@@ -1,0 +1,42 @@
+FROM php:8.2-fpm
+
+ARG TIMEZONE
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    zip \
+    unzip\
+    nodejs \
+    npm
+
+# Installation de Yarn via npm
+RUN npm install -g yarn
+
+# Install PHP extensions
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip intl opcache
+
+# Set timezone
+RUN ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime && echo ${TIMEZONE} > /etc/timezone \
+    && printf '[PHP]\ndate.timezone = "%s"\n', ${TIMEZONE} > /usr/local/etc/php/conf.d/tzone.ini
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Configure PHP
+COPY php.ini /usr/local/etc/php/conf.d/
+
+# Create user with same permissions as host machine user
+RUN usermod -u ${USER_ID} www-data && groupmod -g ${GROUP_ID} www-data
+
+WORKDIR /var/www/
+
+# On garde le conteneur actif
+CMD ["php-fpm"]
