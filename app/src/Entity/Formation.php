@@ -34,22 +34,32 @@ class Formation
 
     #[ORM\Column(length: 255)]
     #[Groups(['formation:read', 'formation:write'])]
+    #[Assert\NotBlank(message: 'Le titre est requis')]
+    #[Assert\Length(min: 5, max: 255)]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
     #[Groups(['formation:read', 'formation:write'])]
+    #[Assert\NotBlank(message: 'La description est requise')]
+    #[Assert\Length(min: 20)]
     private ?string $description = null;
 
     #[ORM\Column]
     #[Groups(['formation:read', 'formation:write'])]
+    #[Assert\NotBlank]
+    #[Assert\Positive]
     private ?float $price = null;
 
     #[ORM\Column]
-    #[Groups(['formation:read', 'formation:write'])]
+    #[Groups(['formation:read', 'formation:write'])] 
+    #[Assert\NotBlank]
+    #[Assert\Positive]
     private ?int $duration = null; // Duration in hours
 
     #[ORM\Column(length: 50)]
     #[Groups(['formation:read', 'formation:write'])]
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['initial', 'continuous', 'mobility'])]
     private ?string $type = null; // initial, continuous, mobility
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
