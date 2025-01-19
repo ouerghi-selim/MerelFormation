@@ -1,2 +1,207 @@
-PD9waHAKCm5hbWVzcGFjZSBBcHBcRW50aXR5OwoKdXNlIEFwaVBsYXRmb3JtXE1ldGFkYXRhXEFwaVJlc291cmNlOwp1c2UgQXBpUGxhdGZvcm1cTWV0YWRhdGFcR2V0Owp1c2UgQXBpUGxhdGZvcm1cTWV0YWRhdGFcR2V0Q29sbGVjdGlvbjsKdXNlIEFwaVBsYXRmb3JtXE1ldGFkYXRhXFBvc3Q7CnVzZSBBcGlQbGF0Zm9ybVxNZXRhZGF0YVxQdXQ7CnVzZSBBcHBcUmVwb3NpdG9yeVxEb2N1bWVudFJlcG9zaXRvcnk7CnVzZSBEb2N0cmluZVxPUk1cTWFwcGluZyBhcyBPUk07CnVzZSBTeW1mb255XENvbXBvbmVudFxTZXJpYWxpemVyXEFubm90YXRpb25cR3JvdXBzOwp1c2UgVmljaFxVcGxvYWRlckJ1bmRsZVxNYXBwaW5nXEFubm90YXRpb25hc1ZpY2g7Cgoj
-W09STV9FbnRpdHkocmVwb3NpdG9yeUNsYXNzOiBEb2N1bWVudFJlcG9zaXRvcnk6OmNsYXNzKV0KI1tBcGlSZXNvdXJjZSgKICAgIG9wZXJhdGlvbnM6IFsKICAgICAgICBuZXcgR2V0KG5vcm1hbGl6YXRpb25Db250ZXh0OiBbJ2dyb3VwcycgPT4gWydkb2N1bWVudDpyZWFkJ11dKSwKICAgICAgICBuZXcgR2V0Q29sbGVjdGlvbihub3JtYWxpemF0aW9uQ29udGV4dDogWydncm91cHMnID0+IFsnZG9jdW1lbnQ6cmVhZCddXSksCiAgICAgICAgbmV3IFBvc3QoZGVub3JtYWxpemF0aW9uQ29udGV4dDogWydncm91cHMnID0+IFsnZG9jdW1lbnQ6d3JpdGUnXV0pLAogICAgICAgIG5ldyBQdXQoZGVub3JtYWxpemF0aW9uQ29udGV4dDogWydncm91cHMnID0+IFsnZG9jdW1lbnQ6d3JpdGUnXV0pCiAgICBdLAogICAgb3JkZXI6IFsnY3JlYXRlZEF0JyA9PiAnREVTQyddCildCiNbVmljaFxVcGxvYWRhYmxlXQpjbGFzcyBEb2N1bWVudAp7CiAgICAjW09STV9JZF0KICAgICNbT1JNXEdlbmVyYXRlVmFsdWVdCiAgICAjW09STV9Db2x1bW5dCiAgICAjW0dyb3VwcyhbJ2RvY3VtZW50OnJlYWQnXSldCiAgICBwcml2YXRlID9pbnQgJGlkID0gbnVsbDsKCiAgICAjW09STV9Db2x1bW4obGVuZ3RoOiAyNTUpXQogICAgI1tHcm91cHMoWydkb2N1bWVudDpyZWFkJywgJ2RvY3VtZW50OndyaXRlJ10pXQogICAgcHJpdmF0ZSA/c3RyaW5nICR0aXRsZSA9IG51bGw7CgogICAgI1tPUk1cQ29sdW1uKGxlbmd0aDogNTApXQogICAgI1tHcm91cHMoWydkb2N1bWVudDpyZWFkJywgJ2RvY3VtZW50OndyaXRlJ10pXQogICAgcHJpdmF0ZSA/c3RyaW5nICR0eXBlID0gbnVsbDsgLy8gY29udHJhdCwgYXR0ZXN0YXRpb24sIHN1cHBvcnQsIGZhY3R1cmUsIGV0Yy4KCiAgICAjW09STV9Db2x1bW4obGVuZ3RoOiAyNTUpXQogICAgI1tHcm91cHMoWydkb2N1bWVudDpyZWFkJ10pXQogICAgcHJpdmF0ZSA/c3RyaW5nICRmaWxlbmFtZSA9IG51bGw7CgogICAgLyoqCiAgICAgKiBAVmljaFxVcGxvYWRhYmxlRmlsZSgKICAgICAqICAgICBtYXBwaW5nPSJkb2N1bWVudF9maWxlcyIsCiAgICAgKiAgICAgbWltZVR5cGVzPXsiYXBwbGljYXRpb24vcGRmIiwgImFwcGxpY2F0aW9uL21zd29yZCIsICJhcHBsaWNhdGlvbi92bmQub3BlbnhtbGZvcm1hdHMtb2ZmaWNlZG9jdW1lbnQud29yZHByb2Nlc3NpbmdtbC5kb2N1bWVudCJ9LAogICAgICogICAgIG1heEhlaWdodD0xMDI0LAogICAgICogICAgIG1heEhlYWRlclM=
+<?php
+
+namespace App\Entity;
+
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use App\Repository\DocumentRepository;
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
+use Vich\UploaderBundle\Mapping\Annotation as Vich;
+
+#[ORM\Entity(repositoryClass: DocumentRepository::class)]
+#[ApiResource(
+    operations: [
+        new Get(normalizationContext: ['groups' => ['document:read']]),
+        new GetCollection(normalizationContext: ['groups' => ['document:read']]),
+        new Post(denormalizationContext: ['groups' => ['document:write']])
+    ],
+    order: ['uploadedAt' => 'DESC']
+)]
+#[Vich\Uploadable]
+class Document
+{
+    #[ORM\Id]
+    #[ORM\GenerateValue]
+    #[ORM\Column]
+    #[Groups(['document:read'])]
+    private ?int $id = null;
+
+    #[ORM\Column(length: 255)]
+    #[Groups(['document:read', 'document:write'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 3, max: 255)]
+    private ?string $title = null;
+
+    #[ORM\Column(length: 50)]
+    #[Groups(['document:read', 'document:write'])]
+    #[Assert\Choice(choices: ['pdf', 'doc', 'docx'])]
+    private ?string $type = null;
+
+    #[ORM\Column(length: 255)]
+    #[Groups(['document:read'])]
+    private ?string $fileName = null;
+
+    /**
+     * @Vich\UploadableFile(
+     *     mapping="document_files",
+     *     mimeTypes={
+     *         "application/pdf",
+     *         "application/msword",
+     *         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+     *     },
+     *     maxSize="4M"
+     * )
+     */
+    #[Assert\NotNull]
+    private ?string $file = null;
+
+    #[ORM\Column(length: 50)]
+    #[Groups(['document:read', 'document:write'])]
+    #[Assert\Choice(choices: ['support', 'contrat', 'attestation', 'facture'])]
+    private ?string $category = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'uploaded_by', referencedColumnName: 'id')]
+    #[Groups(['document:read', 'document:write'])]
+    #[Assert\NotNull]
+    private ?User $uploadedBy = null;
+
+    #[ORM\ManyToOne(targetEntity: Formation::class)]
+    #[ORM\JoinColumn(name: 'formation_id', referencedColumnName: 'id', nullable: true)]
+    #[Groups(['document:read', 'document:write'])]
+    private ?Formation $formation = null;
+
+    #[ORM\Column]
+    #[Groups(['document:read', 'document:write'])]
+    private ?bool $private = false;
+
+    #[ORM\Column]
+    #[Groups(['document:read'])]
+    private ?\DateTimeImmutable $uploadedAt = null;
+
+    #[ORM\Column]
+    #[Groups(['document:read'])]
+    private ?\DateTimeImmutable $updatedAt = null;
+
+    public function __construct()
+    {
+        $this->uploadedAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    #[ORM\PreUpdate]
+    public function setUpdatedAtValue(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getTitle(): ?string
+    {
+        return $this->title;
+    }
+
+    public function setTitle(string $title): static
+    {
+        $this->title = $title;
+        return $this;
+    }
+
+    public function getType(): ?string
+    {
+        return $this->type;
+    }
+
+    public function setType(string $type): static
+    {
+        $this->type = $type;
+        return $this;
+    }
+
+    public function getFileName(): ?string
+    {
+        return $this->fileName;
+    }
+
+    public function setFileName(string $fileName): static
+    {
+        $this->fileName = $fileName;
+        return $this;
+    }
+
+    public function getFile(): ?string
+    {
+        return $this->file;
+    }
+
+    public function setFile(?string $file): static
+    {
+        $this->file = $file;
+        if ($file) {
+            $this->updatedAt = new \DateTimeImmutable();
+        }
+        return $this;
+    }
+
+    public function getUploadedBy(): ?User
+    {
+        return $this->uploadedBy;
+    }
+
+    public function setUploadedBy(?User $uploadedBy): static
+    {
+        $this->uploadedBy = $uploadedBy;
+        return $this;
+    }
+
+    public function getFormation(): ?Formation
+    {
+        return $this->formation;
+    }
+
+    public function setFormation(?Formation $formation): static
+    {
+        $this->formation = $formation;
+        return $this;
+    }
+
+    public function isPrivate(): ?bool
+    {
+        return $this->private;
+    }
+
+    public function setPrivate(bool $private): static
+    {
+        $this->private = $private;
+        return $this;
+    }
+
+    public function getUploadedAt(): ?\DateTimeImmutable
+    {
+        return $this->uploadedAt;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function getCategory(): ?string
+    {
+        return $this->category;
+    }
+
+    public function setCategory(string $category): static
+    {
+        $this->category = $category;
+        return $this;
+    }
+}
