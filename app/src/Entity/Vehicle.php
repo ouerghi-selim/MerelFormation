@@ -31,22 +31,32 @@ class Vehicle
 
     #[ORM\Column(length: 255)]
     #[Groups(['vehicle:read', 'vehicle:write'])]
+    #[Assert\NotBlank(message: 'Le modèle est requis')]
+    #[Assert\Length(min: 2, max: 255)]
     private ?string $model = null;
 
     #[ORM\Column(length: 20)]
     #[Groups(['vehicle:read', 'vehicle:write'])]
+    #[Assert\NotBlank]
+    #[Assert\Regex(pattern: '/^[A-Z]{2}-[0-9]{3}-[A-Z]{2}$/', message: 'La plaque d\'immatriculation n\'est pas valide')]
     private ?string $plate = null;
 
     #[ORM\Column]
     #[Groups(['vehicle:read', 'vehicle:write'])]
+    #[Assert\NotBlank]
+    #[Assert\Range(min: 2000, max: 2025)]
     private ?int $year = null;
 
     #[ORM\Column(length: 50)]
     #[Groups(['vehicle:read', 'vehicle:write'])]
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['available', 'rented', 'maintenance'])]
     private ?string $status = 'available'; // available, rented, maintenance
 
     #[ORM\Column]
     #[Groups(['vehicle:read', 'vehicle:write'])]
+    #[Assert\NotBlank]
+    #[Assert\Positive]
     private ?float $dailyRate = null;
 
     #[ORM\Column]
