@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -18,6 +19,8 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
     denormalizationContext: ['groups' => ['user:write']],
 )]
 #[UniqueEntity(fields: ['email'], message: 'Cet email est déjà utilisé')]
+#[ORM\Index(columns: ['email'], name: 'user_email_idx')]
+#[ORM\UniqueConstraint(name: 'user_email_unique', columns: ['email'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -57,6 +60,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Assert\Length(min: 10, max: 20)]
     #[Assert\Regex(pattern: '/^[0-9\s\+\-\.]+$/', message: 'Le numéro de téléphone n\'est pas valide')]
     private ?string $phone = null;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Reservation::class)]
+    private Collection $reservations;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Document::class)]
+    private Collection $documents;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: VehicleRental::class)]
+    private Collection $vehicleRentals;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Invoice::class)]
+    private Collection $invoices;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Notification::class)]
+    private Collection $notifications;
 
     #[ORM\Column]
     #[Groups(['user:read'])]
@@ -193,4 +211,56 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
+
+    public function getReservations(): Collection
+    {
+        return $this->reservations;
+    }
+
+    public function setReservations(Collection $reservations): void
+    {
+        $this->reservations = $reservations;
+    }
+
+    public function getDocuments(): Collection
+    {
+        return $this->documents;
+    }
+
+    public function setDocuments(Collection $documents): void
+    {
+        $this->documents = $documents;
+    }
+
+    public function getVehicleRentals(): Collection
+    {
+        return $this->vehicleRentals;
+    }
+
+    public function setVehicleRentals(Collection $vehicleRentals): void
+    {
+        $this->vehicleRentals = $vehicleRentals;
+    }
+
+    public function getInvoices(): Collection
+    {
+        return $this->invoices;
+    }
+
+    public function setInvoices(Collection $invoices): void
+    {
+        $this->invoices = $invoices;
+    }
+
+    public function getNotifications(): Collection
+    {
+        return $this->notifications;
+    }
+
+    public function setNotifications(Collection $notifications): void
+    {
+        $this->notifications = $notifications;
+    }
+
+
 }

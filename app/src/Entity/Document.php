@@ -22,10 +22,13 @@ use Vich\UploaderBundle\Mapping\Annotation as Vich;
     order: ['uploadedAt' => 'DESC']
 )]
 #[Vich\Uploadable]
+#[ORM\Table]
+#[ORM\Index(columns: ['type', 'category'], name: 'document_type_category_idx')]
+#[ORM\Index(columns: ['uploaded_at'], name: 'document_upload_idx')]
 class Document
 {
     #[ORM\Id]
-    #[ORM\GenerateValue]
+    #[ORM\GeneratedValue]
     #[ORM\Column]
     #[Groups(['document:read'])]
     private ?int $id = null;

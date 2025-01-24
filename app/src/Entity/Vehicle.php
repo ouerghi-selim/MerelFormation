@@ -8,6 +8,7 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use App\Repository\VehicleRepository;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 
@@ -21,6 +22,9 @@ use Symfony\Component\Serializer\Annotation\Groups;
     ],
     order: ['model' => 'ASC']
 )]
+#[ORM\Table]
+#[ORM\UniqueConstraint(name: 'vehicle_plate_unique', columns: ['plate'])]
+#[ORM\Index(columns: ['status'], name: 'vehicle_status_idx')]
 class Vehicle
 {
     #[ORM\Id]
@@ -66,6 +70,12 @@ class Vehicle
     #[ORM\Column(length: 50)]
     #[Groups(['vehicle:read', 'vehicle:write'])]
     private ?string $category = null; // berline, monospace, etc.
+
+    #[ORM\OneToMany(mappedBy: 'vehicle', targetEntity: VehicleRental::class)]
+    private Collection $rentals;
+
+    #[ORM\OneToMany(mappedBy: 'vehicle', targetEntity: Media::class)]
+    private Collection $media;
 
     #[ORM\Column]
     #[Groups(['vehicle:read'])]
@@ -177,5 +187,25 @@ class Vehicle
     public function getUpdatedAt(): ?\DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function getRentals(): Collection
+    {
+        return $this->rentals;
+    }
+
+    public function setRentals(Collection $rentals): void
+    {
+        $this->rentals = $rentals;
+    }
+
+    public function getMedia(): Collection
+    {
+        return $this->media;
+    }
+
+    public function setMedia(Collection $media): void
+    {
+        $this->media = $media;
     }
 }

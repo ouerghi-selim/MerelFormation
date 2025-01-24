@@ -164,6 +164,13 @@
       <excludeFolder url="file://$MODULE_DIR$/app/vendor/symfony/webpack-encore-bundle" />
       <excludeFolder url="file://$MODULE_DIR$/app/vendor/vich/uploader-bundle" />
       <excludeFolder url="file://$MODULE_DIR$/app/vendor/willdurand/negotiation" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/behat/transliterator" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/easycorp/easyadmin-bundle" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/gedmo/doctrine-extensions" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/stof/doctrine-extensions-bundle" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/symfony/ux-twig-component" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/tattali/calendar-bundle" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/twig/html-extra" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

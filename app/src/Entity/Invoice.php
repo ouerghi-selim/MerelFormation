@@ -23,6 +23,10 @@ use Symfony\Component\Validator\Constraints as Assert;
     ],
     order: ['createdAt' => 'DESC']
 )]
+#[ORM\Table]
+#[ORM\UniqueConstraint(name: 'invoice_number_unique', columns: ['invoice_number'])]
+#[ORM\Index(columns: ['status'], name: 'invoice_status_idx')]
+#[ORM\Index(columns: ['created_at'], name: 'invoice_created_idx')]
 class Invoice
 {
     #[ORM\Id]

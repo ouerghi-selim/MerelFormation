@@ -23,6 +23,9 @@ use Symfony\Component\Serializer\Annotation\Groups;
     ],
     order: ['startDate' => 'ASC']
 )]
+#[ORM\Table]
+#[ORM\Index(columns: ['start_date'], name: 'session_start_idx')]
+#[ORM\Index(columns: ['status'], name: 'session_status_idx')]
 class Session
 {
     #[ORM\Id]
@@ -63,6 +66,12 @@ class Session
     #[ORM\ManyToMany(targetEntity: User::class)]
     #[Groups(['session:item:read'])]
     private Collection $participants;
+
+    #[ORM\OneToMany(mappedBy: 'session', targetEntity: Reservation::class)]
+    private Collection $reservations;
+
+    #[ORM\OneToMany(mappedBy: 'session', targetEntity: Document::class)]
+    private Collection $documents;
 
     #[ORM\Column]
     #[Groups(['session:read'])]
@@ -183,4 +192,25 @@ class Session
         $this->participants->removeElement($participant);
         return $this;
     }
+
+    public function getReservations(): Collection
+    {
+        return $this->reservations;
+    }
+
+    public function setReservations(Collection $reservations): void
+    {
+        $this->reservations = $reservations;
+    }
+
+    public function getDocuments(): Collection
+    {
+        return $this->documents;
+    }
+
+    public function setDocuments(Collection $documents): void
+    {
+        $this->documents = $documents;
+    }
+
 }

@@ -24,6 +24,9 @@ use Symfony\Component\Serializer\Annotation\Groups;
     ],
     order: ['createdAt' => 'DESC']
 )]
+#[ORM\Table]
+#[ORM\Index(columns: ['title'], name: 'formation_title_idx')]
+#[ORM\Index(columns: ['type'], name: 'formation_type_idx')]
 class Formation
 {
     #[ORM\Id]
@@ -65,6 +68,15 @@ class Formation
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups(['formation:read', 'formation:write'])]
     private ?string $prerequisites = null;
+
+    #[ORM\ManyToOne(targetEntity: Category::class, inversedBy: 'formations')]
+    private ?Category $category = null;
+
+    #[ORM\OneToMany(mappedBy: 'formation', targetEntity: Document::class)]
+    private Collection $documents;
+
+    #[ORM\OneToMany(mappedBy: 'formation', targetEntity: Media::class)]
+    private Collection $media;
 
     #[ORM\Column]
     #[Groups(['formation:read'])]
@@ -216,4 +228,35 @@ class Formation
 
         return $this;
     }
+
+    public function getCategory(): ?Category
+    {
+        return $this->category;
+    }
+
+    public function setCategory(?Category $category): void
+    {
+        $this->category = $category;
+    }
+
+    public function getDocuments(): Collection
+    {
+        return $this->documents;
+    }
+
+    public function setDocuments(Collection $documents): void
+    {
+        $this->documents = $documents;
+    }
+
+    public function getMedia(): Collection
+    {
+        return $this->media;
+    }
+
+    public function setMedia(Collection $media): void
+    {
+        $this->media = $media;
+    }
+
 }
