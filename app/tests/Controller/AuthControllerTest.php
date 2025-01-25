@@ -19,6 +19,7 @@ class AuthControllerTest extends WebTestCase
 
         // Clear test database
         $this->entityManager->createQuery('DELETE FROM App\\Entity\\User')->execute();
+        $this->entityManager->createQuery('DELETE FROM App\\Entity\\RefreshToken')->execute();
     }
 
     public function testRegister(): void
@@ -65,9 +66,11 @@ class AuthControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
 
-    public function testLogin(): void
+    public function testLoginAndRefreshToken(): void
     {
-        // First create a user
+        // 1. First create a user
+        $email = 'refresh@example.com';
+        $password = 'password123';
         $this->client->request(
             'POST',
             '/api/register',
@@ -75,14 +78,14 @@ class AuthControllerTest extends WebTestCase
             [],
             ['CONTENT_TYPE' => 'application/json'],
             json_encode([
-                'email' => 'login@example.com',
-                'password' => 'password123',
-                'firstName' => 'Login',
+                'email' => $email,
+                'password' => $password,
+                'firstName' => 'Refresh',
                 'lastName' => 'Test'
             ])
         );
 
-        // Then try to login
+        // 2. Login to get tokens
         $this->client->request(
             'POST',
             '/api/login_check',
@@ -90,15 +93,51 @@ class AuthControllerTest extends WebTestCase
             [],
             ['CONTENT_TYPE' => 'application/json'],
             json_encode([
-                'email' => 'login@example.com',
-                'password' => 'password123'
+                'email' => $email,
+                'password' => $password
             ])
         );
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        $response = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertResponseIsSuccessful();
+        $loginResponse = json_decode($this->client->getResponse()->getContent(), true);
         
-        $this->assertArrayHasKey('token', $response);
+        $this->assertArrayHasKey('token', $loginResponse);
+        $this->assertArrayHasKey('refresh_token', $loginResponse);
+
+        // 3. Try to refresh the token
+        $this->client->request(
+            'POST',
+            '/api/token/refresh',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode([
+                'refresh_token' => $loginResponse['refresh_token']
+            ])
+        );
+
+        $this->assertResponseIsSuccessful();
+        $refreshResponse = json_decode($this->client->getResponse()->getContent(), true);
+        
+        $this->assertArrayHasKey('token', $refreshResponse);
+        $this->assertArrayHasKey('refresh_token', $refreshResponse);
+        $this->assertNotEquals($loginResponse['token'], $refreshResponse['token']);
+    }
+
+    public function testRefreshTokenWithInvalidToken(): void
+    {
+        $this->client->request(
+            'POST',
+            '/api/token/refresh',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode([
+                'refresh_token' => 'invalid_refresh_token'
+            ])
+        );
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
     }
 
     public function testGetProfile(): void
