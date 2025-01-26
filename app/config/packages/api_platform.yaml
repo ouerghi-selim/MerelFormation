@@ -8,6 +8,10 @@ api_platform:
             JWT:
                 name: Authorization
                 type: header
+        versions: [ 3 ]
+        swagger_ui_extra_configuration:
+            persistAuthorization: true
+            displayOperationId: true
     formats:
         jsonld: ['application/ld+json']
         json: ['application/json']
@@ -29,8 +33,3 @@ api_platform:
             enabled_parameter_name: pagination
             items_per_page_parameter_name: itemsPerPage
             page_parameter_name: page
-    swagger:
-        versions: [3]
-        swagger_ui_extra_configuration:
-            persistAuthorization: true
-            displayOperationId: true
