@@ -1,7 +1,35 @@
 api_platform:
-    title: Hello API Platform
-    version: 1.0.0
+    title: 'MerelFormation API'
+    version: '1.0.0'
+    description: 'API for MerelFormation - Formation and Vehicle Rental Management'
+    show_webby: false
+    swagger:
+        api_keys:
+            JWT:
+                name: Authorization
+                type: header
+        versions: [ 3 ]
+        swagger_ui_extra_configuration:
+            persistAuthorization: true
+            displayOperationId: true
+    formats:
+        jsonld: ['application/ld+json']
+        json: ['application/json']
+        html: ['text/html']
+    docs_formats:
+        jsonld: ['application/ld+json']
+        jsonopenapi: ['application/vnd.openapi+json']
+        html: ['text/html']
     defaults:
         stateless: true
         cache_headers:
             vary: ['Content-Type', 'Authorization', 'Origin']
+        extra_properties:
+            standard_put: true
+        pagination_enabled: true
+        pagination_items_per_page: 10
+    collection:
+        pagination:
+            enabled_parameter_name: pagination
+            items_per_page_parameter_name: itemsPerPage
+            page_parameter_name: page

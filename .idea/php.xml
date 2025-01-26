@@ -178,6 +178,7 @@
       <path value="$PROJECT_DIR$/app/vendor/easycorp/easyadmin-bundle" />
       <path value="$PROJECT_DIR$/app/vendor/twig/html-extra" />
       <path value="$PROJECT_DIR$/app/vendor/tattali/calendar-bundle" />
+      <path value="$PROJECT_DIR$/app/vendor/gesdinet/jwt-refresh-token-bundle" />
     </include_path>
   </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="8.2" />
