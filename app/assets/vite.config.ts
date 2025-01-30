@@ -3,15 +3,16 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
-  root: './app/assets',
-  base: '/',
+  root: './',
+  base: '/assets/',
   build: {
     outDir: '../public/build',
     assetsDir: 'assets',
     emptyOutDir: true,
     manifest: true,
+    sourcemap: true,
     rollupOptions: {
-      input: path.resolve(__dirname, 'index.html'),
+      input:'./index.html',
       output: {
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',
@@ -21,8 +22,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
-      '@assets': path.resolve(__dirname, 'src/assets')
+      '@': path.resolve(__dirname, './src'),
+      '@assets': path.resolve(__dirname, './src/assets')
     }
   },
   plugins: [react()],
@@ -30,8 +31,10 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
+    cors: true,  // Ajout pour permettre le CORS
     hmr: {
-      host: 'localhost'
+      host: 'localhost',
+      protocol: 'ws'
     }
   },
   preview: {

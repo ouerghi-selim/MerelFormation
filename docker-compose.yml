@@ -59,12 +59,15 @@ services:
   node:
     image: node:18
     container_name: merel_node
-    working_dir: /var/www
+    working_dir: /var/www/assets
     volumes:
       - ./app:/var/www
     ports:
       - "5173:5173"
       - "4173:4173"
+    command: /bin/sh -c "npm install && npm run dev -- --host"
+    environment:
+      - HOST=0.0.0.0
     stdin_open: true
     tty: true
 
