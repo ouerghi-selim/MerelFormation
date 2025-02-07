@@ -1,1 +1,108 @@
-{"encoding": "base64", "content": "PD9waHAKCm5hbWVzcGFjZSBBcHBcQ29udHJvbGxlcjsKCnVzZSBBcHBcRW50aXR5XFVzZXI7CnVzZSBBcHBcUmVwb3NpdG9yeVxVc2VyUmVwb3NpdG9yeTsKdXNlIERvY3RyaW5lXE9STVxFbnRpdHlNYW5hZ2VyOwoKdXNlIFN5bWZvbnlcQnVuZGxlXEZyYW1ld29ya0J1bmRsZVxDb250cm9sbGVyXEFic3RyYWN0Q29udHJvbGxlcjsKdXNlIFN5bWZvbnlcQ29tcG9uZW50XEh0dHBGb3VuZGF0aW9uXFJlcXVlc3Q7CnVzZSBTeW1mb255XENvbXBvbmVudFxIdHRwRm91bmRhdGlvblxSZXNwb25zZTsKdXNlIFN5bWZvbnlcQ29tcG9uZW50XFJvdXRpbmdcQW5ub3RhdGlvblxSb3V0ZTsKdXNlIFN5bWZvbnlcQ29tcG9uZW50XFBhc3N3b3JkSGFzaGVyXFVzZXJQYXNzd29yZEhhc2hlckludGVyZmFjZTsKCmNsYXNzIFVzZXJDb250cm9sbGVyIGV4dGVuZHMgQWJzdHJhY3RDb250cm9sbGVyCnsKICAgIHB1YmxpYyBmdW5jdGlvbiBfX2NvbnN0cnVjdCgKICAgICAgICBwcml2YXRlIEVudGl0eU1hbmFnZXIgJGVudGl0eU1hbmFnZXIsCiAgICAgICAgcHJpdmF0ZSBVc2VyUmVwb3NpdG9yeSAkdXNlclJlcG9zaXRvcnksCiAgICAgICAgcHJpdmF0ZSBVc2VyUGFzc3dvcmRIYXNoZXJJbnRlcmZhY2UgJHBhc3N3b3JkSGFzaGVyCiAgICApIHsKICAgIH0KCiAgICAjW1JvdXRlKCcvdXNlcnMnLCBuYW1lOiAndXNlcl9saXN0JywgbWV0aG9kczogWydHRVQnXSldCiAgICBwdWJsaWMgZnVuY3Rpb24gaW5kZXgoKTogUmVzcG9uc2UKICAgIHsKICAgICAgICAkdXNlcnMgPSAkdGhpcy0+dXNlclJlcG9zaXRvcnktPmZpbmRBbGwoKTsKCiAgICAgICAgcmV0dXJuICR0aGlzLT5yZW5kZXIoJ3VzZXIvaW5kZXguaHRtbC50d2lnJywgWwogICAgICAgICAgICAndXNlcnMnID0+ICR1c2VycywKICAgICAgICBdKTsKICAgIH0KCiAgICAjW1JvdXRlKCcvdXNlcnMvbmV3JywgbmFtZTogJ3VzZXJfbmV3JywgbWV0aG9kczogWydHRVQnLCAnUE9TVCddKV0KICAgIHB1YmxpYyBmdW5jdGlvbiBuZXcoUmVxdWVzdCAkcmVxdWVzdCk6IFJlc3BvbnNlCiAgICB7CiAgICAgICAgaWYgKCRyZXF1ZXN0LT5pc01ldGhvZCgnUE9TVCcpKSB7CiAgICAgICAgICAgICR1c2VyID0gbmV3IFVzZXIoKTsKICAgICAgICAgICAgJHVzZXItPnNldEVtYWlsKCRyZXF1ZXN0LT5yZXF1ZXN0LT5nZXQoJ2VtYWlsJykpOwogICAgICAgICAgICAkdXNlci0+c2V0Rmlyc3ROYW1lKCRyZXF1ZXN0LT5yZXF1ZXN0LT5nZXQoJ2ZpcnN0TmFtZScpKTsKICAgICAgICAgICAgJHVzZXItPnNldExhc3ROYW1lKCRyZXF1ZXN0LT5yZXF1ZXN0LT5nZXQoJ2xhc3ROYW1lJykpOwogICAgICAgICAgICAkdXNlci0+c2V0UGFzc3dvcmQoCiAgICAgICAgICAgICAgICAkdGhpcy0+cGFzc3dvcmRIYXNoZXItPmhhc2hQYXNzd29yZCgKICAgICAgICAgICAgICAgICAgICAkcmVxdWVzdC0+cmVxdWVzdC0+Z2V0KCdwYXNzd29yZCcpCiAgICAgICAgICAgICAgICApCiAgICAgICAgICAgICk7CgogICAgICAgICAgICAkdGhpcy0+ZW50aXR5TWFuYWdlci0+cGVyc2lzdCgkdXNlcik7CiAgICAgICAgICAgICR0aGlzLT5lbnRpdHlNYW5hZ2VyLT5mbHVzaCgpOwoKICAgICAgICAgICAgcmV0dXJuICR0aGlzLT5yZWRpcmVjdFRvUm91dGUoJ3VzZXJfbGlzdCcpOwogICAgICAgIH0KCiAgICAgICAgcmV0dXJuICR0aGlzLT5yZW5kZXIoJ3VzZXIvbmV3Lmh0bWwudHdpZycpOwogICAgfQoKICAgICNbUm91dGUoJy91c2Vycy97aWR9JywgbmFtZTogJ3VzZXJfZWRpdCcsIG1ldGhvZHM6IFsnR0VUJywgJ1BPU1QnXSldCiAgICBwdWJsaWMgZnVuY3Rpb24gZWRpdChVc2VyICR1c2VyLCBSZXF1ZXN0ICRyZXF1ZXN0KTogUmVzcG9uc2UKICAgIHsKICAgICAgICBpZiAoJHJlcXVlc3QtPmlzTWV0aG9kKCdQT1NUJykpIHsKICAgICAgICAgICAgJHVzZXItPnNldEVtYWlsKCRyZXF1ZXN0LT5yZXF1ZXN0LT5nZXQoJ2VtYWlsJykpOwogICAgICAgICAgICAkdXNlci0+c2V0Rmlyc3ROYW1lKCRyZXF1ZXN0LT5yZXF1ZXN0LT5nZXQoJ2ZpcnN0TmFtZScpKTsKICAgICAgICAgICAgJHVzZXItPnNldExhc3ROYW1lKCRyZXF1ZXN0LT5yZXF1ZXN0LT5nZXQoJ2xhc3ROYW1lJykpOwoKICAgICAgICAgICAgaWYgKCRyZXF1ZXN0LT5yZXF1ZXN0LT5nZXQoJ3Bhc3N3b3JkJykpIHsKICAgICAgICAgICAgICAgICR1c2VyLT5zZXRQYXNzd29yZCgKICAgICAgICAgICAgICAgICAgICAkdGhpcy0+cGFzc3dvcmRIYXNoZXItPmhhc2hQYXNzd29yZCgKICAgICAgICAgICAgICAgICAgICAgICAgJHJlcXVlc3QtPnJlcXVlc3QtPmdldCgncGFzc3dvcmQnKQogICAgICAgICAgICAgICAgICAgICkKICAgICAgICAgICAgICAgICk7CiAgICAgICAgICAgIH0KCiAgICAgICAgICAgICR0aGlzLT5lbnRpdHlNYW5hZ2VyLT5mbHVzaCgpOwoKICAgICAgICAgICAgcmV0dXJuICR0aGlzLT5yZWRpcmVjdFRvUm91dGUoJ3VzZXJfbGlzdCcpOwogICAgICAgIH0KCiAgICAgICAgcmV0dXJuICR0aGlzLT5yZW5kZXIoJ3VzZXIvZWRpdC5odG1sLnR3aWcnLCBbCiAgICAgICAgICAgICd1c2VyJyA9PiAkdXNlciwKICAgICAgICBdKTsKICAgIH0KCiAgICAjW1JvdXRlKCcvdXNlcnMve2lkfS9kZWxldGUnLCBuYW1lOiAndXNlcl9kZWxldGUnLCBtZXRob2RzOiBbJ1BPU1QnXSldCiAgICBwdWJsaWMgZnVuY3Rpb24gZGVsZXRlKFVzZXIgJHVzZXIpOiBSZXNwb25zZQogICAgewogICAgICAgICR0aGlzLT5lbnRpdHlNYW5hZ2VyLT5yZW1vdmUoJHVzZXIpOwogICAgICAgICR0aGlzLT5lbnRpdHlNYW5hZ2VyLT5mbHVzaCgpOwoKICAgICAgICByZXR1cm4gJHRoaXMtPnJlZGlyZWN0VG9Sb3V0ZSgndXNlcl9saXN0Jyk7CiAgICB9Cn0="}
+<?php
+
+namespace App\Controller;
+
+use App\Entity\User;
+use App\Repository\UserRepository;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Routing\Annotation\Route;
+
+class UserController extends AbstractController
+{
+    public function __construct(
+        private EntityManagerInterface $entityManager,
+        private UserRepository $userRepository,
+        private UserPasswordHasherInterface $passwordHasher
+    ) {
+    }
+
+    #[Route('/admin/users', name: 'user_list', methods: ['GET'])]
+    public function index(): Response
+    {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+        
+        $users = $this->userRepository->findAll();
+        return $this->render('admin/user/index.html.twig', [
+            'users' => $users,
+        ]);
+    }
+
+    #[Route('/admin/users/new', name: 'user_new', methods: ['GET', 'POST'])]
+    public function new(Request $request): Response
+    {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
+        if ($request->isMethod('POST')) {
+            $user = new User();
+            $user->setEmail($request->request->get('email'));
+            $user->setFirstName($request->request->get('firstName'));
+            $user->setLastName($request->request->get('lastName'));
+            $user->setRoles($request->request->get('roles', ['ROLE_USER']));
+            $user->setPassword(
+                $this->passwordHasher->hashPassword(
+                    $user,
+                    $request->request->get('password')
+                )
+            );
+
+            $this->entityManager->persist($user);
+            $this->entityManager->flush();
+
+            return $this->redirectToRoute('user_list');
+        }
+
+        return $this->render('admin/user/new.html.twig');
+    }
+
+    #[Route('/admin/users/{id}', name: 'user_edit', methods: ['GET', 'POST'])]
+    public function edit(User $user, Request $request): Response
+    {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
+        if ($request->isMethod('POST')) {
+            $user->setEmail($request->request->get('email'));
+            $user->setFirstName($request->request->get('firstName'));
+            $user->setLastName($request->request->get('lastName'));
+            $user->setRoles($request->request->get('roles', ['ROLE_USER']));
+
+            if ($password = $request->request->get('password')) {
+                $user->setPassword(
+                    $this->passwordHasher->hashPassword($user, $password)
+                );
+            }
+
+            $this->entityManager->flush();
+            return $this->redirectToRoute('user_list');
+        }
+
+        return $this->render('admin/user/edit.html.twig', [
+            'user' => $user,
+        ]);
+    }
+
+    #[Route('/admin/users/{id}/delete', name: 'user_delete', methods: ['POST'])]
+    public function delete(User $user): Response
+    {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+        
+        $this->entityManager->remove($user);
+        $this->entityManager->flush();
+
+        return $this->redirectToRoute('user_list');
+    }
+
+    #[Route('/admin/users/{id}/toggle', name: 'user_toggle', methods: ['POST'])]
+    public function toggleActive(User $user): Response
+    {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+        
+        $user->setIsActive(!$user->isIsActive());
+        $this->entityManager->flush();
+
+        return $this->redirectToRoute('user_list');
+    }
+}
