@@ -4,11 +4,12 @@ namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Http\request;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Entity\Formation;
 use Doctrine\ORM\EntityManagerInterface;
 
+#[Route('/api', name: 'api_')]
 class FormationController extends AbstractController
 {
     private EntityManagerInterface $entityManager;
@@ -18,14 +19,12 @@ class FormationController extends AbstractController
             $this->entityManager = $entityManager;
     }
 
-    /**
-     * @Route("/formations", methods={"GET"})
-     */
+    #[Route('/formations', name: 'formations_list', methods: ['GET'])]
     public function listFormations(): JsonResponse
     {
         $formations = $this->entityManager->getRepository(Formation::class)
             ->findAll();
-        return $this->json($formations);
+        return $this->json(['formations' => $formations]);
     }
 
     /**
@@ -36,7 +35,7 @@ class FormationController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         $formation = new Formation();
-        $formation->setName($data['name']);
+        $formation->setTitle($data['name']);
         $formation->setDescription($data['description']);
 
         $this->entityManager->persist($formation);

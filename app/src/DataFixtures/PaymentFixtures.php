@@ -3,6 +3,7 @@
 namespace App\DataFixtures;
 
 use App\Entity\Payment;
+use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
@@ -18,21 +19,21 @@ class PaymentFixtures extends Fixture implements DependentFixtureInterface
                 'amount' => 1800.00,
                 'method' => 'card',
                 'status' => 'completed',
-                'user' => $this->getReference(UserFixtures::STUDENT_USER_REFERENCE),
+                'user' => $this->getReference(UserFixtures::STUDENT_USER_REFERENCE, User::class),
             ],
             [
                 'transactionId' => 'TRX-' . uniqid(),
                 'amount' => 400.00,
                 'method' => 'transfer',
                 'status' => 'pending',
-                'user' => $this->getReference(UserFixtures::STUDENT_USER_REFERENCE),
+                'user' => $this->getReference(UserFixtures::STUDENT_USER_REFERENCE, User::class),
             ],
             [
                 'transactionId' => 'TRX-' . uniqid(),
                 'amount' => 300.00,
                 'method' => 'cpf',
                 'status' => 'completed',
-                'user' => $this->getReference(UserFixtures::STUDENT_USER_REFERENCE),
+                'user' => $this->getReference(UserFixtures::STUDENT_USER_REFERENCE, User::class),
             ],
         ];
 
@@ -53,7 +54,7 @@ class PaymentFixtures extends Fixture implements DependentFixtureInterface
         $manager->flush();
     }
 
-    public function getDependencies()
+    public function getDependencies(): array
     {
         return [
             UserFixtures::class,
