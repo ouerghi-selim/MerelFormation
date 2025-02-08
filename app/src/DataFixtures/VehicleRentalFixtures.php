@@ -2,6 +2,8 @@
 
 namespace App\DataFixtures;
 
+use App\Entity\User;
+use App\Entity\Vehicle;
 use App\Entity\VehicleRental;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
@@ -17,8 +19,8 @@ class VehicleRentalFixtures extends Fixture implements DependentFixtureInterface
                 'endDate' => new \DateTimeImmutable('+2 weeks'),
                 'totalPrice' => 1200.00,
                 'status' => 'confirmed',
-                'vehicle' => $this->getReference(VehicleFixtures::VEHICLE_1_REFERENCE),
-                'user' => $this->getReference(UserFixtures::STUDENT_USER_REFERENCE),
+                'vehicle' => $this->getReference(VehicleFixtures::VEHICLE_1_REFERENCE, Vehicle::class),
+                'user' => $this->getReference(UserFixtures::STUDENT_USER_REFERENCE, User::class),
                 'pickupLocation' => '7 RUE Georges Maillols, 35000 RENNES',
                 'returnLocation' => '7 RUE Georges Maillols, 35000 RENNES',
             ],
@@ -27,8 +29,8 @@ class VehicleRentalFixtures extends Fixture implements DependentFixtureInterface
                 'endDate' => new \DateTimeImmutable('+4 weeks'),
                 'totalPrice' => 1000.00,
                 'status' => 'pending',
-                'vehicle' => $this->getReference(VehicleFixtures::VEHICLE_2_REFERENCE),
-                'user' => $this->getReference(UserFixtures::STUDENT_USER_REFERENCE),
+                'vehicle' => $this->getReference(VehicleFixtures::VEHICLE_2_REFERENCE, Vehicle::class),
+                'user' => $this->getReference(UserFixtures::STUDENT_USER_REFERENCE, User::class),
                 'pickupLocation' => '7 RUE Georges Maillols, 35000 RENNES',
                 'returnLocation' => '7 RUE Georges Maillols, 35000 RENNES',
             ],
@@ -51,7 +53,7 @@ class VehicleRentalFixtures extends Fixture implements DependentFixtureInterface
         $manager->flush();
     }
 
-    public function getDependencies()
+    public function getDependencies(): array
     {
         return [
             UserFixtures::class,

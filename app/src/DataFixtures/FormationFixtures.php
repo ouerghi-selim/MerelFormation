@@ -2,6 +2,7 @@
 
 namespace App\DataFixtures;
 
+use App\Entity\Category;
 use App\Entity\Formation;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
@@ -54,7 +55,7 @@ class FormationFixtures extends Fixture implements DependentFixtureInterface
             $formation->setType($formationData['type']);
             $formation->setPrerequisites($formationData['prerequisites']);
             $formation->setIsActive(true);
-            $formation->setCategory($this->getReference(CategoryFixtures::TAXI_CATEGORY_REFERENCE));
+            $formation->setCategory($this->getReference(CategoryFixtures::TAXI_CATEGORY_REFERENCE, Category::class));
 
             $manager->persist($formation);
             $this->addReference($formationData['reference'], $formation);
@@ -63,7 +64,7 @@ class FormationFixtures extends Fixture implements DependentFixtureInterface
         $manager->flush();
     }
 
-    public function getDependencies()
+    public function getDependencies(): array
     {
         return [
             CategoryFixtures::class,

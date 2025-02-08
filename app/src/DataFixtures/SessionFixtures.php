@@ -2,6 +2,7 @@
 
 namespace App\DataFixtures;
 
+use App\Entity\Formation;
 use App\Entity\Session;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
@@ -22,7 +23,7 @@ class SessionFixtures extends Fixture implements DependentFixtureInterface
 
         foreach ($startDates as $index => $startDate) {
             $session = new Session();
-            $session->setFormation($this->getReference(FormationFixtures::FORMATION_INITIAL_REFERENCE));
+            $session->setFormation($this->getReference(FormationFixtures::FORMATION_INITIAL_REFERENCE, Formation::class));
             $session->setStartDate($startDate);
             $session->setEndDate($startDate->modify('+4 weeks')); // 4 semaines de formation
             $session->setMaxParticipants(12);
@@ -36,7 +37,7 @@ class SessionFixtures extends Fixture implements DependentFixtureInterface
 
         // Création d'une session pour la formation continue
         $sessionContinue = new Session();
-        $sessionContinue->setFormation($this->getReference(FormationFixtures::FORMATION_CONTINUE_REFERENCE));
+        $sessionContinue->setFormation($this->getReference(FormationFixtures::FORMATION_CONTINUE_REFERENCE, Formation::class));
         $sessionContinue->setStartDate(new \DateTimeImmutable('+1 week'));
         $sessionContinue->setEndDate(new \DateTimeImmutable('+1 week 2 days')); // 2 jours de formation
         $sessionContinue->setMaxParticipants(15);
@@ -49,7 +50,7 @@ class SessionFixtures extends Fixture implements DependentFixtureInterface
         $manager->flush();
     }
 
-    public function getDependencies()
+    public function getDependencies(): array
     {
         return [
             FormationFixtures::class,

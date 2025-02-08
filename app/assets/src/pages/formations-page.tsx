@@ -1,27 +1,44 @@
 import { Search, Calendar, Clock, Users } from 'lucide-react';
-import {Link} from "react-router-dom";
+import { Link } from "react-router-dom";
+import { useEffect, useState } from 'react';
+
+interface Formation {
+  id: number;
+  title: string;
+  description: string;
+  duration: string;
+  price: number;
+  type: string;
+  startDate: string;
+  places: string;
+}
 
 const FormationsPage = () => {
-  const formations = [
-    {
-      id: 1,
-      title: 'Formation Initiale Taxi',
-      duration: '140h',
-      startDate: '15 Février 2024',
-      price: '1500€',
-      places: '8 places disponibles',
-      description: 'Formation complète pour devenir chauffeur de taxi',
-    },
-    {
-      id: 2,
-      title: 'Formation Continue',
-      duration: '14h',
-      startDate: '1 Mars 2024',
-      price: '400€',
-      places: '12 places disponibles',
-      description: 'Formation de mise à jour des connaissances',
-    },
-  ];
+  const [formations, setFormations] = useState<Formation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchFormations = async () => {
+      try {
+        const response = await fetch('http://localhost/api/formations');
+        if (!response.ok) {
+          throw new Error('Failed to fetch formations');
+        }
+        const data = await response.json();
+        setFormations(data['member']);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFormations();
+  }, []);
+
+  if (loading) return <div className="text-center p-4">Chargement...</div>;
+  if (error) return <div className="text-red-500 p-4">{error}</div>;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -82,8 +99,8 @@ const FormationsPage = () => {
                 </div>
                 <p className="text-gray-600 mb-4">{formation.description}</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-blue-900">{formation.price}</span>
-                  <Link to="/formations/initial" className="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800">
+                  <span className="text-2xl font-bold text-blue-900">{formation.price}€</span>
+                  <Link to={`/formations/${formation.id}`} className="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800">
                     S'inscrire
                   </Link>
                 </div>
