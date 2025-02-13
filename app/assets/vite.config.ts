@@ -4,7 +4,7 @@ import path from 'path';
 
 export default defineConfig({
   root: './',
-  base: '/assets/',
+  base: '/',
   build: {
     outDir: '../public/build',
     assetsDir: 'assets',
