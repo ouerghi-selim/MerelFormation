@@ -1,26 +1,64 @@
-import {  Calendar, Car,  CreditCard } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Car, CreditCard } from 'lucide-react';
+import axios from 'axios';
+
+interface Vehicle {
+  id: number;
+  model: string;
+  category: string;
+  dailyRate: number;
+  description?: string;
+  plate: string;
+  year: number;
+  status: 'available' | 'rented' | 'maintenance';
+  isActive: boolean;
+}
 
 const LocationPage = () => {
-  const vehicles = [
-    {
-      id: 1,
-      name: 'Toyota Camry Hybride',
-      type: 'Berline',
-      price: '120€/jour',
-      description: 'Véhicule hybride confortable et économique',
-      features: ['Automatique', 'Climatisation', 'GPS intégré'],
-      available: true
-    },
-    {
-      id: 2,
-      name: 'Peugeot 508',
-      type: 'Berline',
-      price: '100€/jour',
-      description: 'Berline française élégante et spacieuse',
-      features: ['Automatique', 'Climatisation', 'Caméra de recul'],
-      available: true
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useState({
+    startDate: '',
+    category: '',
+  });
+
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      try {
+        setLoading(true);
+        let endpoint = '/api/vehicles';
+        
+        // Si une date est sélectionnée, utiliser l'endpoint available
+        if (searchParams.startDate) {
+          endpoint = '/api/vehicles/available';
+        }
+        
+        const response = await axios.get(endpoint, { params: searchParams });
+        setVehicles(response.data.data);
+        setError(null);
+      } catch (err) {
+        setError('Erreur lors du chargement des véhicules');
+        console.error('Error fetching vehicles:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVehicles();
+  }, [searchParams]);
+
+  const handleSearch = () => {
+    if (!searchParams.startDate) {
+      setError('Veuillez sélectionner une date de début');
+      return;
     }
-  ];
+    setSearchParams(prev => ({ ...prev }));
+  };
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen">Chargement...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -41,21 +79,33 @@ const LocationPage = () => {
               <input
                 type="date"
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchParams.startDate}
+                onChange={(e) => setSearchParams(prev => ({ ...prev, startDate: e.target.value }))}
               />
             </div>
             <div className="relative">
               <Car className="absolute left-3 top-3 text-gray-400" />
-              <select className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option>Type de véhicule</option>
-                <option>Berline</option>
-                <option>Monospace</option>
-                <option>SUV</option>
+              <select 
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchParams.category}
+                onChange={(e) => setSearchParams(prev => ({ ...prev, category: e.target.value }))}
+              >
+                <option value="">Type de véhicule</option>
+                <option value="berline">Berline</option>
+                <option value="monospace">Monospace</option>
+                <option value="suv">SUV</option>
               </select>
             </div>
-            <button className="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800">
+            <button 
+              className="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800"
+              onClick={handleSearch}
+            >
               Rechercher
             </button>
           </div>
+          {error && (
+            <div className="mt-4 text-red-500">{error}</div>
+          )}
         </div>
 
         {/* Liste des véhicules */}
@@ -63,27 +113,36 @@ const LocationPage = () => {
           {vehicles.map((vehicle) => (
             <div key={vehicle.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
               <div className="p-6">
-                <h3 className="text-2xl font-bold mb-2">{vehicle.name}</h3>
+                <h3 className="text-2xl font-bold mb-2">{vehicle.model}</h3>
                 <div className="flex items-center text-gray-600 mb-4">
                   <Car className="h-5 w-5 mr-2" />
-                  <span>{vehicle.type}</span>
+                  <span>{vehicle.category}</span>
                 </div>
-                <p className="text-gray-600 mb-4">{vehicle.description}</p>
+                <p className="text-gray-600 mb-4">{vehicle.description || `${vehicle.model} ${vehicle.year}`}</p>
                 <div className="space-y-2 mb-4">
-                  {vehicle.features.map((feature, index) => (
-                    <div key={index} className="flex items-center text-gray-600">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                      {feature}
-                    </div>
-                  ))}
+                  <div className="flex items-center text-gray-600">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                    Année: {vehicle.year}
+                  </div>
+                  <div className="flex items-center text-gray-600">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                    Statut: {vehicle.status === 'available' ? 'Disponible' : 'Indisponible'}
+                  </div>
                 </div>
                 <div className="flex items-center justify-between mt-6">
                   <div>
-                    <span className="text-3xl font-bold text-blue-900">{vehicle.price}</span>
+                    <span className="text-3xl font-bold text-blue-900">{vehicle.dailyRate}€/jour</span>
                   </div>
-                  <button className="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800 flex items-center">
+                  <button 
+                    className={`${
+                      vehicle.status === 'available' 
+                        ? 'bg-blue-900 hover:bg-blue-800' 
+                        : 'bg-gray-400 cursor-not-allowed'
+                    } text-white px-6 py-2 rounded-lg flex items-center`}
+                    disabled={vehicle.status !== 'available'}
+                  >
                     <CreditCard className="mr-2" />
-                    Réserver
+                    {vehicle.status === 'available' ? 'Réserver' : 'Indisponible'}
                   </button>
                 </div>
               </div>
