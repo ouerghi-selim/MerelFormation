@@ -73,7 +73,7 @@ class Document
     #[Assert\NotNull]
     private ?User $uploadedBy = null;
 
-    #[ORM\ManyToOne(targetEntity: Formation::class)]
+    #[ORM\ManyToOne(targetEntity: Formation::class, inversedBy: 'documents')]
     #[ORM\JoinColumn(name: 'formation_id', referencedColumnName: 'id', nullable: true)]
     #[Groups(['document:read', 'document:write'])]
     private ?Formation $formation = null;
@@ -82,6 +82,11 @@ class Document
     #[Groups(['document:read', 'document:write'])]
     private ?bool $private = false;
 
+    #[ORM\ManyToOne(targetEntity: Session::class, inversedBy: 'documents')]
+    private ?Session $session = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'documents')]
+    private ?User $user = null;
     #[ORM\Column]
     #[Groups(['document:read'])]
     private ?\DateTimeImmutable $uploadedAt = null;
