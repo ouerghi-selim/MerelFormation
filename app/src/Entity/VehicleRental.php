@@ -75,14 +75,14 @@ class VehicleRental
     #[Groups(['rental:read', 'rental:write'])]
     #[Assert\NotNull]
     #[Assert\Positive]
-    private ?float $totalPrice = null;
+    private ?string $totalPrice = null;
 
     #[ORM\Column(length: 50)]
     #[Groups(['rental:read', 'rental:write'])]
     #[Assert\Choice(choices: ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'])]
     private ?string $status = 'pending';
 
-    #[ORM\OneToOne(inversedBy: 'vehicleRental', targetEntity: Invoice::class, cascade: ['persist'])]
+    #[ORM\OneToOne(targetEntity: Invoice::class, mappedBy: 'vehicleRental', cascade: ['persist'])]
     #[Groups(['rental:item:read'])]
     private ?Invoice $invoice = null;
 
@@ -199,12 +199,12 @@ class VehicleRental
         return $this;
     }
 
-    public function getTotalPrice(): ?float
+    public function getTotalPrice(): ?string
     {
         return $this->totalPrice;
     }
 
-    public function setTotalPrice(float $totalPrice): static
+    public function setTotalPrice(string  $totalPrice): static
     {
         $this->totalPrice = $totalPrice;
         return $this;

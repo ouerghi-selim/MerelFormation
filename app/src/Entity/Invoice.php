@@ -42,7 +42,7 @@ class Invoice
     #[Assert\Regex(pattern: '/^INV-\d{4}-\d{6}$/', message: 'Le format du numéro de facture n\'est pas valide')]
     private ?string $invoiceNumber = null;
 
-    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'invoices')]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['invoice:read', 'invoice:write'])]
     #[Assert\NotNull]
@@ -69,14 +69,18 @@ class Invoice
     #[Groups(['invoice:read', 'invoice:write'])]
     private ?string $billingDetails = null;
 
-    #[ORM\OneToOne(inversedBy: 'invoice')]
-    #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['invoice:read', 'invoice:write'])]
+    #[ORM\OneToOne(targetEntity: Payment::class, inversedBy: 'invoice')]
+    #[Groups(['invoice:read'])]
     private ?Payment $payment = null;
 
-    #[ORM\OneToOne(mappedBy: 'invoice', targetEntity: Reservation::class, cascade: ['persist'])]
+    #[ORM\OneToOne(targetEntity: Reservation::class, inversedBy: 'invoice', cascade: ['persist'])]
     #[Groups(['invoice:read'])]
     private ?Reservation $reservation = null;
+
+    #[ORM\OneToOne(targetEntity: VehicleRental::class, inversedBy: 'invoice')]
+    #[Groups(['invoice:read'])]
+    private ?VehicleRental $vehicleRental = null;
+
 
     #[ORM\Column]
     #[Groups(['invoice:read'])]
@@ -217,5 +221,15 @@ class Invoice
     public function getUpdatedAt(): ?\DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function getVehicleRental(): ?VehicleRental
+    {
+        return $this->vehicleRental;
+    }
+
+    public function setVehicleRental(?VehicleRental $vehicleRental): void
+    {
+        $this->vehicleRental = $vehicleRental;
     }
 }

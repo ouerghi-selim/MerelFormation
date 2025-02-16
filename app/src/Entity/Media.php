@@ -30,11 +30,11 @@ class Media
     #[ORM\Column]
     private ?int $size = null;
 
-    #[ORM\ManyToOne]
+    #[ORM\ManyToOne(targetEntity: Formation::class, inversedBy: 'media')]
     #[ORM\JoinColumn(nullable: true)]
     private ?Formation $formation = null;
 
-    #[ORM\ManyToOne]
+    #[ORM\ManyToOne(targetEntity: Vehicle::class, inversedBy: 'media')]
     #[ORM\JoinColumn(nullable: true)]
     private ?Vehicle $vehicle = null;
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, Car, CreditCard } from 'lucide-react';
 import axios from 'axios';
 
@@ -28,14 +28,16 @@ const LocationPage = () => {
       try {
         setLoading(true);
         let endpoint = '/api/vehicles';
-        
+
         // Si une date est sélectionnée, utiliser l'endpoint available
         if (searchParams.startDate) {
           endpoint = '/api/vehicles/available';
         }
-        
+
         const response = await axios.get(endpoint, { params: searchParams });
-        setVehicles(response.data.data);
+
+        // Adapter la récupération des données
+        setVehicles(response.data.member || []); // 👈 Corrigé ici
         setError(null);
       } catch (err) {
         setError('Erreur lors du chargement des véhicules');
@@ -110,7 +112,8 @@ const LocationPage = () => {
 
         {/* Liste des véhicules */}
         <div className="grid md:grid-cols-2 gap-6">
-          {vehicles.map((vehicle) => (
+          {vehicles && vehicles.length > 0 ? (
+              vehicles.map((vehicle) => (
             <div key={vehicle.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
               <div className="p-6">
                 <h3 className="text-2xl font-bold mb-2">{vehicle.model}</h3>
@@ -147,7 +150,10 @@ const LocationPage = () => {
                 </div>
               </div>
             </div>
-          ))}
+          ))
+          ) : (
+              <div className="text-center text-gray-500">Aucun véhicule disponible.</div>
+                )}
         </div>
       </div>
 

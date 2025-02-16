@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Clock, Calendar, Award, CheckCircle, Users, BookOpen, Car, CreditCard } from 'lucide-react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '@/config/axios';
 import classroom from '@assets/images/pages/classroom.png';
 import practical from '@assets/images/pages/practical.png';
 
@@ -72,7 +72,7 @@ const FormationInitialePage = () => {
         const fetchFormation = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(`/api/formations/${id}`);
+                const response = await axiosInstance.get(`/api/formations/${id}`);
                 setFormation(response.data);
                 setError(null);
             } catch (err) {

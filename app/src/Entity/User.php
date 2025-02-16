@@ -40,7 +40,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @var string|null The hashed password
      */
-    #[ORM\Column]
+    #[ORM\Column(type: 'string')]
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
@@ -61,19 +61,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Assert\Regex(pattern: '/^[0-9\s\+\-\.]+$/', message: 'Le numéro de téléphone n\'est pas valide')]
     private ?string $phone = null;
 
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Reservation::class)]
+    #[ORM\OneToMany(targetEntity: Reservation::class, mappedBy: 'user')]
     private Collection $reservations;
 
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Document::class)]
+    #[ORM\OneToMany(targetEntity: Document::class, mappedBy: 'user')]
     private Collection $documents;
 
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: VehicleRental::class)]
+    #[ORM\OneToMany(targetEntity: VehicleRental::class, mappedBy: 'user')]
     private Collection $vehicleRentals;
 
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Invoice::class)]
+    #[ORM\OneToMany(targetEntity: Invoice::class, mappedBy: 'user')]
     private Collection $invoices;
 
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Notification::class)]
+    #[ORM\OneToMany(targetEntity: Notification::class, mappedBy: 'user')]
     private Collection $notifications;
 
     #[ORM\Column]
@@ -138,7 +138,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @see PasswordAuthenticatedUserInterface
      */
-    public function getPassword(): string
+    public function getPassword(): ?string
     {
         return $this->password;
     }

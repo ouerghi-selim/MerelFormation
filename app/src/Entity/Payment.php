@@ -36,7 +36,7 @@ class Payment
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
     #[Assert\NotBlank]
     #[Assert\Positive]
-    private ?float $amount = null;
+    private ?string $amount = null;
 
     #[ORM\Column(length: 50)]
     #[Assert\NotBlank]
@@ -47,9 +47,11 @@ class Payment
     #[Assert\Choice(choices: ['pending', 'completed', 'failed', 'refunded'])]
     private ?string $status = 'pending';
 
-    #[ORM\OneToOne(mappedBy: 'payment', targetEntity: Invoice::class)]
+    #[ORM\OneToOne(targetEntity: Invoice::class, mappedBy: 'payment')]
     private ?Invoice $invoice = null;
 
+    #[ORM\OneToOne(targetEntity: Reservation::class, mappedBy: 'payment')]
+    private ?Reservation $reservation = null;
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -91,12 +93,12 @@ class Payment
         $this->user = $user;
     }
 
-    public function getAmount(): ?float
+    public function getAmount(): ?string
     {
         return $this->amount;
     }
 
-    public function setAmount(?float $amount): void
+    public function setAmount(?string  $amount): void
     {
         $this->amount = $amount;
     }
@@ -149,5 +151,15 @@ class Payment
     public function setCompletedAt(?\DateTimeImmutable $completedAt): void
     {
         $this->completedAt = $completedAt;
+    }
+
+    public function getReservation(): ?Reservation
+    {
+        return $this->reservation;
+    }
+
+    public function setReservation(?Reservation $reservation): void
+    {
+        $this->reservation = $reservation;
     }
 }

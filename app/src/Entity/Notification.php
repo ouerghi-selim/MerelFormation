@@ -41,7 +41,7 @@ class Notification
     #[Groups(['notification:read'])]
     private ?string $type = null; // info, warning, error, success
 
-    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'notifications')]
     #[Groups(['notification:read'])]
     private ?User $user = null;
 

@@ -58,11 +58,11 @@ class Reservation
     #[Assert\Choice(choices: ['pending', 'confirmed', 'cancelled', 'completed'])]
     private ?string $status = 'pending';
 
-    #[ORM\OneToOne(mappedBy: 'reservation', targetEntity: Payment::class, cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(targetEntity: Payment::class, inversedBy: 'reservation', cascade: ['persist', 'remove'])]
     #[Groups(['reservation:item:read'])]
     private ?Payment $payment = null;
 
-    #[ORM\OneToOne(mappedBy: 'reservation', targetEntity: Invoice::class, cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(targetEntity: Invoice::class, mappedBy: 'reservation', cascade: ['persist', 'remove'])]
     #[Groups(['reservation:item:read'])]
     private ?Invoice $invoice = null;
 

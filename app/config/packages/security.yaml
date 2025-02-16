@@ -1,7 +1,10 @@
 security:
     # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
-        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+        # auto hasher with custom options for all PasswordAuthenticatedUserInterface instances
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+            algorithm: 'auto'
+            cost: 15
     
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
@@ -20,16 +23,18 @@ security:
             stateless: true
             json_login:
                 check_path: /api/login_check
+                username_path: email
+                password_path: password
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
         api:
             pattern: ^/api
             stateless: true
-            entry_point: jwt
+#            entry_point: jwt
             jwt: ~
-            refresh_jwt:
-                check_path: /api/token/refresh
+#            refresh_jwt:
+#                check_path: /api/token/refresh
 
         main:
             lazy: true
@@ -38,6 +43,7 @@ security:
     # Note: Only the *first* access control that matches will be used
     access_control:
         - { path: ^/api/formations, roles: PUBLIC_ACCESS }
+        - { path: ^/api/vehicles, roles: PUBLIC_ACCESS }
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
         - { path: ^/api/token/refresh, roles: PUBLIC_ACCESS }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Star, Calendar, Car, Book, CheckCircle } from 'lucide-react';
 import axios from 'axios';
@@ -23,7 +23,13 @@ const HomePage = () => {
   const [vehicleStats, setVehicleStats] = useState<VehicleStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen">Chargement...</div>;
+  }
 
+  if (error) {
+    return <div className="text-red-500 text-center p-4">{error}</div>;
+  }
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -221,8 +227,81 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Testimonials and CTAs remain unchanged */}
-      {/* ... rest of the component remains the same ... */}
+
+      {/* Testimonials Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-12">Ils nous font confiance</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex items-center mb-4">
+                <div className="flex text-yellow-400">
+                  {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 fill-current" />
+                  ))}
+                </div>
+              </div>
+              <p className="text-gray-600 mb-4">
+                "Formation excellente et très professionnelle. Les formateurs sont à l'écoute et le contenu est parfaitement adapté."
+              </p>
+              <div className="font-medium">Sarah M.</div>
+              <div className="text-gray-500 text-sm">Chauffeur de taxi depuis 2023</div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex items-center mb-4">
+                <div className="flex text-yellow-400">
+                  {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 fill-current" />
+                  ))}
+                </div>
+              </div>
+              <p className="text-gray-600 mb-4">
+                "Le service de location est impeccable. Véhicules toujours en parfait état et une équipe très réactive."
+              </p>
+              <div className="font-medium">Thomas R.</div>
+              <div className="text-gray-500 text-sm">Client depuis 2022</div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex items-center mb-4">
+                <div className="flex text-yellow-400">
+                  {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 fill-current" />
+                  ))}
+                </div>
+              </div>
+              <p className="text-gray-600 mb-4">
+                "Une formation complète qui m'a permis d'obtenir ma certification du premier coup. Je recommande vivement."
+              </p>
+              <div className="font-medium">Michel P.</div>
+              <div className="text-gray-500 text-sm">Diplômé en 2024</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <div className="bg-blue-900 text-white rounded-2xl p-8 md:p-12 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Prêt à démarrer votre carrière ?
+            </h2>
+            <p className="text-xl mb-8 text-blue-100">
+              Inscrivez-vous à nos formations et lancez-vous dans l'aventure du taxi professionnel.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <Link to="/contact"
+                    className="bg-yellow-500 text-blue-900 px-8 py-3 rounded-lg font-medium hover:bg-yellow-400 transition-colors">
+                Nous contacter
+              </Link>
+              <Link to="/formations"
+                    className="bg-white text-blue-900 px-8 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors">
+                Voir les formations
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

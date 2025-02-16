@@ -32,7 +32,7 @@ const FormationsPage = () => {
         const response = await axios.get('/api/formations', {
           params: searchParams
         });
-        setFormations(response.data.data);
+        setFormations(response.data.member || []);
         setError(null);
       } catch (err) {
         setError('Erreur lors du chargement des formations');
@@ -107,32 +107,36 @@ const FormationsPage = () => {
 
           {/* Grille des formations */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {formations.map((formation) => (
-                <div key={formation.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold mb-2">{formation.title}</h3>
-                    <div className="space-y-3 mb-4">
-                      <div className="flex items-center text-gray-600">
-                        <Clock className="h-5 w-5 mr-2" />
-                        <span>{formation.duration}h</span>
-                      </div>
-                      {formation.startDate && (
+            {formations && formations.length > 0 ? (
+                formations.map((formation) => (
+                    <div key={formation.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
+                      <div className="p-6">
+                        <h3 className="text-xl font-bold mb-2">{formation.title}</h3>
+                        <div className="space-y-3 mb-4">
                           <div className="flex items-center text-gray-600">
-                            <Calendar className="h-5 w-5 mr-2" />
-                            <span>{new Date(formation.startDate).toLocaleDateString()}</span>
+                            <Clock className="h-5 w-5 mr-2" />
+                            <span>{formation.duration}h</span>
                           </div>
-                      )}
+                          {formation.startDate && (
+                              <div className="flex items-center text-gray-600">
+                                <Calendar className="h-5 w-5 mr-2" />
+                                <span>{new Date(formation.startDate).toLocaleDateString()}</span>
+                              </div>
+                          )}
+                        </div>
+                        <p className="text-gray-600 mb-4">{formation.description}</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-2xl font-bold text-blue-900">{formation.price}€</span>
+                          <button className="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800">
+                            S'inscrire
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-gray-600 mb-4">{formation.description}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-2xl font-bold text-blue-900">{formation.price}€</span>
-                      <button className="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800">
-                        S'inscrire
-                      </button>
-                    </div>
-                  </div>
-                </div>
-            ))}
+                ))
+            ) : (
+                <div className="text-center text-gray-500">Aucune formation disponible.</div>
+            )}
           </div>
         </div>
 
