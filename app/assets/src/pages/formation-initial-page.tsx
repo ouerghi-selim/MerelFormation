@@ -1,9 +1,37 @@
+import { useState, useEffect } from 'react';
 import { Clock, Calendar, Award, CheckCircle, Users, BookOpen, Car, CreditCard } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import axiosInstance from '@/config/axios';
 import classroom from '@assets/images/pages/classroom.png';
 import practical from '@assets/images/pages/practical.png';
 
+interface Formation {
+    id: number;
+    title: string;
+    description: string;
+    duration: number;
+    price: number;
+    type: string;
+    prerequisites: string;
+    isActive: boolean;
+    createdAt: string;
+    sessions: Session[];
+}
+
+interface Session {
+    id: number;
+    startDate: string;
+    endDate: string;
+    maxParticipants: number;
+    status: string;
+}
 
 const FormationInitialePage = () => {
+    const { id } = useParams<{ id: string }>();
+    const [formation, setFormation] = useState<Formation | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
     const prerequisites = [
         { id: 1, text: "Permis B en cours de validité (hors période probatoire)" },
         { id: 2, text: "Maîtrise du Français oral et écrit" },
@@ -40,6 +68,40 @@ const FormationInitialePage = () => {
         }
     ];
 
+    useEffect(() => {
+        const fetchFormation = async () => {
+            try {
+                setLoading(true);
+                const response = await axiosInstance.get(`/api/formations/${id}`);
+                setFormation(response.data);
+                setError(null);
+            } catch (err) {
+                setError('Erreur lors du chargement de la formation');
+                console.error('Error fetching formation:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (id) {
+            fetchFormation();
+        }
+    }, [id]);
+
+    if (loading) {
+        return <div className="flex justify-center items-center h-screen">Chargement...</div>;
+    }
+
+    if (error || !formation) {
+        return (
+            <div className="container mx-auto px-4 py-8">
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                    {error || 'Formation non trouvée'}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Hero Section */}
@@ -47,14 +109,12 @@ const FormationInitialePage = () => {
                 <div className="container mx-auto px-4">
                     <div className="flex flex-col md:flex-row items-center gap-12">
                         <div className="md:w-1/2">
-                            <h1 className="text-4xl md:text-5xl font-bold mb-6">Formation Initiale Taxi</h1>
-                            <p className="text-xl mb-8 text-blue-100">
-                                Devenez chauffeur de taxi professionnel avec notre formation certifiante de 140 heures. Un programme complet pour réussir votre examen et démarrer votre carrière.
-                            </p>
+                            <h1 className="text-4xl md:text-5xl font-bold mb-6">{formation.title}</h1>
+                            <p className="text-xl mb-8 text-blue-100">{formation.description}</p>
                             <div className="flex flex-wrap gap-4">
                                 <div className="flex items-center bg-blue-800 rounded-lg p-3">
                                     <Clock className="h-6 w-6 mr-2" />
-                                    <span>140 heures</span>
+                                    <span>{formation.duration} heures</span>
                                 </div>
                                 <div className="flex items-center bg-blue-800 rounded-lg p-3">
                                     <Award className="h-6 w-6 mr-2" />
@@ -82,7 +142,7 @@ const FormationInitialePage = () => {
                 <div className="container mx-auto px-4">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-8">
                         <div className="flex items-center gap-4">
-                            <span className="text-3xl font-bold text-blue-900">1800€</span>
+                            <span className="text-3xl font-bold text-blue-900">{formation.price}€</span>
                             <span className="text-gray-600">(Exonéré de TVA)</span>
                         </div>
                         <button className="bg-yellow-500 text-blue-900 px-8 py-4 rounded-lg font-bold hover:bg-yellow-400 transition-colors">
@@ -165,6 +225,32 @@ const FormationInitialePage = () => {
                     </div>
                 </div>
             </section>
+
+            {/* Prochaines sessions */}
+            {formation.sessions && formation.sessions.length > 0 && (
+                <section className="py-16 bg-gray-50">
+                    <div className="container mx-auto px-4">
+                        <h2 className="text-3xl font-bold mb-8">Prochaines sessions</h2>
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {formation.sessions.map((session) => (
+                                <div key={session.id} className="bg-white p-6 rounded-lg shadow-lg">
+                                    <div className="flex items-center text-gray-600 mb-4">
+                                        <Calendar className="h-5 w-5 mr-2" />
+                                        <span>Du {new Date(session.startDate).toLocaleDateString()} au {new Date(session.endDate).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className="flex items-center text-gray-600 mb-4">
+                                        <Users className="h-5 w-5 mr-2" />
+                                        <span>{session.maxParticipants} places maximum</span>
+                                    </div>
+                                    <button className="w-full bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800">
+                                        Réserver cette session
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {/* CTA Final */}
             <section className="py-16 bg-blue-900 text-white">

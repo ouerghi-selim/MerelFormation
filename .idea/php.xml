@@ -171,6 +171,14 @@
       <path value="$PROJECT_DIR$/app/vendor/knplabs/knp-snappy-bundle" />
       <path value="$PROJECT_DIR$/app/vendor/doctrine/data-fixtures" />
       <path value="$PROJECT_DIR$/app/vendor/doctrine/doctrine-fixtures-bundle" />
+      <path value="$PROJECT_DIR$/app/vendor/gedmo/doctrine-extensions" />
+      <path value="$PROJECT_DIR$/app/vendor/stof/doctrine-extensions-bundle" />
+      <path value="$PROJECT_DIR$/app/vendor/symfony/ux-twig-component" />
+      <path value="$PROJECT_DIR$/app/vendor/behat/transliterator" />
+      <path value="$PROJECT_DIR$/app/vendor/easycorp/easyadmin-bundle" />
+      <path value="$PROJECT_DIR$/app/vendor/twig/html-extra" />
+      <path value="$PROJECT_DIR$/app/vendor/tattali/calendar-bundle" />
+      <path value="$PROJECT_DIR$/app/vendor/gesdinet/jwt-refresh-token-bundle" />
     </include_path>
   </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="8.2" />

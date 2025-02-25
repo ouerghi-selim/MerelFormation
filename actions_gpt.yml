@@ -1,0 +1,376 @@
+openapi: 3.1.0
+info:
+  title: GitHub API Custom Actions
+  description: API specification for repository management, file commits, branches, pull requests, issues, and search using the GitHub API.
+  version: 1.0.0
+servers:
+  - url: https://api.github.com
+    description: GitHub API Server
+
+components:
+  securitySchemes:
+    githubAuth:
+      type: http
+      scheme: bearer
+      description: "GitHub Personal Access Token (PAT) for authentication"
+
+  schemas:
+    BranchResponse:
+      type: object
+      properties:
+        ref:
+          type: string
+        url:
+          type: string
+
+    FileResponse:
+      type: object
+      properties:
+        content:
+          type: string
+        commit:
+          type: object
+          properties:
+            sha:
+              type: string
+            message:
+              type: string
+
+    PullRequestResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        state:
+          type: string
+        title:
+          type: string
+        url:
+          type: string
+
+    IssueResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        title:
+          type: string
+        state:
+          type: string
+        url:
+          type: string
+
+    SearchResponse:
+      type: object
+      properties:
+        total_count:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              owner:
+                type: string
+
+security:
+  - githubAuth: []
+
+paths:
+  /repos/{owner}/{repo}/git/refs:
+    post:
+      operationId: createBranch
+      summary: Create a new branch
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ref:
+                  type: string
+                  description: "New branch name (refs/heads/my-branch)"
+                sha:
+                  type: string
+                  description: "SHA of the source branch"
+      responses:
+        '201':
+          description: Branch created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchResponse'
+
+  /repos/{owner}/{repo}/contents/{path}:
+    put:
+      operationId: createOrUpdateFile
+      summary: Create or update a file with a commit
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                content:
+                  type: string
+                branch:
+                  type: string
+                sha:
+                  type: string
+      responses:
+        '201':
+          description: File created/updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+    get:
+      operationId: getFileOrDirectory
+      summary: Get contents of a file or directory in a specific branch
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          description: Repository owner
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          description: Repository name
+          schema:
+            type: string
+        - name: path
+          in: path
+          required: true
+          description: Path to file or directory (use empty string for root)
+          schema:
+            type: string
+        - name: ref
+          in: query
+          required: false
+          description: "Branch name (default: main)"
+
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File or directory retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    path:
+                      type: string
+                    type:
+                      type: string
+                      description: "Type of the item (file or dir)"
+                    sha:
+                      type: string
+                    size:
+                      type: integer
+
+  /repos/{owner}/{repo}/pulls:
+    post:
+      operationId: createPullRequest
+      summary: Create a new Pull Request (PR)
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                body:
+                  type: string
+                head:
+                  type: string
+                base:
+                  type: string
+                draft:
+                  type: boolean
+      responses:
+        '201':
+          description: Pull request created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PullRequestResponse'
+
+  /repos/{owner}/{repo}/issues:
+    post:
+      operationId: createIssue
+      summary: Create a new issue
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                body:
+                  type: string
+                assignees:
+                  type: array
+                  items:
+                    type: string
+                labels:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: Issue created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueResponse'
+
+  /search/code:
+    get:
+      operationId: searchCode
+      summary: Search for code across GitHub repositories
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: per_page
+          in: query
+          schema:
+            type: number
+        - name: page
+          in: query
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Search results for code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+
+  /repos/{owner}/{repo}/forks:
+    post:
+      operationId: forkRepository
+      summary: Fork a repository
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Forking initiated
+
+  /repos/{owner}/{repo}/pulls/{pull_number}/merge:
+    put:
+      operationId: mergePullRequest
+      summary: Merge a Pull Request (PR)
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: pull_number
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                commit_message:
+                  type: string
+      responses:
+        '200':
+          description: Pull request merged successfully
+
+
+

@@ -49,11 +49,13 @@
 // // export default App
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
-import HomePage from '@/pages/homepage';
+import HomePage from '@/pages/home-page';
 import FormationsPage from '@/pages/formations-page';
 import LocationPage from '@/pages/location-page';
-import FormationInitialePage from "@/pages/formationInitialPage.tsx";
-import ContactPage from "@/pages/contactPage.tsx";
+import FormationInitialePage from "@/pages/formation-initial-page.tsx";
+import ContactPage from "@/pages/contact-page.tsx";
+import LoginPage from "@/pages/login-page.tsx";
+
 
 const App = () => {
     return (
@@ -65,7 +67,7 @@ const App = () => {
                     <Route path="/formations/initial" element={<FormationInitialePage />} />
                     <Route path="/location" element={<LocationPage />} />
                     <Route path="/contact" element={<ContactPage />} />
-
+                    <Route path="/login" element={<LoginPage />} />
                 </Routes>
             </Layout>
         </Router>
