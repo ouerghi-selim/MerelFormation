@@ -120,17 +120,16 @@ class VehicleRepository extends ServiceEntityRepository
      */
     public function getStatistics(): array
     {
-        $qb = $this->createQueryBuilder('v');
         $now = new \DateTimeImmutable();
         
         return [
-            'totalVehicles' => $qb->select('COUNT(v.id)')
+            'totalVehicles' => $this->createQueryBuilder('v')->select('COUNT(v.id)')
                 ->where('v.isActive = :active')
                 ->setParameter('active', true)
                 ->getQuery()
                 ->getSingleScalarResult(),
                 
-            'activeRentals' => $qb->select('COUNT(r.id)')
+            'activeRentals' => $this->createQueryBuilder('v')->select('COUNT(r.id)')
                 ->leftJoin('v.rentals', 'r')
                 ->where('r.status = :status')
                 ->andWhere('r.startDate <= :now')
@@ -140,13 +139,13 @@ class VehicleRepository extends ServiceEntityRepository
                 ->getQuery()
                 ->getSingleScalarResult(),
                 
-            'maintenanceCount' => $qb->select('COUNT(v.id)')
+            'maintenanceCount' => $this->createQueryBuilder('v')->select('COUNT(v.id)')
                 ->where('v.status = :status')
                 ->setParameter('status', 'maintenance')
                 ->getQuery()
                 ->getSingleScalarResult(),
                 
-            'averageDailyRate' => $qb->select('AVG(v.dailyRate)')
+            'averageDailyRate' => $this->createQueryBuilder('v')->select('AVG(v.dailyRate)')
                 ->where('v.isActive = :active')
                 ->setParameter('active', true)
                 ->getQuery()

@@ -114,7 +114,7 @@ class FormationController extends AbstractController
         return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/api/formations/statistics', name: 'app_formations_statistics', methods: ['GET'])]
+    #[Route('/statistics', name: 'app_formations_statistics', methods: ['GET'])]
     public function getStatistics(): JsonResponse
     {
         $statistics = $this->formationRepository->getStatistics();
