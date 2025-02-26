@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Calendar, Clock } from 'lucide-react';
 import axios from 'axios';
+import {Link} from "react-router-dom";
 
 interface Formation {
+  slug: number;
   id: number;
   title: string;
   duration: string;
@@ -111,8 +113,11 @@ const FormationsPage = () => {
                 formations.map((formation) => (
                     <div key={formation.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
                       <div className="p-6">
-                        <h3 className="text-xl font-bold mb-2">{formation.title}</h3>
-                        <div className="space-y-3 mb-4">
+                        <Link to={`/formations/${formation.slug || formation.id}`}>
+                          <h3 className="text-xl font-bold mb-2 hover:text-blue-700 transition-colors">
+                            {formation.title}
+                          </h3>
+                        </Link>                        <div className="space-y-3 mb-4">
                           <div className="flex items-center text-gray-600">
                             <Clock className="h-5 w-5 mr-2" />
                             <span>{formation.duration}h</span>

@@ -12,6 +12,7 @@ api_platform:
         swagger_ui_extra_configuration:
             persistAuthorization: true
             displayOperationId: true
+            url: '/assets/node_modules/@api-platform/swagger-ui/dist'
     formats:
         jsonld: ['application/ld+json']
         json: ['application/json']

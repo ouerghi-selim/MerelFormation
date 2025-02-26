@@ -7,6 +7,7 @@
         "php": ">=8.2",
         "ext-ctype": "*",
         "ext-iconv": "*",
+        "api-platform/core": "^4.0",
         "api-platform/doctrine-orm": "^4.0.17",
         "api-platform/symfony": "^4.0.17",
         "doctrine/dbal": "^3.9.4",
