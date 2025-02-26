@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Clock, Calendar, Award, CheckCircle, Users, BookOpen, Car, CreditCard } from 'lucide-react';
-import { useParams } from 'react-router-dom';
-import axiosInstance from '@/config/axios';
+import { useState, useEffect, JSXElementConstructor, ReactElement, ReactNode, ReactPortal} from 'react';
+import {Clock, Calendar, Award, CheckCircle, Users, BookOpen, Car, CreditCard} from 'lucide-react';
+import {useParams} from 'react-router-dom';
+import axios from 'axios';
 import classroom from '@assets/images/pages/classroom.png';
 import practical from '@assets/images/pages/practical.png';
 
@@ -27,57 +27,34 @@ interface Session {
 }
 
 const FormationInitialePage = () => {
-    const { id } = useParams<{ id: string }>();
+    const {id} = useParams<{ id: string }>();
     const [formation, setFormation] = useState<Formation | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
-    const prerequisites = [
-        { id: 1, text: "Permis B en cours de validité (hors période probatoire)" },
-        { id: 2, text: "Maîtrise du Français oral et écrit" },
-        { id: 3, text: "Notions en anglais écrit" }
-    ];
-
-    const modules = [
-        {
-            title: "Organisation du Transport",
-            duration: "21h",
-            points: [
-                "Réglementation nationale du transport de personnes",
-                "Code des transports et textes officiels",
-                "Gestion des contrôles et sanctions"
-            ]
-        },
-        {
-            title: "Sécurité Routière",
-            duration: "28h",
-            points: [
-                "Règles du code de la route",
-                "Éco-conduite et sécurité",
-                "Gestion des incidents"
-            ]
-        },
-        {
-            title: "Gestion et Réglementation",
-            duration: "35h",
-            points: [
-                "Gestion d'entreprise taxi",
-                "Réglementation locale",
-                "Obligations comptables et fiscales"
-            ]
-        }
-    ];
+    const [prerequisites, setPrerequisites] = useState<any[]>([]);
+    const [modules, setModules] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchFormation = async () => {
             try {
+                console.log("Attempting to fetch formation with id:", id);
                 setLoading(true);
-                const response = await axiosInstance.get(`/api/formations/${id}`);
+                const response = await axios.get(`/api/formations/${id}`);
+                console.log("API response:", response.data);
                 setFormation(response.data);
+
+                // Récupérer les prérequis et les modules depuis la réponse API
+                if (response.data.prerequisites) {
+                    setPrerequisites(response.data.prerequisites);
+                }
+                if (response.data.modules) {
+                    setModules(response.data.modules);
+                }
+
                 setError(null);
             } catch (err) {
-                setError('Erreur lors du chargement de la formation');
                 console.error('Error fetching formation:', err);
+                setError('Erreur lors du chargement de la formation');
             } finally {
                 setLoading(false);
             }
@@ -85,6 +62,10 @@ const FormationInitialePage = () => {
 
         if (id) {
             fetchFormation();
+        } else {
+            console.log("No ID parameter found");
+            setError('Aucun identifiant de formation trouvé');
+            setLoading(false);
         }
     }, [id]);
 
@@ -113,15 +94,15 @@ const FormationInitialePage = () => {
                             <p className="text-xl mb-8 text-blue-100">{formation.description}</p>
                             <div className="flex flex-wrap gap-4">
                                 <div className="flex items-center bg-blue-800 rounded-lg p-3">
-                                    <Clock className="h-6 w-6 mr-2" />
+                                    <Clock className="h-6 w-6 mr-2"/>
                                     <span>{formation.duration} heures</span>
                                 </div>
                                 <div className="flex items-center bg-blue-800 rounded-lg p-3">
-                                    <Award className="h-6 w-6 mr-2" />
+                                    <Award className="h-6 w-6 mr-2"/>
                                     <span>95% de réussite</span>
                                 </div>
                                 <div className="flex items-center bg-blue-800 rounded-lg p-3">
-                                    <Users className="h-6 w-6 mr-2" />
+                                    <Users className="h-6 w-6 mr-2"/>
                                     <span>8 à 12 élèves</span>
                                 </div>
                             </div>
@@ -145,7 +126,8 @@ const FormationInitialePage = () => {
                             <span className="text-3xl font-bold text-blue-900">{formation.price}€</span>
                             <span className="text-gray-600">(Exonéré de TVA)</span>
                         </div>
-                        <button className="bg-yellow-500 text-blue-900 px-8 py-4 rounded-lg font-bold hover:bg-yellow-400 transition-colors">
+                        <button
+                            className="bg-yellow-500 text-blue-900 px-8 py-4 rounded-lg font-bold hover:bg-yellow-400 transition-colors">
                             S'inscrire à la formation
                         </button>
                     </div>
@@ -157,12 +139,18 @@ const FormationInitialePage = () => {
                 <div className="container mx-auto px-4">
                     <h2 className="text-3xl font-bold mb-8">Prérequis pour la formation</h2>
                     <div className="grid md:grid-cols-3 gap-8">
-                        {prerequisites.map((prereq) => (
-                            <div key={prereq.id} className="bg-white p-6 rounded-lg shadow-lg">
-                                <CheckCircle className="h-8 w-8 text-green-500 mb-4" />
-                                <p className="text-gray-700">{prereq.text}</p>
+                        {prerequisites.length > 0 ? (
+                            prerequisites.map((prereq) => (
+                                <div key={prereq.id} className="bg-white p-6 rounded-lg shadow-lg">
+                                    <CheckCircle className="h-8 w-8 text-green-500 mb-4"/>
+                                    <p className="text-gray-700">{prereq.content}</p>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="col-span-3 text-center text-gray-500">
+                                Aucun prérequis spécifié pour cette formation.
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
             </section>
@@ -172,21 +160,31 @@ const FormationInitialePage = () => {
                 <div className="container mx-auto px-4">
                     <h2 className="text-3xl font-bold mb-12">Programme de formation</h2>
                     <div className="grid md:grid-cols-3 gap-8">
-                        {modules.map((module, index) => (
-                            <div key={index} className="bg-white p-8 rounded-lg shadow-lg">
-                                <BookOpen className="h-8 w-8 text-blue-900 mb-4" />
-                                <h3 className="text-xl font-bold mb-4">{module.title}</h3>
-                                <p className="text-blue-900 font-bold mb-4">{module.duration}</p>
-                                <ul className="space-y-3">
-                                    {module.points.map((point, i) => (
-                                        <li key={i} className="flex items-start">
-                                            <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-1 flex-shrink-0" />
-                                            <span className="text-gray-600">{point}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+                        {modules.length > 0 ? (
+                            modules.map((module) => (
+                                <div key={module.id} className="bg-white p-8 rounded-lg shadow-lg">
+                                    <BookOpen className="h-8 w-8 text-blue-900 mb-4"/>
+                                    <h3 className="text-xl font-bold mb-4">{module.title}</h3>
+                                    <p className="text-blue-900 font-bold mb-4">{module.duration}h</p>
+                                    <ul className="space-y-3">
+                                        {module.points && module.points.map((point: {
+                                            id: any;
+                                            content: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined;
+                                        }, i: any) => (
+                                            <li key={point.id || i} className="flex items-start">
+                                                <CheckCircle
+                                                    className="h-5 w-5 text-green-500 mr-2 mt-1 flex-shrink-0"/>
+                                                <span className="text-gray-600">{point.content}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="col-span-3 text-center text-gray-500">
+                                Aucun module défini pour cette formation.
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
             </section>
@@ -202,15 +200,15 @@ const FormationInitialePage = () => {
                             </p>
                             <ul className="space-y-4">
                                 <li className="flex items-start">
-                                    <Car className="h-5 w-5 text-blue-900 mr-2 mt-1" />
+                                    <Car className="h-5 w-5 text-blue-900 mr-2 mt-1"/>
                                     <span>Véhicule école équipé taxi avec doubles commandes</span>
                                 </li>
                                 <li className="flex items-start">
-                                    <CreditCard className="h-5 w-5 text-blue-900 mr-2 mt-1" />
+                                    <CreditCard className="h-5 w-5 text-blue-900 mr-2 mt-1"/>
                                     <span>Équipements professionnels complets (taximètre, terminal de paiement)</span>
                                 </li>
                                 <li className="flex items-start">
-                                    <Calendar className="h-5 w-5 text-blue-900 mr-2 mt-1" />
+                                    <Calendar className="h-5 w-5 text-blue-900 mr-2 mt-1"/>
                                     <span>Sessions pratiques en conditions réelles</span>
                                 </li>
                             </ul>
@@ -235,14 +233,15 @@ const FormationInitialePage = () => {
                             {formation.sessions.map((session) => (
                                 <div key={session.id} className="bg-white p-6 rounded-lg shadow-lg">
                                     <div className="flex items-center text-gray-600 mb-4">
-                                        <Calendar className="h-5 w-5 mr-2" />
+                                        <Calendar className="h-5 w-5 mr-2"/>
                                         <span>Du {new Date(session.startDate).toLocaleDateString()} au {new Date(session.endDate).toLocaleDateString()}</span>
                                     </div>
                                     <div className="flex items-center text-gray-600 mb-4">
-                                        <Users className="h-5 w-5 mr-2" />
+                                        <Users className="h-5 w-5 mr-2"/>
                                         <span>{session.maxParticipants} places maximum</span>
                                     </div>
-                                    <button className="w-full bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800">
+                                    <button
+                                        className="w-full bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800">
                                         Réserver cette session
                                     </button>
                                 </div>
@@ -260,10 +259,12 @@ const FormationInitialePage = () => {
                         Rejoignez les 500+ professionnels déjà formés chez MerelFormation
                     </p>
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
-                        <button className="bg-yellow-500 text-blue-900 px-8 py-4 rounded-lg font-bold hover:bg-yellow-400 transition-colors">
+                        <button
+                            className="bg-yellow-500 text-blue-900 px-8 py-4 rounded-lg font-bold hover:bg-yellow-400 transition-colors">
                             S'inscrire maintenant
                         </button>
-                        <button className="bg-white text-blue-900 px-8 py-4 rounded-lg font-bold hover:bg-gray-100 transition-colors">
+                        <button
+                            className="bg-white text-blue-900 px-8 py-4 rounded-lg font-bold hover:bg-gray-100 transition-colors">
                             Nous contacter
                         </button>
                     </div>

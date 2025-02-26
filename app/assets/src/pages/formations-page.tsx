@@ -31,7 +31,7 @@ const FormationsPage = () => {
     const fetchFormations = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('/api/formations', {
+        const response = await axios.get('api/formations', {
           params: searchParams
         });
         setFormations(response.data.member || []);
