@@ -26,7 +26,22 @@ const FormationsPage = () => {
     type: '',
     title: '',
   });
+  const [selectedFormation, setSelectedFormation] = useState<Formation | null>(null);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [sessions, setSessions] = useState<any[]>([]);
+// Fonction pour afficher le modal avec les sessions
+  const handleShowSessions = async (formation: Formation) => {
+    setSelectedFormation(formation);
 
+    try {
+      // Récupérer les sessions pour cette formation
+      const response = await axios.get(`/api/formations/${formation.id}`);
+      setSessions(response.data.sessions || []);
+      setShowSessionModal(true);
+    } catch (err) {
+      console.error('Erreur lors de la récupération des sessions:', err);
+    }
+  };
   useEffect(() => {
     const fetchFormations = async () => {
       try {
@@ -132,7 +147,10 @@ const FormationsPage = () => {
                         <p className="text-gray-600 mb-4">{formation.description}</p>
                         <div className="flex items-center justify-between">
                           <span className="text-2xl font-bold text-blue-900">{formation.price}€</span>
-                          <button className="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800">
+                          <button
+                              onClick={() => handleShowSessions(formation)}
+                              className="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800"
+                          >
                             S'inscrire
                           </button>
                         </div>
@@ -165,8 +183,55 @@ const FormationsPage = () => {
             </div>
           </div>
         </div>
+        {showSessionModal && selectedFormation && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white p-6 rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold">{selectedFormation.title} - Sessions disponibles</h3>
+                  <button
+                      onClick={() => setShowSessionModal(false)}
+                      className="text-gray-500 hover:text-gray-700"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {sessions.length > 0 ? (
+                    <div className="space-y-4">
+                      {sessions.map(session => (
+                          <div key={session.id} className="border p-4 rounded-lg">
+                            <div className="flex items-center text-gray-600 mb-2">
+                              <Calendar className="h-5 w-5 mr-2" />
+                              <span>Du {new Date(session.startDate).toLocaleDateString()} au {new Date(session.endDate).toLocaleDateString()}</span>
+                            </div>
+                            <button
+                                className="w-full bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800"
+                                onClick={() => handleRegisterForSession(session.id)}
+                            >
+                              Réserver cette session
+                            </button>
+                          </div>
+                      ))}
+                    </div>
+                ) : (
+                    <p className="text-center text-gray-500 py-4">Aucune session disponible actuellement</p>
+                )}
+              </div>
+            </div>
+        )}
       </div>
   );
 };
+const handleRegisterForSession = (sessionId: number) => {
+  // Vérifier si l'utilisateur est connecté
+  const token = localStorage.getItem('token');
+  if (!token) {
+    // Rediriger vers la page de connexion
+    window.location.href = `/login?redirect=/reservation/${sessionId}`;
+    return;
+  }
 
+  // Si connecté, rediriger vers une page de confirmation d'inscription
+  window.location.href = `/reservation/${sessionId}`;
+};
 export default FormationsPage;
