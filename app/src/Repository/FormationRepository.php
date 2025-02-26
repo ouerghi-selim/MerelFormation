@@ -160,23 +160,22 @@ class FormationRepository extends ServiceEntityRepository
      */
     public function getStatistics(): array
     {
-        $qb = $this->createQueryBuilder('f');
-        
+
         return [
-            'totalFormations' => $qb->select('COUNT(f.id)')
+            'totalFormations' => $this->createQueryBuilder('f')->select('COUNT(f.id)')
                 ->where('f.isActive = :active')
                 ->setParameter('active', true)
                 ->getQuery()
                 ->getSingleScalarResult(),
                 
-            'totalSessions' => $qb->select('COUNT(s.id)')
+            'totalSessions' => $this->createQueryBuilder('f')->select('COUNT(s.id)')
                 ->leftJoin('f.sessions', 's')
                 ->where('f.isActive = :active')
                 ->setParameter('active', true)
                 ->getQuery()
                 ->getSingleScalarResult(),
                 
-            'upcomingSessions' => $qb->select('COUNT(s.id)')
+            'upcomingSessions' => $this->createQueryBuilder('f')->select('COUNT(s.id)')
                 ->leftJoin('f.sessions', 's')
                 ->where('f.isActive = :active')
                 ->andWhere('s.startDate > :now')

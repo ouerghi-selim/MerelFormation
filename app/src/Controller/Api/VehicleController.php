@@ -113,7 +113,7 @@ class VehicleController extends AbstractController
         return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/api/vehicles/statistics', name: 'app_vehicles_statistics', methods: ['GET'])]
+    #[Route('/statistics', name: 'app_vehicles_statistics', methods: ['GET'])]
     public function getStatistics(): JsonResponse
     {
         $statistics = $this->vehicleRepository->getStatistics();
