@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[Route('/api/fozaermations')]
+#[Route('/api/formations')]
 class FormationController extends AbstractController
 {
     public function __construct(
@@ -28,8 +28,6 @@ class FormationController extends AbstractController
     public function index(Request $request): JsonResponse
     {
 
-        dump('test');
-        die;
         $page = $request->query->getInt('page', 1);
         $limit = $request->query->getInt('limit', 10);
         $type = $request->query->get('type');
@@ -116,11 +114,9 @@ class FormationController extends AbstractController
         return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/statistics', name: 'app_formations_statistics', methods: ['GET'])]
+    #[Route('/api/formations/statistics', name: 'app_formations_statistics', methods: ['GET'])]
     public function getStatistics(): JsonResponse
     {
-        dump('test');
-        die;
         $statistics = $this->formationRepository->getStatistics();
 
         return $this->json($statistics);

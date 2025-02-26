@@ -64,7 +64,7 @@ const App = () => {
                 <Routes>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/formations" element={<FormationsPage />} />
-                    <Route path="/formations/:slug" element={<FormationDetailPage />} />
+                    <Route path="/formations/:id" element={<FormationDetailPage />} />
                     <Route path="/location" element={<LocationPage />} />
                     <Route path="/contact" element={<ContactPage />} />
                     <Route path="/login" element={<LoginPage />} />

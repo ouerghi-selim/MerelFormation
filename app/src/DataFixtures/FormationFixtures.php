@@ -23,7 +23,6 @@ class FormationFixtures extends Fixture implements DependentFixtureInterface
                 'price' => 1800.00,
                 'duration' => 140,
                 'type' => 'initial',
-                'prerequisites' => 'Permis B valide, Casier judiciaire vierge',
                 'reference' => self::FORMATION_INITIAL_REFERENCE,
             ],
             [
@@ -32,7 +31,6 @@ class FormationFixtures extends Fixture implements DependentFixtureInterface
                 'price' => 400.00,
                 'duration' => 14,
                 'type' => 'continuous',
-                'prerequisites' => 'Être chauffeur de taxi en activité',
                 'reference' => self::FORMATION_CONTINUE_REFERENCE,
             ],
             [
@@ -41,7 +39,6 @@ class FormationFixtures extends Fixture implements DependentFixtureInterface
                 'price' => 300.00,
                 'duration' => 14,
                 'type' => 'mobility',
-                'prerequisites' => 'Être chauffeur de taxi en activité',
                 'reference' => self::FORMATION_MOBILITY_REFERENCE,
             ],
         ];
@@ -53,7 +50,6 @@ class FormationFixtures extends Fixture implements DependentFixtureInterface
             $formation->setPrice($formationData['price']);
             $formation->setDuration($formationData['duration']);
             $formation->setType($formationData['type']);
-            $formation->setPrerequisites($formationData['prerequisites']);
             $formation->setIsActive(true);
             $formation->setCategory($this->getReference(CategoryFixtures::TAXI_CATEGORY_REFERENCE, Category::class));
 

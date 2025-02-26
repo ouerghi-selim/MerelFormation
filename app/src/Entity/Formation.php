@@ -65,10 +65,6 @@ class Formation
     #[Assert\Choice(choices: ['initial', 'continuous', 'mobility'])]
     private ?string $type = null; // initial, continuous, mobility
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['formation:read', 'formation:write'])]
-    private ?string $prerequisites = null;
-
     #[ORM\ManyToOne(targetEntity: Category::class, inversedBy: 'formations')]
     private ?Category $category = null;
 
@@ -94,11 +90,20 @@ class Formation
     #[Groups(['formation:item:read'])]
     private Collection $sessions;
 
+    #[ORM\OneToMany(mappedBy: 'formation', targetEntity: Module::class, cascade: ['persist', 'remove'])]
+    #[Groups(['formation:item:read'])]
+    private Collection $modules;
+
+    #[ORM\OneToMany(mappedBy: 'formation', targetEntity: Prerequisite::class, cascade: ['persist', 'remove'])]
+    #[Groups(['formation:item:read'])]
+    private Collection $prerequisites;
     public function __construct()
     {
         $this->sessions = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
+        $this->modules = new ArrayCollection();
+        $this->prerequisites = new ArrayCollection();
     }
 
     #[ORM\PreUpdate]
@@ -164,17 +169,6 @@ class Formation
     public function setType(string $type): static
     {
         $this->type = $type;
-        return $this;
-    }
-
-    public function getPrerequisites(): ?string
-    {
-        return $this->prerequisites;
-    }
-
-    public function setPrerequisites(?string $prerequisites): static
-    {
-        $this->prerequisites = $prerequisites;
         return $this;
     }
 
@@ -258,5 +252,57 @@ class Formation
     {
         $this->media = $media;
     }
+    /**
+     * @return Collection<int, Module>
+     */
+    public function getModules(): Collection
+    {
+        return $this->modules;
+    }
 
+    public function addModule(Module $module): self
+    {
+        if (!$this->modules->contains($module)) {
+            $this->modules->add($module);
+            $module->setFormation($this);
+        }
+        return $this;
+    }
+
+    public function removeModule(Module $module): self
+    {
+        if ($this->modules->removeElement($module)) {
+            if ($module->getFormation() === $this) {
+                $module->setFormation(null);
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Prerequisite>
+     */
+    public function getPrerequisites(): Collection
+    {
+        return $this->prerequisites;
+    }
+
+    public function addPrerequisite(Prerequisite $prerequisite): self
+    {
+        if (!$this->prerequisites->contains($prerequisite)) {
+            $this->prerequisites->add($prerequisite);
+            $prerequisite->setFormation($this);
+        }
+        return $this;
+    }
+
+    public function removePrerequisite(Prerequisite $prerequisite): self
+    {
+        if ($this->prerequisites->removeElement($prerequisite)) {
+            if ($prerequisite->getFormation() === $this) {
+                $prerequisite->setFormation(null);
+            }
+        }
+        return $this;
+    }
 }
