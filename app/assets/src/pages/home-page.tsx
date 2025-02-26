@@ -19,26 +19,23 @@ interface VehicleStats {
 }
 
 const HomePage = () => {
+  console.log("Fetching stats...");
   const [formationStats, setFormationStats] = useState<FormationStats | null>(null);
   const [vehicleStats, setVehicleStats] = useState<VehicleStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  if (loading) {
-    return <div className="flex justify-center items-center h-screen">Chargement...</div>;
-  }
 
-  if (error) {
-    return <div className="text-red-500 text-center p-4">{error}</div>;
-  }
   useEffect(() => {
     const fetchStats = async () => {
+      console.log("Fetching stats...");
       try {
         setLoading(true);
+        console.log("Fetching stats...");
         const [formationsResponse, vehiclesResponse] = await Promise.all([
           axios.get('/api/formations/statistics'),
           axios.get('/api/vehicles/statistics')
         ]);
-
+        console.log("Stats received:", formationsResponse.data, vehiclesResponse.data);
         setFormationStats(formationsResponse.data);
         setVehicleStats(vehiclesResponse.data);
         setError(null);
@@ -52,7 +49,12 @@ const HomePage = () => {
 
     fetchStats();
   }, []);
-
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen">Chargement...</div>;
+  }
+  if (error) {
+    return <div className="text-red-500 text-center p-4">{error}</div>;
+  }
   return (
     <div className="min-h-screen">
       {/* Hero Section */}

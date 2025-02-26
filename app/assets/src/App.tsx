@@ -49,10 +49,10 @@
 // // export default App
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
-import HomePage from '@/pages/home-page';
+import HomePage from '@/pages/home-page.tsx';
 import FormationsPage from '@/pages/formations-page';
 import LocationPage from '@/pages/location-page';
-import FormationInitialePage from "@/pages/formation-initial-page.tsx";
+import FormationDetailPage from "@/pages/formation-detail-page";
 import ContactPage from "@/pages/contact-page.tsx";
 import LoginPage from "@/pages/login-page.tsx";
 
@@ -64,7 +64,7 @@ const App = () => {
                 <Routes>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/formations" element={<FormationsPage />} />
-                    <Route path="/formations/initial" element={<FormationInitialePage />} />
+                    <Route path="/formations/:slug" element={<FormationDetailPage />} />
                     <Route path="/location" element={<LocationPage />} />
                     <Route path="/contact" element={<ContactPage />} />
                     <Route path="/login" element={<LoginPage />} />

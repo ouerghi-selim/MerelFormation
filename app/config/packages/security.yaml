@@ -43,6 +43,7 @@ security:
     # Note: Only the *first* access control that matches will be used
     access_control:
         - { path: ^/api/formations, roles: PUBLIC_ACCESS }
+        - { path: ^/api/formations/statistics, roles: PUBLIC_ACCESS }
         - { path: ^/api/vehicles, roles: PUBLIC_ACCESS }
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
