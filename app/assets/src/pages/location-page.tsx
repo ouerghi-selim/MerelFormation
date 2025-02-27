@@ -58,38 +58,30 @@ const LocationPage = () => {
     { name: 'Paiement', icon: <CreditCard className="h-4 w-4" /> }
   ];
   return (
-      <div className="min-h-screen bg-gray-50">
-        {/* Hero Section */}
-        <section className="bg-blue-900 text-white py-16">
-          <div className="container mx-auto px-4">
-            <div className="flex flex-col md:flex-row items-center gap-12">
-              <div className="md:w-1/2">
-                <h1 className="text-4xl md:text-5xl font-bold mb-6">Location Véhicule « double commande »</h1>
-                <p className="text-xl mb-8 text-blue-100">
-                  Véhicule équipé pour l'examen TAXI & VTC
-                </p>
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="bg-yellow-500 text-blue-900 px-8 py-4 rounded-lg font-bold hover:bg-yellow-400 transition-colors"
-                >
-                  Réserver un véhicule
-                </button>
-              </div>
-              <div className="md:w-1/2">
-                <img
-                    src={taxiCar}
-                    alt="Véhicule taxi double commande"
-                    className="rounded-lg shadow-xl"
-                />
-              </div>
-            </div>
-          </div>
-        </section>
 
-        {/* Section d'information principale */}
-        <section className="py-16">
-          <div className="container mx-auto px-4">
-            <div className="bg-white rounded-lg shadow-lg p-8 mb-12">
+        <div className="min-h-screen bg-gray-50">
+          {/* Hero Section */}
+          <div className="bg-blue-900 text-white py-16">
+            <div className="container mx-auto px-4">
+              <h1 className="text-4xl md:text-5xl font-bold mb-6">Location Véhicule « double commande »</h1>
+              <p className="text-xl mb-8 text-blue-100">
+                Véhicule équipé pour l'examen TAXI & VTC
+              </p>
+              <button
+                  onClick={() => setShowModal(true)}
+                  className="bg-yellow-500 text-blue-900 px-8 py-4 rounded-lg font-bold hover:bg-yellow-400 transition-colors"
+              >
+                Réserver un véhicule
+              </button>
+            </div>
+
+          </div>
+
+  {/* Section d'information principale */
+  }
+  <section className="py-16">
+    <div className="container mx-auto px-4">
+      <div className="bg-white rounded-lg shadow-lg p-8 mb-12">
               <h2 className="text-3xl font-bold mb-6">Examen TAXI-VTC</h2>
               <p className="text-gray-700 mb-6">
                 Vous passez l'examen pratique Taxi VTC ? Vous devez vous présenter le jour de l'examen pratique avec un véhicule équipé des doubles commandes.

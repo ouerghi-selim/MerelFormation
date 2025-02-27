@@ -115,42 +115,56 @@ class FormationRepository extends ServiceEntityRepository
             ->andWhere('f.isActive = :active')
             ->setParameter('active', true);
 
-        if (isset($criteria['title'])) {
-            $qb->andWhere('f.title LIKE :title')
-               ->setParameter('title', '%' . $criteria['title'] . '%');
+        if (isset($criteria['title']) && !empty($criteria['title'])) {
+            // Découper la recherche en mots pour permettre une recherche plus flexible
+            $titleTerms = explode(' ', trim($criteria['title']));
+
+            $titleClauses = [];
+            foreach ($titleTerms as $index => $term) {
+                if (strlen($term) >= 2) { // Ignorer les termes trop courts
+                    $paramName = 'title' . $index;
+                    $titleClauses[] = "LOWER(f.title) LIKE LOWER(:{$paramName})";
+                    $qb->setParameter($paramName, '%' . $term . '%');
+                }
+            }
+
+            if (count($titleClauses) > 0) {
+                // Utiliser OR entre les termes pour une recherche plus flexible
+                $qb->andWhere('(' . implode(' OR ', $titleClauses) . ')');
+            }
         }
 
-        if (isset($criteria['type'])) {
+        if (isset($criteria['type']) && !empty($criteria['type'])) {
             $qb->andWhere('f.type = :type')
-               ->setParameter('type', $criteria['type']);
+                ->setParameter('type', $criteria['type']);
         }
 
         if (isset($criteria['priceMin'])) {
             $qb->andWhere('f.price >= :priceMin')
-               ->setParameter('priceMin', $criteria['priceMin']);
+                ->setParameter('priceMin', $criteria['priceMin']);
         }
 
         if (isset($criteria['priceMax'])) {
             $qb->andWhere('f.price <= :priceMax')
-               ->setParameter('priceMax', $criteria['priceMax']);
+                ->setParameter('priceMax', $criteria['priceMax']);
         }
 
         if (isset($criteria['categoryId'])) {
             $qb->andWhere('f.category = :categoryId')
-               ->setParameter('categoryId', $criteria['categoryId']);
+                ->setParameter('categoryId', $criteria['categoryId']);
         }
 
         if (isset($criteria['hasAvailableSessions']) && $criteria['hasAvailableSessions']) {
             $qb->leftJoin('f.sessions', 's')
-               ->andWhere('s.startDate > :now')
-               ->andWhere('s.status = :status')
-               ->setParameter('now', new \DateTimeImmutable())
-               ->setParameter('status', 'scheduled');
+                ->andWhere('s.startDate > :now')
+                ->andWhere('s.status = :status')
+                ->setParameter('now', new \DateTimeImmutable())
+                ->setParameter('status', 'scheduled');
         }
 
         return $qb->orderBy('f.title', 'ASC')
-                  ->getQuery()
-                  ->getResult();
+            ->getQuery()
+            ->getResult();
     }
 
     /**
