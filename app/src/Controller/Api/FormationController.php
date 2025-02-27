@@ -27,13 +27,16 @@ class FormationController extends AbstractController
     #[Route('', name: 'app_formations_index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
-
         $page = $request->query->getInt('page', 1);
         $limit = $request->query->getInt('limit', 10);
         $type = $request->query->get('type');
+        $title = $request->query->get('title');
         $category = $request->query->get('category');
 
         $criteria = [];
+        if ($title) {
+            $criteria['title'] = $title;
+        }
         if ($type) {
             $criteria['type'] = $type;
         }
@@ -41,14 +44,24 @@ class FormationController extends AbstractController
             $criteria['category'] = $category;
         }
 
-        $formations = $this->formationRepository->findBy(
-            $criteria,
-            ['createdAt' => 'DESC'],
-            $limit,
-            ($page - 1) * $limit
-        );
+        // Si nous avons des critères de recherche, utilisons la méthode searchByCriteria
+        if (!empty($criteria)) {
+            $formations = $this->formationRepository->searchByCriteria($criteria);
 
-        $totalFormations = $this->formationRepository->count($criteria);
+            // Appliquer manuellement la pagination
+            $totalFormations = count($formations);
+            $offset = ($page - 1) * $limit;
+            $formations = array_slice($formations, $offset, $limit);
+        } else {
+            // Sans critères, on utilise la méthode findBy standard
+            $formations = $this->formationRepository->findBy(
+                ['isActive' => true],
+                ['createdAt' => 'DESC'],
+                $limit,
+                ($page - 1) * $limit
+            );
+            $totalFormations = $this->formationRepository->count(['isActive' => true]);
+        }
 
         return $this->json([
             'data' => $formations,

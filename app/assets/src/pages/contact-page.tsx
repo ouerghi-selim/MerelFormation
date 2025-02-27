@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState,useRef, useEffect, useCallback } from 'react';
 import { Phone, MapPin, Clock, AlertCircle, Info, Send, User, Mail, Smartphone, MessageSquare, Building, MapPinned } from 'lucide-react';
 
 const ContactPage = () => {
@@ -93,13 +93,17 @@ const ContactPage = () => {
             });
         }
     };
+    const mapRef = useRef<HTMLDivElement>(null);
 
     // Initialiser la carte Google Maps
     useEffect(() => {
+        let scriptElement: HTMLScriptElement | null = null;
+
         // Fonction pour charger l'API Google Maps
         const initMap = () => {
-            if (!mapLoaded && typeof google !== 'undefined') {
-                const map = new google.maps.Map(document.getElementById('google-map'), {
+            if (!mapLoaded && typeof google !== 'undefined' && mapRef.current) {
+                try {
+                    const map = new google.maps.Map(mapRef.current, {
                     center: centerCoordinates,
                     zoom: 15,
                     styles: [
@@ -155,6 +159,9 @@ const ContactPage = () => {
                 infowindow.open(map, marker);
 
                 setMapLoaded(true);
+                } catch (error) {
+                    console.error('Error initializing Google Maps:', error);
+                }
             }
         };
 
@@ -176,8 +183,12 @@ const ContactPage = () => {
             if (window.initMap === initMap) {
                 delete window.initMap;
             }
+            // Si nous avons ajouté le script, le supprimer aussi
+            if (scriptElement && document.head.contains(scriptElement)) {
+                document.head.removeChild(scriptElement);
+            }
         };
-    }, [mapLoaded]);
+    }, [mapLoaded, centerCoordinates]);
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -252,10 +263,11 @@ const ContactPage = () => {
                     <div className="max-w-5xl mx-auto">
                         <h2 className="text-3xl font-bold mb-8 text-center">Nous situer</h2>
                         <div className="shadow-xl rounded-xl overflow-hidden border-4 border-white">
-                            <div id="google-map" className="w-full h-96 bg-gray-200">
+                            <div ref={mapRef} className="w-full h-96 bg-gray-200">
                                 {!mapLoaded && (
                                     <div className="w-full h-full flex items-center justify-center">
-                                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900"></div>
+                                        <div
+                                            className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900"></div>
                                     </div>
                                 )}
                             </div>
