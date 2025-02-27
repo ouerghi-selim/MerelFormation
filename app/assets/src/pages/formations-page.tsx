@@ -28,7 +28,13 @@ const FormationsPage = () => {
   });
   const [selectedFormation, setSelectedFormation] = useState<Formation | null>(null);
   const [showSessionModal, setShowSessionModal] = useState(false);
+  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
   const [sessions, setSessions] = useState<any[]>([]);
+  const [registrationData, setRegistrationData] = useState({
+    name: '',
+    email: '',
+    sessionId: null
+  });
 // Fonction pour afficher le modal avec les sessions
   const handleShowSessions = async (formation: Formation) => {
     setSelectedFormation(formation);
@@ -61,6 +67,10 @@ const FormationsPage = () => {
 
     fetchFormations();
   }, [searchParams]);
+  const handleCloseModal = () => {
+    setShowSessionModal(false);
+    setShowRegistrationForm(false);
+  };
 
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
@@ -74,7 +84,22 @@ const FormationsPage = () => {
       page: 1
     }));
   };
+  const handleRegisterForSession = (sessionId: any) => {
+    setRegistrationData(prev => ({ ...prev, sessionId }));
+    setShowRegistrationForm(true);
+    setShowSessionModal(false);
+  };
 
+  const handleRegistrationSubmit = async (event: { preventDefault: () => void; }) => {
+    event.preventDefault();
+    try {
+      await axios.post('/api/registration', registrationData);
+      alert("Inscription réussie! Vérifiez votre email.");
+      setShowRegistrationForm(false);
+    } catch (error) {
+      alert("Erreur lors de l'inscription.");
+    }
+  };
   if (loading) {
     return <div className="flex justify-center items-center h-screen">Chargement...</div>;
   }
@@ -183,17 +208,31 @@ const FormationsPage = () => {
             </div>
           </div>
         </div>
+        {showRegistrationForm ? (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                 onClick={handleCloseModal}>
+              <div className="bg-white p-6 rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">Inscription</h3>
+                <button className="text-gray-500 hover:text-gray-700" onClick={handleCloseModal}>✕</button>
+                </div>
+                <form onSubmit={handleRegistrationSubmit}>
+                  <input type="text" placeholder="Nom" className="bg-white text-black border p-2 w-full mb-2"
+                         onChange={(e) => setRegistrationData({...registrationData, name: e.target.value})} required/>
+                  <input type="email" placeholder="Email" className="border p-2 w-full mb-2"
+                         onChange={(e) => setRegistrationData({...registrationData, email: e.target.value})} required/>
+                  <button type="submit" className="bg-blue-600 text-white px-4 py-2 w-full">Envoyer</button>
+                </form>
+              </div>
+            </div>
+        ) : null}
+
         {showSessionModal && selectedFormation && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white p-6 rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseModal}>
+              <div className="bg-white p-6 rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xl font-bold">{selectedFormation.title} - Sessions disponibles</h3>
-                  <button
-                      onClick={() => setShowSessionModal(false)}
-                      className="text-gray-500 hover:text-gray-700"
-                  >
-                    ✕
-                  </button>
+                  <button className="text-gray-500 hover:text-gray-700" onClick={handleCloseModal}>✕</button>
                 </div>
 
                 {sessions.length > 0 ? (
@@ -222,16 +261,16 @@ const FormationsPage = () => {
       </div>
   );
 };
-const handleRegisterForSession = (sessionId: number) => {
-  // Vérifier si l'utilisateur est connecté
-  const token = localStorage.getItem('token');
-  if (!token) {
-    // Rediriger vers la page de connexion
-    window.location.href = `/login?redirect=/reservation/${sessionId}`;
-    return;
-  }
-
-  // Si connecté, rediriger vers une page de confirmation d'inscription
-  window.location.href = `/reservation/${sessionId}`;
-};
+// const handleRegisterForSession = (sessionId: number) => {
+//   // Vérifier si l'utilisateur est connecté
+//   const token = localStorage.getItem('token');
+//   if (!token) {
+//     // Rediriger vers la page de connexion
+//     window.location.href = `/login?redirect=/reservation/${sessionId}`;
+//     return;
+//   }
+//
+//   // Si connecté, rediriger vers une page de confirmation d'inscription
+//   window.location.href = `/reservation/${sessionId}`;
+// };
 export default FormationsPage;
