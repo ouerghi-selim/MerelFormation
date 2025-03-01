@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Calendar, Clock, Filter, Tag, Users, Book, ChevronRight, X, CheckCircle } from 'lucide-react';
+import { Search, Calendar, Clock, Filter, Users, Book, ChevronRight, X, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 import { Link } from "react-router-dom";
 

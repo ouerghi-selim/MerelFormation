@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
-  Calendar, Car, CheckCircle, ArrowRight, X, User, Mail, Phone,
-  MapPin, CreditCard, FileText, ChevronLeft, ChevronRight, Send, Clock, Building
+  Calendar, CheckCircle, ArrowRight, X, User, Mail, Phone,
+  MapPin, CreditCard, FileText, ChevronLeft, ChevronRight, Clock, Building
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import taxiCar from '@assets/images/pages/taxi-car.png'; // Assurez-vous que cette image existe ou remplacez-la
@@ -26,9 +26,9 @@ const LocationPage = () => {
     examTime: '',
     financing: '',
     paymentMethod: '',
-    driverLicenseFront: null,
-    driverLicenseBack: null,
-    observations: ''
+    driverLicenseFront: null as File | null,
+    driverLicenseBack: null as File | null,
+    observations: '',
   });
 
   const handleNextStep = () => {
@@ -641,7 +641,7 @@ const LocationPage = () => {
                                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                   required
                                   accept="image/*,.pdf"
-                                  onChange={(e) => setReservationData({...reservationData, driverLicenseFront: e.target.files[0]})}
+                                  onChange={(e) => setReservationData({...reservationData,   driverLicenseFront: e.target.files ? e.target.files[0] : null})}
                               />
                               <FileText className="mx-auto h-8 w-8 text-gray-400" />
                               <p className="mt-2 text-sm text-gray-600">Cliquez pour sélectionner un fichier ou glissez-déposez</p>
@@ -657,7 +657,7 @@ const LocationPage = () => {
                                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                   required
                                   accept="image/*,.pdf"
-                                  onChange={(e) => setReservationData({...reservationData, driverLicenseBack: e.target.files[0]})}
+                                  onChange={(e) => setReservationData({...reservationData,   driverLicenseFront: e.target.files ? e.target.files[0] : null})}
                               />
                               <FileText className="mx-auto h-8 w-8 text-gray-400" />
                               <p className="mt-2 text-sm text-gray-600">Cliquez pour sélectionner un fichier ou glissez-déposez</p>
@@ -670,7 +670,7 @@ const LocationPage = () => {
                           <label className="block text-sm font-medium text-gray-700">Observations</label>
                           <textarea
                               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                              rows="3"
+                              rows={3}
                               onChange={(e) => setReservationData({...reservationData, observations: e.target.value})}
                               placeholder="Ajoutez vos commentaires ou questions ici..."
                           ></textarea>
