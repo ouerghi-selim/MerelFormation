@@ -28,7 +28,7 @@ const ContactPage = () => {
     // Chargement de l'API Google Maps
     const { isLoaded } = useJsApiLoader({
         id: 'Maps Platform API Key',
-        googleMapsApiKey: 'AIzaSyAqhCN4SBf6YlF_PoRHZm42-JeIIPmWqiM'
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY
     });
 
     // Options de la carte

@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, Facebook, Instagram, Twitter, Send, CheckCircle,
-    ChevronDown, ChevronRight, HelpCircle, Clock, MessageSquare } from 'lucide-react';
+    ChevronDown, HelpCircle, Clock, MessageSquare } from 'lucide-react';
 
 const Footer = () => {
     const currentYear = new Date().getFullYear();
     const [email, setEmail] = useState('');
     const [subscribed, setSubscribed] = useState(false);
-    const [showNewsletterForm, setShowNewsletterForm] = useState(false);
 
     // États pour les menus déroulants
     const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
@@ -20,7 +19,6 @@ const Footer = () => {
             setEmail('');
             setTimeout(() => {
                 setSubscribed(false);
-                setShowNewsletterForm(false);
             }, 3000);
         }
     };

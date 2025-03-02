@@ -6,7 +6,7 @@ export default defineConfig({
   root: './',
   base: '/',
   build: {
-    outDir: './public/build',
+    outDir: './dist',
     emptyOutDir: true,
     manifest: true,
     rollupOptions: {
@@ -22,7 +22,6 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@assets': path.resolve(__dirname, './src/assets')
-
     },
   },
   plugins: [react()],
@@ -35,7 +34,7 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://nginx',
+        target: 'http://nginx:80',
         changeOrigin: true,
         secure: false,
       }
