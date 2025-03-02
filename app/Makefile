@@ -57,6 +57,9 @@ symfony-cache-clear: ## Nettoyer le cache Symfony
 symfony-migrate: ## Exécuter les migrations
 	docker exec -it $(PHP_CONTAINER) php bin/console doctrine:migrations:migrate --no-interaction
 
+fixtures:
+	docker exec -it $(PHP_CONTAINER) php bin/console doctrine:fixtures:load
+
 # Commandes Node/NPM
 node-install: ## Installer les dépendances Node
 	docker exec -it $(NODE_CONTAINER) npm install

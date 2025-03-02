@@ -66,12 +66,9 @@ services:
   node:
     image: node:18
     container_name: merel_node
-    working_dir: /var/www/assets
-    depends_on:
-      - nginx
-      - php
+    working_dir: /app
     volumes:
-      - ./app:/var/www
+      - ./frontend:/app
     ports:
       - "5173:5173"
       - "4173:4173"

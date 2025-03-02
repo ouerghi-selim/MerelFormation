@@ -1,1 +1,33 @@
-{}
+{
+  "index.html": {
+    "file": "assets/index-115RMpGI.js",
+    "name": "index",
+    "src": "index.html",
+    "isEntry": true,
+    "css": [
+      "assets/index-CnJ55EXg.css"
+    ],
+    "assets": [
+      "assets/classroom-elB6wQtm.jpg",
+      "assets/classroom-Bsq80KB_.png",
+      "assets/practical-G62WYFRN.png",
+      "assets/contact-office-DAFu-iiA.png"
+    ]
+  },
+  "src/assets/images/hero/classroom.jpg": {
+    "file": "assets/classroom-elB6wQtm.jpg",
+    "src": "src/assets/images/hero/classroom.jpg"
+  },
+  "src/assets/images/pages/classroom.png": {
+    "file": "assets/classroom-Bsq80KB_.png",
+    "src": "src/assets/images/pages/classroom.png"
+  },
+  "src/assets/images/pages/contact-office.png": {
+    "file": "assets/contact-office-DAFu-iiA.png",
+    "src": "src/assets/images/pages/contact-office.png"
+  },
+  "src/assets/images/pages/practical.png": {
+    "file": "assets/practical-G62WYFRN.png",
+    "src": "src/assets/images/pages/practical.png"
+  }
+}
