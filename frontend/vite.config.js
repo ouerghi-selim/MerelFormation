@@ -5,7 +5,7 @@ export default defineConfig({
     root: './',
     base: '/',
     build: {
-        outDir: './public/build',
+        outDir: './dist',
         emptyOutDir: true,
         manifest: true,
         rollupOptions: {
@@ -33,7 +33,7 @@ export default defineConfig({
         },
         proxy: {
             '/api': {
-                target: 'http://nginx',
+                target: 'http://localhost:8000',
                 changeOrigin: true,
                 secure: false,
             }

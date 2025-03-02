@@ -1,0 +1,38 @@
+{
+  "src/assets/images/hero/classroom.jpg": {
+    "file": "assets/classroom-elB6wQtm.jpg",
+    "src": "src/assets/images/hero/classroom.jpg"
+  },
+  "src/assets/images/logo/merel-logo.png": {
+    "file": "assets/merel-logo-DqRMNcmy.png",
+    "src": "src/assets/images/logo/merel-logo.png"
+  },
+  "src/assets/images/pages/classroom.png": {
+    "file": "assets/classroom-Bsq80KB_.png",
+    "src": "src/assets/images/pages/classroom.png"
+  },
+  "src/assets/images/pages/practical.png": {
+    "file": "assets/practical-G62WYFRN.png",
+    "src": "src/assets/images/pages/practical.png"
+  },
+  "src/assets/images/pages/taxi-car.png": {
+    "file": "assets/taxi-car-jTdvjmN6.png",
+    "src": "src/assets/images/pages/taxi-car.png"
+  },
+  "src/main.tsx": {
+    "file": "assets/main-BjtphC9D.js",
+    "name": "main",
+    "src": "src/main.tsx",
+    "isEntry": true,
+    "css": [
+      "assets/main-DQZOgcO9.css"
+    ],
+    "assets": [
+      "assets/merel-logo-DqRMNcmy.png",
+      "assets/classroom-elB6wQtm.jpg",
+      "assets/taxi-car-jTdvjmN6.png",
+      "assets/classroom-Bsq80KB_.png",
+      "assets/practical-G62WYFRN.png"
+    ]
+  }
+}
