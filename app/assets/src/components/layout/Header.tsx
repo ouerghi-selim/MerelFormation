@@ -17,7 +17,6 @@ const Header = () => {
                 <div className="flex justify-between items-center">
                     <div className="flex items-center space-x-4">
                         <Link to="/" className="hover:opacity-90 transition-opacity duration-300">
-                            {/* Remplacez le texte par le logo */}
                             <img
                                 src={logo}
                                 alt="MerelFormation"

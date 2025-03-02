@@ -74,7 +74,6 @@ const LocationPage = () => {
                 Réserver un véhicule
               </button>
             </div>
-
           </div>
 
   {/* Section d'information principale */

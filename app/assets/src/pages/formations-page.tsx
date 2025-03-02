@@ -211,7 +211,7 @@ const FormationsPage = () => {
           <div className="container mx-auto px-4">
             <h1 className="text-4xl md:text-5xl font-bold mb-6">Nos Formations Taxi</h1>
             <p className="text-xl max-w-2xl">
-            Découvrez nos programmes de formation certifiants pour devenir chauffeur de taxi professionnel.
+              Découvrez nos programmes de formation certifiants pour devenir chauffeur de taxi professionnel.
               Des formations adaptées à tous les niveaux pour réussir dans le métier.
             </p>
           </div>
@@ -222,7 +222,7 @@ const FormationsPage = () => {
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8 -mt-12 relative z-10">
             <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-3 text-gray-400" />
+                <Search className="absolute left-3 top-3 text-gray-400"/>
                 <input
                     type="text"
                     placeholder="Rechercher une formation..."
@@ -233,7 +233,7 @@ const FormationsPage = () => {
               </div>
               <div className="flex gap-4">
                 <div className="relative">
-                  <Filter className="absolute left-3 top-3 text-gray-400" />
+                  <Filter className="absolute left-3 top-3 text-gray-400"/>
                   <select
                       className="pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
                       value={formValues.type}
@@ -244,13 +244,13 @@ const FormationsPage = () => {
                     <option value="continuous">Formation Continue</option>
                     <option value="mobility">Formation Mobilité</option>
                   </select>
-                  <ChevronRight className="absolute right-3 top-3 text-gray-400 transform rotate-90" />
+                  <ChevronRight className="absolute right-3 top-3 text-gray-400 transform rotate-90"/>
                 </div>
                 <button
                     type="submit"
                     className="bg-blue-900 text-white px-6 py-3 rounded-lg hover:bg-blue-800 transition flex items-center"
                 >
-                  <Search className="h-5 w-5 mr-2" /> Rechercher
+                  <Search className="h-5 w-5 mr-2"/> Rechercher
                 </button>
               </div>
             </form>
@@ -291,17 +291,17 @@ const FormationsPage = () => {
 
                         <div className="space-y-3 mb-4">
                           <div className="flex items-center text-gray-600">
-                            <Clock className="h-5 w-5 mr-2 text-blue-900" />
+                            <Clock className="h-5 w-5 mr-2 text-blue-900"/>
                             <span>{formation.duration}h de formation</span>
                           </div>
                           {formation.startDate && (
                               <div className="flex items-center text-gray-600">
-                                <Calendar className="h-5 w-5 mr-2 text-blue-900" />
+                                <Calendar className="h-5 w-5 mr-2 text-blue-900"/>
                                 <span>Prochaine session: {new Date(formation.startDate).toLocaleDateString()}</span>
                               </div>
                           )}
                           <div className="flex items-center text-gray-600">
-                            <Users className="h-5 w-5 mr-2 text-blue-900" />
+                            <Users className="h-5 w-5 mr-2 text-blue-900"/>
                             <span>8 à 12 participants par session</span>
                           </div>
                         </div>
@@ -330,15 +330,15 @@ const FormationsPage = () => {
                 ))
             ) : (
                 <div className="col-span-3 bg-white rounded-lg shadow p-8 text-center">
-                  <Book className="h-12 w-12 text-blue-900 mx-auto mb-4" />
+                  <Book className="h-12 w-12 text-blue-900 mx-auto mb-4"/>
                   <h3 className="text-xl font-bold mb-2">Aucune formation disponible</h3>
                   <p className="text-gray-600 mb-4">
                     Nous n'avons pas trouvé de formations correspondant à vos critères de recherche.
                   </p>
                   <button
                       onClick={() => {
-                        setFormValues({ title: '', type: '' });
-                        setSearchParams({ page: 1, limit: 10, type: '', title: '' });
+                        setFormValues({title: '', type: ''});
+                        setSearchParams({page: 1, limit: 10, type: '', title: ''});
                       }}
                       className="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800 transition"
                   >
@@ -401,36 +401,40 @@ const FormationsPage = () => {
             <div className="grid md:grid-cols-3 gap-8">
               <div className="bg-blue-50 p-8 rounded-lg">
                 <div className="bg-blue-900 text-white h-14 w-14 rounded-full flex items-center justify-center mb-6">
-                  <CheckCircle className="h-7 w-7" />
+                  <CheckCircle className="h-7 w-7"/>
                 </div>
                 <div className="text-blue-900 font-bold text-xl mb-4">Formation Certifiante</div>
                 <p className="text-gray-700">
-                  Nos formations sont reconnues par l'État et vous permettent d'obtenir votre carte professionnelle de chauffeur de taxi.
+                  Nos formations sont reconnues par l'État et vous permettent d'obtenir votre carte professionnelle de
+                  chauffeur de taxi.
                 </p>
               </div>
               <div className="bg-blue-50 p-8 rounded-lg">
                 <div className="bg-blue-900 text-white h-14 w-14 rounded-full flex items-center justify-center mb-6">
-                  <Users className="h-7 w-7" />
+                  <Users className="h-7 w-7"/>
                 </div>
                 <div className="text-blue-900 font-bold text-xl mb-4">Formateurs Expérimentés</div>
                 <p className="text-gray-700">
-                  Notre équipe de formateurs possède une solide expérience du métier de chauffeur de taxi et connaît parfaitement les exigences de l'examen.
+                  Notre équipe de formateurs possède une solide expérience du métier de chauffeur de taxi et connaît
+                  parfaitement les exigences de l'examen.
                 </p>
               </div>
               <div className="bg-blue-50 p-8 rounded-lg">
                 <div className="bg-blue-900 text-white h-14 w-14 rounded-full flex items-center justify-center mb-6">
-                  <Book className="h-7 w-7" />
+                  <Book className="h-7 w-7"/>
                 </div>
                 <div className="text-blue-900 font-bold text-xl mb-4">Accompagnement Personnalisé</div>
                 <p className="text-gray-700">
-                  Un suivi individuel tout au long de votre formation pour garantir votre réussite et vous aider à préparer efficacement l'examen.
+                  Un suivi individuel tout au long de votre formation pour garantir votre réussite et vous aider à
+                  préparer efficacement l'examen.
                 </p>
               </div>
             </div>
 
             <div className="text-center mt-12">
-              <Link to="/contact" className="bg-blue-900 text-white px-8 py-3 rounded-lg inline-flex items-center hover:bg-blue-800 transition">
-                Contactez-nous <ChevronRight className="ml-2 h-5 w-5" />
+              <Link to="/contact"
+                    className="bg-blue-900 text-white px-8 py-3 rounded-lg inline-flex items-center hover:bg-blue-800 transition">
+                Contactez-nous <ChevronRight className="ml-2 h-5 w-5"/>
               </Link>
             </div>
           </div>
@@ -444,7 +448,7 @@ const FormationsPage = () => {
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-xl font-bold text-blue-900">Inscription à la formation</h3>
                   <button className="text-gray-500 hover:text-gray-700 p-1" onClick={handleCloseModal}>
-                    <X className="h-6 w-6" />
+                    <X className="h-6 w-6"/>
                   </button>
                 </div>
 
@@ -487,13 +491,15 @@ const FormationsPage = () => {
         )}
 
         {showSessionModal && selectedFormation && (
-            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" onClick={handleCloseModal}>
-              <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"
+                 onClick={handleCloseModal}>
+              <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto"
+                   onClick={(e) => e.stopPropagation()}>
                 <div className="sticky top-0 bg-blue-900 text-white p-6 rounded-t-lg">
                   <div className="flex justify-between items-center">
                     <h3 className="text-xl font-bold">{selectedFormation.title}</h3>
                     <button className="text-white hover:text-blue-200 p-1" onClick={handleCloseModal}>
-                      <X className="h-6 w-6" />
+                      <X className="h-6 w-6"/>
                     </button>
                   </div>
                   <p className="mt-2 text-blue-100">Choisissez une session ci-dessous</p>
@@ -503,13 +509,14 @@ const FormationsPage = () => {
                   {sessions.length > 0 ? (
                       <div className="space-y-4">
                         {sessions.map(session => (
-                            <div key={session.id} className="border border-gray-200 hover:border-blue-300 p-5 rounded-lg transition-all">
+                            <div key={session.id}
+                                 className="border border-gray-200 hover:border-blue-300 p-5 rounded-lg transition-all">
                               <div className="flex items-center text-gray-700 mb-3">
-                                <Calendar className="h-5 w-5 mr-2 text-blue-900" />
+                                <Calendar className="h-5 w-5 mr-2 text-blue-900"/>
                                 <span>Du <strong>{new Date(session.startDate).toLocaleDateString()}</strong> au <strong>{new Date(session.endDate).toLocaleDateString()}</strong></span>
                               </div>
                               <div className="flex items-center text-gray-700 mb-4">
-                                <Users className="h-5 w-5 mr-2 text-blue-900" />
+                                <Users className="h-5 w-5 mr-2 text-blue-900"/>
                                 <span><strong>{session.maxParticipants}</strong> places maximum</span>
                               </div>
                               <button
@@ -523,10 +530,11 @@ const FormationsPage = () => {
                       </div>
                   ) : (
                       <div className="text-center py-8">
-                        <Calendar className="h-12 w-12 text-blue-900 mx-auto mb-4" />
+                        <Calendar className="h-12 w-12 text-blue-900 mx-auto mb-4"/>
                         <p className="text-gray-700 mb-2 font-medium">Aucune session disponible actuellement</p>
                         <p className="text-gray-600 mb-4">Contactez-nous pour connaître les prochaines dates</p>
-                        <Link to="/contact" className="inline-block bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800">
+                        <Link to="/contact"
+                              className="inline-block bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800">
                           Nous contacter
                         </Link>
                       </div>
