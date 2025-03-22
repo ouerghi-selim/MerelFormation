@@ -78,6 +78,16 @@ class Document
     #[Groups(['document:read', 'document:write'])]
     private ?Formation $formation = null;
 
+    #[ORM\ManyToOne(targetEntity: Reservation::class, inversedBy: 'documents')]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['document:read', 'document:write'])]
+    private ?Reservation $reservation = null;
+
+    #[ORM\ManyToOne(targetEntity: VehicleRental::class, inversedBy: 'documents')]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['document:read', 'document:write'])]
+    private ?VehicleRental $vehicleRental = null;
+
     #[ORM\Column]
     #[Groups(['document:read', 'document:write'])]
     private ?bool $private = false;
@@ -210,6 +220,28 @@ class Document
     public function setCategory(string $category): static
     {
         $this->category = $category;
+        return $this;
+    }
+
+    public function getReservation(): ?Reservation
+    {
+        return $this->reservation;
+    }
+
+    public function setReservation(?Reservation $reservation): self
+    {
+        $this->reservation = $reservation;
+        return $this;
+    }
+
+    public function getVehicleRental(): ?VehicleRental
+    {
+        return $this->vehicleRental;
+    }
+
+    public function setVehicleRental(?VehicleRental $vehicleRental): self
+    {
+        $this->vehicleRental = $vehicleRental;
         return $this;
     }
 }

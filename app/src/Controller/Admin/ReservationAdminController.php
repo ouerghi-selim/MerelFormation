@@ -7,29 +7,26 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use App\Repository\ReservationRepository;
+use App\Repository\VehicleRentalRepository;
 use App\Repository\VehicleRepository;
 use App\Entity\Reservation;
 use Doctrine\ORM\EntityManagerInterface;
 
-/**
- * @Route("/api/admin/reservations", name="api_admin_reservations_")
- */
 class ReservationAdminController extends AbstractController
 {
     private $security;
-    private $reservationRepository;
+    private $vehicleRentalRepository;
     private $vehicleRepository;
     private $entityManager;
 
     public function __construct(
         Security $security,
-        ReservationRepository $reservationRepository,
+        VehicleRentalRepository $vehicleRentalRepository,
         VehicleRepository $vehicleRepository,
         EntityManagerInterface $entityManager
     ) {
         $this->security = $security;
-        $this->reservationRepository = $reservationRepository;
+        $this->vehicleRentalRepository = $vehicleRentalRepository;
         $this->vehicleRepository = $vehicleRepository;
         $this->entityManager = $entityManager;
     }
@@ -40,9 +37,9 @@ class ReservationAdminController extends AbstractController
     public function list(Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-        if (!$this->security->isGranted('ROLE_ADMIN')) {
-            return $this->json(['message' => 'Accès refusé'], 403);
-        }
+//        if (!$this->security->isGranted('ROLE_ADMIN')) {
+//            return $this->json(['message' => 'Accès refusé'], 403);
+//        }
 
         // Récupérer les paramètres de filtrage
         $search = $request->query->get('search');
@@ -50,18 +47,18 @@ class ReservationAdminController extends AbstractController
         $date = $request->query->get('date');
 
         // Récupérer les réservations avec filtres
-        $reservations = $this->reservationRepository->findByFilters($search, $status, $date);
+        $reservations = $this->vehicleRentalRepository->findByFilters($search, $status, $date);
         
         // Formater les données pour le frontend
         $formattedReservations = [];
         foreach ($reservations as $reservation) {
-            $client = $reservation->getClient();
+            $client = $reservation->getUser();
             $formattedReservations[] = [
                 'id' => $reservation->getId(),
                 'clientName' => $client->getFirstName() . ' ' . $client->getLastName(),
                 'clientEmail' => $client->getEmail(),
                 'clientPhone' => $client->getPhone(),
-                'date' => $reservation->getDate()->format('d/m/Y'),
+                'date' => $reservation->getstartDate()->format('d/m/Y'),
                 'examCenter' => $reservation->getExamCenter(),
                 'formula' => $reservation->getFormula(),
                 'status' => $reservation->getStatus(),
@@ -83,13 +80,13 @@ class ReservationAdminController extends AbstractController
         }
 
         // Récupérer la réservation
-        $reservation = $this->reservationRepository->find($id);
+        $reservation = $this->vehicleRentalRepository->find($id);
         
         if (!$reservation) {
             return $this->json(['message' => 'Réservation non trouvée'], 404);
         }
 
-        $client = $reservation->getClient();
+        $client = $reservation->getUser();
         
         // Formater les données pour le frontend
         $formattedReservation = [
@@ -97,7 +94,7 @@ class ReservationAdminController extends AbstractController
             'clientName' => $client->getFirstName() . ' ' . $client->getLastName(),
             'clientEmail' => $client->getEmail(),
             'clientPhone' => $client->getPhone(),
-            'date' => $reservation->getDate()->format('d/m/Y'),
+            'date' => $reservation->getstartDate()->format('d/m/Y'),
             'examCenter' => $reservation->getExamCenter(),
             'formula' => $reservation->getFormula(),
             'status' => $reservation->getStatus(),
@@ -113,12 +110,12 @@ class ReservationAdminController extends AbstractController
     public function updateStatus(int $id, Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-        if (!$this->security->isGranted('ROLE_ADMIN')) {
-            return $this->json(['message' => 'Accès refusé'], 403);
-        }
+//        if (!$this->security->isGranted('ROLE_ADMIN')) {
+//            return $this->json(['message' => 'Accès refusé'], 403);
+//        }
 
         // Récupérer la réservation
-        $reservation = $this->reservationRepository->find($id);
+        $reservation = $this->vehicleRentalRepository->find($id);
         
         if (!$reservation) {
             return $this->json(['message' => 'Réservation non trouvée'], 404);
@@ -150,12 +147,12 @@ class ReservationAdminController extends AbstractController
     public function assignVehicle(int $id, Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-        if (!$this->security->isGranted('ROLE_ADMIN')) {
-            return $this->json(['message' => 'Accès refusé'], 403);
-        }
+//        if (!$this->security->isGranted('ROLE_ADMIN')) {
+//            return $this->json(['message' => 'Accès refusé'], 403);
+//        }
 
         // Récupérer la réservation
-        $reservation = $this->reservationRepository->find($id);
+        $reservation = $this->vehicleRentalRepository->find($id);
         
         if (!$reservation) {
             return $this->json(['message' => 'Réservation non trouvée'], 404);
@@ -197,26 +194,31 @@ class ReservationAdminController extends AbstractController
     public function getAvailableVehicles(Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-        if (!$this->security->isGranted('ROLE_ADMIN')) {
-            return $this->json(['message' => 'Accès refusé'], 403);
-        }
+//        if (!$this->security->isGranted('ROLE_ADMIN')) {
+//            return $this->json(['message' => 'Accès refusé'], 403);
+//        }
 
         // Récupérer la date de la requête
         $date = $request->query->get('date');
-        
+
         if (!$date) {
             return $this->json(['message' => 'Date non spécifiée'], 400);
         }
         
         // Convertir la date au format DateTime
         try {
-            $dateObj = new \DateTime($date);
+
+            $dateObj = \DateTime::createFromFormat('d/m/Y', $date);
+
+            //$dateObj = new \DateTime($dateObj);
+
         } catch (\Exception $e) {
+           // dd($e->getMessage());
             return $this->json(['message' => 'Format de date invalide'], 400);
         }
         
         // Récupérer les véhicules disponibles pour cette date
-        $availableVehicles = $this->vehicleRepository->findAvailableForDate($dateObj);
+        $availableVehicles = $this->vehicleRepository->findAvailableVehicles($dateObj);
         
         // Formater les données pour le frontend
         $formattedVehicles = [];
@@ -224,8 +226,8 @@ class ReservationAdminController extends AbstractController
             $formattedVehicles[] = [
                 'id' => $vehicle->getId(),
                 'model' => $vehicle->getModel(),
-                'type' => $vehicle->getType(),
-                'licensePlate' => $vehicle->getLicensePlate()
+                //'type' => $vehicle->getType(),
+                //'licensePlate' => $vehicle->getLicensePlate()
             ];
         }
 

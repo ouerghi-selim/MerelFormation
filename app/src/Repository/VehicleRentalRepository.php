@@ -224,4 +224,52 @@ class VehicleRentalRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Find vehicle rentals by filters for admin interface
+     */
+    public function findByFilters(?string $search = null, ?string $status = null, ?string $date = null, ?string $type = null): array
+    {
+        $qb = $this->createQueryBuilder('vr')
+            ->leftJoin('vr.user', 'u')
+            ->leftJoin('vr.vehicle', 'v')
+            ->addSelect('u', 'v');
+
+        // Filtre sur le type si spécifié
+        if ($type) {
+            $qb->andWhere('vr.rentalType = :type')
+                ->setParameter('type', $type);
+        }
+
+        // Filtre de recherche
+        if ($search) {
+            $qb->andWhere('u.firstName LIKE :search OR u.lastName LIKE :search OR u.email LIKE :search OR vr.notes LIKE :search')
+                ->setParameter('search', '%' . $search . '%');
+        }
+
+        // Filtre de statut
+        if ($status) {
+            $qb->andWhere('vr.status = :status')
+                ->setParameter('status', $status);
+        }
+
+        // Filtre de date
+        if ($date) {
+            try {
+                $dateObj = new \DateTime($date);
+                $dateStart = (clone $dateObj)->setTime(0, 0, 0);
+                $dateEnd = (clone $dateObj)->setTime(23, 59, 59);
+
+                $qb->andWhere('(vr.startDate <= :dateEnd AND vr.endDate >= :dateStart)')
+                    ->setParameter('dateStart', $dateStart)
+                    ->setParameter('dateEnd', $dateEnd);
+            } catch (\Exception $e) {
+                // Ignorer si le format de date est invalide
+            }
+        }
+
+        return $qb->orderBy('vr.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

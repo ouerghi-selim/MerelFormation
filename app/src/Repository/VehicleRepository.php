@@ -25,7 +25,7 @@ class VehicleRepository extends ServiceEntityRepository
     /**
      * Find available vehicles for rental
      */
-    public function findAvailableVehicles(\DateTimeInterface $startDate, \DateTimeInterface $endDate): array
+    public function findAvailableVehicles(\DateTimeInterface $startDate): array
     {
         return $this->createQueryBuilder('v')
             ->andWhere('v.isActive = :active')
@@ -34,14 +34,14 @@ class VehicleRepository extends ServiceEntityRepository
             ->andWhere(
                 'r.id IS NULL OR (
                     r.status != :rentalStatus AND
-                    (r.endDate < :startDate OR r.startDate > :endDate)
+                    (r.startDate != :startDate )
                 )'
             )
             ->setParameter('active', true)
             ->setParameter('status', 'available')
             ->setParameter('rentalStatus', 'confirmed')
             ->setParameter('startDate', $startDate)
-            ->setParameter('endDate', $endDate)
+            //->setParameter('endDate', $endDate)
             ->orderBy('v.category', 'ASC')
             ->addOrderBy('v.model', 'ASC')
             ->getQuery()
