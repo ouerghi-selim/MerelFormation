@@ -8,6 +8,8 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use App\Repository\VehicleRentalRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -52,9 +54,8 @@ class VehicleRental
     private ?User $user = null;
 
     #[ORM\ManyToOne(targetEntity: Vehicle::class, inversedBy: 'rentals')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: true)]
     #[Groups(['rental:read', 'rental:write'])]
-    #[Assert\NotNull]
     private ?Vehicle $vehicle = null;
 
     #[ORM\Column]
@@ -108,10 +109,64 @@ class VehicleRental
     #[Assert\NotBlank]
     private ?string $returnLocation = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['rental:read', 'rental:write'])]
+    private ?string $examCenter = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['rental:read', 'rental:write'])]
+    private ?string $formula = null;
+
+    #[ORM\Column(length: 50, nullable: true)]
+    #[Groups(['rental:read', 'rental:write'])]
+    private ?string $examTime = null;
+
+    // Informations personnelles supplémentaires
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['rental:read', 'rental:write'])]
+    private ?string $birthPlace = null;
+
+    #[ORM\Column(type: 'date', nullable: true)]
+    #[Groups(['rental:read', 'rental:write'])]
+    private ?\DateTimeInterface $birthDate = null;
+
+    // Informations d'adresse
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['rental:read', 'rental:write'])]
+    private ?string $address = null;
+
+    #[ORM\Column(length: 20, nullable: true)]
+    #[Groups(['rental:read', 'rental:write'])]
+    private ?string $postalCode = null;
+
+    #[ORM\Column(length: 100, nullable: true)]
+    #[Groups(['rental:read', 'rental:write'])]
+    private ?string $city = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['rental:read', 'rental:write'])]
+    private ?string $facturation = null;
+
+    // Informations de paiement
+    #[ORM\Column(length: 100, nullable: true)]
+    #[Groups(['rental:read', 'rental:write'])]
+    private ?string $financing = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['rental:read', 'rental:write'])]
+    private ?string $paymentMethod = null;
+
+
+    #[ORM\OneToMany(mappedBy: 'vehicleRental', targetEntity: Document::class, cascade: ['persist', 'remove'])]
+    #[Groups(['rental:read', 'rental:item:read'])]
+    private Collection $documents;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
+        $this->documents = new ArrayCollection();
+
     }
 
     #[ORM\PreUpdate]
@@ -272,6 +327,155 @@ class VehicleRental
     public function setReturnLocation(string $returnLocation): static
     {
         $this->returnLocation = $returnLocation;
+        return $this;
+    }
+    public function getExamCenter(): ?string
+    {
+        return $this->examCenter;
+    }
+
+    public function setExamCenter(?string $examCenter): self
+    {
+        $this->examCenter = $examCenter;
+        return $this;
+    }
+
+    public function getFormula(): ?string
+    {
+        return $this->formula;
+    }
+
+    public function setFormula(?string $formula): self
+    {
+        $this->formula = $formula;
+        return $this;
+    }
+
+    public function getExamTime(): ?string
+    {
+        return $this->examTime;
+    }
+
+    public function setExamTime(?string $examTime): self
+    {
+        $this->examTime = $examTime;
+        return $this;
+    }
+
+    public function getBirthPlace(): ?string
+    {
+        return $this->birthPlace;
+    }
+
+    public function setBirthPlace(?string $birthPlace): self
+    {
+        $this->birthPlace = $birthPlace;
+        return $this;
+    }
+
+    public function getBirthDate(): ?\DateTimeInterface
+    {
+        return $this->birthDate;
+    }
+
+    public function setBirthDate(?\DateTimeInterface $birthDate): self
+    {
+        $this->birthDate = $birthDate;
+        return $this;
+    }
+
+    public function getAddress(): ?string
+    {
+        return $this->address;
+    }
+
+    public function setAddress(?string $address): self
+    {
+        $this->address = $address;
+        return $this;
+    }
+
+    public function getPostalCode(): ?string
+    {
+        return $this->postalCode;
+    }
+
+    public function setPostalCode(?string $postalCode): self
+    {
+        $this->postalCode = $postalCode;
+        return $this;
+    }
+
+    public function getCity(): ?string
+    {
+        return $this->city;
+    }
+
+    public function setCity(?string $city): self
+    {
+        $this->city = $city;
+        return $this;
+    }
+
+    public function getFacturation(): ?string
+    {
+        return $this->facturation;
+    }
+
+    public function setFacturation(?string $facturation): self
+    {
+        $this->facturation = $facturation;
+        return $this;
+    }
+
+    public function getFinancing(): ?string
+    {
+        return $this->financing;
+    }
+
+    public function setFinancing(?string $financing): self
+    {
+        $this->financing = $financing;
+        return $this;
+    }
+
+    public function getPaymentMethod(): ?string
+    {
+        return $this->paymentMethod;
+    }
+
+    public function setPaymentMethod(?string $paymentMethod): self
+    {
+        $this->paymentMethod = $paymentMethod;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Document>
+     */
+    public function getDocuments(): Collection
+    {
+        return $this->documents;
+    }
+
+    public function addDocument(Document $document): self
+    {
+        if (!$this->documents->contains($document)) {
+            $this->documents->add($document);
+            $document->setVehicleRental($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDocument(Document $document): self
+    {
+        if ($this->documents->removeElement($document)) {
+            if ($document->getVehicleRental() === $this) {
+                $document->setVehicleRental(null);
+            }
+        }
+
         return $this;
     }
 }
