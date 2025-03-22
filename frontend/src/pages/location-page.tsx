@@ -4,7 +4,8 @@ import {
   MapPin, CreditCard, FileText, ChevronLeft, ChevronRight, Clock, Building
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import taxiCar from '@assets/images/pages/taxi-car.png'; // Assurez-vous que cette image existe ou remplacez-la
+import taxiCar from '@assets/images/pages/taxi-car.png';
+import axios from "axios"; // Assurez-vous que cette image existe ou remplacez-la
 
 const LocationPage = () => {
   const [showModal, setShowModal] = useState(false);
@@ -43,12 +44,62 @@ const LocationPage = () => {
     if (modalContent) modalContent.scrollTop = 0;
   };
 
-  const handleReservation = (e: { preventDefault: () => void; }) => {
+  const handleReservation = async (e: { preventDefault: () => void; }) => {
     e.preventDefault();
-    console.log('Données de réservation:', reservationData);
-    alert('Votre demande de réservation a été envoyée. Nous vous contacterons avec un devis personnalisé.');
-    setShowModal(false);
-    setStep(1);
+
+    // Conversion des dates pour l'API
+    const examDateObj = reservationData.examDate ? new Date(reservationData.examDate) : null;
+    const birthDateObj = reservationData.birthDate ? new Date(reservationData.birthDate) : null;
+
+    try {
+      // Préparation des données pour l'API
+      const formData = {
+        // Informations de base pour VehicleRental
+        rentalType: 'exam',
+        status: 'pending',
+        notes: reservationData.observations,
+
+        // Dates d'examen (utilisées comme dates de location)
+        startDate: examDateObj ? examDateObj.toISOString() : null,
+        endDate: examDateObj ? examDateObj.toISOString() : null, // Même jour pour l'examen
+
+        // Lieux
+        pickupLocation: reservationData.examCenter,
+        returnLocation: reservationData.examCenter,
+
+        // Informations personnelles
+        firstName: reservationData.firstName,
+        lastName: reservationData.name,
+        birthDate: birthDateObj ? birthDateObj.toISOString().split('T')[0] : null,
+        birthPlace: reservationData.birthPlace,
+
+        // Adresse
+        address: reservationData.address,
+        postalCode: reservationData.postalCode,
+        city: reservationData.city,
+        facturation: reservationData.facturation,
+
+        // Informations d'examen
+        examCenter: reservationData.examCenter,
+        formula: reservationData.formula,
+        examTime: reservationData.examTime,
+
+        // Paiement
+        financing: reservationData.financing,
+        paymentMethod: reservationData.paymentMethod,
+      };
+
+      // Envoi à l'API
+      await axios.post('/api/vehicle_rentals', formData);
+
+      // Gestion du succès
+      alert('Votre demande de réservation a été envoyée. Nous vous contacterons avec un devis personnalisé.');
+      setShowModal(false);
+      setStep(1);
+    } catch (err) {
+      console.error('Erreur lors de l\'envoi de la réservation:', err);
+      alert('Une erreur est survenue lors de l\'envoi de votre demande. Veuillez réessayer.');
+    }
   };
   // Définition des étapes du formulaire
   const steps = [
