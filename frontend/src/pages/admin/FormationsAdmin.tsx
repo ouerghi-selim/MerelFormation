@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus, Search, Filter, Edit, Trash2, ChevronDown } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
-// @ts-ignore
-import axios from 'axios';
+import { adminFormationsApi } from '../../services/api';
 
 interface Formation {
   id: number;
@@ -29,35 +28,25 @@ const FormationsAdmin: React.FC = () => {
       try {
         setLoading(true);
         
-        // Simuler des données pour le développement
-        setTimeout(() => {
-          const mockFormations: Formation[] = [
-            { id: 1, title: 'Formation Initiale Taxi', type: 'initial', duration: 140, price: 1500, isActive: true },
-            { id: 2, title: 'Formation Continue Taxi', type: 'continuous', duration: 21, price: 450, isActive: true },
-            { id: 3, title: 'Formation Mobilité Taxi', type: 'mobility', duration: 14, price: 350, isActive: true },
-            { id: 4, title: 'Formation VTC', type: 'initial', duration: 120, price: 1300, isActive: false },
-            { id: 5, title: 'Remise à niveau', type: 'continuous', duration: 7, price: 200, isActive: true }
-          ];
-          
-          setFormations(mockFormations);
-          setLoading(false);
-        }, 1000);
-        
-        // Commenté pour le développement, à décommenter pour la production
-        /*
-        const response = await axios.get('/api/admin/formations', {
-          params: {
-            title: searchTerm || undefined,
-            type: selectedType || undefined
-          }
-        });
+        // Utilisation des appels API réels
+        const response = await adminFormationsApi.getAll();
         setFormations(response.data);
         setLoading(false);
-        */
       } catch (err) {
         console.error('Error fetching formations:', err);
         setError('Erreur lors du chargement des formations');
         setLoading(false);
+        
+        // Données de secours en cas d'erreur (pour le développement)
+        const mockFormations: Formation[] = [
+          { id: 1, title: 'Formation Initiale Taxi', type: 'initial', duration: 140, price: 1500, isActive: true },
+          { id: 2, title: 'Formation Continue Taxi', type: 'continuous', duration: 21, price: 450, isActive: true },
+          { id: 3, title: 'Formation Mobilité Taxi', type: 'mobility', duration: 14, price: 350, isActive: true },
+          { id: 4, title: 'Formation VTC', type: 'initial', duration: 120, price: 1300, isActive: false },
+          { id: 5, title: 'Remise à niveau', type: 'continuous', duration: 7, price: 200, isActive: true }
+        ];
+        
+        setFormations(mockFormations);
       }
     };
 
@@ -78,18 +67,10 @@ const FormationsAdmin: React.FC = () => {
     if (!formationToDelete) return;
     
     try {
-      // Simuler la suppression pour le développement
+      await adminFormationsApi.delete(formationToDelete.id);
       setFormations(formations.filter(f => f.id !== formationToDelete.id));
       setShowDeleteModal(false);
       setFormationToDelete(null);
-      
-      // Commenté pour le développement, à décommenter pour la production
-      /*
-      await axios.delete(`/api/admin/formations/${formationToDelete.id}`);
-      setFormations(formations.filter(f => f.id !== formationToDelete.id));
-      setShowDeleteModal(false);
-      setFormationToDelete(null);
-      */
     } catch (err) {
       console.error('Error deleting formation:', err);
       setError('Erreur lors de la suppression de la formation');
