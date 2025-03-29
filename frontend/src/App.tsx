@@ -21,6 +21,9 @@ import FormationsStudent from './pages/student/FormationsStudent';
 import FormationDetailStudent from './pages/student/FormationDetailStudent';
 import DocumentsStudent from './pages/student/DocumentsStudent';
 
+// Planning pages
+import PlanningCalendar from './pages/planning/PlanningCalendar';
+
 // Composant pour protéger les routes admin
 // const ProtectedAdminRoute = ({ children }: { children: React.ReactNode }) => {
 //     // // Vérifier si l'utilisateur est connecté et a les droits d'admin
@@ -83,6 +86,18 @@ const App = () => {
                  //   <ProtectedAdminRoute>
                         <UsersAdmin />
                  //   </ProtectedAdminRoute>
+                } />
+                
+                {/* Routes de planning */}
+                <Route path="/admin/planning" element={
+                 //   <ProtectedAdminRoute>
+                        <PlanningCalendar />
+                 //   </ProtectedAdminRoute>
+                } />
+                <Route path="/student/planning" element={
+                 //   <ProtectedStudentRoute>
+                        <PlanningCalendar />
+                 //   </ProtectedStudentRoute>
                 } />
 
                 {/* Routes étudiant protégées */}
