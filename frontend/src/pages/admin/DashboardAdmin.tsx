@@ -4,6 +4,7 @@ import { Users, BookOpen, Calendar, AlertCircle } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
 import StatCard from '../../components/admin/StatCard';
+import { adminDashboardApi } from '../../services/api';
 
 interface DashboardStats {
   activeStudents: number;
@@ -49,52 +50,45 @@ const DashboardAdmin: React.FC = () => {
       try {
         setLoading(true);
         
-        // Simuler des données pour le développement
-        // Dans un environnement de production, ces données viendraient de l'API
-        setTimeout(() => {
-          setStats({
-            activeStudents: 24,
-            activeFormations: 12,
-            upcomingSessions: 8,
-            pendingReservations: 5,
-            totalRevenue: 15000,
-            conversionRate: 68
-          });
-          
-          setInscriptions([
-            { id: 1, studentName: 'Jean Dupont', formationName: 'Formation Initiale', date: '12/03/2025' },
-            { id: 2, studentName: 'Marie Lambert', formationName: 'Formation Mobilité', date: '10/03/2025' },
-            { id: 3, studentName: 'Paul Martin', formationName: 'Formation Continue', date: '08/03/2025' },
-            { id: 4, studentName: 'Sophie Klein', formationName: 'Formation Initiale', date: '05/03/2025' }
-          ]);
-          
-          setReservations([
-            { id: 1, vehicleModel: 'Touran', clientName: 'Sophie Klein', date: '15/03/2025', status: 'pending' },
-            { id: 2, vehicleModel: 'Touran', clientName: 'Kevin Robert', date: '14/03/2025', status: 'confirmed' },
-            { id: 3, vehicleModel: 'Clio', clientName: 'Thomas Blanc', date: '12/03/2025', status: 'completed' },
-            { id: 4, vehicleModel: 'Clio', clientName: 'Julie Moreau', date: '10/03/2025', status: 'cancelled' }
-          ]);
-          
-          setLoading(false);
-        }, 1000);
-        
-        // Commenté pour le développement, à décommenter pour la production
-        /*
+        // Utilisation des appels API réels
         const [statsResponse, inscriptionsResponse, reservationsResponse] = await Promise.all([
-          axios.get('/api/admin/dashboard/stats'),
-          axios.get('/api/admin/dashboard/recent-inscriptions'),
-          axios.get('/api/admin/dashboard/recent-reservations')
+          adminDashboardApi.getStats(),
+          adminDashboardApi.getRecentInscriptions(),
+          adminDashboardApi.getRecentReservations()
         ]);
         
         setStats(statsResponse.data);
         setInscriptions(inscriptionsResponse.data);
         setReservations(reservationsResponse.data);
         setLoading(false);
-        */
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
         setError('Erreur lors du chargement des données');
         setLoading(false);
+        
+        // Données de secours en cas d'erreur (pour le développement)
+        setStats({
+          activeStudents: 24,
+          activeFormations: 12,
+          upcomingSessions: 8,
+          pendingReservations: 5,
+          totalRevenue: 15000,
+          conversionRate: 68
+        });
+        
+        setInscriptions([
+          { id: 1, studentName: 'Jean Dupont', formationName: 'Formation Initiale', date: '12/03/2025' },
+          { id: 2, studentName: 'Marie Lambert', formationName: 'Formation Mobilité', date: '10/03/2025' },
+          { id: 3, studentName: 'Paul Martin', formationName: 'Formation Continue', date: '08/03/2025' },
+          { id: 4, studentName: 'Sophie Klein', formationName: 'Formation Initiale', date: '05/03/2025' }
+        ]);
+        
+        setReservations([
+          { id: 1, vehicleModel: 'Touran', clientName: 'Sophie Klein', date: '15/03/2025', status: 'pending' },
+          { id: 2, vehicleModel: 'Touran', clientName: 'Kevin Robert', date: '14/03/2025', status: 'confirmed' },
+          { id: 3, vehicleModel: 'Clio', clientName: 'Thomas Blanc', date: '12/03/2025', status: 'completed' },
+          { id: 4, vehicleModel: 'Clio', clientName: 'Julie Moreau', date: '10/03/2025', status: 'cancelled' }
+        ]);
       }
     };
 
