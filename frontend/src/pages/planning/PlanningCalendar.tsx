@@ -2,19 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Edit, Trash2 } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
-
-// Cette interface sera étendue lorsque nous intégrerons avec l'API
-interface CalendarEvent {
-  id: number;
-  title: string;
-  start: Date;
-  end: Date;
-  type: 'formation' | 'exam';
-  location: string;
-  instructor?: string;
-  maxParticipants?: number;
-  currentParticipants?: number;
-}
+import EventModal from '../../components/planning/EventModal';
+import planningApi from '../../services/planningApi';
+import { CalendarEvent } from '../../types/planning';
 
 const PlanningCalendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -24,75 +14,46 @@ const PlanningCalendar: React.FC = () => {
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
+  const [availableLocations, setAvailableLocations] = useState<string[]>([]);
+  const [availableInstructors, setAvailableInstructors] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Données de démonstration pour le calendrier
+  // Charger les données initiales
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        // Charger les lieux et formateurs disponibles
+        const locations = await planningApi.getAvailableLocations();
+        const instructors = await planningApi.getAvailableInstructors();
+        
+        setAvailableLocations(locations);
+        setAvailableInstructors(instructors);
+      } catch (err) {
+        console.error('Error fetching initial data:', err);
+        setError('Erreur lors du chargement des données initiales');
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  // Charger les événements du calendrier
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         setLoading(true);
         
-        // Simuler un appel API
-        setTimeout(() => {
-          // Générer des événements pour le mois en cours
-          const today = new Date();
-          const demoEvents: CalendarEvent[] = [
-            {
-              id: 1,
-              title: 'Formation Initiale Taxi',
-              start: new Date(today.getFullYear(), today.getMonth(), 5, 9, 0),
-              end: new Date(today.getFullYear(), today.getMonth(), 5, 17, 0),
-              type: 'formation',
-              location: 'Centre de formation Rennes',
-              instructor: 'Jean Dupont',
-              maxParticipants: 12,
-              currentParticipants: 8
-            },
-            {
-              id: 2,
-              title: 'Examen Théorique',
-              start: new Date(today.getFullYear(), today.getMonth(), 12, 10, 0),
-              end: new Date(today.getFullYear(), today.getMonth(), 12, 12, 0),
-              type: 'exam',
-              location: 'Centre d\'examen Rennes',
-              maxParticipants: 20,
-              currentParticipants: 15
-            },
-            {
-              id: 3,
-              title: 'Formation Continue',
-              start: new Date(today.getFullYear(), today.getMonth(), 15, 9, 0),
-              end: new Date(today.getFullYear(), today.getMonth(), 16, 17, 0),
-              type: 'formation',
-              location: 'Centre de formation Nantes',
-              instructor: 'Marie Lambert',
-              maxParticipants: 10,
-              currentParticipants: 6
-            },
-            {
-              id: 4,
-              title: 'Examen Pratique',
-              start: new Date(today.getFullYear(), today.getMonth(), 20, 8, 0),
-              end: new Date(today.getFullYear(), today.getMonth(), 20, 18, 0),
-              type: 'exam',
-              location: 'Centre d\'examen Nantes',
-              maxParticipants: 8,
-              currentParticipants: 8
-            }
-          ];
-          
-          setEvents(demoEvents);
-          setLoading(false);
-        }, 1000);
+        // Calculer le premier et dernier jour du mois
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
         
-        // À terme, nous utiliserons un appel API réel
-        // const response = await axios.get('/api/planning/events', {
-        //   params: {
-        //     start: startOfMonth(currentDate),
-        //     end: endOfMonth(currentDate)
-        //   }
-        // });
-        // setEvents(response.data);
-        // setLoading(false);
+        // Récupérer les événements pour la période
+        const fetchedEvents = await planningApi.getEvents(firstDay, lastDay);
+        setEvents(fetchedEvents);
+        setLoading(false);
       } catch (err) {
         console.error('Error fetching events:', err);
         setError('Erreur lors du chargement des événements');
@@ -125,6 +86,80 @@ const PlanningCalendar: React.FC = () => {
   const handleAddEvent = () => {
     setSelectedEvent(null);
     setShowEventModal(true);
+  };
+
+  // Gérer la sauvegarde d'un événement (création ou mise à jour)
+  const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
+    try {
+      setIsProcessing(true);
+      
+      if (selectedEvent) {
+        // Mise à jour d'un événement existant
+        const updatedEvent = await planningApi.updateEvent(selectedEvent.id, eventData);
+        
+        // Mettre à jour la liste des événements
+        setEvents(events.map(event => 
+          event.id === updatedEvent.id ? updatedEvent : event
+        ));
+        
+        setSuccessMessage('Événement mis à jour avec succès');
+      } else {
+        // Création d'un nouvel événement
+        const newEvent = await planningApi.createEvent(eventData as Omit<CalendarEvent, 'id'>);
+        
+        // Ajouter le nouvel événement à la liste
+        setEvents([...events, newEvent]);
+        
+        setSuccessMessage('Événement créé avec succès');
+      }
+      
+      // Fermer la modal
+      setShowEventModal(false);
+      setSelectedEvent(null);
+      setIsProcessing(false);
+      
+      // Effacer le message de succès après 3 secondes
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+    } catch (err) {
+      console.error('Error saving event:', err);
+      setError('Erreur lors de la sauvegarde de l\'événement');
+      setIsProcessing(false);
+    }
+  };
+
+  // Gérer la suppression d'un événement
+  const handleDeleteEvent = async (id: number) => {
+    try {
+      setIsProcessing(true);
+      
+      // Supprimer l'événement
+      const success = await planningApi.deleteEvent(id);
+      
+      if (success) {
+        // Mettre à jour la liste des événements
+        setEvents(events.filter(event => event.id !== id));
+        
+        setSuccessMessage('Événement supprimé avec succès');
+      } else {
+        setError('Erreur lors de la suppression de l\'événement');
+      }
+      
+      // Fermer la modal
+      setShowEventModal(false);
+      setSelectedEvent(null);
+      setIsProcessing(false);
+      
+      // Effacer le message de succès après 3 secondes
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+    } catch (err) {
+      console.error('Error deleting event:', err);
+      setError('Erreur lors de la suppression de l\'événement');
+      setIsProcessing(false);
+    }
   };
 
   // Génération du calendrier
@@ -216,6 +251,18 @@ const PlanningCalendar: React.FC = () => {
           {error && (
             <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
               <p>{error}</p>
+              <button 
+                className="text-sm underline mt-1"
+                onClick={() => setError(null)}
+              >
+                Fermer
+              </button>
+            </div>
+          )}
+          
+          {successMessage && (
+            <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6">
+              <p>{successMessage}</p>
             </div>
           )}
           
@@ -374,151 +421,23 @@ const PlanningCalendar: React.FC = () => {
       
       {/* Modal d'ajout/édition d'événement */}
       {showEventModal && (
+        <EventModal
+          event={selectedEvent}
+          isOpen={showEventModal}
+          onClose={() => setShowEventModal(false)}
+          onSave={handleSaveEvent}
+          onDelete={handleDeleteEvent}
+          availableLocations={availableLocations}
+          availableInstructors={availableInstructors}
+        />
+      )}
+      
+      {/* Overlay de chargement pendant le traitement */}
+      {isProcessing && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-            <h3 className="text-lg font-bold mb-4">
-              {selectedEvent ? 'Modifier l\'événement' : 'Ajouter un événement'}
-            </h3>
-            
-            <form className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Titre
-                </label>
-                <input 
-                  type="text" 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  defaultValue={selectedEvent?.title || ''}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Date de début
-                  </label>
-                  <input 
-                    type="date" 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    defaultValue={selectedEvent?.start.toISOString().split('T')[0] || ''}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Heure de début
-                  </label>
-                  <input 
-                    type="time" 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    defaultValue={selectedEvent?.start.toTimeString().slice(0, 5) || ''}
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Date de fin
-                  </label>
-                  <input 
-                    type="date" 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    defaultValue={selectedEvent?.end.toISOString().split('T')[0] || ''}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Heure de fin
-                  </label>
-                  <input 
-                    type="time" 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    defaultValue={selectedEvent?.end.toTimeString().slice(0, 5) || ''}
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Type
-                </label>
-                <select 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  defaultValue={selectedEvent?.type || 'formation'}
-                >
-                  <option value="formation">Formation</option>
-                  <option value="exam">Examen</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Lieu
-                </label>
-                <input 
-                  type="text" 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  defaultValue={selectedEvent?.location || ''}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Formateur
-                </label>
-                <input 
-                  type="text" 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  defaultValue={selectedEvent?.instructor || ''}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre max. de participants
-                  </label>
-                  <input 
-                    type="number" 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    defaultValue={selectedEvent?.maxParticipants || ''}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Participants actuels
-                  </label>
-                  <input 
-                    type="number" 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    defaultValue={selectedEvent?.currentParticipants || '0'}
-                  />
-                </div>
-              </div>
-            </form>
-            
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={() => setShowEventModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
-              >
-                Annuler
-              </button>
-              
-              {selectedEvent && (
-                <button
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                >
-                  Supprimer
-                </button>
-              )}
-              
-              <button
-                className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
-              >
-                {selectedEvent ? 'Mettre à jour' : 'Créer'}
-              </button>
-            </div>
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900 mx-auto"></div>
+            <p className="mt-4 text-gray-700">Traitement en cours...</p>
           </div>
         </div>
       )}
