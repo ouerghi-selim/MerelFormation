@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Filter, Edit, Trash2, ChevronDown } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, ChevronDown, X } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
 import { adminFormationsApi } from '../../services/api';
@@ -22,6 +22,10 @@ const FormationsAdmin: React.FC = () => {
   const [selectedType, setSelectedType] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [formationToDelete, setFormationToDelete] = useState<Formation | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [formationToEdit, setFormationToEdit] = useState<Formation | null>(null);
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     const fetchFormations = async () => {
@@ -84,6 +88,57 @@ const FormationsAdmin: React.FC = () => {
       'mobility': 'Formation Mobilité'
     };
     return types[type] || type;
+  };
+  const openEditModal = (formation: Formation) => {
+    setFormationToEdit({...formation});
+    setFormErrors({});
+    setShowEditModal(true);
+  };
+
+  const validateForm = (formation: Formation) => {
+    const errors: {[key: string]: string} = {};
+
+    if (!formation.title.trim()) errors.title = 'Le titre est requis';
+    else if (formation.title.length < 5) errors.title = 'Le titre doit contenir au moins 5 caractères';
+
+    if (!formation.duration || formation.duration <= 0)
+      errors.duration = 'La durée doit être un nombre positif';
+
+    if (!formation.price || formation.price <= 0)
+      errors.price = 'Le prix doit être un nombre positif';
+
+    if (!formation.type) errors.type = 'Le type de formation est requis';
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleEditFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formationToEdit || !validateForm(formationToEdit)) {
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      await adminFormationsApi.update(formationToEdit.id, formationToEdit);
+
+      // Mettre à jour la liste des formations
+      setFormations(
+          formations.map(f =>
+              f.id === formationToEdit.id ? formationToEdit : f
+          )
+      );
+
+      setShowEditModal(false);
+      setFormationToEdit(null);
+    } catch (err) {
+      console.error('Error updating formation:', err);
+      setError('Erreur lors de la mise à jour de la formation');
+    } finally {
+      setUpdating(false);
+    }
   };
 
   return (
@@ -198,17 +253,17 @@ const FormationsAdmin: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end space-x-2">
-                            <Link 
-                              to={`/admin/formations/${formation.id}/edit`}
-                              className="text-blue-700 hover:text-blue-900"
+                            <button
+                                onClick={() => openEditModal(formation)}
+                                className="text-blue-700 hover:text-blue-900"
                             >
-                              <Edit className="h-5 w-5" />
-                            </Link>
-                            <button 
-                              onClick={() => confirmDelete(formation)}
-                              className="text-red-600 hover:text-red-900"
+                              <Edit className="h-5 w-5"/>
+                            </button>
+                            <button
+                                onClick={() => confirmDelete(formation)}
+                                className="text-red-600 hover:text-red-900"
                             >
-                              <Trash2 className="h-5 w-5" />
+                              <Trash2 className="h-5 w-5"/>
                             </button>
                           </div>
                         </td>
@@ -258,6 +313,142 @@ const FormationsAdmin: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal d'édition */}
+      {showEditModal && formationToEdit && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg max-w-3xl w-full max-h-screen overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold">Modifier la formation</h3>
+                <button
+                    onClick={() => setShowEditModal(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditFormSubmit}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Titre*
+                    </label>
+                    <input
+                        type="text"
+                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                            formErrors.title ? 'border-red-500' : ''
+                        }`}
+                        value={formationToEdit.title}
+                        onChange={(e) => setFormationToEdit({...formationToEdit, title: e.target.value})}
+                    />
+                    {formErrors.title && (
+                        <p className="mt-1 text-sm text-red-500">{formErrors.title}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Prix (€)*
+                    </label>
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                            formErrors.price ? 'border-red-500' : ''
+                        }`}
+                        value={formationToEdit.price}
+                        onChange={(e) => setFormationToEdit({...formationToEdit, price: parseFloat(e.target.value) || 0})}
+                    />
+                    {formErrors.price && (
+                        <p className="mt-1 text-sm text-red-500">{formErrors.price}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Durée (heures)*
+                    </label>
+                    <input
+                        type="number"
+                        min="1"
+                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                            formErrors.duration ? 'border-red-500' : ''
+                        }`}
+                        value={formationToEdit.duration}
+                        onChange={(e) => setFormationToEdit({...formationToEdit, duration: parseInt(e.target.value) || 0})}
+                    />
+                    {formErrors.duration && (
+                        <p className="mt-1 text-sm text-red-500">{formErrors.duration}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Type de formation*
+                    </label>
+                    <select
+                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                            formErrors.type ? 'border-red-500' : ''
+                        }`}
+                        value={formationToEdit.type}
+                        onChange={(e) => setFormationToEdit({...formationToEdit, type: e.target.value})}
+                    >
+                      <option value="initial">Formation Initiale</option>
+                      <option value="continuous">Formation Continue</option>
+                      <option value="mobility">Formation Mobilité</option>
+                    </select>
+                    {formErrors.type && (
+                        <p className="mt-1 text-sm text-red-500">{formErrors.type}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Statut
+                    </label>
+                    <div className="flex items-center mt-2">
+                      <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          checked={formationToEdit.isActive}
+                          onChange={(e) => setFormationToEdit({...formationToEdit, isActive: e.target.checked})}
+                      />
+                      <span className="ml-2 text-sm text-gray-700">
+                Formation active
+              </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 border-t border-gray-200 pt-4 flex justify-end space-x-3">
+                  <button
+                      type="button"
+                      onClick={() => setShowEditModal(false)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                      type="submit"
+                      disabled={updating}
+                      className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 flex items-center"
+                  >
+                    {updating ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                          Mise à jour...
+                        </>
+                    ) : (
+                        <>Enregistrer</>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
       )}
     </div>
   );

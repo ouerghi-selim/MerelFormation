@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Créer une instance axios avec la configuration de base
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000',
+  baseURL: import.meta.env.REACT_APP_API_URL || 'http://merelformation.localhost/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -89,5 +89,23 @@ export const authApi = {
   refreshToken: (refreshToken: string) => 
     api.post('/api/token/refresh', { refresh_token: refreshToken }),
 };
+
+export const adminSessionsApi = {
+    getAll: (queryParams = '') => axios.get(`/api/admin/sessions${queryParams ? '?' + queryParams : ''}`),
+    get: (id:number) => axios.get(`/api/admin/sessions/${id}`),
+    create: (sessionData:any) => axios.post('/api/admin/sessions', sessionData),
+    update: (id:number, sessionData:any) => axios.put(`/api/admin/sessions/${id}`, sessionData),
+    delete: (id:number) => axios.delete(`/api/admin/sessions/${id}`)
+}
+
+// Dans votre fichier services/api.js ou services/api/adminVehiclesApi.js
+
+export const adminVehiclesApi = {
+    getAll: () => axios.get('/api/admin/vehicles'),
+    get: (id:number) => axios.get(`/api/admin/vehicles/${id}`),
+    create: (vehicleData:any) => axios.post('/api/admin/vehicles', vehicleData),
+    update: (id:number, vehicleData:any) => axios.put(`/api/admin/vehicles/${id}`, vehicleData),
+    delete: (id:number) => axios.delete(`/api/admin/vehicles/${id}`)
+}
 
 export default api;

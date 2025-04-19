@@ -1,6 +1,10 @@
 // @ts-ignore
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+// contexts
+import { NotificationProvider } from './contexts/NotificationContext';
+
 import Layout from './components/layout/Layout';
 import HomePage from './pages/home-page';
 import FormationsPage from './pages/formations-page';
@@ -12,8 +16,16 @@ import LoginPage from "./pages/login-page";
 // Admin pages
 import DashboardAdmin from './pages/admin/DashboardAdmin';
 import FormationsAdmin from './pages/admin/FormationsAdmin';
+import FormationNew from './pages/admin/FormationNew';
 import ReservationsAdmin from './pages/admin/ReservationsAdmin';
 import UsersAdmin from './pages/admin/UsersAdmin';
+import StudentsAdmin from './pages/admin/StudentsAdmin';
+import InstructorsAdmin from './pages/admin/InstructorsAdmin';
+import AdminsAdmin from './pages/admin/AdminsAdmin';
+import SessionsAdmin from './pages/admin/SessionsAdmin';
+import SessionNew from './pages/admin/SessionNew';
+import VehiclesAdmin from './pages/admin/VehiclesAdmin';
+
 
 // Student pages
 import DashboardStudent from './pages/student/DashboardStudent';
@@ -56,73 +68,85 @@ import PlanningCalendar from './pages/planning/PlanningCalendar';
 
 const App = () => {
     return (
-        <Router>
-            <Routes>
-                {/* Routes publiques */}
-                <Route path="/" element={<Layout><HomePage /></Layout>} />
-                <Route path="/formations" element={<Layout><FormationsPage /></Layout>} />
-                <Route path="/formations/:id" element={<Layout><FormationDetailPage /></Layout>} />
-                <Route path="/location" element={<Layout><LocationPage /></Layout>} />
-                <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
-                <Route path="/login" element={<LoginPage />} />
+        <NotificationProvider>
+            <Router>
+                <Routes>
+                    {/* Routes publiques */}
+                    <Route path="/" element={<Layout><HomePage /></Layout>} />
+                    <Route path="/formations" element={<Layout><FormationsPage /></Layout>} />
+                    <Route path="/formations/:id" element={<Layout><FormationDetailPage /></Layout>} />
+                    <Route path="/location" element={<Layout><LocationPage /></Layout>} />
+                    <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
+                    <Route path="/login" element={<LoginPage />} />
 
-                {/* Routes admin protégées */}
-                <Route path="/admin/dashboard" element={
-                   // <ProtectedAdminRoute>
-                        <DashboardAdmin />
-                   // </ProtectedAdminRoute>
-                } />
-                <Route path="/admin/formations" element={
-                 //   <ProtectedAdminRoute>
-                        <FormationsAdmin />
-                   // </ProtectedAdminRoute>
-                } />
-                <Route path="/admin/reservations" element={
-                  //  <ProtectedAdminRoute>
-                        <ReservationsAdmin />
-                   // </ProtectedAdminRoute>
-                } />
-                <Route path="/admin/users" element={
-                 //   <ProtectedAdminRoute>
-                        <UsersAdmin />
-                 //   </ProtectedAdminRoute>
-                } />
-                
-                {/* Routes de planning */}
-                <Route path="/admin/planning" element={
-                 //   <ProtectedAdminRoute>
-                        <PlanningCalendar />
-                 //   </ProtectedAdminRoute>
-                } />
-                <Route path="/student/planning" element={
-                 //   <ProtectedStudentRoute>
-                        <PlanningCalendar />
-                 //   </ProtectedStudentRoute>
-                } />
+                    {/* Routes admin protégées */}
+                    <Route path="/admin/dashboard" element={
+                       // <ProtectedAdminRoute>
+                            <DashboardAdmin />
+                       // </ProtectedAdminRoute>
+                    } />
+                    <Route path="/admin/formations" element={
+                     //   <ProtectedAdminRoute>
+                            <FormationsAdmin />
+                       // </ProtectedAdminRoute>
+                    } />
+                    <Route path="/admin/formations/new" element={<FormationNew />} />
+                    <Route path="/admin/sessions" element={<SessionsAdmin />} />
+                    <Route path="/admin/sessions/new" element={<SessionNew />} />
+                    <Route path="/admin/vehicles" element={<VehiclesAdmin />} />
 
-                {/* Routes étudiant protégées */}
-                <Route path="/student" element={
-                 //   <ProtectedStudentRoute>
-                        <DashboardStudent />
-                 //   </ProtectedStudentRoute>
-                } />
-                <Route path="/student/formations" element={
-                  //  <ProtectedStudentRoute>
-                        <FormationsStudent />
-                  //  </ProtectedStudentRoute>
-                } />
-                <Route path="/student/formations/:id" element={
-                 //   <ProtectedStudentRoute>
-                        <FormationDetailStudent />
-                 //   </ProtectedStudentRoute>
-                } />
-                <Route path="/student/documents" element={
-                 //   <ProtectedStudentRoute>
-                        <DocumentsStudent />
-                 //   </ProtectedStudentRoute>
-                } />
-            </Routes>
-        </Router>
+
+
+                    <Route path="/admin/reservations" element={
+                      //  <ProtectedAdminRoute>
+                            <ReservationsAdmin />
+                       // </ProtectedAdminRoute>
+                    } />
+                    <Route path="/admin/users" element={
+                     //   <ProtectedAdminRoute>
+                            <UsersAdmin />
+                     //   </ProtectedAdminRoute>
+                    } />
+                    <Route path="/admin/users/students" element={<StudentsAdmin />} />
+                    <Route path="/admin/users/instructors" element={<InstructorsAdmin />} />
+                    <Route path="/admin/users/admins" element={<AdminsAdmin />} />
+
+                    {/* Routes de planning */}
+                    <Route path="/admin/planning" element={
+                     //   <ProtectedAdminRoute>
+                            <PlanningCalendar />
+                     //   </ProtectedAdminRoute>
+                    } />
+                    <Route path="/student/planning" element={
+                     //   <ProtectedStudentRoute>
+                            <PlanningCalendar />
+                     //   </ProtectedStudentRoute>
+                    } />
+
+                    {/* Routes étudiant protégées */}
+                    <Route path="/student" element={
+                     //   <ProtectedStudentRoute>
+                            <DashboardStudent />
+                     //   </ProtectedStudentRoute>
+                    } />
+                    <Route path="/student/formations" element={
+                      //  <ProtectedStudentRoute>
+                            <FormationsStudent />
+                      //  </ProtectedStudentRoute>
+                    } />
+                    <Route path="/student/formations/:id" element={
+                     //   <ProtectedStudentRoute>
+                            <FormationDetailStudent />
+                     //   </ProtectedStudentRoute>
+                    } />
+                    <Route path="/student/documents" element={
+                     //   <ProtectedStudentRoute>
+                            <DocumentsStudent />
+                     //   </ProtectedStudentRoute>
+                    } />
+                </Routes>
+            </Router>
+        </NotificationProvider>
     );
 };
 

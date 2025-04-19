@@ -31,7 +31,7 @@ const StudentHeader: React.FC = () => {
           <Link to="/student" className="text-gray-700 hover:text-blue-700">Tableau de bord</Link>
           <Link to="/student/formations" className="text-gray-700 hover:text-blue-700">Mes formations</Link>
           <Link to="/student/documents" className="text-gray-700 hover:text-blue-700">Documents</Link>
-          <Link to="/student/planning" className="text-gray-700 hover:text-blue-700">Planning</Link>
+          {/*<Link to="/student/planning" className="text-gray-700 hover:text-blue-700">Planning</Link>*/}
           <Link to="/student/payments" className="text-gray-700 hover:text-blue-700">Paiements</Link>
         </div>
         
