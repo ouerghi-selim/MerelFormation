@@ -199,4 +199,18 @@ class FormationRepository extends ServiceEntityRepository
                 ->getSingleScalarResult(),
         ];
     }
+    /**
+     * Count active formations
+     *
+     * @return int
+     */
+    public function countActiveFormations(): int
+    {
+        return $this->createQueryBuilder('f')
+            ->select('COUNT(f.id)')
+            ->andWhere('f.isActive = :active')
+            ->setParameter('active', true)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

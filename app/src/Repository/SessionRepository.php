@@ -217,4 +217,22 @@ class SessionRepository extends ServiceEntityRepository
 
         return ($session->getMaxParticipants() - $reservationsCount) / $session->getMaxParticipants() * 100;
     }
+
+    /**
+     * Count upcoming sessions
+     *
+     * @return int
+     */
+    public function countUpcomingSessions(): int
+    {
+        return $this->createQueryBuilder('s')
+            ->select('COUNT(s.id)')
+            ->andWhere('s.startDate > :now')
+            ->andWhere('s.status = :status')
+            ->setParameter('now', new \DateTimeImmutable())
+            ->setParameter('status', 'scheduled')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
 }

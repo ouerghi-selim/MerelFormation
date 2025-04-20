@@ -44,18 +44,20 @@ function DataTable<T>({
     };
 
     // Filter logic
+    const safeData = Array.isArray(data) ? data : [];
     const filteredData = searchTerm && searchFields
-        ? data.filter(row =>
+        ? safeData.filter(row =>
             searchFields.some(field => {
                 const value = row[field];
                 return value && String(value).toLowerCase().includes(searchTerm.toLowerCase());
             })
         )
-        : data;
+        : safeData;
 
     // Sort data
-    const sortedData = sortField
-        ? [...filteredData].sort((a, b) => {
+    const sortedData = Array.isArray(filteredData)
+        ? (sortField
+            ? [...filteredData].sort((a, b) => {
             const aValue = a[sortField];
             const bValue = b[sortField];
 
@@ -63,8 +65,9 @@ function DataTable<T>({
 
             const comparison = aValue < bValue ? -1 : 1;
             return sortDirection === 'asc' ? comparison : -comparison;
-        })
-        : filteredData;
+            })
+            : filteredData)
+        : [];
 
     return (
         <div className="bg-white rounded-lg shadow overflow-hidden">

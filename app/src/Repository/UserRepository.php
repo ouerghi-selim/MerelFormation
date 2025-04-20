@@ -133,4 +133,47 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
         return $qb->getQuery()->getResult();
     }
+
+    /**
+     * Count the number of active students
+     *
+     * @return int
+     */
+    public function countActiveStudents(): int
+    {
+        // Solution 1: Utiliser LIKE pour rechercher le rôle dans le JSON
+        return $this->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->andWhere('u.isActive = :active')
+            ->andWhere('u.roles LIKE :role')
+            ->setParameter('active', true)
+            ->setParameter('role', '%"ROLE_STUDENT"%')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Find recent inscriptions (users who have recent reservations)
+     *
+     * @param int $limit
+     * @return array
+     */
+    public function findRecentInscriptions(int $limit = 5): array
+    {
+        // Modifier aussi ici pour éviter JSON_CONTAINS
+        return $this->createQueryBuilder('u')
+            ->leftJoin('u.reservations', 'r')
+            ->leftJoin('r.session', 's')
+            ->leftJoin('s.formation', 'f')
+            ->addSelect('r', 's', 'f')
+            ->andWhere('r.id IS NOT NULL')
+            ->andWhere('r.status != :cancelledStatus')
+            ->andWhere('u.roles LIKE :role')  // Utiliser LIKE au lieu de JSON_CONTAINS
+            ->setParameter('cancelledStatus', 'cancelled')
+            ->setParameter('role', '%"ROLE_STUDENT"%')
+            ->orderBy('r.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 }

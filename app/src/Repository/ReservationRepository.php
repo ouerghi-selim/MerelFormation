@@ -213,4 +213,38 @@ class ReservationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Count pending reservations
+     *
+     * @return int
+     */
+    public function countPendingReservations(): int
+    {
+        return $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->andWhere('r.status = :status')
+            ->setParameter('status', 'pending')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Find recent reservations
+     *
+     * @param int $limit
+     * @return array
+     */
+    public function findRecentReservations(int $limit = 5): array
+    {
+        return $this->createQueryBuilder('r')
+            ->leftJoin('r.user', 'u')
+            ->leftJoin('r.session', 's')
+            ->leftJoin('s.formation', 'f')
+            ->addSelect('u', 's', 'f')
+            ->orderBy('r.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 }
