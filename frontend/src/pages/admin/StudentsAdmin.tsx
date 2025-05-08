@@ -1,11 +1,18 @@
-// StudentsAdmin.tsx
-import React, { useState, useEffect } from 'react';
+// src/pages/admin/StudentsAdmin.tsx
+import React, { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, Edit, Trash2, ChevronDown, UserPlus, GraduationCap } from 'lucide-react';
+import { UserPlus, Edit, Trash2, Eye, GraduationCap, Check, X } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
-// @ts-ignore
-import axios from 'axios';
+import DataTable from '../../components/common/DataTable';
+import Modal from '../../components/common/Modal';
+import Button from '../../components/common/Button';
+import Alert from '../../components/common/Alert';
+import { useNotification } from '../../contexts/NotificationContext';
+import useDataFetching from '../../hooks/useDataFetching';
+import { adminUsersApi } from '../../services/api';
+import { useLocation } from 'react-router-dom';
+
 
 interface User {
     id: number;
@@ -18,280 +25,384 @@ interface User {
     phone?: string;
 }
 
+interface Formation {
+    id: number;
+    title: string;
+    type: string;
+    status: string;
+    startDate: string;
+    endDate: string;
+}
+
 const StudentsAdmin: React.FC = () => {
-    const [students, setStudents] = useState<User[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
+    const { addToast } = useNotification();
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
+    const [userFormations, setUserFormations] = useState<Formation[]>([]);
+    const [loadingFormations, setLoadingFormations] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
+    const [processing, setProcessing] = useState(false);
+    const [studentToEdit, setStudentToEdit] = useState<User | null>(null);
 
+    // Nouvel étudiant form state
+    const [newStudent, setNewStudent] = useState<Omit<User, 'id'>>({
+        firstName: '',
+        lastName: '',
+        email: '',
+        role: 'ROLE_USER',
+        isActive: true,
+        lastLogin: null,
+        phone: ''
+    });
+    const fetchStudents = useCallback(() => {
+        return adminUsersApi.getAll('role=ROLE_USER')
+            .then(response => response.data);
+    }, []); // tableau vide = fonction stable
+    // Utiliser le hook personnalisé pour charger les données
+    const {
+        data: students = [],
+        loading,
+        error,
+        setData: setStudents,
+        setError,
+        refetch
+    } = useDataFetching<User[]>({
+        fetchFn: fetchStudents
+    });
+
+    const location = useLocation();
     useEffect(() => {
-        const fetchStudents = async () => {
-            try {
-                setLoading(true);
+        // Vérifie si le paramètre showAddModal est présent dans l'URL
+        const params = new URLSearchParams(location.search);
+        if (params.get('showAddModal') === 'true') {
+            setShowAddModal(true);
+        }
+    }, [location]);
+    // Validation du formulaire (ajout et édition)
+    const validateStudentForm = (student: Omit<User, 'id'> | User) => {
+        const errors: {[key: string]: string} = {};
 
-                // Simuler des données pour le développement
-                setTimeout(() => {
-                    const mockUsers: User[] = [
-                        {
-                            id: 2,
-                            firstName: 'Marie',
-                            lastName: 'Lambert',
-                            email: 'marie.lambert@example.com',
-                            role: 'ROLE_STUDENT',
-                            isActive: true,
-                            lastLogin: '19/03/2025 10:15',
-                            phone: '06 12 34 56 78'
-                        },
-                        {
-                            id: 3,
-                            firstName: 'Paul',
-                            lastName: 'Martin',
-                            email: 'paul.martin@example.com',
-                            role: 'ROLE_STUDENT',
-                            isActive: true,
-                            lastLogin: '18/03/2025 16:45',
-                            phone: '06 23 45 67 89'
-                        },
-                        {
-                            id: 4,
-                            firstName: 'Sophie',
-                            lastName: 'Klein',
-                            email: 'sophie.klein@example.com',
-                            role: 'ROLE_STUDENT',
-                            isActive: false,
-                            lastLogin: '15/02/2025 09:20',
-                            phone: '06 34 56 78 90'
-                        }
-                    ];
+        if (!student.firstName.trim())
+            errors.firstName = 'Le prénom est requis';
+        if (!student.lastName.trim())
+            errors.lastName = 'Le nom est requis';
+        if (!student.email.trim())
+            errors.email = 'L\'email est requis';
+        else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(student.email))
+            errors.email = 'Format d\'email invalide';
 
-                    // Filtrer les utilisateurs en fonction des critères de recherche
-                    let filteredStudents = mockUsers;
-
-                    if (searchTerm) {
-                        const search = searchTerm.toLowerCase();
-                        filteredStudents = filteredStudents.filter(user =>
-                            user.firstName.toLowerCase().includes(search) ||
-                            user.lastName.toLowerCase().includes(search) ||
-                            user.email.toLowerCase().includes(search)
-                        );
-                    }
-
-                    if (statusFilter) {
-                        filteredStudents = filteredStudents.filter(user =>
-                            statusFilter === 'active' ? user.isActive : !user.isActive
-                        );
-                    }
-
-                    setStudents(filteredStudents);
-                    setLoading(false);
-                }, 1000);
-
-                // Code pour la production
-                /*
-                const response = await axios.get('/api/admin/users', {
-                  params: {
-                    role: 'ROLE_STUDENT',
-                    search: searchTerm || undefined,
-                    status: statusFilter || undefined
-                  }
-                });
-                setStudents(response.data);
-                setLoading(false);
-                */
-            } catch (err) {
-                console.error('Error fetching students:', err);
-                setError('Erreur lors du chargement des élèves');
-                setLoading(false);
-            }
-        };
-
-        fetchStudents();
-    }, [searchTerm, statusFilter]);
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
 
     const confirmDelete = (user: User) => {
         setUserToDelete(user);
         setShowDeleteModal(true);
     };
 
-    const viewDetails = (user: User) => {
+    const viewDetails = async (user: User) => {
         setSelectedStudent(user);
         setShowDetailsModal(true);
+
+        // Charger les formations de l'étudiant
+        try {
+            setLoadingFormations(true);
+            const response = await adminUsersApi.getSessions(user.id);
+            setUserFormations(response.data);
+        } catch (err) {
+            console.error('Error fetching user formations:', err);
+            addToast('Erreur lors du chargement des formations de l\'élève', 'error');
+        } finally {
+            setLoadingFormations(false);
+        }
+    };
+
+    const openEditModal = (student: User) => {
+        setStudentToEdit({...student});
+        setFormErrors({});
+        setShowEditModal(true);
+    };
+
+    const handleAddStudent = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!validateStudentForm(newStudent)) {
+            return;
+        }
+
+        try {
+            setProcessing(true);
+            const response = await adminUsersApi.create(newStudent);
+
+            // Ajouter le nouvel étudiant à la liste
+            setStudents([...students, response.data]);
+            addToast('Élève ajouté avec succès', 'success');
+
+            // Réinitialiser le formulaire
+            setNewStudent({
+                firstName: '',
+                lastName: '',
+                email: '',
+                role: 'ROLE_USER',
+                isActive: true,
+                lastLogin: null,
+                phone: ''
+            });
+
+            setShowAddModal(false);
+        } catch (err) {
+            console.error('Error adding student:', err);
+            addToast('Erreur lors de l\'ajout de l\'élève', 'error');
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    const handleEditStudent = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!studentToEdit) return;
+
+        if (!validateStudentForm(studentToEdit)) {
+            return;
+        }
+
+        try {
+            setProcessing(true);
+            await adminUsersApi.update(studentToEdit.id, studentToEdit);
+
+            // Mettre à jour la liste
+            setStudents(students.map(s => s.id === studentToEdit.id ? studentToEdit : s));
+            addToast('Élève mis à jour avec succès', 'success');
+
+            setShowEditModal(false);
+        } catch (err) {
+            console.error('Error updating student:', err);
+            addToast('Erreur lors de la mise à jour de l\'élève', 'error');
+        } finally {
+            setProcessing(false);
+        }
     };
 
     const handleDelete = async () => {
         if (!userToDelete) return;
 
         try {
-            // Simuler la suppression pour le développement
-            setStudents(students.filter(u => u.id !== userToDelete.id));
-            setShowDeleteModal(false);
-            setUserToDelete(null);
+            setProcessing(true);
+            await adminUsersApi.delete(userToDelete.id);
 
-            // Code pour la production
-            /*
-            await axios.delete(`/api/admin/users/${userToDelete.id}`);
-            setStudents(students.filter(u => u.id !== userToDelete.id));
+            // Mettre à jour la liste
+            setStudents(students.filter(s => s.id !== userToDelete.id));
+            addToast('Élève supprimé avec succès', 'success');
+
             setShowDeleteModal(false);
             setUserToDelete(null);
-            */
         } catch (err) {
             console.error('Error deleting student:', err);
-            setError('Erreur lors de la suppression de l\'élève');
+            addToast('Erreur lors de la suppression de l\'élève', 'error');
+        } finally {
+            setProcessing(false);
         }
     };
+
+    // Configuration des colonnes pour le DataTable
+    const columns = [
+        {
+            title: 'Nom',
+            field: (row: User) => (
+                <div className="flex items-center">
+                    <GraduationCap className="h-5 w-5 text-blue-600 mr-3" />
+                    <div className="text-sm font-medium text-gray-900">
+                        {row.firstName} {row.lastName}
+                    </div>
+                </div>
+            ),
+            sortable: true
+        },
+        {
+            title: 'Email',
+            field: 'email' as keyof User,
+            sortable: true
+        },
+        {
+            title: 'Téléphone',
+            field: (row: User) => row.phone || '-',
+            sortable: false
+        },
+        {
+            title: 'Statut',
+            field: (row: User) => (
+                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    row.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                    {row.isActive ? 'Actif' : 'Inactif'}
+                </span>
+            ),
+            sortable: false
+        },
+        {
+            title: 'Dernière connexion',
+            field: (row: User) => row.lastLogin || 'Jamais',
+            sortable: true
+        }
+    ];
+
+    // Rendu des actions pour chaque ligne
+    const renderActions = (student: User) => (
+        <div className="flex justify-end space-x-2">
+            <button
+                onClick={() => viewDetails(student)}
+                className="text-blue-600 hover:text-blue-900"
+                title="Voir détails"
+            >
+                <Eye className="h-5 w-5" />
+            </button>
+            <button
+                onClick={() => openEditModal(student)}
+                className="text-indigo-600 hover:text-indigo-900"
+                title="Modifier"
+            >
+                <Edit className="h-5 w-5" />
+            </button>
+            <button
+                onClick={() => confirmDelete(student)}
+                className="text-red-600 hover:text-red-900"
+                title="Supprimer"
+            >
+                <Trash2 className="h-5 w-5" />
+            </button>
+        </div>
+    );
+
+    // Rendu du formulaire d'étudiant (utilisé dans les modals d'ajout et d'édition)
+    const renderStudentForm = (student: Omit<User, 'id'> | User, setStudent: React.Dispatch<React.SetStateAction<any>>) => (
+        <div className="space-y-4">
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Prénom*
+                </label>
+                <input
+                    type="text"
+                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                        formErrors.firstName ? 'border-red-500' : ''
+                    }`}
+                    value={student.firstName}
+                    onChange={(e) => setStudent({...student, firstName: e.target.value})}
+                />
+                {formErrors.firstName && (
+                    <p className="mt-1 text-sm text-red-500">{formErrors.firstName}</p>
+                )}
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nom*
+                </label>
+                <input
+                    type="text"
+                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                        formErrors.lastName ? 'border-red-500' : ''
+                    }`}
+                    value={student.lastName}
+                    onChange={(e) => setStudent({...student, lastName: e.target.value})}
+                />
+                {formErrors.lastName && (
+                    <p className="mt-1 text-sm text-red-500">{formErrors.lastName}</p>
+                )}
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email*
+                </label>
+                <input
+                    type="email"
+                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                        formErrors.email ? 'border-red-500' : ''
+                    }`}
+                    value={student.email}
+                    onChange={(e) => setStudent({...student, email: e.target.value})}
+                />
+                {formErrors.email && (
+                    <p className="mt-1 text-sm text-red-500">{formErrors.email}</p>
+                )}
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Téléphone
+                </label>
+                <input
+                    type="tel"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    value={student.phone || ''}
+                    onChange={(e) => setStudent({...student, phone: e.target.value})}
+                    placeholder="06 12 34 56 78"
+                />
+            </div>
+
+            <div className="flex items-center mt-2">
+                <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    checked={student.isActive}
+                    onChange={(e) => setStudent({...student, isActive: e.target.checked})}
+                />
+                <span className="ml-2 text-sm text-gray-700">
+                    Compte actif
+                </span>
+            </div>
+        </div>
+    );
+
+    // Calcul des statistiques
+    const activeStudents = students ? students.filter(s => s.isActive).length : 0;
+    const inactiveStudents = students ? students.filter(s => !s.isActive).length : 0;
 
     return (
         <div className="flex min-h-screen bg-gray-50">
             <AdminSidebar />
             <div className="flex-1">
-                <AdminHeader title="Gestion des élèves" />
+                <AdminHeader
+                    title="Gestion des élèves"
+                    breadcrumbItems={[
+                        { label: 'Admin', path: '/admin' },
+                        { label: 'Utilisateurs', path: '/admin/users' },
+                        { label: 'Élèves' }
+                    ]}
+                />
 
                 <div className="p-6">
                     {error && (
-                        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
-                            <p>{error}</p>
-                        </div>
+                        <Alert
+                            type="error"
+                            message={error}
+                            onClose={() => setError(null)}
+                        />
                     )}
 
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                        <Link
-                            to="/admin/students/new"
-                            className="bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-800 transition-colors"
+                    <div className="flex justify-between items-center mb-6">
+                        <Button
+                            onClick={() => setShowAddModal(true)}
+                            icon={<UserPlus className="h-5 w-5" />}
                         >
-                            <UserPlus className="h-5 w-5 mr-2" />
                             Nouvel élève
-                        </Link>
-
-                        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-                            <div className="relative w-full md:w-64">
-                                <Search className="absolute left-3 top-3 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Rechercher un élève..."
-                                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
-
-                            <div className="relative w-full md:w-48">
-                                <Filter className="absolute left-3 top-3 text-gray-400" />
-                                <select
-                                    className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg appearance-none bg-white w-full"
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                >
-                                    <option value="">Tous les statuts</option>
-                                    <option value="active">Actifs</option>
-                                    <option value="inactive">Inactifs</option>
-                                </select>
-                                <ChevronDown className="absolute right-3 top-3 text-gray-400" />
-                            </div>
-                        </div>
+                        </Button>
                     </div>
 
-                    {loading ? (
-                        <div className="bg-white p-8 rounded-lg shadow text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900 mx-auto"></div>
-                            <p className="mt-4 text-gray-700">Chargement des élèves...</p>
-                        </div>
-                    ) : students.length === 0 ? (
-                        <div className="bg-white p-8 rounded-lg shadow text-center">
-                            <p className="text-gray-700">Aucun élève trouvé</p>
-                        </div>
-                    ) : (
-                        <div className="bg-white rounded-lg shadow overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Nom
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Email
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Téléphone
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Statut
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Dernière connexion
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                    {students.map((student) => (
-                                        <tr key={student.id}>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <GraduationCap className="h-5 w-5 text-blue-600 mr-3" />
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {student.firstName} {student.lastName}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900">{student.email}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900">{student.phone || '-'}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              student.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {student.isActive ? 'Actif' : 'Inactif'}
-                          </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-500">{student.lastLogin || 'Jamais'}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <div className="flex justify-end space-x-2">
-                                                    <button
-                                                        onClick={() => viewDetails(student)}
-                                                        className="text-blue-600 hover:text-blue-900"
-                                                        title="Voir détails"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                        </svg>
-                                                    </button>
-                                                    <Link
-                                                        to={`/admin/students/${student.id}/edit`}
-                                                        className="text-indigo-600 hover:text-indigo-900"
-                                                        title="Modifier"
-                                                    >
-                                                        <Edit className="h-5 w-5" />
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => confirmDelete(student)}
-                                                        className="text-red-600 hover:text-red-900"
-                                                        title="Supprimer"
-                                                    >
-                                                        <Trash2 className="h-5 w-5" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
+                    <DataTable<User>
+                        data={students || []}
+                        columns={columns}
+                        keyField="id"
+                        loading={loading}
+                        actions={renderActions}
+                        searchFields={['firstName', 'lastName', 'email']}
+                        emptyMessage="Aucun élève trouvé"
+                    />
 
                     {/* Statistiques des élèves */}
                     <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -310,13 +421,11 @@ const StudentsAdmin: React.FC = () => {
                         <div className="bg-white rounded-lg shadow-md p-6">
                             <div className="flex items-center">
                                 <div className="bg-green-100 p-3 rounded-full">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
+                                    <Check className="h-6 w-6 text-green-600" />
                                 </div>
                                 <div className="ml-4">
                                     <h3 className="text-gray-500 text-sm">Élèves actifs</h3>
-                                    <p className="text-2xl font-semibold">{students.filter(s => s.isActive).length}</p>
+                                    <p className="text-2xl font-semibold">{activeStudents}</p>
                                 </div>
                             </div>
                         </div>
@@ -324,13 +433,11 @@ const StudentsAdmin: React.FC = () => {
                         <div className="bg-white rounded-lg shadow-md p-6">
                             <div className="flex items-center">
                                 <div className="bg-red-100 p-3 rounded-full">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
+                                    <X className="h-6 w-6 text-red-600" />
                                 </div>
                                 <div className="ml-4">
                                     <h3 className="text-gray-500 text-sm">Élèves inactifs</h3>
-                                    <p className="text-2xl font-semibold">{students.filter(s => !s.isActive).length}</p>
+                                    <p className="text-2xl font-semibold">{inactiveStudents}</p>
                                 </div>
                             </div>
                         </div>
@@ -338,49 +445,122 @@ const StudentsAdmin: React.FC = () => {
                 </div>
             </div>
 
-            {/* Modal de confirmation de suppression */}
-            {showDeleteModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-                        <h3 className="text-lg font-bold mb-4">Confirmer la suppression</h3>
-                        <p className="mb-6">
-                            Êtes-vous sûr de vouloir supprimer l'élève "{userToDelete?.firstName} {userToDelete?.lastName}" ?
-                            Cette action est irréversible.
-                        </p>
-                        <div className="flex justify-end space-x-3">
-                            <button
-                                onClick={() => setShowDeleteModal(false)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
-                            >
-                                Annuler
-                            </button>
-                            <button
-                                onClick={handleDelete}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                            >
-                                Supprimer
-                            </button>
-                        </div>
+            {/* Modal d'ajout d'élève */}
+            <Modal
+                isOpen={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                title="Ajouter un élève"
+                footer={
+                    <div className="flex justify-end space-x-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowAddModal(false)}
+                        >
+                            Annuler
+                        </Button>
+                        <Button
+                            type="submit"
+                            loading={processing}
+                            onClick={handleAddStudent}
+                        >
+                            Ajouter
+                        </Button>
                     </div>
-                </div>
-            )}
+                }
+            >
+                <form onSubmit={handleAddStudent}>
+                    {renderStudentForm(newStudent, setNewStudent)}
+                </form>
+            </Modal>
+
+            {/* Modal d'édition d'élève */}
+            <Modal
+                isOpen={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                title="Modifier l'élève"
+                footer={
+                    <div className="flex justify-end space-x-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowEditModal(false)}
+                        >
+                            Annuler
+                        </Button>
+                        <Button
+                            type="submit"
+                            loading={processing}
+                            onClick={handleEditStudent}
+                        >
+                            Enregistrer
+                        </Button>
+                    </div>
+                }
+            >
+                {studentToEdit && (
+                    <form onSubmit={handleEditStudent}>
+                        {renderStudentForm(studentToEdit, setStudentToEdit)}
+                    </form>
+                )}
+            </Modal>
+
+            {/* Modal de confirmation de suppression */}
+            <Modal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                title="Confirmer la suppression"
+                footer={
+                    <div className="flex justify-end space-x-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowDeleteModal(false)}
+                        >
+                            Annuler
+                        </Button>
+                        <Button
+                            variant="danger"
+                            loading={processing}
+                            onClick={handleDelete}
+                        >
+                            Supprimer
+                        </Button>
+                    </div>
+                }
+            >
+                <p>
+                    Êtes-vous sûr de vouloir supprimer l'élève "{userToDelete?.firstName} {userToDelete?.lastName}" ?
+                    Cette action est irréversible.
+                </p>
+            </Modal>
 
             {/* Modal de détails de l'élève */}
-            {showDetailsModal && selectedStudent && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-lg font-bold">Détails de l'élève</h3>
-                            <button
-                                onClick={() => setShowDetailsModal(false)}
-                                className="text-gray-500 hover:text-gray-700"
+            <Modal
+                isOpen={showDetailsModal}
+                onClose={() => setShowDetailsModal(false)}
+                title="Détails de l'élève"
+                maxWidth="max-w-2xl"
+                footer={
+                    <div className="flex justify-end space-x-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowDetailsModal(false)}
+                        >
+                            Fermer
+                        </Button>
+                        {selectedStudent && (
+                            <Button
+                                onClick={() => {
+                                    setShowDetailsModal(false);
+                                    openEditModal(selectedStudent);
+                                }}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
+                                Modifier
+                            </Button>
+                        )}
+                    </div>
+                }
+            >
+                {selectedStudent && (
+                    <>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <h4 className="text-sm font-medium text-gray-500 mb-1">Nom complet</h4>
@@ -402,8 +582,8 @@ const StudentsAdmin: React.FC = () => {
                                 <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                                     selectedStudent.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                 }`}>
-                  {selectedStudent.isActive ? 'Actif' : 'Inactif'}
-                </span>
+                                    {selectedStudent.isActive ? 'Actif' : 'Inactif'}
+                                </span>
                             </div>
 
                             <div>
@@ -414,27 +594,67 @@ const StudentsAdmin: React.FC = () => {
 
                         <div className="border-t border-gray-200 mt-6 pt-6">
                             <h4 className="font-medium mb-4">Formations inscrites</h4>
-                            <p className="text-gray-500 italic">Aucune formation trouvée</p>
-                            {/* Ici vous pourriez ajouter la liste des formations auxquelles l'élève est inscrit */}
+                            {loadingFormations ? (
+                                <div className="flex justify-center">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-900"></div>
+                                    <span className="ml-2">Chargement...</span>
+                                </div>
+                            ) : userFormations && userFormations.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Formation
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Type
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Statut
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Dates
+                                            </th>
+                                        </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                        {userFormations.map((formation, index) => (
+                                            <tr key={index}>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                    {formation.title}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {formation.type}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                        formation.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                            formation.status === 'ongoing' ? 'bg-blue-100 text-blue-800' :
+                                                                'bg-gray-100 text-gray-800'
+                                                    }`}>
+                                                        {formation.status === 'completed' ? 'Terminée' :
+                                                            formation.status === 'ongoing' ? 'En cours' :
+                                                                formation.status === 'scheduled' ? 'Programmée' : formation.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {formation.startDate && formation.endDate
+                                                        ? `${new Date(formation.startDate).toLocaleDateString('fr-FR')} - ${new Date(formation.endDate).toLocaleDateString('fr-FR')}`
+                                                        : 'Dates non définies'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <p className="text-gray-500 italic">Aucune formation trouvée</p>
+                            )}
                         </div>
-
-                        <div className="mt-6 flex justify-end space-x-3">
-                            <button
-                                onClick={() => setShowDetailsModal(false)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
-                            >
-                                Fermer
-                            </button>
-                            <Link
-                                to={`/admin/students/${selectedStudent.id}/edit`}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                            >
-                                Modifier
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            )}
+                    </>
+                )}
+            </Modal>
         </div>
     );
 };

@@ -91,21 +91,51 @@ export const authApi = {
 };
 
 export const adminSessionsApi = {
-    getAll: (queryParams = '') => axios.get(`/api/admin/sessions${queryParams ? '?' + queryParams : ''}`),
-    get: (id:number) => axios.get(`/api/admin/sessions/${id}`),
-    create: (sessionData:any) => axios.post('/api/admin/sessions', sessionData),
-    update: (id:number, sessionData:any) => axios.put(`/api/admin/sessions/${id}`, sessionData),
-    delete: (id:number) => axios.delete(`/api/admin/sessions/${id}`)
+    getAll: (queryParams = '') => api.get(`/admin/sessions${queryParams ? '?' + queryParams : ''}`),
+    get: (id:number) => api.get(`/admin/sessions/${id}`),
+    create: (sessionData:any) => api.post('/admin/sessions', sessionData),
+    update: (id:number, sessionData:any) => api.put(`/admin/sessions/${id}`, sessionData),
+    delete: (id:number) => api.delete(`/admin/sessions/${id}`),
+    getInstructors: () => api.get('/admin/users?role=ROLE_INSTRUCTOR'),
+
 }
 
 // Dans votre fichier services/api.js ou services/api/adminVehiclesApi.js
 
 export const adminVehiclesApi = {
-    getAll: () => axios.get('/api/admin/vehicles'),
-    get: (id:number) => axios.get(`/api/admin/vehicles/${id}`),
-    create: (vehicleData:any) => axios.post('/api/admin/vehicles', vehicleData),
-    update: (id:number, vehicleData:any) => axios.put(`/api/admin/vehicles/${id}`, vehicleData),
-    delete: (id:number) => axios.delete(`/api/admin/vehicles/${id}`)
+    getAll: () => api.get('/admin/vehicles'),
+    get: (id:number) => api.get(`/admin/vehicles/${id}`),
+    create: (vehicleData:any) => api.post('/admin/vehicles', vehicleData),
+    update: (id:number, vehicleData:any) => api.put(`/admin/vehicles/${id}`, vehicleData),
+    delete: (id:number) => api.delete(`/admin/vehicles/${id}`)
 }
+
+export const adminUsersApi = {
+    getAll: (queryParams = '') => api.get(`/admin/users${queryParams ? '?' + queryParams : ''}`),
+    get: (id: number) => api.get(`/admin/users/${id}`),
+    create: (userData: any) => api.post('/admin/users', userData),
+    update: (id: number, userData: any) => api.put(`/admin/users/${id}`, userData),
+    delete: (id: number) => api.delete(`/admin/users/${id}`),
+    getFormations: (userId: number) => api.get(`/admin/users/${userId}/formations`),
+    getStudents: (queryParams = '') => api.get(`/admin/users/students${queryParams ? '?' + queryParams : ''}`),
+    getSessions: (userId: number) => api.get(`/admin/users/${userId}/sessions`),
+};
+
+export const adminPlanningApi = {
+    getEvents: (startDate: string, endDate: string) =>
+        api.get(`/admin/sessions?startDate=${startDate}&endDate=${endDate}`),
+    getEvent: (id: number) =>
+        api.get(`/admin/sessions/${id}`),
+    createEvent: (eventData: any) =>
+        api.post('/admin/sessions', eventData),
+    updateEvent: (id: number, eventData: any) =>
+        api.put(`/admin/sessions/${id}`, eventData),
+    deleteEvent: (id: number) =>
+        api.delete(`/admin/sessions/${id}`),
+    getInstructors: () =>
+        api.get('/admin/users?role=ROLE_INSTRUCTOR'),
+    getLocations: () =>
+        api.get('/admin/locations')
+};
 
 export default api;

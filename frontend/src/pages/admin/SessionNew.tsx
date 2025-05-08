@@ -1,8 +1,13 @@
+// src/pages/admin/SessionNew.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
+import Button from '../../components/common/Button';
+import Alert from '../../components/common/Alert';
+import { useNotification } from '../../contexts/NotificationContext';
+import useDataFetching from '../../hooks/useDataFetching';
 import { adminSessionsApi, adminFormationsApi } from '../../services/api';
 
 interface Formation {
@@ -12,11 +17,9 @@ interface Formation {
 
 const SessionNew: React.FC = () => {
     const navigate = useNavigate();
+    const { addToast } = useNotification();
     const [loading, setLoading] = useState(false);
-    const [loadingFormations, setLoadingFormations] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
-    const [formations, setFormations] = useState<Formation[]>([]);
 
     // Form state
     const [formationId, setFormationId] = useState('');
@@ -27,34 +30,47 @@ const SessionNew: React.FC = () => {
     const [status, setStatus] = useState('scheduled');
     const [notes, setNotes] = useState('');
 
+    const [instructorId, setInstructorId] = useState('');
+    const [instructors, setInstructors] = useState<Array<{id: number, firstName: string, lastName: string}>>([]);
+    const [loadingInstructors, setLoadingInstructors] = useState(true);
+
+
     // Form validation
     const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
 
-    // Charger les formations disponibles
+    const [formationsData, setFormationsData] = useState<Formation[]>([]);
+    const [loadingFormations, setLoadingFormations] = useState(true);
+
     useEffect(() => {
         const fetchFormations = async () => {
             try {
                 setLoadingFormations(true);
                 const response = await adminFormationsApi.getAll();
-                setFormations(response.data);
-                setLoadingFormations(false);
+                setFormationsData(response.data);
             } catch (err) {
                 console.error('Error fetching formations:', err);
-                setError('Erreur lors du chargement des formations');
+            } finally {
                 setLoadingFormations(false);
-
-                // Données de secours en cas d'erreur
-                const mockFormations: Formation[] = [
-                    { id: 1, title: 'Formation Initiale Taxi' },
-                    { id: 2, title: 'Formation Continue Taxi' },
-                    { id: 3, title: 'Formation Mobilité Taxi' }
-                ];
-
-                setFormations(mockFormations);
             }
         };
 
         fetchFormations();
+    }, []);
+
+    useEffect(() => {
+        const fetchInstructors = async () => {
+            try {
+                setLoadingInstructors(true);
+                const response = await adminFormationsApi.getInstructors();
+                setInstructors(response.data);
+            } catch (err) {
+                console.error('Error fetching instructors:', err);
+            } finally {
+                setLoadingInstructors(false);
+            }
+        };
+
+        fetchInstructors();
     }, []);
 
     const validateForm = () => {
@@ -76,6 +92,8 @@ const SessionNew: React.FC = () => {
         if (!location.trim()) errors.location = 'Le lieu est requis';
 
         if (!status) errors.status = 'Le statut est requis';
+        // if (!instructorId) errors.instructor = 'Le formateur est requis';
+
 
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
@@ -100,18 +118,21 @@ const SessionNew: React.FC = () => {
                 maxParticipants: parseInt(maxParticipants),
                 location,
                 status,
-                notes: notes.trim() || null
+                notes: notes.trim() || null,
+                instructor: instructorId ? { id: parseInt(instructorId) } : null
             };
 
             await adminSessionsApi.create(sessionData);
+            addToast('Session créée avec succès', 'success');
 
-            setSuccess('Session créée avec succès');
+            // Redirection après un court délai
             setTimeout(() => {
                 navigate('/admin/sessions');
             }, 1500);
         } catch (err) {
             console.error('Error creating session:', err);
             setError('Erreur lors de la création de la session');
+            addToast('Erreur lors de la création de la session', 'error');
             window.scrollTo(0, 0);
         } finally {
             setLoading(false);
@@ -124,10 +145,9 @@ const SessionNew: React.FC = () => {
         setFormationId(selectedFormationId);
 
         if (selectedFormationId && startDate) {
-            const selectedFormation = formations.find(f => f.id.toString() === selectedFormationId);
+            const selectedFormation = formationsDataData.find(f => f.id.toString() === selectedFormationId);
             if (selectedFormation) {
                 // Déterminer la durée en fonction du type de formation
-                // Ces durées sont fictives, à ajuster selon votre logique métier
                 let durationDays = 28; // Par défaut 4 semaines pour formation initiale
 
                 if (selectedFormation.title.toLowerCase().includes('continue')) {
@@ -152,7 +172,7 @@ const SessionNew: React.FC = () => {
 
         // Mettre à jour la date de fin automatiquement si une formation est sélectionnée
         if (formationId && newStartDate) {
-            const selectedFormation = formations.find(f => f.id.toString() === formationId);
+            const selectedFormation = formationsData.find(f => f.id.toString() === formationId);
             if (selectedFormation) {
                 let durationDays = 28;
 
@@ -175,29 +195,32 @@ const SessionNew: React.FC = () => {
         <div className="flex min-h-screen bg-gray-50">
             <AdminSidebar />
             <div className="flex-1">
-                <AdminHeader title="Création d'une nouvelle session" />
+                <AdminHeader
+                    title="Création d'une nouvelle session"
+                    breadcrumbItems={[
+                        { label: 'Admin', path: '/admin' },
+                        { label: 'Sessions', path: '/admin/sessions' },
+                        { label: 'Nouvelle session' }
+                    ]}
+                />
 
                 <div className="p-6">
                     {error && (
-                        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
-                            <p>{error}</p>
-                        </div>
-                    )}
-
-                    {success && (
-                        <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6">
-                            <p>{success}</p>
-                        </div>
+                        <Alert
+                            type="error"
+                            message={error}
+                            onClose={() => setError(null)}
+                        />
                     )}
 
                     <div className="flex mb-6">
-                        <button
+                        <Button
+                            variant="outline"
                             onClick={() => navigate('/admin/sessions')}
-                            className="flex items-center text-blue-700 hover:text-blue-900"
+                            icon={<ArrowLeft className="h-4 w-4" />}
                         >
-                            <ArrowLeft className="h-4 w-4 mr-1" />
                             Retour à la liste
-                        </button>
+                        </Button>
                     </div>
 
                     <div className="bg-white shadow rounded-lg p-6">
@@ -216,7 +239,7 @@ const SessionNew: React.FC = () => {
                                         disabled={loadingFormations}
                                     >
                                         <option value="">Sélectionner une formation</option>
-                                        {formations.map(formation => (
+                                        {formationsData.map(formation => (
                                             <option key={formation.id} value={formation.id}>
                                                 {formation.title}
                                             </option>
@@ -277,7 +300,29 @@ const SessionNew: React.FC = () => {
                                         <p className="mt-1 text-sm text-red-500">{formErrors.location}</p>
                                     )}
                                 </div>
-
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Formateur
+                                    </label>
+                                    <select
+                                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                                            formErrors.instructor ? 'border-red-500' : ''
+                                        }`}
+                                        value={instructorId}
+                                        onChange={(e) => setInstructorId(e.target.value)}
+                                        disabled={loadingInstructors}
+                                    >
+                                        <option value="">Sélectionner un formateur</option>
+                                        {instructors.map(instructor => (
+                                            <option key={instructor.id} value={instructor.id}>
+                                                {instructor.firstName} {instructor.lastName}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {formErrors.instructor && (
+                                        <p className="mt-1 text-sm text-red-500">{formErrors.instructor}</p>
+                                    )}
+                                </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Nombre maximum de participants*
@@ -332,25 +377,20 @@ const SessionNew: React.FC = () => {
                             </div>
 
                             <div className="mt-8 border-t border-gray-200 pt-6 flex justify-end">
-                                <button
-                                    type="button"
+                                <Button
+                                    variant="outline"
                                     onClick={() => navigate('/admin/sessions')}
-                                    className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mr-3"
+                                    className="mr-3"
                                 >
                                     Annuler
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="submit"
-                                    disabled={loading}
-                                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    loading={loading}
+                                    icon={!loading && <Save className="h-5 w-5"/>}
                                 >
-                                    {loading ? (
-                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                    ) : (
-                                        <Save className="h-5 w-5 mr-2" />
-                                    )}
                                     Enregistrer
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     </div>

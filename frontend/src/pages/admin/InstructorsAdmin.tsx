@@ -1,11 +1,17 @@
-// InstructorsAdmin.tsx
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Filter, Edit, Trash2, ChevronDown, UserPlus, BookOpen } from 'lucide-react';
+// src/pages/admin/InstructorsAdmin.tsx
+import React, { useState, useCallback, useEffect } from 'react';
+import { UserPlus, Edit, Trash2, Eye, Award, Calendar, Check, X } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
-// @ts-ignore
-import axios from 'axios';
+import DataTable from '../../components/common/DataTable';
+import Button from '../../components/common/Button';
+import Modal from '../../components/common/Modal';
+import Alert from '../../components/common/Alert';
+import { useNotification } from '../../contexts/NotificationContext';
+import useDataFetching from '../../hooks/useDataFetching';
+import { adminUsersApi } from '../../services/api';
+import { useLocation } from 'react-router-dom';
+
 
 interface User {
     id: number;
@@ -16,282 +22,429 @@ interface User {
     isActive: boolean;
     lastLogin: string | null;
     phone?: string;
-    speciality?: string;
+    specialization?: string;
+}
+
+interface Session {
+    id: number;
+    title: string;
+    startDate: string;
+    endDate: string;
+    location: string;
+    type: string;
 }
 
 const InstructorsAdmin: React.FC = () => {
-    const [instructors, setInstructors] = useState<User[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
+    const { addToast } = useNotification();
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [selectedInstructor, setSelectedInstructor] = useState<User | null>(null);
+    const [instructorSessions, setInstructorSessions] = useState<Session[]>([]);
+    const [loadingSessions, setLoadingSessions] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
+    const [processing, setProcessing] = useState(false);
+    const [instructorToEdit, setInstructorToEdit] = useState<User | null>(null);
 
+    // Nouvel instructeur form state
+    const [newInstructor, setNewInstructor] = useState<Omit<User, 'id'>>({
+        firstName: '',
+        lastName: '',
+        email: '',
+        role: 'ROLE_INSTRUCTOR',
+        isActive: true,
+        lastLogin: null,
+        phone: '',
+        specialization: ''
+    });
+
+    // Spécialisations disponibles
+    const specializations = [
+        'Formation initiale',
+        'Formation continue',
+        'Mobilité',
+        'Préparation à l\'examen',
+        'Conduite'
+    ];
+    const fetchInstructors = useCallback(() => {
+        return adminUsersApi.getAll('role=ROLE_INSTRUCTOR')
+            .then(response => response.data);
+    }, []); // tableau vide pour n'exécuter qu'une seule fois
+    // Utiliser le hook personnalisé pour charger les données
+    const {
+        data: instructors = [],
+        loading,
+        error,
+        setData: setInstructors,
+        setError,
+        refetch
+    } = useDataFetching<User[]>({
+        fetchFn: fetchInstructors
+    });
+
+    const location = useLocation();
+
+    // Effet pour ouvrir le modal d'ajout automatiquement
     useEffect(() => {
-        const fetchInstructors = async () => {
-            try {
-                setLoading(true);
+        // Vérifie si le paramètre showAddModal est présent dans l'URL
+        const params = new URLSearchParams(location.search);
+        if (params.get('showAddModal') === 'true') {
+            setShowAddModal(true);
+        }
+    }, [location]);
+    // Validation du formulaire (ajout et édition)
+    const validateInstructorForm = (instructor: Omit<User, 'id'> | User) => {
+        const errors: {[key: string]: string} = {};
 
-                // Simuler des données pour le développement
-                setTimeout(() => {
-                    const mockInstructors: User[] = [
-                        {
-                            id: 5,
-                            firstName: 'Thomas',
-                            lastName: 'Blanc',
-                            email: 'thomas.blanc@example.com',
-                            role: 'ROLE_INSTRUCTOR',
-                            isActive: true,
-                            lastLogin: '20/03/2025 08:30',
-                            phone: '06 45 67 89 01',
-                            speciality: 'Formation Taxi'
-                        },
-                        {
-                            id: 6,
-                            firstName: 'Laura',
-                            lastName: 'Durand',
-                            email: 'laura.durand@example.com',
-                            role: 'ROLE_INSTRUCTOR',
-                            isActive: true,
-                            lastLogin: '19/03/2025 14:20',
-                            phone: '06 56 78 90 12',
-                            speciality: 'Formation VTC'
-                        }
-                    ];
+        if (!instructor.firstName.trim())
+            errors.firstName = 'Le prénom est requis';
+        if (!instructor.lastName.trim())
+            errors.lastName = 'Le nom est requis';
+        if (!instructor.email.trim())
+            errors.email = 'L\'email est requis';
+        else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(instructor.email))
+            errors.email = 'Format d\'email invalide';
+        if (!instructor.specialization)
+            errors.specialization = 'La spécialisation est requise';
 
-                    // Filtrer les formateurs en fonction des critères de recherche
-                    let filteredInstructors = mockInstructors;
-
-                    if (searchTerm) {
-                        const search = searchTerm.toLowerCase();
-                        filteredInstructors = filteredInstructors.filter(user =>
-                            user.firstName.toLowerCase().includes(search) ||
-                            user.lastName.toLowerCase().includes(search) ||
-                            user.email.toLowerCase().includes(search)
-                        );
-                    }
-
-                    if (statusFilter) {
-                        filteredInstructors = filteredInstructors.filter(user =>
-                            statusFilter === 'active' ? user.isActive : !user.isActive
-                        );
-                    }
-
-                    setInstructors(filteredInstructors);
-                    setLoading(false);
-                }, 1000);
-
-                // Code pour la production
-                /*
-                const response = await axios.get('/api/admin/users', {
-                  params: {
-                    role: 'ROLE_INSTRUCTOR',
-                    search: searchTerm || undefined,
-                    status: statusFilter || undefined
-                  }
-                });
-                setInstructors(response.data);
-                setLoading(false);
-                */
-            } catch (err) {
-                console.error('Error fetching instructors:', err);
-                setError('Erreur lors du chargement des formateurs');
-                setLoading(false);
-            }
-        };
-
-        fetchInstructors();
-    }, [searchTerm, statusFilter]);
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
 
     const confirmDelete = (user: User) => {
         setUserToDelete(user);
         setShowDeleteModal(true);
     };
 
-    const viewDetails = (user: User) => {
+    const viewDetails = async (user: User) => {
         setSelectedInstructor(user);
         setShowDetailsModal(true);
+
+        try {
+            setLoadingSessions(true);
+            const response = await adminUsersApi.getSessions(user.id);
+            setInstructorSessions(response.data);
+        } catch (err) {
+            console.error('Error fetching instructor sessions:', err);
+            setInstructorSessions([]);
+        } finally {
+            setLoadingSessions(false);
+        }
+    };
+
+    const openEditModal = (instructor: User) => {
+        setInstructorToEdit({...instructor});
+        setFormErrors({});
+        setShowEditModal(true);
+    };
+
+    const handleAddInstructor = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!validateInstructorForm(newInstructor)) {
+            return;
+        }
+
+        try {
+            setProcessing(true);
+            const response = await adminUsersApi.create(newInstructor);
+
+            // Ajouter le nouvel instructeur à la liste
+            setInstructors([...instructors, response.data]);
+            addToast('Formateur ajouté avec succès', 'success');
+
+            // Réinitialiser le formulaire
+            setNewInstructor({
+                firstName: '',
+                lastName: '',
+                email: '',
+                role: 'ROLE_INSTRUCTOR',
+                isActive: true,
+                lastLogin: null,
+                phone: '',
+                specialization: ''
+            });
+
+            setShowAddModal(false);
+        } catch (err) {
+            console.error('Error adding instructor:', err);
+            addToast('Erreur lors de l\'ajout du formateur', 'error');
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    const handleEditInstructor = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!instructorToEdit) return;
+
+        if (!validateInstructorForm(instructorToEdit)) {
+            return;
+        }
+
+        try {
+            setProcessing(true);
+            await adminUsersApi.update(instructorToEdit.id, instructorToEdit);
+
+            // Mettre à jour la liste
+            setInstructors(instructors.map(i => i.id === instructorToEdit.id ? instructorToEdit : i));
+            addToast('Formateur mis à jour avec succès', 'success');
+
+            setShowEditModal(false);
+        } catch (err) {
+            console.error('Error updating instructor:', err);
+            addToast('Erreur lors de la mise à jour du formateur', 'error');
+        } finally {
+            setProcessing(false);
+        }
     };
 
     const handleDelete = async () => {
         if (!userToDelete) return;
 
         try {
-            // Simuler la suppression pour le développement
-            setInstructors(instructors.filter(u => u.id !== userToDelete.id));
-            setShowDeleteModal(false);
-            setUserToDelete(null);
+            setProcessing(true);
+            await adminUsersApi.delete(userToDelete.id);
 
-            // Code pour la production
-            /*
-            await axios.delete(`/api/admin/users/${userToDelete.id}`);
-            setInstructors(instructors.filter(u => u.id !== userToDelete.id));
+            // Mettre à jour la liste
+            setInstructors(instructors.filter(i => i.id !== userToDelete.id));
+            addToast('Formateur supprimé avec succès', 'success');
+
             setShowDeleteModal(false);
             setUserToDelete(null);
-            */
         } catch (err) {
             console.error('Error deleting instructor:', err);
-            setError('Erreur lors de la suppression du formateur');
+            addToast('Erreur lors de la suppression du formateur', 'error');
+        } finally {
+            setProcessing(false);
         }
     };
+
+    // Configuration des colonnes pour le DataTable
+    const columns = [
+        {
+            title: 'Nom',
+            field: (row: User) => (
+                <div className="flex items-center">
+                    <Award className="h-5 w-5 text-yellow-600 mr-3" />
+                    <div className="text-sm font-medium text-gray-900">
+                        {row.firstName} {row.lastName}
+                    </div>
+                </div>
+            ),
+            sortable: true
+        },
+        {
+            title: 'Email',
+            field: 'email' as keyof User,
+            sortable: true
+        },
+        {
+            title: 'Spécialisation',
+            field: (row: User) => row.specialization || '-',
+            sortable: true
+        },
+        {
+            title: 'Téléphone',
+            field: (row: User) => row.phone || '-',
+            sortable: false
+        },
+        {
+            title: 'Statut',
+            field: (row: User) => (
+                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    row.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                    {row.isActive ? 'Actif' : 'Inactif'}
+                </span>
+            ),
+            sortable: false
+        }
+    ];
+
+    // Rendu des actions pour chaque ligne
+    const renderActions = (instructor: User) => (
+        <div className="flex justify-end space-x-2">
+            <button
+                onClick={() => viewDetails(instructor)}
+                className="text-blue-600 hover:text-blue-900"
+                title="Voir détails"
+            >
+                <Eye className="h-5 w-5" />
+            </button>
+            <button
+                onClick={() => openEditModal(instructor)}
+                className="text-indigo-600 hover:text-indigo-900"
+                title="Modifier"
+            >
+                <Edit className="h-5 w-5" />
+            </button>
+            <button
+                onClick={() => confirmDelete(instructor)}
+                className="text-red-600 hover:text-red-900"
+                title="Supprimer"
+            >
+                <Trash2 className="h-5 w-5" />
+            </button>
+        </div>
+    );
+
+    // Rendu du formulaire d'instructeur (utilisé dans les modals d'ajout et d'édition)
+    const renderInstructorForm = (instructor: Omit<User, 'id'> | User, setInstructor: React.Dispatch<React.SetStateAction<any>>) => (
+        <div className="space-y-4">
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Prénom*
+                </label>
+                <input
+                    type="text"
+                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                        formErrors.firstName ? 'border-red-500' : ''
+                    }`}
+                    value={instructor.firstName}
+                    onChange={(e) => setInstructor({...instructor, firstName: e.target.value})}
+                />
+                {formErrors.firstName && (
+                    <p className="mt-1 text-sm text-red-500">{formErrors.firstName}</p>
+                )}
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nom*
+                </label>
+                <input
+                    type="text"
+                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                        formErrors.lastName ? 'border-red-500' : ''
+                    }`}
+                    value={instructor.lastName}
+                    onChange={(e) => setInstructor({...instructor, lastName: e.target.value})}
+                />
+                {formErrors.lastName && (
+                    <p className="mt-1 text-sm text-red-500">{formErrors.lastName}</p>
+                )}
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email*
+                </label>
+                <input
+                    type="email"
+                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                        formErrors.email ? 'border-red-500' : ''
+                    }`}
+                    value={instructor.email}
+                    onChange={(e) => setInstructor({...instructor, email: e.target.value})}
+                />
+                {formErrors.email && (
+                    <p className="mt-1 text-sm text-red-500">{formErrors.email}</p>
+                )}
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Téléphone
+                </label>
+                <input
+                    type="tel"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    value={instructor.phone || ''}
+                    onChange={(e) => setInstructor({...instructor, phone: e.target.value})}
+                    placeholder="06 12 34 56 78"
+                />
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Spécialisation*
+                </label>
+                <select
+                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                        formErrors.specialization ? 'border-red-500' : ''
+                    }`}
+                    value={instructor.specialization || ''}
+                    onChange={(e) => setInstructor({...instructor, specialization: e.target.value})}
+                >
+                    <option value="">Sélectionnez une spécialisation</option>
+                    {specializations.map(spec => (
+                        <option key={spec} value={spec}>{spec}</option>
+                    ))}
+                </select>
+                {formErrors.specialization && (
+                    <p className="mt-1 text-sm text-red-500">{formErrors.specialization}</p>
+                )}
+            </div>
+
+            <div className="flex items-center mt-2">
+                <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    checked={instructor.isActive}
+                    onChange={(e) => setInstructor({...instructor, isActive: e.target.checked})}
+                />
+                <span className="ml-2 text-sm text-gray-700">
+                    Compte actif
+                </span>
+            </div>
+        </div>
+    );
+
+    // Calcul des statistiques
+    const activeInstructors = instructors ? instructors.filter(i => i.isActive).length : 0;
+    const inactiveInstructors = instructors ? instructors.filter(i => !i.isActive).length : 0;
 
     return (
         <div className="flex min-h-screen bg-gray-50">
             <AdminSidebar />
             <div className="flex-1">
-                <AdminHeader title="Gestion des formateurs" />
+                <AdminHeader
+                    title="Gestion des formateurs"
+                    breadcrumbItems={[
+                        { label: 'Admin', path: '/admin' },
+                        { label: 'Utilisateurs', path: '/admin/users' },
+                        { label: 'Formateurs' }
+                    ]}
+                />
 
                 <div className="p-6">
                     {error && (
-                        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
-                            <p>{error}</p>
-                        </div>
+                        <Alert
+                            type="error"
+                            message={error}
+                            onClose={() => setError(null)}
+                        />
                     )}
 
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                        <Link
-                            to="/admin/instructors/new"
-                            className="bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-800 transition-colors"
+                    <div className="flex justify-between items-center mb-6">
+                        <Button
+                            onClick={() => setShowAddModal(true)}
+                            icon={<UserPlus className="h-5 w-5" />}
                         >
-                            <UserPlus className="h-5 w-5 mr-2" />
                             Nouveau formateur
-                        </Link>
-
-                        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-                            <div className="relative w-full md:w-64">
-                                <Search className="absolute left-3 top-3 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Rechercher un formateur..."
-                                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
-
-                            <div className="relative w-full md:w-48">
-                                <Filter className="absolute left-3 top-3 text-gray-400" />
-                                <select
-                                    className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg appearance-none bg-white w-full"
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                >
-                                    <option value="">Tous les statuts</option>
-                                    <option value="active">Actifs</option>
-                                    <option value="inactive">Inactifs</option>
-                                </select>
-                                <ChevronDown className="absolute right-3 top-3 text-gray-400" />
-                            </div>
-                        </div>
+                        </Button>
                     </div>
 
-                    {loading ? (
-                        <div className="bg-white p-8 rounded-lg shadow text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900 mx-auto"></div>
-                            <p className="mt-4 text-gray-700">Chargement des formateurs...</p>
-                        </div>
-                    ) : instructors.length === 0 ? (
-                        <div className="bg-white p-8 rounded-lg shadow text-center">
-                            <p className="text-gray-700">Aucun formateur trouvé</p>
-                        </div>
-                    ) : (
-                        <div className="bg-white rounded-lg shadow overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Nom
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Email
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Spécialité
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Statut
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Dernière connexion
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                    {instructors.map((instructor) => (
-                                        <tr key={instructor.id}>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <BookOpen className="h-5 w-5 text-indigo-600 mr-3" />
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {instructor.firstName} {instructor.lastName}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900">{instructor.email}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900">{instructor.speciality || '-'}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              instructor.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {instructor.isActive ? 'Actif' : 'Inactif'}
-                          </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-500">{instructor.lastLogin || 'Jamais'}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <div className="flex justify-end space-x-2">
-                                                    <button
-                                                        onClick={() => viewDetails(instructor)}
-                                                        className="text-blue-600 hover:text-blue-900"
-                                                        title="Voir détails"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                        </svg>
-                                                    </button>
-                                                    <Link
-                                                        to={`/admin/instructors/${instructor.id}/edit`}
-                                                        className="text-indigo-600 hover:text-indigo-900"
-                                                        title="Modifier"
-                                                    >
-                                                        <Edit className="h-5 w-5" />
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => confirmDelete(instructor)}
-                                                        className="text-red-600 hover:text-red-900"
-                                                        title="Supprimer"
-                                                    >
-                                                        <Trash2 className="h-5 w-5" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
+                    <DataTable<User>
+                        data={instructors || []}
+                        columns={columns}
+                        keyField="id"
+                        loading={loading}
+                        actions={renderActions}
+                        searchFields={['firstName', 'lastName', 'email', 'specialization']}
+                        emptyMessage="Aucun formateur trouvé"
+                    />
 
                     {/* Statistiques des formateurs */}
                     <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-white rounded-lg shadow-md p-6">
                             <div className="flex items-center">
-                                <div className="bg-indigo-100 p-3 rounded-full">
-                                    <BookOpen className="h-6 w-6 text-indigo-600" />
+                                <div className="bg-yellow-100 p-3 rounded-full">
+                                    <Award className="h-6 w-6 text-yellow-600" />
                                 </div>
                                 <div className="ml-4">
                                     <h3 className="text-gray-500 text-sm">Total formateurs</h3>
@@ -303,13 +456,11 @@ const InstructorsAdmin: React.FC = () => {
                         <div className="bg-white rounded-lg shadow-md p-6">
                             <div className="flex items-center">
                                 <div className="bg-green-100 p-3 rounded-full">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
+                                    <Check className="h-6 w-6 text-green-600" />
                                 </div>
                                 <div className="ml-4">
                                     <h3 className="text-gray-500 text-sm">Formateurs actifs</h3>
-                                    <p className="text-2xl font-semibold">{instructors.filter(i => i.isActive).length}</p>
+                                    <p className="text-2xl font-semibold">{activeInstructors}</p>
                                 </div>
                             </div>
                         </div>
@@ -317,13 +468,11 @@ const InstructorsAdmin: React.FC = () => {
                         <div className="bg-white rounded-lg shadow-md p-6">
                             <div className="flex items-center">
                                 <div className="bg-red-100 p-3 rounded-full">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
+                                    <X className="h-6 w-6 text-red-600" />
                                 </div>
                                 <div className="ml-4">
                                     <h3 className="text-gray-500 text-sm">Formateurs inactifs</h3>
-                                    <p className="text-2xl font-semibold">{instructors.filter(i => !i.isActive).length}</p>
+                                    <p className="text-2xl font-semibold">{inactiveInstructors}</p>
                                 </div>
                             </div>
                         </div>
@@ -331,49 +480,122 @@ const InstructorsAdmin: React.FC = () => {
                 </div>
             </div>
 
-            {/* Modal de confirmation de suppression */}
-            {showDeleteModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-                        <h3 className="text-lg font-bold mb-4">Confirmer la suppression</h3>
-                        <p className="mb-6">
-                            Êtes-vous sûr de vouloir supprimer le formateur "{userToDelete?.firstName} {userToDelete?.lastName}" ?
-                            Cette action est irréversible.
-                        </p>
-                        <div className="flex justify-end space-x-3">
-                            <button
-                                onClick={() => setShowDeleteModal(false)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
-                            >
-                                Annuler
-                            </button>
-                            <button
-                                onClick={handleDelete}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                            >
-                                Supprimer
-                            </button>
-                        </div>
+            {/* Modal d'ajout de formateur */}
+            <Modal
+                isOpen={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                title="Ajouter un formateur"
+                footer={
+                    <div className="flex justify-end space-x-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowAddModal(false)}
+                        >
+                            Annuler
+                        </Button>
+                        <Button
+                            type="submit"
+                            loading={processing}
+                            onClick={handleAddInstructor}
+                        >
+                            Ajouter
+                        </Button>
                     </div>
-                </div>
-            )}
+                }
+            >
+                <form onSubmit={handleAddInstructor}>
+                    {renderInstructorForm(newInstructor, setNewInstructor)}
+                </form>
+            </Modal>
+
+            {/* Modal d'édition de formateur */}
+            <Modal
+                isOpen={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                title="Modifier le formateur"
+                footer={
+                    <div className="flex justify-end space-x-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowEditModal(false)}
+                        >
+                            Annuler
+                        </Button>
+                        <Button
+                            type="submit"
+                            loading={processing}
+                            onClick={handleEditInstructor}
+                        >
+                            Enregistrer
+                        </Button>
+                    </div>
+                }
+            >
+                {instructorToEdit && (
+                    <form onSubmit={handleEditInstructor}>
+                        {renderInstructorForm(instructorToEdit, setInstructorToEdit)}
+                    </form>
+                )}
+            </Modal>
+
+            {/* Modal de confirmation de suppression */}
+            <Modal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                title="Confirmer la suppression"
+                footer={
+                    <div className="flex justify-end space-x-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowDeleteModal(false)}
+                        >
+                            Annuler
+                        </Button>
+                        <Button
+                            variant="danger"
+                            loading={processing}
+                            onClick={handleDelete}
+                        >
+                            Supprimer
+                        </Button>
+                    </div>
+                }
+            >
+                <p>
+                    Êtes-vous sûr de vouloir supprimer le formateur "{userToDelete?.firstName} {userToDelete?.lastName}" ?
+                    Cette action est irréversible.
+                </p>
+            </Modal>
 
             {/* Modal de détails du formateur */}
-            {showDetailsModal && selectedInstructor && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-lg font-bold">Détails du formateur</h3>
-                            <button
-                                onClick={() => setShowDetailsModal(false)}
-                                className="text-gray-500 hover:text-gray-700"
+            <Modal
+                isOpen={showDetailsModal}
+                onClose={() => setShowDetailsModal(false)}
+                title="Détails du formateur"
+                maxWidth="max-w-2xl"
+                footer={
+                    <div className="flex justify-end space-x-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowDetailsModal(false)}
+                        >
+                            Fermer
+                        </Button>
+                        {selectedInstructor && (
+                            <Button
+                                onClick={() => {
+                                    setShowDetailsModal(false);
+                                    openEditModal(selectedInstructor);
+                                }}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
+                                Modifier
+                            </Button>
+                        )}
+                    </div>
+                }
+            >
+                {selectedInstructor && (
+                    <>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <h4 className="text-sm font-medium text-gray-500 mb-1">Nom complet</h4>
@@ -391,8 +613,8 @@ const InstructorsAdmin: React.FC = () => {
                             </div>
 
                             <div>
-                                <h4 className="text-sm font-medium text-gray-500 mb-1">Spécialité</h4>
-                                <p className="text-base">{selectedInstructor.speciality || '-'}</p>
+                                <h4 className="text-sm font-medium text-gray-500 mb-1">Spécialisation</h4>
+                                <p className="text-base">{selectedInstructor.specialization || '-'}</p>
                             </div>
 
                             <div>
@@ -400,8 +622,8 @@ const InstructorsAdmin: React.FC = () => {
                                 <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                                     selectedInstructor.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                 }`}>
-                  {selectedInstructor.isActive ? 'Actif' : 'Inactif'}
-                </span>
+                                    {selectedInstructor.isActive ? 'Actif' : 'Inactif'}
+                                </span>
                             </div>
 
                             <div>
@@ -411,28 +633,61 @@ const InstructorsAdmin: React.FC = () => {
                         </div>
 
                         <div className="border-t border-gray-200 mt-6 pt-6">
-                            <h4 className="font-medium mb-4">Sessions encadrées</h4>
-                            <p className="text-gray-500 italic">Aucune session trouvée</p>
-                            {/* Ici vous pourriez ajouter la liste des sessions encadrées par le formateur */}
+                            <h4 className="font-medium mb-4">Sessions de formation programmées</h4>
+                            {loadingSessions ? (
+                                <div className="flex justify-center">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-900"></div>
+                                    <span className="ml-2">Chargement...</span>
+                                </div>
+                            ) : instructorSessions && instructorSessions.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Session
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Type
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Lieu
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Dates
+                                            </th>
+                                        </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                        {instructorSessions.map((session, index) => (
+                                            <tr key={index}>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                    <div className="flex items-center">
+                                                        <Calendar className="h-4 w-4 text-blue-500 mr-2" />
+                                                        {session.title}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {session.type}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {session.location}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {new Date(session.startDate).toLocaleDateString('fr-FR')} - {new Date(session.endDate).toLocaleDateString('fr-FR')}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <p className="text-gray-500 italic">Aucune session trouvée</p>
+                            )}
                         </div>
-
-                        <div className="mt-6 flex justify-end space-x-3">
-                            <button
-                                onClick={() => setShowDetailsModal(false)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
-                            >
-                                Fermer
-                            </button>
-                            <Link
-                                to={`/admin/instructors/${selectedInstructor.id}/edit`}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                            >
-                                Modifier
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            )}
+                    </>
+                )}
+            </Modal>
         </div>
     );
 };

@@ -235,4 +235,41 @@ class SessionRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    /**
+     * Find sessions by instructor (formateur)
+     *
+     * @param int $instructorId The ID of the instructor
+     * @return array Array of sessions
+     */
+    public function findByInstructor(int $instructorId): array
+    {
+        return $this->createQueryBuilder('s')
+            ->leftJoin('s.formation', 'f')
+            ->addSelect('f')
+            ->where('s.instructor = :instructorId')
+            ->setParameter('instructorId', $instructorId)
+            ->orderBy('s.startDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find sessions by participant (élève)
+     *
+     * @param int $participantId The ID of the participant (student)
+     * @return array Array of sessions
+     */
+    public function findByParticipant(int $participantId): array
+    {
+        return $this->createQueryBuilder('s')
+            ->leftJoin('s.participants', 'p')
+            ->leftJoin('s.formation', 'f')
+            ->addSelect('f')
+            ->where('p.id = :participantId')
+            ->setParameter('participantId', $participantId)
+            ->orderBy('s.startDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
 }

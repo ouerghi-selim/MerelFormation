@@ -73,6 +73,11 @@ class Session
     #[ORM\OneToMany(mappedBy: 'session', targetEntity: Document::class)]
     private Collection $documents;
 
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['session:read', 'session:write'])]
+    private ?User $instructor = null;
+
     #[ORM\Column]
     #[Groups(['session:read'])]
     private ?\DateTimeImmutable $createdAt = null;
@@ -211,6 +216,16 @@ class Session
     public function setDocuments(Collection $documents): void
     {
         $this->documents = $documents;
+    }
+
+    public function getInstructor(): ?User
+    {
+        return $this->instructor;
+    }
+
+    public function setInstructor(?User $instructor): void
+    {
+        $this->instructor = $instructor;
     }
 
 }

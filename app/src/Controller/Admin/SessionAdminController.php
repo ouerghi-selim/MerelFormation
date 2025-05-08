@@ -196,6 +196,12 @@ class SessionAdminController extends AbstractController
             }
             $session->setFormation($formation);
         }
+        $instructor = $this->userRepository->find($data['instructor']['id']);
+
+        if (!$instructor) {
+            return $this->json(['message' => 'vormateur non trouvée'], 404);
+        }
+        $session->setInstructor($instructor);
 
         // Mettre à jour les autres champs
         if (isset($data['startDate'])) {
@@ -425,7 +431,14 @@ class SessionAdminController extends AbstractController
             'notes' => $session->getNotes(),
             'participants' => count($session->getParticipants())
         ];
-
+        // Ajouter l'instructeur aux données formatées
+        if ($session->getInstructor()) {
+            $formattedSession['instructor'] = [
+                'id' => $session->getInstructor()->getId(),
+                'firstName' => $session->getInstructor()->getFirstName(),
+                'lastName' => $session->getInstructor()->getLastName()
+            ];
+        }
         // Ajouter des détails supplémentaires si demandés
         if ($detailed) {
             $participants = [];

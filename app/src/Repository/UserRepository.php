@@ -111,25 +111,33 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     {
         $qb = $this->createQueryBuilder('u');
 
+        // Recherche par email
         if (isset($criteria['email'])) {
             $qb->andWhere('u.email LIKE :email')
-               ->setParameter('email', '%' . $criteria['email'] . '%');
+                ->setParameter('email', '%' . $criteria['email'] . '%');
         }
 
+        // Recherche par nom ou prénom
         if (isset($criteria['name'])) {
-            $qb->andWhere('u.firstName LIKE :name OR u.lastName LIKE :name')
-               ->setParameter('name', '%' . $criteria['name'] . '%');
+            $qb->andWhere('u.firstName LIKE :name OR u.lastName LIKE :name OR u.email LIKE :name')
+                ->setParameter('name', '%' . $criteria['name'] . '%');
         }
 
+        // Filtre par rôle - utiliser LIKE au lieu de JSON_CONTAINS pour compatibilité
         if (isset($criteria['role'])) {
-            $qb->andWhere('JSON_CONTAINS(u.roles, :role) = 1')
-               ->setParameter('role', json_encode($criteria['role']));
+            $qb->andWhere('u.roles LIKE :role')
+                ->setParameter('role', '%' . $criteria['role'] . '%');
         }
 
+        // Filtre par statut actif/inactif
         if (isset($criteria['active'])) {
             $qb->andWhere('u.isActive = :active')
-               ->setParameter('active', $criteria['active']);
+                ->setParameter('active', $criteria['active']);
         }
+
+        // Ordre de tri par défaut
+        $qb->orderBy('u.lastName', 'ASC')
+            ->addOrderBy('u.firstName', 'ASC');
 
         return $qb->getQuery()->getResult();
     }
