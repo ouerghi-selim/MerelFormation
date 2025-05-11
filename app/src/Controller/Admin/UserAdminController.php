@@ -47,9 +47,9 @@ class UserAdminController extends AbstractController
     {
 
         // Vérifier que l'utilisateur est un admin
-        //if (!$this->security->isGranted('ROLE_ADMIN')) {
-        //    return $this->json(['message' => 'Accès refusé'], 403);
-        //}
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer les paramètres de filtrage
         $criteria = [];
@@ -80,7 +80,7 @@ class UserAdminController extends AbstractController
                 'firstName' => $user->getFirstName(),
                 'lastName' => $user->getLastName(),
                 'email' => $user->getEmail(),
-                'role' => $user->getRoles()[0] ?? 'ROLE_USER', // Prendre le premier rôle
+                'role' => $user->getRoles()[0] ?? 'ROLE_STUDENT', // Prendre le premier rôle
                 'isActive' => $user->isIsActive(),  // Utiliser isIsActive() au lieu de isActive()
                 'phone' => $user->getPhone(),
                 // Ajouter la date de création au format français
@@ -109,7 +109,7 @@ class UserAdminController extends AbstractController
         if (in_array('ROLE_INSTRUCTOR', $user->getRoles())) {
             // Pour un formateur, récupérer les sessions où il est instructeur
             $sessions = $this->sessionRepository->findByInstructor($id);
-        } else if (in_array('ROLE_USER', $user->getRoles())) {
+        } else if (in_array('ROLE_STUDENT', $user->getRoles())) {
             // Pour un élève, récupérer les sessions où il est participant
             $sessions = $this->sessionRepository->findByParticipant($id);
         } else {
@@ -198,7 +198,7 @@ class UserAdminController extends AbstractController
             'firstName' => $user->getFirstName(),
             'lastName' => $user->getLastName(),
             'email' => $user->getEmail(),
-            'role' => $user->getRoles()[0] ?? 'ROLE_USER',
+            'role' => $user->getRoles()[0] ?? 'ROLE_STUDENT',
             'isActive' => $user->isIsActive(),  // Utiliser isIsActive() au lieu de isActive()
             'phone' => $user->getPhone(),
             'createdAt' => $user->getCreatedAt() ? $user->getCreatedAt()->format('d/m/Y') : null,
@@ -233,8 +233,8 @@ class UserAdminController extends AbstractController
         $user->setFirstName($data['firstName']);
         $user->setLastName($data['lastName']);
 
-        // Définir le rôle (par défaut ROLE_USER si non spécifié)
-        $role = $data['role'] ?? 'ROLE_USER';
+        // Définir le rôle (par défaut ROLE_STUDENT si non spécifié)
+        $role = $data['role'] ?? 'ROLE_STUDENT';
         $user->setRoles([$role]);
 
         // Hachage du mot de passe

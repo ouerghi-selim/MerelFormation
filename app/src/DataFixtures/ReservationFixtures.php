@@ -27,8 +27,8 @@ class ReservationFixtures extends Fixture implements DependentFixtureInterface
             $this->getReference(SessionFixtures::SESSION_2_REFERENCE, Session::class),
         ];
 
-        // Récupérer tous les utilisateurs avec le rôle ROLE_USER
-        $students = $this->userRepository->findBy(['roles' => 'ROLE_USER']);
+        // Récupérer tous les utilisateurs avec le rôle ROLE_STUDENT
+        $students = $this->userRepository->findBy(['roles' => 'ROLE_STUDENT']);
         if (empty($students)) {
             // Fallback: utiliser la référence unique
             $students = [$this->getReference(UserFixtures::STUDENT_USER_REFERENCE, User::class)];

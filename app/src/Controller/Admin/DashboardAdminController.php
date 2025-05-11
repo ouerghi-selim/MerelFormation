@@ -2,6 +2,8 @@
 
 namespace App\Controller\Admin;
 
+use App\Repository\PaymentRepository;
+use App\Repository\VehicleRentalRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -43,9 +45,9 @@ class DashboardAdminController extends AbstractController
     public function getStats(): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer les statistiques
         $activeStudents = $this->userRepository->countActiveStudents();
@@ -75,9 +77,9 @@ class DashboardAdminController extends AbstractController
     public function getRecentInscriptions(): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer les inscriptions récentes
         $users = $this->userRepository->findRecentInscriptions(5);
@@ -110,9 +112,9 @@ class DashboardAdminController extends AbstractController
     public function getRecentReservations(): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer les réservations récentes
         $reservations = $this->reservationRepository->findRecentReservations(5);
@@ -133,5 +135,37 @@ class DashboardAdminController extends AbstractController
         }
 
         return $this->json($formattedReservations);
+    }
+
+    /**
+     * @Route("/revenue-data", name="revenue_data", methods={"GET"})
+     */
+    public function getRevenueData(PaymentRepository $paymentRepository): JsonResponse
+    {
+        // Récupérer toutes les statistiques, incluant les données mensuelles
+        $stats = $paymentRepository->getStatistics();
+
+        // Renvoyer uniquement les données mensuelles pour le graphique
+        return $this->json($stats['monthlyRevenue']);
+    }
+
+    /**
+     * @Route("/success-rate-data", name="success_rate_data", methods={"GET"})
+     */
+    public function getSuccessRateData(
+        ReservationRepository $reservationRepository,
+        VehicleRentalRepository $vehicleRentalRepository
+    ): JsonResponse {
+        // Récupérer les taux de confirmation de chaque repository
+        $reservationStats = $reservationRepository->getStatistics();
+        $vehicleRentalStats = $vehicleRentalRepository->getStatistics();
+
+        // Formater les données pour le graphique
+        $rateData = [
+            ['formation' => 'Formations', 'taux' => $reservationStats['confirmationRate']],
+            ['formation' => 'Véhicules', 'taux' => $vehicleRentalStats['confirmationRate']]
+        ];
+
+        return $this->json($rateData);
     }
 }

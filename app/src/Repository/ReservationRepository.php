@@ -112,14 +112,13 @@ class ReservationRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get comprehensive reservation statistics
+     * Get comprehensive reservation statistics with dashboard data
      */
     public function getStatistics(\DateTimeInterface $startDate = null, \DateTimeInterface $endDate = null): array
     {
-        $qb = $this->createQueryBuilder('r');
         $now = new \DateTimeImmutable();
-        
-        // Base statistics
+
+        // Statistiques de base
         $stats = [
             'totalReservations' => $this->count([]),
             'pendingReservations' => $this->count(['status' => 'pending']),
@@ -127,7 +126,7 @@ class ReservationRepository extends ServiceEntityRepository
             'cancelledReservations' => $this->count(['status' => 'cancelled']),
         ];
 
-        // Add payment statistics
+        // Ajouter d'autres statistiques existantes
         $qb = $this->createQueryBuilder('r')
             ->leftJoin('r.invoice', 'i');
 
@@ -138,7 +137,6 @@ class ReservationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
 
-        // Add upcoming reservations count
         $qb = $this->createQueryBuilder('r')
             ->leftJoin('r.session', 's');
 
@@ -150,6 +148,11 @@ class ReservationRepository extends ServiceEntityRepository
             ->setParameter('status', 'confirmed')
             ->getQuery()
             ->getSingleScalarResult();
+
+        // Calculer le taux de réservations confirmées pour le graphique du dashboard
+        $stats['confirmationRate'] = $stats['totalReservations'] > 0
+            ? round(($stats['confirmedReservations'] / $stats['totalReservations']) * 100)
+            : 0;
 
         return $stats;
     }
@@ -253,9 +256,11 @@ class ReservationRepository extends ServiceEntityRepository
      *
      * @param string|null $search Search term to filter by user name or email
      * @param string|null $status Status to filter by
+     * @param int|null $limit Limit the number of results
+     * @param string|null $sort Sort field and direction (e.g. 'createdAt,DESC')
      * @return array Array of session reservations
      */
-    public function findSessionReservations(?string $search = null, ?string $status = null): array
+    public function findSessionReservations(?string $search = null, ?string $status = null, ?int $limit = null, ?string $sort = null): array
     {
         $qb = $this->createQueryBuilder('r')
             ->leftJoin('r.user', 'u')
@@ -276,8 +281,34 @@ class ReservationRepository extends ServiceEntityRepository
                 ->setParameter('status', $status);
         }
 
-        return $qb->orderBy('r.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
+        // Appliquer le tri
+        if ($sort) {
+            $sortParts = explode(',', $sort);
+            $sortField = $sortParts[0];
+            $sortDirection = isset($sortParts[1]) ? $sortParts[1] : 'ASC';
+
+            // Mapper les champs de tri à leurs chemins réels
+            $sortFieldMap = [
+                'createdAt' => 'r.createdAt',
+                'status' => 'r.status',
+                'startDate' => 's.startDate',
+                // Ajouter d'autres mappings si nécessaire
+            ];
+
+            if (isset($sortFieldMap[$sortField])) {
+                $qb->orderBy($sortFieldMap[$sortField], $sortDirection);
+            }
+        } else {
+            // Tri par défaut
+            $qb->orderBy('r.createdAt', 'DESC');
+        }
+
+        // Appliquer la limite
+        if ($limit !== null) {
+            $qb->setMaxResults((int) $limit);
+        }
+
+        // Retirer le orderBy redondant et retourner simplement le résultat
+        return $qb->getQuery()->getResult();
     }
 }

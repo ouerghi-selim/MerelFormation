@@ -44,9 +44,9 @@ class VehicleAdminController extends AbstractController
     public function list(Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer les paramètres de filtrage
         $model = $request->query->get('model');
@@ -90,9 +90,9 @@ class VehicleAdminController extends AbstractController
     public function get(int $id): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer le véhicule
         $vehicle = $this->vehicleRepository->find($id);
@@ -110,9 +110,9 @@ class VehicleAdminController extends AbstractController
     public function create(Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer les données de la requête
         $data = json_decode($request->getContent(), true);
@@ -143,9 +143,9 @@ class VehicleAdminController extends AbstractController
     public function update(int $id, Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer le véhicule
         $vehicle = $this->vehicleRepository->find($id);
@@ -181,9 +181,9 @@ class VehicleAdminController extends AbstractController
     public function delete(int $id): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer le véhicule
         $vehicle = $this->vehicleRepository->find($id);
@@ -225,9 +225,9 @@ class VehicleAdminController extends AbstractController
     public function getStats(): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer les statistiques
         $stats = $this->vehicleRepository->getStatistics();
@@ -260,9 +260,9 @@ class VehicleAdminController extends AbstractController
     public function getByCategory(string $category): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer les véhicules par catégorie
         $vehicles = $this->vehicleRepository->findByCategory($category);
@@ -276,9 +276,9 @@ class VehicleAdminController extends AbstractController
     public function getMaintenance(): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer les véhicules en maintenance
         $vehicles = $this->vehicleRepository->findVehiclesNeedingMaintenance();
@@ -292,9 +292,9 @@ class VehicleAdminController extends AbstractController
     public function getMostRented(Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer le paramètre de limite
         $limit = $request->query->getInt('limit', 5);

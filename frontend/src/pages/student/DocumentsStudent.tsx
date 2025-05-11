@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Download, Filter, Search, ChevronDown } from 'lucide-react';
 import StudentHeader from '../../components/student/StudentHeader';
-// @ts-ignore
-import axios from 'axios';
+import { studentDocumentsApi } from '@/services/api.ts';
 
 interface Document {
   id: number;
@@ -27,74 +26,13 @@ const DocumentsStudent: React.FC = () => {
     const fetchDocuments = async () => {
       try {
         setLoading(true);
-        
-        // Simuler des données pour le développement
-        setTimeout(() => {
-          const mockDocuments: Document[] = [
-            {
-              id: 1,
-              title: 'Support_Module1.pdf',
-              type: 'support',
-              formationTitle: 'Formation Initiale Taxi',
-              date: '15/03/2025',
-              downloadUrl: '/documents/1',
-              fileSize: '2.4 MB',
-              fileType: 'pdf'
-            },
-            {
-              id: 2,
-              title: 'Convocation_Examen.pdf',
-              type: 'attestation',
-              formationTitle: 'Formation Initiale Taxi',
-              date: '10/03/2025',
-              downloadUrl: '/documents/2',
-              fileSize: '1.1 MB',
-              fileType: 'pdf'
-            },
-            {
-              id: 3,
-              title: 'Exercices_Pratiques.pdf',
-              type: 'support',
-              formationTitle: 'Formation Initiale Taxi',
-              date: '01/03/2025',
-              downloadUrl: '/documents/3',
-              fileSize: '3.7 MB',
-              fileType: 'pdf'
-            },
-            {
-              id: 4,
-              title: 'Facture_Formation.pdf',
-              type: 'facture',
-              formationTitle: null,
-              date: '15/02/2025',
-              downloadUrl: '/documents/4',
-              fileSize: '0.8 MB',
-              fileType: 'pdf'
-            },
-            {
-              id: 5,
-              title: 'Contrat_Formation.docx',
-              type: 'contrat',
-              formationTitle: 'Formation Initiale Taxi',
-              date: '10/02/2025',
-              downloadUrl: '/documents/5',
-              fileSize: '1.2 MB',
-              fileType: 'docx'
-            }
-          ];
-          
-          setDocuments(mockDocuments);
-          setFilteredDocuments(mockDocuments);
-          setLoading(false);
-        }, 1000);
-        
-        // Commenté pour le développement, à décommenter pour la production
-        /*
-        const response = await axios.get('/api/student/documents');
+
+        // Remplaçons le mock par l'appel API réel
+        const response = await studentDocumentsApi.getAll();
         setDocuments(response.data);
         setFilteredDocuments(response.data);
         setLoading(false);
-        */
+
       } catch (err) {
         console.error('Error fetching documents:', err);
         setError('Erreur lors du chargement des documents');
@@ -104,6 +42,7 @@ const DocumentsStudent: React.FC = () => {
 
     fetchDocuments();
   }, []);
+
 
   useEffect(() => {
     // Apply filters when type filter or search query changes
@@ -277,7 +216,7 @@ const DocumentsStudent: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <a
-                          href={document.downloadUrl}
+                          href={`/api/student/documents/${document.id}/download`}
                           download
                           className="inline-flex items-center px-3 py-1 border border-blue-700 text-blue-700 text-sm font-medium rounded-md hover:bg-blue-700 hover:text-white transition-colors"
                         >

@@ -54,7 +54,7 @@ class UserFixtures extends Fixture
             $user->setEmail("student{$i}@example.com");
             $user->setFirstName("Student");
             $user->setLastName("Number {$i}");
-            $user->setRoles(['ROLE_USER']);
+            $user->setRoles(['ROLE_STUDENT']);
             $user->setPhone("012345678{$i}");
             $user->setIsActive(true);
             $hashedPassword = $this->passwordHasher->hashPassword($user, 'student123');

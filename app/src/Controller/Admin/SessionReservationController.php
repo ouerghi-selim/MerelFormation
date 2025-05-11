@@ -31,9 +31,11 @@ class SessionReservationController extends AbstractController
     {
         $search = $request->query->get('search');
         $status = $request->query->get('status');
+        $limit = $request->query->get('limit', null);
+        $sort = $request->query->get('sort', null);
 
         // Utilisation du repository pour récupérer les réservations
-        $reservations = $this->reservationRepository->findSessionReservations($search, $status);
+        $reservations = $this->reservationRepository->findSessionReservations($search, $status, $limit, $sort);
 
         // Format de la réponse pour correspondre à ce qu'attend le frontend
         $formattedData = array_map(function ($reservation) {

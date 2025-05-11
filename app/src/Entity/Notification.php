@@ -16,7 +16,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
         new GetCollection(normalizationContext: ['groups' => ['notification:read']]),
         new Put(
             normalizationContext: ['groups' => ['notification:write']],
-            security: "is_granted('ROLE_USER') and object.getUser() == user"
+            security: "is_granted('ROLE_STUDENT') and object.getUser() == user"
         )
     ],
     order: ['createdAt' => 'DESC']

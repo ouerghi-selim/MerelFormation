@@ -53,13 +53,13 @@ const StudentsAdmin: React.FC = () => {
         firstName: '',
         lastName: '',
         email: '',
-        role: 'ROLE_USER',
+        role: 'ROLE_STUDENT',
         isActive: true,
         lastLogin: null,
         phone: ''
     });
     const fetchStudents = useCallback(() => {
-        return adminUsersApi.getAll('role=ROLE_USER')
+        return adminUsersApi.getAll('role=ROLE_STUDENT')
             .then(response => response.data);
     }, []); // tableau vide = fonction stable
     // Utiliser le hook personnalisé pour charger les données
@@ -147,7 +147,7 @@ const StudentsAdmin: React.FC = () => {
                 firstName: '',
                 lastName: '',
                 email: '',
-                role: 'ROLE_USER',
+                role: 'ROLE_STUDENT',
                 isActive: true,
                 lastLogin: null,
                 phone: ''

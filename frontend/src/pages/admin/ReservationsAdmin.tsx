@@ -80,25 +80,6 @@ const ReservationsAdmin: React.FC = () => {
       } catch (err) {
         console.error('Error fetching vehicle reservations:', err);
         setError('Erreur lors du chargement des réservations de véhicules');
-        setLoading(false);
-
-        // Données de secours en cas d'erreur (pour le développement)
-        const mockReservations: VehicleReservation[] = [
-          {
-            id: 1,
-            clientName: 'Sophie Klein',
-            clientEmail: 'sophie.klein@example.com',
-            clientPhone: '06 12 34 56 78',
-            date: '15/03/2025',
-            examCenter: 'Rennes',
-            formula: 'Examen pratique (2h)',
-            status: 'pending',
-            vehicleAssigned: null
-          },
-          // ... autres réservations de test
-        ];
-
-        setVehicleReservations(mockReservations);
       }
     };
 
@@ -175,6 +156,29 @@ const ReservationsAdmin: React.FC = () => {
       // Pour l'instant, on se contente de fermer le modal
     }
     setShowDetailModal(false);
+  };
+
+  const handleSessionStatusChange = async (reservationId: number, newStatus: string) => {
+    try {
+      // Appel API à créer
+      await adminReservationsApi.updateSessionReservationStatus(reservationId, newStatus);
+
+      // Mise à jour de l'état local
+      setSessionReservations(sessionReservations.map(r =>
+          r.id === reservationId ? { ...r, status: newStatus } : r
+      ));
+
+      setSuccessMessage(`Statut de la réservation mis à jour avec succès`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      console.error('Error updating session reservation status:', err);
+      setError('Erreur lors de la mise à jour du statut');
+
+      // Mise à jour de l'état local même en cas d'erreur (pour le développement)
+      setSessionReservations(sessionReservations.map(r =>
+          r.id === reservationId ? { ...r, status: newStatus } : r
+      ));
+    }
   };
 
   // Fonction utilitaire pour formater les dates
@@ -550,106 +554,7 @@ const ReservationsAdmin: React.FC = () => {
           </div>
         </div>
 
-        {/* Modal de détails pour réservation de véhicule */}
-        {showDetailModal && selectedVehicleReservation && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full">
-                <h3 className="text-lg font-bold mb-4">Détails de la réservation de véhicule</h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <p className="text-sm text-gray-500">Client</p>
-                    <p className="font-medium">{selectedVehicleReservation.clientName}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Contact</p>
-                    <p className="font-medium">{selectedVehicleReservation.clientPhone}</p>
-                    <p className="text-sm">{selectedVehicleReservation.clientEmail}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Date d'examen</p>
-                    <p className="font-medium">{selectedVehicleReservation.date}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Centre d'examen</p>
-                    <p className="font-medium">{selectedVehicleReservation.examCenter}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Formule</p>
-                    <p className="font-medium">{selectedVehicleReservation.formula}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Statut</p>
-                    <p className="font-medium">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(selectedVehicleReservation.status)}`}>
-                    {getStatusLabel(selectedVehicleReservation.status)}
-                  </span>
-                    </p>
-                  </div>
-                </div>
-
-                {(selectedVehicleReservation.status === 'pending' || selectedVehicleReservation.status === 'confirmed') && (
-                    <div className="mb-6">
-                      <h4 className="font-medium mb-2">Assigner un véhicule</h4>
-                      <div className="flex space-x-3">
-                        <select
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
-                            value={selectedVehicle}
-                            onChange={(e) => setSelectedVehicle(e.target.value)}
-                        >
-                          <option value="">Sélectionner un véhicule</option>
-                          {availableVehicles.map((vehicle, index) => (
-                              <option key={index} value={vehicle}>{vehicle}</option>
-                          ))}
-                        </select>
-                        <button
-                            onClick={handleAssignVehicle}
-                            disabled={!selectedVehicle}
-                            className={`px-4 py-2 rounded-lg ${
-                                selectedVehicle
-                                    ? 'bg-blue-700 text-white hover:bg-blue-800'
-                                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                            }`}
-                        >
-                          Assigner
-                        </button>
-                      </div>
-                    </div>
-                )}
-
-                <div className="flex justify-end space-x-3">
-                  <button
-                      onClick={() => setShowDetailModal(false)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
-                  >
-                    Fermer
-                  </button>
-                  {selectedVehicleReservation.status === 'pending' && (
-                      <button
-                          onClick={() => {
-                            handleVehicleStatusChange(selectedVehicleReservation.id, 'confirmed');
-                            setShowDetailModal(false);
-                          }}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                      >
-                        Confirmer
-                      </button>
-                  )}
-                  {(selectedVehicleReservation.status === 'pending' || selectedVehicleReservation.status === 'confirmed') && (
-                      <button
-                          onClick={() => {
-                            handleVehicleStatusChange(selectedVehicleReservation.id, 'cancelled');
-                            setShowDetailModal(false);
-                          }}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                      >
-                        Annuler
-                      </button>
-                  )}
-                </div>
-              </div>
-            </div>
-        )}
 
         {/* Utilisation du composant ReservationDetailModal */}
         <ReservationDetailModal

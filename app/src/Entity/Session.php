@@ -63,10 +63,6 @@ class Session
     #[Groups(['session:read', 'session:write'])]
     private ?string $notes = null;
 
-    #[ORM\ManyToMany(targetEntity: User::class)]
-    #[Groups(['session:item:read'])]
-    private Collection $participants;
-
     #[ORM\OneToMany(mappedBy: 'session', targetEntity: Reservation::class)]
     private Collection $reservations;
 
@@ -176,25 +172,95 @@ class Session
     }
 
     /**
+     * Get participants with confirmed reservations
+     *
      * @return Collection<int, User>
      */
+    #[Groups(['session:item:read'])]
     public function getParticipants(): Collection
     {
-        return $this->participants;
+        $participants = new ArrayCollection();
+        foreach ($this->reservations as $reservation) {
+            if ($reservation->getStatus() === 'confirmed' || $reservation->getStatus() === 'completed') {
+                if (!$participants->contains($reservation->getUser())) {
+                    $participants->add($reservation->getUser());
+                }
+            }
+        }
+        return $participants;
     }
 
+    /**
+     * Check if a user is a participant (has confirmed reservation)
+     *
+     * @param User $user
+     * @return bool
+     */
+    public function hasParticipant(User $user): bool
+    {
+        foreach ($this->reservations as $reservation) {
+            if ($reservation->getUser() === $user &&
+                ($reservation->getStatus() === 'confirmed' || $reservation->getStatus() === 'completed')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Find user's reservation for this session
+     *
+     * @param User $user
+     * @return Reservation|null
+     */
+    public function findUserReservation(User $user): ?Reservation
+    {
+        foreach ($this->reservations as $reservation) {
+            if ($reservation->getUser() === $user) {
+                return $reservation;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Add participant through reservation
+     * Note: This method identifies if the user already has a reservation
+     * and updates its status to confirmed. If no reservation exists,
+     * a new one will need to be created through the appropriate service.
+     *
+     * @param User $participant
+     * @return static
+     */
     public function addParticipant(User $participant): static
     {
-        if (!$this->participants->contains($participant)) {
-            $this->participants->add($participant);
+        // Check if participant already exists with confirmed status
+        if (!$this->hasParticipant($participant)) {
+            // Check if participant has a reservation
+            $reservation = $this->findUserReservation($participant);
+            if ($reservation) {
+                // Update existing reservation to confirmed
+                $reservation->setStatus('confirmed');
+            }
+            // Note: If no reservation exists, this should be handled at service level
         }
 
         return $this;
     }
 
+    /**
+     * Remove participant by setting reservation status to cancelled
+     *
+     * @param User $participant
+     * @return static
+     */
     public function removeParticipant(User $participant): static
     {
-        $this->participants->removeElement($participant);
+        $reservation = $this->findUserReservation($participant);
+        if ($reservation && ($reservation->getStatus() === 'confirmed' || $reservation->getStatus() === 'completed')) {
+            $reservation->setStatus('cancelled');
+        }
+
         return $this;
     }
 

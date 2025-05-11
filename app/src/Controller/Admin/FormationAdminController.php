@@ -39,9 +39,9 @@ class FormationAdminController extends AbstractController
     public function list(Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer les paramètres de filtrage
         // Build criteria array from GET parameters
@@ -102,9 +102,9 @@ class FormationAdminController extends AbstractController
     public function get(int $id): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer la formation
         $formation = $this->formationRepository->find($id);
@@ -177,9 +177,9 @@ class FormationAdminController extends AbstractController
     public function create(Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer les données de la requête
         $data = json_decode($request->getContent(), true);
@@ -247,9 +247,9 @@ class FormationAdminController extends AbstractController
     public function update(int $id, Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer la formation
         $formation = $this->formationRepository->find($id);
@@ -353,9 +353,9 @@ class FormationAdminController extends AbstractController
     public function delete(int $id): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer la formation
         $formation = $this->formationRepository->find($id);
@@ -379,9 +379,9 @@ class FormationAdminController extends AbstractController
     public function getSessions(Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Cette méthode peut être implémentée pour récupérer toutes les sessions
         // pour l'affichage dans l'interface d'administration

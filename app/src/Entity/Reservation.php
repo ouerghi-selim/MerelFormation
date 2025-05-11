@@ -25,7 +25,7 @@ use Symfony\Component\Validator\Constraints as Assert;
         ),
         new Post(
             denormalizationContext: ['groups' => ['reservation:write']],
-            security: "is_granted('ROLE_USER')"
+            security: "is_granted('ROLE_STUDENT')"
         ),
         new Put(
             denormalizationContext: ['groups' => ['reservation:write']],

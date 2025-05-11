@@ -3,6 +3,7 @@
 namespace App\Controller\Student;
 
 use App\Repository\FormationRepository;
+use App\Repository\SessionRepository;
 use App\Repository\UserFormationRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -16,15 +17,18 @@ class FormationStudentController extends AbstractController
     private $security;
     private $formationRepository;
     private $userFormationRepository;
+    private $sessionRepository;
 
     public function __construct(
         Security $security,
         FormationRepository $formationRepository,
-        UserFormationRepository $userFormationRepository
+        UserFormationRepository $userFormationRepository,
+        SessionRepository $sessionRepository
     ) {
         $this->security = $security;
         $this->formationRepository = $formationRepository;
         $this->userFormationRepository = $userFormationRepository;
+        $this->sessionRepository = $sessionRepository;
     }
 
     /**
@@ -40,22 +44,24 @@ class FormationStudentController extends AbstractController
 
         // Récupérer les formations de l'étudiant
         $userFormations = $this->userFormationRepository->findByUser($user->getId());
-        
+
         // Formater les données pour le frontend
         $formattedFormations = [];
         foreach ($userFormations as $userFormation) {
-            $formation = $userFormation->getFormation();
+            $formations = $userFormation->getSessions();
+            foreach ($formations as $formation) {
             $formattedFormations[] = [
                 'id' => $formation->getId(),
-                'title' => $formation->getTitle(),
-                'type' => $formation->getType(),
-                'progress' => $userFormation->getProgress(),
-                'startDate' => $userFormation->getStartDate()->format('d/m/Y'),
-                'endDate' => $userFormation->getEndDate()->format('d/m/Y'),
-                'instructor' => $userFormation->getInstructor()->getFirstName() . ' ' . $userFormation->getInstructor()->getLastName(),
+                //'title' => $formation->getTitle(),
+                //'type' => $formation->getType(),
+//                'progress' => $userFormation->getProgress(),
+//                'startDate' => $userFormation->getStartDate()->format('d/m/Y'),
+//                'endDate' => $userFormation->getEndDate()->format('d/m/Y'),
+//                'instructor' => $userFormation->getInstructor()->getFirstName() . ' ' . $userFormation->getInstructor()->getLastName(),
                 'nextSession' => $this->getNextSessionDate($formation->getId(), $user->getId()),
                 'status' => $this->getFormationStatus($userFormation)
             ];
+            }
         }
 
         return $this->json($formattedFormations);

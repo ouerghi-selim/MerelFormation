@@ -22,6 +22,14 @@ use App\Controller\Admin\DashboardAdminController;
             uriTemplate: '/admin/dashboard/recent-reservations',
             controller: DashboardAdminController::class . '::getRecentReservations',
         ),
+        new GetCollection(
+            uriTemplate: '/admin/dashboard/revenue-data',
+            controller: DashboardAdminController::class . '::getRevenueData',
+        ),
+        new GetCollection(
+            uriTemplate: '/admin/dashboard/success-rate-data',
+            controller: DashboardAdminController::class . '::getSuccessRateData',
+        ),
     ]
 )]
 class AdminDashboard

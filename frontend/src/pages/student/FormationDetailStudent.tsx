@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, CheckCircle, ChevronDown, BookOpen } from 'lucide-react';
 import StudentHeader from '../../components/student/StudentHeader';
-// @ts-ignore
-import axios from 'axios';
+import { studentFormationsApi } from '@/services/api.ts';
 
 interface FormationDetail {
   id: number;
@@ -55,99 +54,12 @@ const FormationDetailStudent: React.FC = () => {
     const fetchFormationDetail = async () => {
       try {
         setLoading(true);
-        
-        // Simuler des données pour le développement
-        setTimeout(() => {
-          const mockFormation: FormationDetail = {
-            id: parseInt(id || '1'),
-            title: 'Formation Initiale Taxi',
-            description: 'Cette formation vous prépare à l\'examen du certificat de capacité professionnelle de conducteur de taxi. Elle couvre tous les aspects réglementaires, pratiques et théoriques nécessaires pour exercer le métier de chauffeur de taxi.',
-            type: 'initial',
-            instructor: 'Jean Dupont',
-            startDate: '15/02/2025',
-            endDate: '30/04/2025',
-            progress: 75,
-            modules: [
-              {
-                id: 1,
-                title: 'Module 1: Réglementation',
-                description: 'Ce module couvre les aspects réglementaires du métier de chauffeur de taxi, incluant les lois et règlements applicables au transport de personnes.',
-                status: 'completed',
-                progress: 100
-              },
-              {
-                id: 2,
-                title: 'Module 2: Sécurité routière',
-                description: 'Ce module traite des règles de sécurité routière, de la prévention des accidents et des comportements à adopter en cas d\'urgence.',
-                status: 'completed',
-                progress: 100
-              },
-              {
-                id: 3,
-                title: 'Module 3: Orientation et navigation',
-                description: 'Ce module vous apprend à vous orienter efficacement en milieu urbain et à utiliser les outils de navigation modernes.',
-                status: 'in_progress',
-                progress: 60
-              },
-              {
-                id: 4,
-                title: 'Module 4: Communication et relation client',
-                description: 'Ce module aborde les techniques de communication et la gestion de la relation client pour offrir un service de qualité.',
-                status: 'pending',
-                progress: 0
-              }
-            ],
-            documents: [
-              {
-                id: 1,
-                title: 'Guide_Reglementation.pdf',
-                type: 'Support',
-                date: '15/02/2025',
-                downloadUrl: '/documents/1'
-              },
-              {
-                id: 2,
-                title: 'Exercices_Pratiques.pdf',
-                type: 'Exercices',
-                date: '01/03/2025',
-                downloadUrl: '/documents/2'
-              },
-              {
-                id: 3,
-                title: 'QCM_Entrainement.pdf',
-                type: 'Test',
-                date: '15/03/2025',
-                downloadUrl: '/documents/3'
-              }
-            ],
-            upcomingSessions: [
-              {
-                id: 1,
-                date: '28/03/2025',
-                time: '09:00',
-                location: 'Salle 2',
-                topic: 'Orientation en milieu urbain'
-              },
-              {
-                id: 2,
-                date: '30/03/2025',
-                time: '14:00',
-                location: 'Parking',
-                topic: 'Pratique de conduite'
-              }
-            ]
-          };
-          
-          setFormation(mockFormation);
-          setLoading(false);
-        }, 1000);
-        
-        // Commenté pour le développement, à décommenter pour la production
-        /*
-        const response = await axios.get(`/api/student/formations/${id}`);
+
+        // Remplaçons le mock par l'appel API réel
+        const response = await studentFormationsApi.getById(parseInt(id || '0'));
         setFormation(response.data);
         setLoading(false);
-        */
+
       } catch (err) {
         console.error('Error fetching formation details:', err);
         setError('Erreur lors du chargement des détails de la formation');

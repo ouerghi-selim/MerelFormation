@@ -272,4 +272,29 @@ class SessionRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Find upcoming sessions for a student with limit
+     *
+     * @param int $userId
+     * @param int $limit
+     * @return array
+     */
+    public function findUpcomingSessionsForStudent(int $userId, int $limit): array
+    {
+        return $this->createQueryBuilder('s')
+            ->leftJoin('s.participants', 'p')
+            ->leftJoin('s.formation', 'f')
+            ->addSelect('f')
+            ->where('p.id = :userId')
+            ->andWhere('s.startDate > :now')
+            ->andWhere('s.status = :status')
+            ->setParameter('userId', $userId)
+            ->setParameter('now', new \DateTimeImmutable())
+            ->setParameter('status', 'scheduled')
+            ->orderBy('s.startDate', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
 }

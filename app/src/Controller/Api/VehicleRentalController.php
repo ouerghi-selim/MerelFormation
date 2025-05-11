@@ -59,7 +59,7 @@ class VehicleRentalController extends AbstractController
             if (!$user) {
                 $user = new User();
                 $user->setEmail($email);
-                $user->setRoles(['ROLE_USER']);
+                $user->setRoles(['ROLE_STUDENT']);
 
                 // Générer un mot de passe aléatoire
                 $randomPassword = bin2hex(random_bytes(8));

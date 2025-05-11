@@ -44,8 +44,10 @@ export const sessionRegistrationApi = {
 
 // Services API pour le dashboard administrateur
 export const adminDashboardApi = {
-  getStats: () => api.get('/admin/dashboard/stats'),
-  getRecentInscriptions: () => api.get('/admin/dashboard/recent-inscriptions'),
+    getStats: () => api.get('/admin/dashboard/stats'),
+    getRecentInscriptions: () => api.get('/admin/dashboard/recent-inscriptions'),
+    getRevenueData: () => api.get('/admin/dashboard/revenue-data'),
+    getSuccessRateData: () => api.get('/admin/dashboard/success-rate-data'),
 };
 
 // Services API pour les formations administrateur
@@ -60,7 +62,7 @@ export const adminFormationsApi = {
 
 // Services API pour les réservations administrateur
 export const adminReservationsApi = {
-  getAll: () => api.get('/admin/reservations'),
+  getAll: (queryParams = '') => api.get(`/admin/reservations${queryParams ? '?' + queryParams : ''}`),
   getById: (id: number) => api.get(`/admin/reservations/${id}`),
   updateStatus: (id: number, status: string) => api.put(`/admin/reservations/${id}/status`, { status }),
   assignVehicle: (id: number, vehicleModel: string) => api.put(`/admin/reservations/${id}/assign-vehicle`, { vehicleModel }),

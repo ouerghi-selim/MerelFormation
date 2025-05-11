@@ -37,17 +37,20 @@ class ReservationAdminController extends AbstractController
     public function list(Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer les paramètres de filtrage
         $search = $request->query->get('search');
         $status = $request->query->get('status');
         $date = $request->query->get('date');
+        $limit = $request->query->get('limit');
+        $sort = $request->query->get('sort');
+
 
         // Récupérer les réservations avec filtres
-        $reservations = $this->vehicleRentalRepository->findByFilters($search, $status, $date);
+        $reservations = $this->vehicleRentalRepository->findByFilters($search, $status, $date, $limit, $sort);
         
         // Formater les données pour le frontend
         $formattedReservations = [];
@@ -75,9 +78,9 @@ class ReservationAdminController extends AbstractController
     public function get(int $id): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer la réservation
         $reservation = $this->vehicleRentalRepository->find($id);
@@ -110,9 +113,9 @@ class ReservationAdminController extends AbstractController
     public function updateStatus(int $id, Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer la réservation
         $reservation = $this->vehicleRentalRepository->find($id);
@@ -147,9 +150,9 @@ class ReservationAdminController extends AbstractController
     public function assignVehicle(int $id, Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer la réservation
         $reservation = $this->vehicleRentalRepository->find($id);
@@ -194,9 +197,9 @@ class ReservationAdminController extends AbstractController
     public function getAvailableVehicles(Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//    if (!$this->security->isGranted('ROLE_ADMIN')) {
-//        return $this->json(['message' => 'Accès refusé'], 403);
-//    }
+    if (!$this->security->isGranted('ROLE_ADMIN')) {
+        return $this->json(['message' => 'Accès refusé'], 403);
+    }
 
         // Récupérer la date de la requête
         $date = $request->query->get('date');

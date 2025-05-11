@@ -3,9 +3,15 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasher;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -15,8 +21,30 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[ApiResource(
+    operations: [
+        new Get(
+            normalizationContext: ['groups' => ['user:read']],
+            security: "is_granted('ROLE_ADMIN') or object == user"
+        ),
+        new GetCollection(
+            normalizationContext: ['groups' => ['user:read']],
+            security: "is_granted('ROLE_ADMIN')"
+        ),
+        new Post(
+            validationContext: ['groups' => ['Default', 'user:create']],
+            processor: UserPasswordHasher::class
+        ),
+        new Put(
+            processor: UserPasswordHasher::class,
+            normalizationContext: ['groups' => ['user:read']],
+            security: "is_granted('ROLE_ADMIN') or object == user"
+        ),
+        new Delete(
+            security: "is_granted('ROLE_ADMIN')"
+        ),
+    ],
     normalizationContext: ['groups' => ['user:read']],
-    denormalizationContext: ['groups' => ['user:write']],
+    denormalizationContext: ['groups' => ['user:write']]
 )]
 #[UniqueEntity(fields: ['email'], message: 'Cet email est déjà utilisé')]
 #[ORM\Index(columns: ['email'], name: 'user_email_idx')]
@@ -108,7 +136,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
-        $this->roles = ['ROLE_USER'];
+        $this->roles = ['ROLE_STUDENT'];
     }
 
     public function getId(): ?int
@@ -144,8 +172,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getRoles(): array
     {
         $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
-        $roles[] = 'ROLE_USER';
+        // guarantee every user at least has ROLE_STUDENT
+        $roles[] = 'ROLE_STUDENT';
 
         return array_unique($roles);
     }

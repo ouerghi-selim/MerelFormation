@@ -1,7 +1,7 @@
 // src/pages/admin/SessionsAdmin.tsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Edit, Trash2, Calendar, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, Calendar, Users, Eye } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
 import DataTable from '../../components/common/DataTable';
@@ -9,7 +9,7 @@ import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
 import { useNotification } from '../../contexts/NotificationContext';
-import { adminSessionsApi, adminFormationsApi } from '../../services/api';
+import { adminSessionsApi, adminFormationsApi } from '@/services/api.ts';
 
 interface Session {
     id: number;
@@ -53,6 +53,8 @@ const SessionsAdmin: React.FC = () => {
     const [selectedStatus, setSelectedStatus] = useState('');
     const [instructors, setInstructors] = useState<Array<{id: number, firstName: string, lastName: string}>>([]);
     const [loadingInstructors, setLoadingInstructors] = useState(false);
+    const [showInspectModal, setShowInspectModal] = useState(false);
+    const [sessionToInspect, setSessionToInspect] = useState<Session | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -120,6 +122,10 @@ const SessionsAdmin: React.FC = () => {
         }
     };
 
+    const openInspectModal = (session: Session) => {
+        setSessionToInspect({...session});
+        setShowInspectModal(true);
+    };
     const openEditModal = (session: Session) => {
         setSessionToEdit({...session});
         setFormErrors({});
@@ -265,6 +271,13 @@ const SessionsAdmin: React.FC = () => {
     // Rendu des actions pour chaque ligne
     const renderActions = (session: Session) => (
         <div className="flex justify-end space-x-2">
+            <button
+                onClick={() => openInspectModal(session)}
+                className="text-indigo-600 hover:text-indigo-900"
+                title="Voir les détails"
+            >
+                <Eye className="h-5 w-5" />
+            </button>
             <button
                 onClick={() => openEditModal(session)}
                 className="text-blue-700 hover:text-blue-900"
@@ -616,6 +629,97 @@ const SessionsAdmin: React.FC = () => {
                             </div>
                         </div>
                     </form>
+                )}
+            </Modal>
+
+            <Modal
+                isOpen={showInspectModal}
+                onClose={() => setShowInspectModal(false)}
+                title="Détails de la session"
+                maxWidth="max-w-3xl"
+                footer={
+                    <div className="flex justify-end space-x-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowInspectModal(false)}
+                        >
+                            Fermer
+                        </Button>
+                    </div>
+                }
+            >
+                {sessionToInspect && (
+                    <div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <h4 className="font-medium text-gray-700">Formation</h4>
+                                <p>{sessionToInspect.formation.title}</p>
+                            </div>
+                            <div>
+                                <h4 className="font-medium text-gray-700">Lieu</h4>
+                                <p>{sessionToInspect.location}</p>
+                            </div>
+                            <div>
+                                <h4 className="font-medium text-gray-700">Date de début</h4>
+                                <p>{formatDate(sessionToInspect.startDate)}</p>
+                            </div>
+                            <div>
+                                <h4 className="font-medium text-gray-700">Date de fin</h4>
+                                <p>{formatDate(sessionToInspect.endDate)}</p>
+                            </div>
+                            <div>
+                                <h4 className="font-medium text-gray-700">Formateur</h4>
+                                <p>
+                                    {sessionToInspect.instructor
+                                        ? `${sessionToInspect.instructor.firstName} ${sessionToInspect.instructor.lastName}`
+                                        : 'Non assigné'}
+                                </p>
+                            </div>
+                            <div>
+                                <h4 className="font-medium text-gray-700">Nombre maximum de participants</h4>
+                                <p>{sessionToInspect.maxParticipants}</p>
+                            </div>
+                            <div>
+                                <h4 className="font-medium text-gray-700">Statut</h4>
+                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(sessionToInspect.status)}`}>
+                        {formatStatus(sessionToInspect.status)}
+                    </span>
+                            </div>
+                        </div>
+
+                        {sessionToInspect.notes && (
+                            <div className="mb-4">
+                                <h4 className="font-medium text-gray-700">Notes</h4>
+                                <p className="whitespace-pre-wrap">{sessionToInspect.notes}</p>
+                            </div>
+                        )}
+
+                        <div className="mt-6">
+                            <h3 className="text-lg font-medium text-gray-900 mb-3">Liste des participants</h3>
+                            {sessionToInspect.participants && sessionToInspect.participants.length > 0 ? (
+                                <div className="bg-white shadow overflow-hidden sm:rounded-md">
+                                    <ul className="divide-y divide-gray-200">
+                                        {sessionToInspect.participants.map((participant) => (
+                                            <li key={participant.id} className="px-4 py-3">
+                                                <div className="flex items-center">
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-sm font-medium text-gray-900 truncate">
+                                                            {participant.firstName} {participant.lastName}
+                                                        </p>
+                                                        <p className="text-sm text-gray-500 truncate">
+                                                            {participant.email}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-gray-500">Aucun participant inscrit à cette session.</p>
+                            )}
+                        </div>
+                    </div>
                 )}
             </Modal>
         </div>

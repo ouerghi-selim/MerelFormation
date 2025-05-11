@@ -26,7 +26,7 @@ const UsersAdmin: React.FC = () => {
       // Effectuer trois appels API parallèles
       const [adminsResponse, studentsResponse, instructorsResponse] = await Promise.all([
         adminUsersApi.getAll('role=ROLE_ADMIN'),
-        adminUsersApi.getAll('role=ROLE_USER'),
+        adminUsersApi.getAll('role=ROLE_STUDENT'),
         adminUsersApi.getAll('role=ROLE_INSTRUCTOR')
       ]);
 

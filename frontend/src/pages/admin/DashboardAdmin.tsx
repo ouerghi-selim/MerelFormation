@@ -1,4 +1,4 @@
-// src/pages/admin/DashboardAdmin.tsx (version refactorisée)
+// src/pages/admin/DashboardAdmin.tsx (version modifiée)
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Users, BookOpen, Calendar, AlertCircle } from 'lucide-react';
@@ -9,7 +9,7 @@ import LineChart from '../../components/charts/LineChart';
 import BarChart from '../../components/charts/BarChart';
 import Alert from '../../components/common/Alert';
 import ReservationDetailModal from '../../components/admin/ReservationDetailModal';
-import {adminDashboardApi, adminReservationsApi} from '../../services/api';
+import {adminDashboardApi, adminReservationsApi} from '@/services/api.ts';
 
 interface DashboardStats {
   activeStudents: number;
@@ -20,16 +20,30 @@ interface DashboardStats {
   conversionRate: number;
 }
 
-interface RecentInscription {
+interface SessionReservation {
   id: number;
-  studentName: string;
-  formationName: string;
-  date: string;
+  user: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+  };
+  session: {
+    id: number;
+    startDate: string;
+    formation: {
+      id: number;
+      title: string;
+    }
+  };
+  status: string;
+  createdAt: string;
 }
 
 interface RecentReservation {
   id: number;
-  vehicleModel: string;
+  vehicleAssigned: string | null;
   clientName: string;
   date: string;
   status: string;
@@ -45,7 +59,7 @@ const DashboardAdmin: React.FC = () => {
     conversionRate: 0
   });
 
-  const [inscriptions, setInscriptions] = useState<RecentInscription[]>([]);
+  const [sessionReservations, setSessionReservations] = useState<SessionReservation[]>([]);
   const [reservations, setReservations] = useState<RecentReservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,23 +67,11 @@ const DashboardAdmin: React.FC = () => {
   const [selectedReservationType, setSelectedReservationType] = useState<'vehicle' | 'session'>('vehicle');
   const [selectedReservationId, setSelectedReservationId] = useState<number | null>(null);
 
-
   // Données de graphique (à remplacer par des données réelles)
-  const revenueData = [
-    { name: 'Jan', revenue: 5000 },
-    { name: 'Fév', revenue: 4500 },
-    { name: 'Mar', revenue: 6000 },
-    { name: 'Avr', revenue: 8000 },
-    { name: 'Mai', revenue: 7500 },
-    { name: 'Juin', revenue: 9000 },
-  ];
+  const [revenueData, setRevenueData] = useState([]);
+  const [successRateData, setSuccessRateData] = useState([]);
 
-  const successRateData = [
-    { name: 'Formation Initiale', taux: 85 },
-    { name: 'Formation Continue', taux: 92 },
-    { name: 'Formation Mobilité', taux: 88 },
-  ];
-  // Nouvelles méthodes pour le modal
+  // Méthodes pour le modal
   const handleOpenVehicleReservation = (id: number) => {
     setSelectedReservationType('vehicle');
     setSelectedReservationId(id);
@@ -77,19 +79,6 @@ const DashboardAdmin: React.FC = () => {
   };
 
   const handleOpenSessionReservation = (id: number) => {
-    console.log("Opening session reservation:", id);
-
-    // Intercepter l'appel API et utiliser les données locales
-    const mockSessionReservation = getSessionReservationFromInscription(id);
-
-    // Pour déboguer
-    console.log("Mock session reservation data:", mockSessionReservation);
-
-    if (mockSessionReservation) {
-      // Patch temporaire: Stocker les données dans le localStorage pour les récupérer dans le modal
-      localStorage.setItem('temp_session_data', JSON.stringify(mockSessionReservation));
-    }
-
     setSelectedReservationType('session');
     setSelectedReservationId(id);
     setShowDetailModal(true);
@@ -102,85 +91,54 @@ const DashboardAdmin: React.FC = () => {
 
   // Méthode pour mettre à jour les données après une action sur le modal
   const handleReservationUpdated = () => {
-    // Recharger les données ou mettre à jour localement
-    // Pour un exemple simple, on va juste fermer le modal
+    fetchDashboardData();
     setShowDetailModal(false);
   };
-  const getSessionReservationFromInscription = (id: number) => {
-    // Trouver l'inscription correspondante
-    const inscription = inscriptions.find(ins => ins.id === id);
 
-    if (!inscription) return null;
-
-    // Convertir au format attendu par ReservationDetailModal
-    return {
-      id: inscription.id,
-      user: {
-        id: 101, // Valeur par défaut
-        firstName: inscription.studentName.split(' ')[0],
-        lastName: inscription.studentName.split(' ')[1] || '',
-        email: `${inscription.studentName.replace(' ', '.').toLowerCase()}@example.com`,
-        phone: '06 XX XX XX XX' // Valeur par défaut
-      },
-      session: {
-        id: 201, // Valeur par défaut
-        startDate: new Date().toISOString(),
-        formation: {
-          id: 301, // Valeur par défaut
-          title: inscription.formationName
-        }
-      },
-      status: 'pending', // Par défaut
-      createdAt: new Date(inscription.date.split('/').reverse().join('-')).toISOString()
-    };
+  // Fonction pour formater les dates
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   };
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Utilisation des appels API réels
+      const [
+        statsResponse,
+        sessionReservationsResponse,
+        vehicleReservationsResponse,
+        revenueDataResponse,
+        successRateDataResponse
+      ] = await Promise.all([
+        adminDashboardApi.getStats(),
+        adminReservationsApi.getSessionReservations('limit=4&sort=createdAt,desc'),
+        adminReservationsApi.getAll('limit=4&sort=date,desc'),
+        adminDashboardApi.getRevenueData(),
+        adminDashboardApi.getSuccessRateData()
+      ]);
+
+      setStats(statsResponse.data);
+      setSessionReservations(sessionReservationsResponse.data);
+      setReservations(vehicleReservationsResponse.data);
+      setRevenueData(revenueDataResponse.data);
+      setSuccessRateData(successRateDataResponse.data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Erreur lors du chargement des données du tableau de bord');
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-
-        // Utilisation des appels API réels
-        const [statsResponse, inscriptionsResponse, reservationsResponse] = await Promise.all([
-          adminDashboardApi.getStats(),
-          adminDashboardApi.getRecentInscriptions(),
-          adminReservationsApi.getAll()
-        ]);
-
-        setStats(statsResponse.data);
-        setInscriptions(inscriptionsResponse.data);
-        setReservations(reservationsResponse.data);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-        setError('Erreur lors du chargement des données');
-        setLoading(false);
-
-        // Données de secours en cas d'erreur (pour le développement)
-        setStats({
-          activeStudents: 24,
-          activeFormations: 12,
-          upcomingSessions: 8,
-          pendingReservations: 5,
-          totalRevenue: 15000,
-          conversionRate: 68
-        });
-
-        setInscriptions([
-          { id: 1, studentName: 'Jean Dupont', formationName: 'Formation Initiale', date: '12/03/2025' },
-          { id: 2, studentName: 'Marie Lambert', formationName: 'Formation Mobilité', date: '10/03/2025' },
-          { id: 3, studentName: 'Paul Martin', formationName: 'Formation Continue', date: '08/03/2025' },
-          { id: 4, studentName: 'Sophie Klein', formationName: 'Formation Initiale', date: '05/03/2025' }
-        ]);
-
-        setReservations([
-          { id: 1, vehicleModel: 'Touran', clientName: 'Sophie Klein', date: '15/03/2025', status: 'pending' },
-          { id: 2, vehicleModel: 'Touran', clientName: 'Kevin Robert', date: '14/03/2025', status: 'confirmed' },
-          { id: 3, vehicleModel: 'Clio', clientName: 'Thomas Blanc', date: '12/03/2025', status: 'completed' },
-          { id: 4, vehicleModel: 'Clio', clientName: 'Julie Moreau', date: '10/03/2025', status: 'cancelled' }
-        ]);
-      }
-    };
-
     fetchDashboardData();
   }, []);
 
@@ -246,8 +204,8 @@ const DashboardAdmin: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <div className="bg-white p-6 rounded-lg shadow">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-gray-800">Dernières inscriptions</h2>
-                  <Link to="/admin/inscriptions" className="text-blue-700 hover:text-blue-900 text-sm font-medium">
+                  <h2 className="text-xl font-bold text-gray-800">Réservations de formations récentes</h2>
+                  <Link to="/admin/reservations" className="text-blue-700 hover:text-blue-900 text-sm font-medium">
                     Voir tout
                   </Link>
                 </div>
@@ -257,7 +215,7 @@ const DashboardAdmin: React.FC = () => {
                     <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Nom
+                        Élève
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Formation
@@ -265,26 +223,41 @@ const DashboardAdmin: React.FC = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Date
                       </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Statut
+                      </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                    {inscriptions.map((inscription) => (
-                        <tr key={inscription.id} className="hover:bg-gray-50">
+                    {sessionReservations.map((reservation) => (
+                        <tr key={reservation.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{inscription.studentName}</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {reservation.user.firstName} {reservation.user.lastName}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{inscription.formationName}</div>
+                            <div className="text-sm text-gray-900">{reservation.session.formation.title}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-500">{inscription.date}</div>
+                            <div className="text-sm text-gray-500">{formatDate(reservation.createdAt)}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                              ${reservation.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                reservation.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                    'bg-gray-100 text-gray-800'}`}>
+                              {reservation.status === 'pending' ? 'En attente' :
+                                  reservation.status === 'confirmed' ? 'Confirmée' :
+                                      'Annulée'}
+                            </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
-                                onClick={() => handleOpenSessionReservation(inscription.id)}
+                                onClick={() => handleOpenSessionReservation(reservation.id)}
                                 className="text-blue-700 hover:text-blue-900"
                             >
                               Détails
@@ -299,7 +272,7 @@ const DashboardAdmin: React.FC = () => {
 
               <div className="bg-white p-6 rounded-lg shadow">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-gray-800">Réservations récentes</h2>
+                  <h2 className="text-xl font-bold text-gray-800">Réservations de véhicules récentes</h2>
                   <Link to="/admin/reservations" className="text-blue-700 hover:text-blue-900 text-sm font-medium">
                     Voir tout
                   </Link>
@@ -330,7 +303,9 @@ const DashboardAdmin: React.FC = () => {
                     {reservations.map((reservation) => (
                         <tr key={reservation.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{reservation.vehicleModel}</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {reservation.vehicleAssigned || 'Non assigné'}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">{reservation.clientName}</div>
@@ -365,6 +340,7 @@ const DashboardAdmin: React.FC = () => {
                 </div>
               </div>
             </div>
+
             <ReservationDetailModal
                 isOpen={showDetailModal}
                 onClose={handleCloseModal}
@@ -372,6 +348,7 @@ const DashboardAdmin: React.FC = () => {
                 reservationId={selectedReservationId}
                 onSuccess={handleReservationUpdated}
             />
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-lg shadow">
                 <h2 className="text-xl font-bold text-gray-800 mb-6">Revenus mensuels</h2>
@@ -382,10 +359,10 @@ const DashboardAdmin: React.FC = () => {
               </div>
 
               <div className="bg-white p-6 rounded-lg shadow">
-                <h2 className="text-xl font-bold text-gray-800 mb-6">Taux de réussite aux examens</h2>
+                <h2 className="text-xl font-bold text-gray-800 mb-6">Taux de confirmation des réservations</h2>
                 <BarChart
                     data={successRateData}
-                    bars={[{ dataKey: 'taux', color: '#10B981', name: 'Taux de réussite (%)' }]}
+                    bars={[{ dataKey: 'taux', color: '#10B981', name: 'Taux de confirmation (%)' }]}
                 />
               </div>
             </div>

@@ -79,6 +79,10 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
                     const response = await adminReservationsApi.getById(reservationId);
                     setVehicleReservation(response.data);
 
+                    // Définir selectedVehicle avec le véhicule déjà assigné
+                    if (response.data && response.data.vehicleAssigned) {
+                        setSelectedVehicle(response.data.vehicleAssigned);
+                    }
                     // Convertir la date au format ISO pour l'API
                     // On utilise la date de la réservation pour trouver les véhicules disponibles ce jour-là
                     if (response.data && response.data.date) {

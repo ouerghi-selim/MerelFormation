@@ -86,49 +86,105 @@ class PaymentRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get payments statistics
+     * Get payments statistics with enhanced dashboard data
      */
     public function getStatistics(\DateTimeInterface $startDate = null, \DateTimeInterface $endDate = null): array
     {
-        $qb = $this->createQueryBuilder('p');
-        
-        $conditions = [];
-        $parameters = [];
-        
-        if ($startDate && $endDate) {
-            $conditions[] = 'p.createdAt BETWEEN :startDate AND :endDate';
-            $parameters['startDate'] = $startDate;
-            $parameters['endDate'] = $endDate;
+        // Statistiques de base - utilisons des méthodes plus simples
+        $totalAmount = $this->createQueryBuilder('p')
+            ->select('SUM(p.amount)')
+            ->getQuery()
+            ->getSingleScalarResult() ?? 0;
+
+        // Compter les paiements par statut
+        $countByStatus = [];
+        $statuses = ['pending', 'completed', 'failed', 'refunded'];
+
+        foreach ($statuses as $status) {
+            $count = $this->count(['status' => $status]);
+            $amount = $this->createQueryBuilder('p')
+                ->select('SUM(p.amount)')
+                ->where('p.status = :status')
+                ->setParameter('status', $status)
+                ->getQuery()
+                ->getSingleScalarResult() ?? 0;
+
+            $countByStatus[] = [
+                'status' => $status,
+                'count' => $count,
+                'total' => $amount
+            ];
         }
 
-        return [
-            'totalAmount' => $qb->select('SUM(p.amount)')
-                ->where($conditions ? implode(' AND ', $conditions) : '1=1')
-                ->setParameters($parameters)
-                ->getQuery()
-                ->getSingleScalarResult() ?? 0,
+        // Compter les paiements par méthode
+        $countByMethod = [];
+        $methods = ['card', 'transfer', 'cpf'];
 
-            'countByStatus' => $qb->select('p.status, COUNT(p.id) as count, SUM(p.amount) as total')
-                ->where($conditions ? implode(' AND ', $conditions) : '1=1')
-                ->setParameters($parameters)
-                ->groupBy('p.status')
+        foreach ($methods as $method) {
+            $count = $this->count(['method' => $method]);
+            $amount = $this->createQueryBuilder('p')
+                ->select('SUM(p.amount)')
+                ->where('p.method = :method')
+                ->setParameter('method', $method)
                 ->getQuery()
-                ->getResult(),
+                ->getSingleScalarResult() ?? 0;
 
-            'countByMethod' => $qb->select('p.method, COUNT(p.id) as count, SUM(p.amount) as total')
-                ->where($conditions ? implode(' AND ', $conditions) : '1=1')
-                ->setParameters($parameters)
-                ->groupBy('p.method')
-                ->getQuery()
-                ->getResult(),
+            $countByMethod[] = [
+                'method' => $method,
+                'count' => $count,
+                'total' => $amount
+            ];
+        }
 
-            'successRate' => $qb->select('(COUNT(CASE WHEN p.status = :completed THEN 1 END) * 100.0 / COUNT(p.id)) as rate')
-                ->where($conditions ? implode(' AND ', $conditions) : '1=1')
-                ->setParameter('completed', 'completed')
-                ->setParameters($parameters)
-                ->getQuery()
-                ->getSingleScalarResult() ?? 0
+        // Calculer le taux de réussite manuellement
+        $totalPayments = $this->count([]);
+        $completedPayments = $this->count(['status' => 'completed']);
+        $successRate = $totalPayments > 0 ? round(($completedPayments / $totalPayments) * 100) : 0;
+
+        $stats = [
+            'totalAmount' => $totalAmount,
+            'countByStatus' => $countByStatus,
+            'countByMethod' => $countByMethod,
+            'successRate' => $successRate
         ];
+
+        // Ajouter les données mensuelles de revenus pour le dashboard
+        // Approche simplifiée qui évite les erreurs de syntaxe
+        $currentYear = (int)(new \DateTime())->format('Y');
+
+        $monthlyData = [];
+        $monthNames = [
+            1 => 'Jan', 2 => 'Fév', 3 => 'Mar', 4 => 'Avr', 5 => 'Mai', 6 => 'Juin',
+            7 => 'Juil', 8 => 'Août', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Déc'
+        ];
+
+        // Pour chaque mois de l'année en cours jusqu'au mois actuel
+        $currentMonth = (int)(new \DateTime())->format('m');
+
+        for ($month = 1; $month <= $currentMonth; $month++) {
+            $startDate = new \DateTime("$currentYear-$month-01");
+            $endDate = clone $startDate;
+            $endDate->modify('last day of this month');
+
+            $revenue = $this->createQueryBuilder('p')
+                ->select('SUM(p.amount)')
+                ->where('p.createdAt BETWEEN :start AND :end')
+                ->andWhere('p.status = :status')
+                ->setParameter('start', $startDate)
+                ->setParameter('end', $endDate)
+                ->setParameter('status', 'completed')
+                ->getQuery()
+                ->getSingleScalarResult() ?? 0;
+
+            $monthlyData[] = [
+                'month' => $monthNames[$month],
+                'revenue' => (float)$revenue
+            ];
+        }
+
+        $stats['monthlyRevenue'] = $monthlyData;
+
+        return $stats;
     }
 
     /**

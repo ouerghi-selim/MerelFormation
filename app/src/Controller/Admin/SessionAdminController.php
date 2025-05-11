@@ -54,9 +54,9 @@ class SessionAdminController extends AbstractController
     public function list(Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer les paramètres de filtrage
         $search = $request->query->get('search');
@@ -97,9 +97,9 @@ class SessionAdminController extends AbstractController
     public function get(int $id): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer la session
         $session = $this->sessionRepository->find($id);
@@ -120,9 +120,9 @@ class SessionAdminController extends AbstractController
     public function create(Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer les données de la requête
         $data = json_decode($request->getContent(), true);
@@ -168,9 +168,9 @@ class SessionAdminController extends AbstractController
     public function update(int $id, Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer la session
         $session = $this->sessionRepository->find($id);
@@ -242,9 +242,9 @@ class SessionAdminController extends AbstractController
     public function delete(int $id): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer la session
         $session = $this->sessionRepository->find($id);
@@ -279,9 +279,9 @@ class SessionAdminController extends AbstractController
     public function getParticipants(int $id): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer la session
         $session = $this->sessionRepository->find($id);
@@ -314,9 +314,9 @@ class SessionAdminController extends AbstractController
     public function addParticipant(int $id, Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer la session
         $session = $this->sessionRepository->find($id);
@@ -364,9 +364,9 @@ class SessionAdminController extends AbstractController
     public function removeParticipant(int $id, int $userId): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer la session
         $session = $this->sessionRepository->find($id);
@@ -402,9 +402,9 @@ class SessionAdminController extends AbstractController
     public function getStats(): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Obtenir les statistiques depuis le repository
         $stats = $this->sessionRepository->getStatistics();
@@ -429,7 +429,14 @@ class SessionAdminController extends AbstractController
             'location' => $session->getLocation(),
             'status' => $session->getStatus(),
             'notes' => $session->getNotes(),
-            'participants' => count($session->getParticipants())
+            'participants' => array_map(function($participant) {
+                return [
+                    'id' => $participant->getId(),
+                    'firstName' => $participant->getFirstName(),
+                    'lastName' => $participant->getLastName(),
+                    'email' => $participant->getEmail()
+                ];
+            }, $session->getParticipants()->toArray())
         ];
         // Ajouter l'instructeur aux données formatées
         if ($session->getInstructor()) {
