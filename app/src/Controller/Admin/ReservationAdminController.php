@@ -37,17 +37,20 @@ class ReservationAdminController extends AbstractController
     public function list(Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer les paramètres de filtrage
         $search = $request->query->get('search');
         $status = $request->query->get('status');
         $date = $request->query->get('date');
+        $limit = $request->query->get('limit');
+        $sort = $request->query->get('sort');
+
 
         // Récupérer les réservations avec filtres
-        $reservations = $this->vehicleRentalRepository->findByFilters($search, $status, $date);
+        $reservations = $this->vehicleRentalRepository->findByFilters($search, $status, $date, $limit, $sort);
         
         // Formater les données pour le frontend
         $formattedReservations = [];
@@ -110,9 +113,9 @@ class ReservationAdminController extends AbstractController
     public function updateStatus(int $id, Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer la réservation
         $reservation = $this->vehicleRentalRepository->find($id);
@@ -147,9 +150,9 @@ class ReservationAdminController extends AbstractController
     public function assignVehicle(int $id, Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
 
         // Récupérer la réservation
         $reservation = $this->vehicleRentalRepository->find($id);
@@ -194,9 +197,9 @@ class ReservationAdminController extends AbstractController
     public function getAvailableVehicles(Request $request): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-//        if (!$this->security->isGranted('ROLE_ADMIN')) {
-//            return $this->json(['message' => 'Accès refusé'], 403);
-//        }
+    if (!$this->security->isGranted('ROLE_ADMIN')) {
+        return $this->json(['message' => 'Accès refusé'], 403);
+    }
 
         // Récupérer la date de la requête
         $date = $request->query->get('date');
@@ -204,30 +207,40 @@ class ReservationAdminController extends AbstractController
         if (!$date) {
             return $this->json(['message' => 'Date non spécifiée'], 400);
         }
-        
+
         // Convertir la date au format DateTime
         try {
-
+            // Essayer d'abord le format d/m/Y
             $dateObj = \DateTime::createFromFormat('d/m/Y', $date);
 
-            //$dateObj = new \DateTime($dateObj);
+            // Si ça échoue, essayer Y-m-d
+            if (!$dateObj) {
+                $dateObj = \DateTime::createFromFormat('Y-m-d', $date);
+            }
+
+            if (!$dateObj) {
+                throw new \Exception('Format de date non reconnu');
+            }
+
+            // Convertir en DateTimeImmutable si nécessaire
+            $dateImmutable = \DateTimeImmutable::createFromMutable($dateObj);
 
         } catch (\Exception $e) {
-           // dd($e->getMessage());
-            return $this->json(['message' => 'Format de date invalide'], 400);
+            return $this->json(['message' => 'Format de date invalide: ' . $e->getMessage()], 400);
         }
-        
+
         // Récupérer les véhicules disponibles pour cette date
-        $availableVehicles = $this->vehicleRepository->findAvailableVehicles($dateObj);
-        
+        $availableVehicles = $this->vehicleRepository->findAvailableVehicles($dateImmutable);
+
         // Formater les données pour le frontend
         $formattedVehicles = [];
         foreach ($availableVehicles as $vehicle) {
             $formattedVehicles[] = [
                 'id' => $vehicle->getId(),
                 'model' => $vehicle->getModel(),
-                //'type' => $vehicle->getType(),
-                //'licensePlate' => $vehicle->getLicensePlate()
+                'category' => $vehicle->getCategory(),
+                'plate' => $vehicle->getPlate(),
+                'dailyRate' => $vehicle->getDailyRate()
             ];
         }
 

@@ -29,6 +29,9 @@ class Module
     #[Groups(['module:read', 'module:write', 'formation:item:read'])]
     private ?int $duration = null;
 
+    #[ORM\Column(name: "position", nullable: true)]
+    #[Groups(['module:read', 'module:write', 'formation:item:read'])]
+    private ?int $position = null;
     #[ORM\ManyToOne(inversedBy: 'modules')]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['module:read', 'module:write'])]
@@ -68,6 +71,17 @@ class Module
     public function setDuration(int $duration): self
     {
         $this->duration = $duration;
+        return $this;
+    }
+
+    public function getPosition(): ?int
+    {
+        return $this->position;
+    }
+
+    public function setPosition(?int $position): self
+    {
+        $this->position = $position;
         return $this;
     }
 

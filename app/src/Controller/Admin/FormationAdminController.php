@@ -9,6 +9,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Repository\FormationRepository;
 use App\Entity\Formation;
+use App\Entity\Module;
+use App\Entity\ModulePoint;
+use App\Entity\Prerequisite;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -41,12 +44,42 @@ class FormationAdminController extends AbstractController
         }
 
         // Récupérer les paramètres de filtrage
-        $title = $request->query->get('title');
-        $type = $request->query->get('type');
+        // Build criteria array from GET parameters
+        $criteria = [];
 
-        // Récupérer les formations avec filtres
-        $formations = $this->formationRepository->findByFilters($title, $type);
-        
+        // Filter by title (string contains)
+        if (null !== $title = $request->query->get('title')) {
+            $criteria['title'] = trim($title);
+        }
+
+        // Filter by exact type
+        if (null !== $type = $request->query->get('type')) {
+            $criteria['type'] = $type;
+        }
+
+        // Optionally filter by minimum price
+        if (null !== $min = $request->query->get('priceMin')) {
+            $criteria['priceMin'] = (float) $min;
+        }
+
+        // Optionally filter by maximum price
+        if (null !== $max = $request->query->get('priceMax')) {
+            $criteria['priceMax'] = (float) $max;
+        }
+
+        // Optionally filter by category
+        if (null !== $cat = $request->query->get('categoryId')) {
+            $criteria['categoryId'] = (int) $cat;
+        }
+
+        // Optionally require available future sessions
+        if ($request->query->getBoolean('hasAvailableSessions')) {
+            $criteria['hasAvailableSessions'] = true;
+        }
+
+        // Fetch with dynamic criteria
+        $formations = $this->formationRepository->searchByCriteria($criteria);
+
         // Formater les données pour le frontend
         $formattedFormations = [];
         foreach ($formations as $formation) {
@@ -56,7 +89,7 @@ class FormationAdminController extends AbstractController
                 'type' => $formation->getType(),
                 'duration' => $formation->getDuration(),
                 'price' => $formation->getPrice(),
-                'isActive' => $formation->isActive()
+                'isActive' => $formation->isIsActive()
             ];
         }
 
@@ -75,9 +108,50 @@ class FormationAdminController extends AbstractController
 
         // Récupérer la formation
         $formation = $this->formationRepository->find($id);
-        
+
         if (!$formation) {
             return $this->json(['message' => 'Formation non trouvée'], 404);
+        }
+
+        // Formater les modules
+        $modules = [];
+        foreach ($formation->getModules() as $module) {
+            $modulePoints = [];
+            foreach ($module->getPoints() as $point) {
+                $modulePoints[] = [
+                    'id' => $point->getId(),
+                    'content' => $point->getContent()
+                ];
+            }
+
+            $modules[] = [
+                'id' => $module->getId(),
+                'title' => $module->getTitle(),
+                'duration' => $module->getDuration(),
+                'order' => $module->getPosition(),
+                'points' => $modulePoints
+            ];
+        }
+
+        // Formater les prérequis
+        $prerequisites = [];
+        foreach ($formation->getPrerequisites() as $prerequisite) {
+            $prerequisites[] = [
+                'id' => $prerequisite->getId(),
+                'description' => $prerequisite->getContent()
+            ];
+        }
+
+        // Formater les sessions
+        $sessions = [];
+        foreach ($formation->getSessions() as $session) {
+            $sessions[] = [
+                'id' => $session->getId(),
+                'startDate' => $session->getStartDate()->format('Y-m-d H:i:s'),
+                'endDate' => $session->getEndDate()->format('Y-m-d H:i:s'),
+                'maxParticipants' => $session->getMaxParticipants(),
+                'status' => $session->getStatus()
+            ];
         }
 
         // Formater les données pour le frontend
@@ -88,9 +162,10 @@ class FormationAdminController extends AbstractController
             'type' => $formation->getType(),
             'duration' => $formation->getDuration(),
             'price' => $formation->getPrice(),
-            'isActive' => $formation->isActive(),
-            'modules' => [], // À implémenter selon votre structure de données
-            'sessions' => [] // À implémenter selon votre structure de données
+            'isActive' => $formation->isIsActive(),
+            'modules' => $modules,
+            'prerequisites' => $prerequisites,
+            'sessions' => $sessions
         ];
 
         return $this->json($formattedFormation);
@@ -108,9 +183,9 @@ class FormationAdminController extends AbstractController
 
         // Récupérer les données de la requête
         $data = json_decode($request->getContent(), true);
-        
+
         // Valider les données (à implémenter selon vos besoins)
-        
+
         // Créer une nouvelle formation
         $formation = new Formation();
         $formation->setTitle($data['title']);
@@ -119,7 +194,43 @@ class FormationAdminController extends AbstractController
         $formation->setDuration($data['duration']);
         $formation->setPrice($data['price']);
         $formation->setIsActive($data['isActive'] ?? true);
-        
+
+        // Ajouter les modules
+        if (isset($data['modules']) && is_array($data['modules'])) {
+            foreach ($data['modules'] as $moduleData) {
+                $module = new Module();
+                $module->setTitle($moduleData['title']);
+                $module->setDuration($moduleData['duration']);
+                $module->setFormation($formation);
+
+                // Ajouter les points du module
+                if (isset($moduleData['points']) && is_array($moduleData['points'])) {
+                    foreach ($moduleData['points'] as $pointData) {
+                        $point = new ModulePoint();
+                        $point->setContent($pointData['content']);
+                        $point->setModule($module);
+                        $this->entityManager->persist($point);
+                        $module->addPoint($point);
+                    }
+                }
+
+                $this->entityManager->persist($module);
+                $formation->addModule($module);
+            }
+        }
+
+        // Ajouter les prérequis
+        if (isset($data['prerequisites']) && is_array($data['prerequisites'])) {
+            foreach ($data['prerequisites'] as $prerequisiteData) {
+                $prerequisite = new Prerequisite();
+                $prerequisite->setContent($prerequisiteData['description']);
+                $prerequisite->setFormation($formation);
+
+                $this->entityManager->persist($prerequisite);
+                $formation->addPrerequisite($prerequisite);
+            }
+        }
+
         // Persister la formation
         $this->entityManager->persist($formation);
         $this->entityManager->flush();
@@ -142,14 +253,14 @@ class FormationAdminController extends AbstractController
 
         // Récupérer la formation
         $formation = $this->formationRepository->find($id);
-        
+
         if (!$formation) {
             return $this->json(['message' => 'Formation non trouvée'], 404);
         }
 
         // Récupérer les données de la requête
         $data = json_decode($request->getContent(), true);
-        
+
         // Mettre à jour la formation
         if (isset($data['title'])) {
             $formation->setTitle($data['title']);
@@ -169,7 +280,65 @@ class FormationAdminController extends AbstractController
         if (isset($data['isActive'])) {
             $formation->setIsActive($data['isActive']);
         }
-        
+
+        // Mettre à jour les modules
+        if (isset($data['modules']) && is_array($data['modules'])) {
+            // Supprimer les modules existants et leurs points
+            foreach ($formation->getModules() as $existingModule) {
+                // Supprimer les points du module
+                foreach ($existingModule->getPoints() as $point) {
+                    $existingModule->removePoint($point);
+                    $this->entityManager->remove($point);
+                }
+
+                $formation->removeModule($existingModule);
+                $this->entityManager->remove($existingModule);
+            }
+
+            // Ajouter les nouveaux modules
+            foreach ($data['modules'] as $index => $moduleData) {
+                $module = new Module();
+                $module->setTitle($moduleData['title']);
+                $module->setDuration($moduleData['duration']);
+                // Ajouter l'ordre si disponible ou utiliser l'index
+                $module->setPosition($moduleData['order'] ?? ($index + 1));
+                $module->setFormation($formation);
+
+                // Ajouter les points du module
+                if (isset($moduleData['points']) && is_array($moduleData['points'])) {
+                    foreach ($moduleData['points'] as $pointData) {
+                        $point = new ModulePoint();
+                        $point->setContent($pointData['content']);
+                        $point->setModule($module);
+                        $this->entityManager->persist($point);
+                        $module->addPoint($point);
+                    }
+                }
+
+                $this->entityManager->persist($module);
+                $formation->addModule($module);
+            }
+        }
+
+        // Mettre à jour les prérequis
+        if (isset($data['prerequisites']) && is_array($data['prerequisites'])) {
+            // Supprimer les prérequis existants
+            foreach ($formation->getPrerequisites() as $existingPrerequisite) {
+                $formation->removePrerequisite($existingPrerequisite);
+                $this->entityManager->remove($existingPrerequisite);
+            }
+
+            // Ajouter les nouveaux prérequis
+            foreach ($data['prerequisites'] as $prerequisiteData) {
+                $prerequisite = new Prerequisite();
+                $prerequisite->setContent($prerequisiteData['description']);
+                $prerequisite->setFormation($formation);
+
+                $this->entityManager->persist($prerequisite);
+                $formation->addPrerequisite($prerequisite);
+            }
+        }
+
         // Persister les modifications
         $this->entityManager->flush();
 
@@ -190,7 +359,7 @@ class FormationAdminController extends AbstractController
 
         // Récupérer la formation
         $formation = $this->formationRepository->find($id);
-        
+
         if (!$formation) {
             return $this->json(['message' => 'Formation non trouvée'], 404);
         }
@@ -201,6 +370,25 @@ class FormationAdminController extends AbstractController
 
         return $this->json([
             'message' => 'Formation supprimée avec succès'
+        ]);
+    }
+
+    /**
+     * @Route("/sessions", name="get_sessions", methods={"GET"})
+     */
+    public function getSessions(Request $request): JsonResponse
+    {
+        // Vérifier que l'utilisateur est un admin
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
+
+        // Cette méthode peut être implémentée pour récupérer toutes les sessions
+        // pour l'affichage dans l'interface d'administration
+
+        // Pour l'instant, retourner un message indiquant que cette fonctionnalité est à implémenter
+        return $this->json([
+            'message' => 'Fonctionnalité à implémenter'
         ]);
     }
 }

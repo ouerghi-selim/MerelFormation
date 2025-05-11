@@ -1,35 +1,65 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { redirectAuthenticatedUser, getRedirectPathForCurrentUser } from "../utils/auth";
 
 const LoginPage = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+// Vérifier si l'utilisateur est déjà connecté au chargement du composant
+    useEffect(() => {
+        const checkAuthentication = async () => {
+            const wasRedirected = await redirectAuthenticatedUser(navigate);
+            if (!wasRedirected) {
+                setIsLoading(false); // Si pas de redirection, arrêter le chargement
+            }
+        };
 
+        checkAuthentication();
+    }, [navigate]);
     const handleLogin = async (event: React.FormEvent) => {
         event.preventDefault();
         setError(null);
+        setIsLoading(true);
 
         try {
+            // 1. Obtenir le token JWT
             const response = await axios.post("/api/login_check", {
                 email,
                 password,
             });
 
-            // Stocker le token JWT
+            // 2. Stocker le token JWT
             localStorage.setItem("token", response.data.token);
-            navigate("/dashboard"); // Redirection après connexion
+
+            // 3. Déterminer et naviguer vers la bonne page en fonction du rôle
+            const redirectPath = await getRedirectPathForCurrentUser();
+            navigate(redirectPath);
+
         } catch (err: any) {
             if (err.response && err.response.status === 401) {
                 setError("Identifiants incorrects, veuillez réessayer.");
             } else {
                 setError("Une erreur s'est produite, veuillez réessayer plus tard.");
+                console.error("Login error:", err);
             }
+        } finally {
+            setIsLoading(false);
         }
     };
-
+    // Afficher un indicateur de chargement pendant la vérification d'authentification
+    if (isLoading && !error) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <div className="text-center">
+                    <p className="text-gray-600">Vérification de la connexion...</p>
+                </div>
+            </div>
+        );
+    }
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="bg-white p-8 rounded-lg shadow-lg w-96">

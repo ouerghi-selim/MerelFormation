@@ -23,26 +23,25 @@ class VehicleRepository extends ServiceEntityRepository
     }
 
     /**
-     * Find available vehicles for rental
+     * Find available vehicles for rental on a specific date
      */
-    public function findAvailableVehicles(\DateTimeInterface $startDate): array
+    public function findAvailableVehicles(\DateTimeInterface $date): array
     {
-        return $this->createQueryBuilder('v')
+        $qb = $this->createQueryBuilder('v')
             ->andWhere('v.isActive = :active')
             ->andWhere('v.status = :status')
-            ->leftJoin('v.rentals', 'r')
-            ->andWhere(
-                'r.id IS NULL OR (
-                    r.status != :rentalStatus AND
-                    (r.startDate != :startDate )
-                )'
-            )
             ->setParameter('active', true)
-            ->setParameter('status', 'available')
-            ->setParameter('rentalStatus', 'confirmed')
-            ->setParameter('startDate', $startDate)
-            //->setParameter('endDate', $endDate)
-            ->orderBy('v.category', 'ASC')
+            ->setParameter('status', 'available');
+
+        // Exclure les véhicules qui ont déjà une location confirmée pour cette date
+        $qb->leftJoin('v.rentals', 'r', 'WITH',
+            'r.status IN (:activeStatuses) AND 
+             :date BETWEEN r.startDate AND r.endDate')
+            ->setParameter('activeStatuses', ['confirmed', 'in_progress'])
+            ->setParameter('date', $date)
+            ->andWhere('r.id IS NULL');
+
+        return $qb->orderBy('v.category', 'ASC')
             ->addOrderBy('v.model', 'ASC')
             ->getQuery()
             ->getResult();

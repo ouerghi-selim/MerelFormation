@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Search, Filter, ChevronDown, CheckCircle } from 'lucide-react';
 import StudentHeader from '../../components/student/StudentHeader';
-// @ts-ignore
-import axios from 'axios';
-
+import { studentFormationsApi } from '@/services/api.ts';
 interface Formation {
   id: number;
   title: string;
@@ -29,57 +27,13 @@ const FormationsStudent: React.FC = () => {
     const fetchFormations = async () => {
       try {
         setLoading(true);
-        
-        // Simuler des données pour le développement
-        setTimeout(() => {
-          const mockFormations: Formation[] = [
-            {
-              id: 1,
-              title: 'Formation Initiale Taxi',
-              type: 'initial',
-              progress: 75,
-              startDate: '15/02/2025',
-              endDate: '30/04/2025',
-              instructor: 'Jean Dupont',
-              nextSession: '28/03/2025',
-              status: 'active'
-            },
-            {
-              id: 2,
-              title: 'Formation Continue Taxi',
-              type: 'continuous',
-              progress: 100,
-              startDate: '10/01/2025',
-              endDate: '31/01/2025',
-              instructor: 'Marie Lambert',
-              nextSession: null,
-              status: 'completed'
-            },
-            {
-              id: 3,
-              title: 'Formation Mobilité',
-              type: 'mobility',
-              progress: 0,
-              startDate: '15/04/2025',
-              endDate: '30/04/2025',
-              instructor: 'Thomas Blanc',
-              nextSession: '15/04/2025',
-              status: 'pending'
-            }
-          ];
-          
-          setFormations(mockFormations);
-          setFilteredFormations(mockFormations);
-          setLoading(false);
-        }, 1000);
-        
-        // Commenté pour le développement, à décommenter pour la production
-        /*
-        const response = await axios.get('/api/student/formations');
+
+        // Remplaçons le mock par l'appel API réel
+        const response = await studentFormationsApi.getAll();
         setFormations(response.data);
         setFilteredFormations(response.data);
         setLoading(false);
-        */
+
       } catch (err) {
         console.error('Error fetching formations:', err);
         setError('Erreur lors du chargement des formations');

@@ -27,7 +27,7 @@ use Symfony\Component\Validator\Constraints as Assert;
         ),
         new Post(
             denormalizationContext: ['groups' => ['rental:write']],
-            security: "is_granted('ROLE_USER')"
+            security: "is_granted('ROLE_STUDENT')"
         ),
         new Put(
             denormalizationContext: ['groups' => ['rental:write']],
@@ -120,28 +120,6 @@ class VehicleRental
     #[ORM\Column(length: 50, nullable: true)]
     #[Groups(['rental:read', 'rental:write'])]
     private ?string $examTime = null;
-
-    // Informations personnelles supplémentaires
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['rental:read', 'rental:write'])]
-    private ?string $birthPlace = null;
-
-    #[ORM\Column(type: 'date', nullable: true)]
-    #[Groups(['rental:read', 'rental:write'])]
-    private ?\DateTimeInterface $birthDate = null;
-
-    // Informations d'adresse
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['rental:read', 'rental:write'])]
-    private ?string $address = null;
-
-    #[ORM\Column(length: 20, nullable: true)]
-    #[Groups(['rental:read', 'rental:write'])]
-    private ?string $postalCode = null;
-
-    #[ORM\Column(length: 100, nullable: true)]
-    #[Groups(['rental:read', 'rental:write'])]
-    private ?string $city = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['rental:read', 'rental:write'])]
@@ -359,61 +337,6 @@ class VehicleRental
     public function setExamTime(?string $examTime): self
     {
         $this->examTime = $examTime;
-        return $this;
-    }
-
-    public function getBirthPlace(): ?string
-    {
-        return $this->birthPlace;
-    }
-
-    public function setBirthPlace(?string $birthPlace): self
-    {
-        $this->birthPlace = $birthPlace;
-        return $this;
-    }
-
-    public function getBirthDate(): ?\DateTimeInterface
-    {
-        return $this->birthDate;
-    }
-
-    public function setBirthDate(?\DateTimeInterface $birthDate): self
-    {
-        $this->birthDate = $birthDate;
-        return $this;
-    }
-
-    public function getAddress(): ?string
-    {
-        return $this->address;
-    }
-
-    public function setAddress(?string $address): self
-    {
-        $this->address = $address;
-        return $this;
-    }
-
-    public function getPostalCode(): ?string
-    {
-        return $this->postalCode;
-    }
-
-    public function setPostalCode(?string $postalCode): self
-    {
-        $this->postalCode = $postalCode;
-        return $this;
-    }
-
-    public function getCity(): ?string
-    {
-        return $this->city;
-    }
-
-    public function setCity(?string $city): self
-    {
-        $this->city = $city;
         return $this;
     }
 

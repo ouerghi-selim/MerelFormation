@@ -111,49 +111,64 @@ class VehicleRentalRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get rental statistics
+     * Get rental statistics with dashboard data
      */
     public function getStatistics(\DateTimeInterface $startDate = null, \DateTimeInterface $endDate = null): array
     {
-        $qb = $this->createQueryBuilder('vr');
-        
-        $conditions = [];
-        $parameters = [];
-        
-        if ($startDate && $endDate) {
-            $conditions[] = 'vr.startDate BETWEEN :startDate AND :endDate';
-            $parameters['startDate'] = $startDate;
-            $parameters['endDate'] = $endDate;
+        // Nombre total de locations
+        $totalRentals = $this->count([]);
+
+        // Revenus totaux des locations complétées
+        $totalRevenue = $this->createQueryBuilder('vr')
+            ->select('SUM(vr.totalPrice)')
+            ->where('vr.status = :completedStatus')
+            ->setParameter('completedStatus', 'completed')
+            ->getQuery()
+            ->getSingleScalarResult() ?? 0;
+
+        // Répartition par statut
+        $rentalsByStatus = [];
+        $statuses = ['pending', 'confirmed', 'completed', 'cancelled'];
+
+        foreach ($statuses as $status) {
+            $count = $this->count(['status' => $status]);
+
+            $rentalsByStatus[] = [
+                'status' => $status,
+                'count' => $count
+            ];
         }
 
-        return [
-            'totalRentals' => $qb->select('COUNT(vr.id)')
-                ->where($conditions ? implode(' AND ', $conditions) : '1=1')
-                ->setParameters($parameters)
-                ->getQuery()
-                ->getSingleScalarResult(),
+        // Pour la durée moyenne, on récupère les données brutes et on calcule manuellement
+        $rentals = $this->createQueryBuilder('vr')
+            ->select('vr.startDate', 'vr.endDate')
+            ->getQuery()
+            ->getResult();
 
-            'totalRevenue' => $qb->select('SUM(vr.totalPrice)')
-                ->where($conditions ? implode(' AND ', $conditions) : '1=1')
-                ->andWhere('vr.status = :completedStatus')
-                ->setParameter('completedStatus', 'completed')
-                ->setParameters($parameters)
-                ->getQuery()
-                ->getSingleScalarResult() ?? 0,
+        $totalDays = 0;
+        $count = count($rentals);
 
-            'rentalsByStatus' => $qb->select('vr.status, COUNT(vr.id) as count')
-                ->where($conditions ? implode(' AND ', $conditions) : '1=1')
-                ->setParameters($parameters)
-                ->groupBy('vr.status')
-                ->getQuery()
-                ->getResult(),
+        foreach ($rentals as $rental) {
+            if ($rental['startDate'] instanceof \DateTimeInterface && $rental['endDate'] instanceof \DateTimeInterface) {
+                $interval = $rental['startDate']->diff($rental['endDate']);
+                $totalDays += $interval->days;
+            }
+        }
 
-            'averageRentalDuration' => $qb->select('AVG(TIMESTAMPDIFF(DAY, vr.startDate, vr.endDate)) as avgDuration')
-                ->where($conditions ? implode(' AND ', $conditions) : '1=1')
-                ->setParameters($parameters)
-                ->getQuery()
-                ->getSingleScalarResult() ?? 0
+        $avgDuration = $count > 0 ? $totalDays / $count : 0;
+
+        $stats = [
+            'totalRentals' => $totalRentals,
+            'totalRevenue' => $totalRevenue,
+            'rentalsByStatus' => $rentalsByStatus,
+            'averageRentalDuration' => $avgDuration
         ];
+
+        // Calculer le taux de confirmation
+        $confirmedCount = $this->count(['status' => 'confirmed']);
+        $stats['confirmationRate'] = $totalRentals > 0 ? round(($confirmedCount / $totalRentals) * 100) : 0;
+
+        return $stats;
     }
 
     /**
@@ -228,18 +243,18 @@ class VehicleRentalRepository extends ServiceEntityRepository
     /**
      * Find vehicle rentals by filters for admin interface
      */
-    public function findByFilters(?string $search = null, ?string $status = null, ?string $date = null, ?string $type = null): array
-    {
+    public function findByFilters(
+        ?string $search = null,
+        ?string $status = null,
+        ?string $date = null,
+        ?int $limit = null,
+        ?string $sort = null
+    ): array {
         $qb = $this->createQueryBuilder('vr')
             ->leftJoin('vr.user', 'u')
             ->leftJoin('vr.vehicle', 'v')
             ->addSelect('u', 'v');
 
-        // Filtre sur le type si spécifié
-        if ($type) {
-            $qb->andWhere('vr.rentalType = :type')
-                ->setParameter('type', $type);
-        }
 
         // Filtre de recherche
         if ($search) {
@@ -268,8 +283,36 @@ class VehicleRentalRepository extends ServiceEntityRepository
             }
         }
 
-        return $qb->orderBy('vr.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
+        // Appliquer le tri
+        if ($sort) {
+            $sortParts = explode(',', $sort);
+            $sortField = $sortParts[0];
+            $sortDirection = isset($sortParts[1]) ? $sortParts[1] : 'ASC';
+
+            // Mapper les champs de tri à leurs chemins réels
+            $sortFieldMap = [
+                'date' => 'vr.startDate',
+                'createdAt' => 'vr.createdAt',
+                'status' => 'vr.status',
+                // Ajouter d'autres mappings si nécessaire
+            ];
+
+            if (isset($sortFieldMap[$sortField])) {
+                $qb->orderBy($sortFieldMap[$sortField], $sortDirection);
+            } else {
+                // Tri par défaut
+                $qb->orderBy('vr.createdAt', 'DESC');
+            }
+        } else {
+            // Tri par défaut
+            $qb->orderBy('vr.createdAt', 'DESC');
+        }
+
+        // Appliquer la limite
+        if ($limit !== null) {
+            $qb->setMaxResults((int) $limit);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 }

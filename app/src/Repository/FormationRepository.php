@@ -199,4 +199,43 @@ class FormationRepository extends ServiceEntityRepository
                 ->getSingleScalarResult(),
         ];
     }
+    /**
+     * Count active formations
+     *
+     * @return int
+     */
+    public function countActiveFormations(): int
+    {
+        return $this->createQueryBuilder('f')
+            ->select('COUNT(f.id)')
+            ->andWhere('f.isActive = :active')
+            ->setParameter('active', true)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+
+    /**
+     * Count active formations for a student
+     *
+     * @param int $userId
+     * @return int
+     */
+    public function countActiveFormationsForStudent(int $userId): int
+    {
+        $now = new \DateTimeImmutable();
+
+        return $this->createQueryBuilder('f')
+            ->select('COUNT(DISTINCT f.id)')
+            ->join('f.sessions', 's')
+            ->join('s.participants', 'p')
+            ->where('p.id = :userId')
+            ->andWhere('f.isActive = :active')
+            ->andWhere('s.endDate > :now OR (s.startDate <= :now AND s.endDate >= :now)')
+            ->setParameter('userId', $userId)
+            ->setParameter('active', true)
+            ->setParameter('now', $now)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Controller\Admin;
 
+use App\Repository\PaymentRepository;
+use App\Repository\VehicleRentalRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -80,17 +82,25 @@ class DashboardAdminController extends AbstractController
         }
 
         // Récupérer les inscriptions récentes
-        $inscriptions = $this->userRepository->findRecentInscriptions(5);
-        
+        $users = $this->userRepository->findRecentInscriptions(5);
+
         // Formater les données pour le frontend
         $formattedInscriptions = [];
-        foreach ($inscriptions as $inscription) {
-            $formattedInscriptions[] = [
-                'id' => $inscription->getId(),
-                'studentName' => $inscription->getFirstName() . ' ' . $inscription->getLastName(),
-                'formationName' => $inscription->getFormation()->getTitle(),
-                'date' => $inscription->getCreatedAt()->format('d/m/Y')
-            ];
+        foreach ($users as $user) {
+            // Prendre la première réservation associée à l'utilisateur
+            $reservations = $user->getReservations();
+            if (!$reservations->isEmpty()) {
+                $reservation = $reservations->first();
+                $session = $reservation->getSession();
+                $formation = $session ? $session->getFormation() : null;
+
+                $formattedInscriptions[] = [
+                    'id' => $user->getId(),
+                    'studentName' => $user->getFirstName() . ' ' . $user->getLastName(),
+                    'formationName' => $formation ? $formation->getTitle() : 'N/A',
+                    'date' => $reservation->getCreatedAt()->format('d/m/Y')
+                ];
+            }
         }
 
         return $this->json($formattedInscriptions);
@@ -108,19 +118,54 @@ class DashboardAdminController extends AbstractController
 
         // Récupérer les réservations récentes
         $reservations = $this->reservationRepository->findRecentReservations(5);
-        
+
         // Formater les données pour le frontend
         $formattedReservations = [];
         foreach ($reservations as $reservation) {
+            $session = $reservation->getSession();
+            $formation = $session ? $session->getFormation() : null;
+
             $formattedReservations[] = [
                 'id' => $reservation->getId(),
-                'vehicleModel' => $reservation->getVehicle() ? $reservation->getVehicle()->getModel() : null,
-                'clientName' => $reservation->getClient()->getFirstName() . ' ' . $reservation->getClient()->getLastName(),
-                'date' => $reservation->getDate()->format('d/m/Y'),
+                'studentName' => $reservation->getUser()->getFirstName() . ' ' . $reservation->getUser()->getLastName(),
+                'formationName' => $formation ? $formation->getTitle() : 'N/A',
+                'date' => $reservation->getCreatedAt()->format('d/m/Y'),
                 'status' => $reservation->getStatus()
             ];
         }
 
         return $this->json($formattedReservations);
+    }
+
+    /**
+     * @Route("/revenue-data", name="revenue_data", methods={"GET"})
+     */
+    public function getRevenueData(PaymentRepository $paymentRepository): JsonResponse
+    {
+        // Récupérer toutes les statistiques, incluant les données mensuelles
+        $stats = $paymentRepository->getStatistics();
+
+        // Renvoyer uniquement les données mensuelles pour le graphique
+        return $this->json($stats['monthlyRevenue']);
+    }
+
+    /**
+     * @Route("/success-rate-data", name="success_rate_data", methods={"GET"})
+     */
+    public function getSuccessRateData(
+        ReservationRepository $reservationRepository,
+        VehicleRentalRepository $vehicleRentalRepository
+    ): JsonResponse {
+        // Récupérer les taux de confirmation de chaque repository
+        $reservationStats = $reservationRepository->getStatistics();
+        $vehicleRentalStats = $vehicleRentalRepository->getStatistics();
+
+        // Formater les données pour le graphique
+        $rateData = [
+            ['formation' => 'Formations', 'taux' => $reservationStats['confirmationRate']],
+            ['formation' => 'Véhicules', 'taux' => $vehicleRentalStats['confirmationRate']]
+        ];
+
+        return $this->json($rateData);
     }
 }

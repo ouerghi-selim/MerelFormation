@@ -3,9 +3,15 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasher;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -15,8 +21,30 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[ApiResource(
+    operations: [
+        new Get(
+            normalizationContext: ['groups' => ['user:read']],
+            security: "is_granted('ROLE_ADMIN') or object == user"
+        ),
+        new GetCollection(
+            normalizationContext: ['groups' => ['user:read']],
+            security: "is_granted('ROLE_ADMIN')"
+        ),
+        new Post(
+            validationContext: ['groups' => ['Default', 'user:create']],
+            processor: UserPasswordHasher::class
+        ),
+        new Put(
+            processor: UserPasswordHasher::class,
+            normalizationContext: ['groups' => ['user:read']],
+            security: "is_granted('ROLE_ADMIN') or object == user"
+        ),
+        new Delete(
+            security: "is_granted('ROLE_ADMIN')"
+        ),
+    ],
     normalizationContext: ['groups' => ['user:read']],
-    denormalizationContext: ['groups' => ['user:write']],
+    denormalizationContext: ['groups' => ['user:write']]
 )]
 #[UniqueEntity(fields: ['email'], message: 'Cet email est déjà utilisé')]
 #[ORM\Index(columns: ['email'], name: 'user_email_idx')]
@@ -61,6 +89,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Assert\Regex(pattern: '/^[0-9\s\+\-\.]+$/', message: 'Le numéro de téléphone n\'est pas valide')]
     private ?string $phone = null;
 
+    #[ORM\Column(type: 'date', nullable: true)]
+    private ?\DateTimeInterface $birthDate = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $birthPlace = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $address = null;
+
+    #[ORM\Column(type: 'string', length: 20, nullable: true)]
+    private ?string $postalCode = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $city = null;
+
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $driverLicenseFrontFile = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $driverLicenseBackFile = null;
+
     #[ORM\OneToMany(targetEntity: Reservation::class, mappedBy: 'user')]
     private Collection $reservations;
 
@@ -86,7 +136,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
-        $this->roles = ['ROLE_USER'];
+        $this->roles = ['ROLE_STUDENT'];
     }
 
     public function getId(): ?int
@@ -122,8 +172,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getRoles(): array
     {
         $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
-        $roles[] = 'ROLE_USER';
+        // guarantee every user at least has ROLE_STUDENT
+        $roles[] = 'ROLE_STUDENT';
 
         return array_unique($roles);
     }
@@ -194,6 +244,77 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
+
+    public function getBirthDate(): ?\DateTimeInterface
+    {
+        return $this->birthDate;
+    }
+
+    public function setBirthDate(?\DateTimeInterface $birthDate): void
+    {
+        $this->birthDate = $birthDate;
+    }
+
+    public function getBirthPlace(): ?string
+    {
+        return $this->birthPlace;
+    }
+
+    public function setBirthPlace(?string $birthPlace): void
+    {
+        $this->birthPlace = $birthPlace;
+    }
+
+    public function getAddress(): ?string
+    {
+        return $this->address;
+    }
+
+    public function setAddress(?string $address): void
+    {
+        $this->address = $address;
+    }
+
+    public function getPostalCode(): ?string
+    {
+        return $this->postalCode;
+    }
+
+    public function setPostalCode(?string $postalCode): void
+    {
+        $this->postalCode = $postalCode;
+    }
+
+    public function getCity(): ?string
+    {
+        return $this->city;
+    }
+
+    public function setCity(?string $city): void
+    {
+        $this->city = $city;
+    }
+
+    public function getDriverLicenseFrontFile(): ?string
+    {
+        return $this->driverLicenseFrontFile;
+    }
+
+    public function setDriverLicenseFrontFile(?string $driverLicenseFrontFile): void
+    {
+        $this->driverLicenseFrontFile = $driverLicenseFrontFile;
+    }
+
+    public function getDriverLicenseBackFile(): ?string
+    {
+        return $this->driverLicenseBackFile;
+    }
+
+    public function setDriverLicenseBackFile(?string $driverLicenseBackFile): void
+    {
+        $this->driverLicenseBackFile = $driverLicenseBackFile;
+    }
+
 
     public function getCreatedAt(): ?\DateTimeImmutable
     {

@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, FileText, Bell, Calendar, CreditCard } from 'lucide-react';
 import StudentHeader from '../../components/student/StudentHeader';
-// @ts-ignore
-import axios from 'axios';
+import { studentDashboardApi } from '@/services/api.ts';
 
 interface DashboardData {
   activeFormations: number;
@@ -39,64 +38,17 @@ const DashboardStudent: React.FC = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        
-        // Simuler des données pour le développement
-        setTimeout(() => {
-          setUserName('Jean Dupont');
-          
-          setDashboardData({
-            activeFormations: 2,
-            documentsCount: 5,
-            pendingPayments: 1,
-            upcomingSessions: [
-              {
-                id: 1,
-                formationTitle: 'Formation Taxi',
-                date: '28/03/2025',
-                time: '09:00',
-                location: 'Salle 2'
-              },
-              {
-                id: 2,
-                formationTitle: 'Pratique',
-                date: '30/03/2025',
-                time: '14:00',
-                location: 'Parking'
-              }
-            ],
-            recentDocuments: [
-              {
-                id: 1,
-                title: 'Support_Module1.pdf',
-                type: 'Cours',
-                date: '15/03/2025',
-                downloadUrl: '/documents/1'
-              },
-              {
-                id: 2,
-                title: 'Convocation_Examen.pdf',
-                type: 'Admin',
-                date: '10/03/2025',
-                downloadUrl: '/documents/2'
-              }
-            ]
-          });
-          
-          setLoading(false);
-        }, 1000);
-        
-        // Commenté pour le développement, à décommenter pour la production
-        /*
+
         // Fetch user profile and dashboard data
         const [profileResponse, dashboardResponse] = await Promise.all([
-          axios.get('/api/student/profile'),
-          axios.get('/api/student/dashboard')
+          studentDashboardApi.getProfile(),
+          studentDashboardApi.getIndex()
         ]);
-        
+
         setUserName(`${profileResponse.data.firstName} ${profileResponse.data.lastName}`);
         setDashboardData(dashboardResponse.data);
         setLoading(false);
-        */
+
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
         setError('Erreur lors du chargement des données');

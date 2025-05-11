@@ -217,4 +217,84 @@ class SessionRepository extends ServiceEntityRepository
 
         return ($session->getMaxParticipants() - $reservationsCount) / $session->getMaxParticipants() * 100;
     }
+
+    /**
+     * Count upcoming sessions
+     *
+     * @return int
+     */
+    public function countUpcomingSessions(): int
+    {
+        return $this->createQueryBuilder('s')
+            ->select('COUNT(s.id)')
+            ->andWhere('s.startDate > :now')
+            ->andWhere('s.status = :status')
+            ->setParameter('now', new \DateTimeImmutable())
+            ->setParameter('status', 'scheduled')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Find sessions by instructor (formateur)
+     *
+     * @param int $instructorId The ID of the instructor
+     * @return array Array of sessions
+     */
+    public function findByInstructor(int $instructorId): array
+    {
+        return $this->createQueryBuilder('s')
+            ->leftJoin('s.formation', 'f')
+            ->addSelect('f')
+            ->where('s.instructor = :instructorId')
+            ->setParameter('instructorId', $instructorId)
+            ->orderBy('s.startDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find sessions by participant (élève)
+     *
+     * @param int $participantId The ID of the participant (student)
+     * @return array Array of sessions
+     */
+    public function findByParticipant(int $participantId): array
+    {
+        return $this->createQueryBuilder('s')
+            ->leftJoin('s.participants', 'p')
+            ->leftJoin('s.formation', 'f')
+            ->addSelect('f')
+            ->where('p.id = :participantId')
+            ->setParameter('participantId', $participantId)
+            ->orderBy('s.startDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find upcoming sessions for a student with limit
+     *
+     * @param int $userId
+     * @param int $limit
+     * @return array
+     */
+    public function findUpcomingSessionsForStudent(int $userId, int $limit): array
+    {
+        return $this->createQueryBuilder('s')
+            ->leftJoin('s.participants', 'p')
+            ->leftJoin('s.formation', 'f')
+            ->addSelect('f')
+            ->where('p.id = :userId')
+            ->andWhere('s.startDate > :now')
+            ->andWhere('s.status = :status')
+            ->setParameter('userId', $userId)
+            ->setParameter('now', new \DateTimeImmutable())
+            ->setParameter('status', 'scheduled')
+            ->orderBy('s.startDate', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
 }

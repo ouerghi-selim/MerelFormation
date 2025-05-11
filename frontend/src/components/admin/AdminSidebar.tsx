@@ -32,8 +32,8 @@ const AdminSidebar: React.FC = () => {
       icon: <BookOpen size={20} />,
       path: '/admin/formations',
       submenu: [
+        { title: 'Planing des formations', path: '/admin/planning' },
         { title: 'Liste des formations', path: '/admin/formations' },
-        { title: 'Ajouter une formation', path: '/admin/formations/new' },
         { title: 'Sessions', path: '/admin/sessions' }
       ]
     },
@@ -53,7 +53,8 @@ const AdminSidebar: React.FC = () => {
       submenu: [
         { title: 'Élèves', path: '/admin/users/students' },
         { title: 'Formateurs', path: '/admin/users/instructors' },
-        { title: 'Administrateurs', path: '/admin/users/admins' }
+        { title: 'Administrateurs', path: '/admin/users/admins' },
+        { title: 'All', path: '/admin/users' }
       ]
     },
     {

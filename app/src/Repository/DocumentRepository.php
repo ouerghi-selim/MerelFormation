@@ -164,4 +164,37 @@ class DocumentRepository extends ServiceEntityRepository
                   ->getQuery()
                   ->getResult();
     }
+    /**
+     * Count documents for a student
+     *
+     * @param int $userId
+     * @return int
+     */
+    public function countDocumentsForStudent(int $userId): int
+    {
+        return $this->createQueryBuilder('d')
+            ->select('COUNT(d.id)')
+            ->where('d.user = :userId')
+            ->setParameter('userId', $userId)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Find recent documents for a student with limit
+     *
+     * @param int $userId
+     * @param int $limit
+     * @return Document[]
+     */
+    public function findRecentDocumentsForStudent(int $userId, int $limit): array
+    {
+        return $this->createQueryBuilder('d')
+            ->where('d.user = :userId')
+            ->setParameter('userId', $userId)
+            ->orderBy('d.uploadedAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 }
