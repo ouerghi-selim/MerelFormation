@@ -36,12 +36,16 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+export const sessionRegistrationApi = {
+    register: (registrationData: { name: string; email: string; sessionId: number | null }) =>
+        api.post('/api/registration', registrationData),
+};
+
 
 // Services API pour le dashboard administrateur
 export const adminDashboardApi = {
   getStats: () => api.get('/admin/dashboard/stats'),
   getRecentInscriptions: () => api.get('/admin/dashboard/recent-inscriptions'),
-  getRecentReservations: () => api.get('/admin/dashboard/recent-reservations'),
 };
 
 // Services API pour les formations administrateur
@@ -59,9 +63,13 @@ export const adminReservationsApi = {
   getAll: () => api.get('/admin/reservations'),
   getById: (id: number) => api.get(`/admin/reservations/${id}`),
   updateStatus: (id: number, status: string) => api.put(`/admin/reservations/${id}/status`, { status }),
-  assignVehicle: (id: number, vehicleId: number) => api.put(`/admin/reservations/${id}/assign-vehicle`, { vehicleId }),
-  getAvailableVehicles: () => api.get('/admin/vehicles/available'),
+  assignVehicle: (id: number, vehicleModel: string) => api.put(`/admin/reservations/${id}/assign-vehicle`, { vehicleModel }),
+  getAvailableVehicles: (date: string) => api.get(`/admin/vehicles/available?date=${date}`),
+  getSessionReservations: (queryParams = '') => api.get(`/admin/session-reservations${queryParams ? '?' + queryParams : ''}`),
+  updateSessionReservationStatus: (id: number, status: string) => api.put(`/admin/session-reservations/${id}/status`, { status }),
+  getSessionReservationById: (id: number) => api.get(`/admin/session-reservations/${id}`)
 };
+
 
 // Services API pour le dashboard étudiant
 export const studentDashboardApi = {
@@ -137,5 +145,16 @@ export const adminPlanningApi = {
     getLocations: () =>
         api.get('/admin/locations')
 };
+
+export const vehicleRentalsApi = {
+    create: (formData: FormData) =>
+        api.post('/vehicle-rentals', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+    getAvailable: (date: string) =>
+        api.get(`/vehicles/available?date=${date}`),
+};
+
+
 
 export default api;

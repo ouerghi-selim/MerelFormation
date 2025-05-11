@@ -8,7 +8,8 @@ import StatCard from '../../components/admin/StatCard';
 import LineChart from '../../components/charts/LineChart';
 import BarChart from '../../components/charts/BarChart';
 import Alert from '../../components/common/Alert';
-import { adminDashboardApi } from '../../services/api';
+import ReservationDetailModal from '../../components/admin/ReservationDetailModal';
+import {adminDashboardApi, adminReservationsApi} from '../../services/api';
 
 interface DashboardStats {
   activeStudents: number;
@@ -48,6 +49,10 @@ const DashboardAdmin: React.FC = () => {
   const [reservations, setReservations] = useState<RecentReservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedReservationType, setSelectedReservationType] = useState<'vehicle' | 'session'>('vehicle');
+  const [selectedReservationId, setSelectedReservationId] = useState<number | null>(null);
+
 
   // Données de graphique (à remplacer par des données réelles)
   const revenueData = [
@@ -64,7 +69,71 @@ const DashboardAdmin: React.FC = () => {
     { name: 'Formation Continue', taux: 92 },
     { name: 'Formation Mobilité', taux: 88 },
   ];
+  // Nouvelles méthodes pour le modal
+  const handleOpenVehicleReservation = (id: number) => {
+    setSelectedReservationType('vehicle');
+    setSelectedReservationId(id);
+    setShowDetailModal(true);
+  };
 
+  const handleOpenSessionReservation = (id: number) => {
+    console.log("Opening session reservation:", id);
+
+    // Intercepter l'appel API et utiliser les données locales
+    const mockSessionReservation = getSessionReservationFromInscription(id);
+
+    // Pour déboguer
+    console.log("Mock session reservation data:", mockSessionReservation);
+
+    if (mockSessionReservation) {
+      // Patch temporaire: Stocker les données dans le localStorage pour les récupérer dans le modal
+      localStorage.setItem('temp_session_data', JSON.stringify(mockSessionReservation));
+    }
+
+    setSelectedReservationType('session');
+    setSelectedReservationId(id);
+    setShowDetailModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowDetailModal(false);
+    setSelectedReservationId(null);
+  };
+
+  // Méthode pour mettre à jour les données après une action sur le modal
+  const handleReservationUpdated = () => {
+    // Recharger les données ou mettre à jour localement
+    // Pour un exemple simple, on va juste fermer le modal
+    setShowDetailModal(false);
+  };
+  const getSessionReservationFromInscription = (id: number) => {
+    // Trouver l'inscription correspondante
+    const inscription = inscriptions.find(ins => ins.id === id);
+
+    if (!inscription) return null;
+
+    // Convertir au format attendu par ReservationDetailModal
+    return {
+      id: inscription.id,
+      user: {
+        id: 101, // Valeur par défaut
+        firstName: inscription.studentName.split(' ')[0],
+        lastName: inscription.studentName.split(' ')[1] || '',
+        email: `${inscription.studentName.replace(' ', '.').toLowerCase()}@example.com`,
+        phone: '06 XX XX XX XX' // Valeur par défaut
+      },
+      session: {
+        id: 201, // Valeur par défaut
+        startDate: new Date().toISOString(),
+        formation: {
+          id: 301, // Valeur par défaut
+          title: inscription.formationName
+        }
+      },
+      status: 'pending', // Par défaut
+      createdAt: new Date(inscription.date.split('/').reverse().join('-')).toISOString()
+    };
+  };
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -74,7 +143,7 @@ const DashboardAdmin: React.FC = () => {
         const [statsResponse, inscriptionsResponse, reservationsResponse] = await Promise.all([
           adminDashboardApi.getStats(),
           adminDashboardApi.getRecentInscriptions(),
-          adminDashboardApi.getRecentReservations()
+          adminReservationsApi.getAll()
         ]);
 
         setStats(statsResponse.data);
@@ -214,9 +283,12 @@ const DashboardAdmin: React.FC = () => {
                             <div className="text-sm text-gray-500">{inscription.date}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <Link to={`/admin/inscriptions/${inscription.id}`} className="text-blue-700 hover:text-blue-900">
+                            <button
+                                onClick={() => handleOpenSessionReservation(inscription.id)}
+                                className="text-blue-700 hover:text-blue-900"
+                            >
                               Détails
-                            </Link>
+                            </button>
                           </td>
                         </tr>
                     ))}
@@ -279,9 +351,12 @@ const DashboardAdmin: React.FC = () => {
                           </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <Link to={`/admin/reservations/${reservation.id}`} className="text-blue-700 hover:text-blue-900">
+                            <button
+                                onClick={() => handleOpenVehicleReservation(reservation.id)}
+                                className="text-blue-700 hover:text-blue-900"
+                            >
                               Gérer
-                            </Link>
+                            </button>
                           </td>
                         </tr>
                     ))}
@@ -290,7 +365,13 @@ const DashboardAdmin: React.FC = () => {
                 </div>
               </div>
             </div>
-
+            <ReservationDetailModal
+                isOpen={showDetailModal}
+                onClose={handleCloseModal}
+                reservationType={selectedReservationType}
+                reservationId={selectedReservationId}
+                onSuccess={handleReservationUpdated}
+            />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-lg shadow">
                 <h2 className="text-xl font-bold text-gray-800 mb-6">Revenus mensuels</h2>

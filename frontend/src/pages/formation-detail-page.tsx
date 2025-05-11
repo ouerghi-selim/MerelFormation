@@ -4,6 +4,8 @@ import {useParams} from 'react-router-dom';
 import axios from 'axios';
 import classroom from '@assets/images/pages/classroom.png';
 import practical from '@assets/images/pages/practical.png';
+import SessionSelectionModal from '../components/front/modals/SessionSelectionModal';
+import RegistrationFormModal from '../components/front/modals/RegistrationFormModal';
 
 interface Formation {
     id: number;
@@ -33,6 +35,11 @@ const FormationInitialePage = () => {
     const [error, setError] = useState<string | null>(null);
     const [prerequisites, setPrerequisites] = useState<any[]>([]);
     const [modules, setModules] = useState<any[]>([]);
+
+    // États pour les modaux
+    const [showSessionModal, setShowSessionModal] = useState(false);
+    const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+    const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
 
     useEffect(() => {
         const fetchFormation = async () => {
@@ -68,7 +75,20 @@ const FormationInitialePage = () => {
             setLoading(false);
         }
     }, [id]);
+    const handleShowSessions = () => {
+        setShowSessionModal(true);
+    };
 
+    const handleSelectSession = (sessionId: number) => {
+        setSelectedSessionId(sessionId);
+        setShowSessionModal(false);
+        setShowRegistrationForm(true);
+    };
+
+    const handleCloseModals = () => {
+        setShowSessionModal(false);
+        setShowRegistrationForm(false);
+    };
     if (loading) {
         return <div className="flex justify-center items-center h-screen">Chargement...</div>;
     }
@@ -127,6 +147,7 @@ const FormationInitialePage = () => {
                             <span className="text-gray-600">(Exonéré de TVA)</span>
                         </div>
                         <button
+                            onClick={handleShowSessions}
                             className="bg-yellow-500 text-blue-900 px-8 py-4 rounded-lg font-bold hover:bg-yellow-400 transition-colors">
                             S'inscrire à la formation
                         </button>
@@ -241,6 +262,7 @@ const FormationInitialePage = () => {
                                         <span>{session.maxParticipants} places maximum</span>
                                     </div>
                                     <button
+                                        onClick={() => handleSelectSession(session.id)}
                                         className="w-full bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800">
                                         Réserver cette session
                                     </button>
@@ -260,6 +282,7 @@ const FormationInitialePage = () => {
                     </p>
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
                         <button
+                            onClick={handleShowSessions}
                             className="bg-yellow-500 text-blue-900 px-8 py-4 rounded-lg font-bold hover:bg-yellow-400 transition-colors">
                             S'inscrire maintenant
                         </button>
@@ -270,6 +293,19 @@ const FormationInitialePage = () => {
                     </div>
                 </div>
             </section>
+            <SessionSelectionModal
+                isOpen={showSessionModal}
+                onClose={handleCloseModals}
+                title={formation?.title || 'Formation'}
+                sessions={formation?.sessions || []}
+                onSelectSession={handleSelectSession}
+            />
+
+            <RegistrationFormModal
+                isOpen={showRegistrationForm}
+                onClose={handleCloseModals}
+                sessionId={selectedSessionId}
+            />
         </div>
     );
 };

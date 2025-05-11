@@ -247,4 +247,37 @@ class ReservationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Find all session reservations with optional filtering
+     *
+     * @param string|null $search Search term to filter by user name or email
+     * @param string|null $status Status to filter by
+     * @return array Array of session reservations
+     */
+    public function findSessionReservations(?string $search = null, ?string $status = null): array
+    {
+        $qb = $this->createQueryBuilder('r')
+            ->leftJoin('r.user', 'u')
+            ->leftJoin('r.session', 's')
+            ->leftJoin('s.formation', 'f')
+            ->addSelect('u', 's', 'f')
+            ->andWhere('s.id IS NOT NULL'); // Assurez-vous qu'il s'agit d'une réservation de session
+
+        // Filtrage par recherche (nom ou email)
+        if ($search) {
+            $qb->andWhere('u.firstName LIKE :search OR u.lastName LIKE :search OR u.email LIKE :search OR CONCAT(u.firstName, \' \', u.lastName) LIKE :search')
+                ->setParameter('search', '%' . $search . '%');
+        }
+
+        // Filtrage par statut
+        if ($status) {
+            $qb->andWhere('r.status = :status')
+                ->setParameter('status', $status);
+        }
+
+        return $qb->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

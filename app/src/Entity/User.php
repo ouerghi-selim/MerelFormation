@@ -61,6 +61,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Assert\Regex(pattern: '/^[0-9\s\+\-\.]+$/', message: 'Le numéro de téléphone n\'est pas valide')]
     private ?string $phone = null;
 
+    #[ORM\Column(type: 'date', nullable: true)]
+    private ?\DateTimeInterface $birthDate = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $birthPlace = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $address = null;
+
+    #[ORM\Column(type: 'string', length: 20, nullable: true)]
+    private ?string $postalCode = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $city = null;
+
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $driverLicenseFrontFile = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $driverLicenseBackFile = null;
+
     #[ORM\OneToMany(targetEntity: Reservation::class, mappedBy: 'user')]
     private Collection $reservations;
 
@@ -194,6 +216,77 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
+
+    public function getBirthDate(): ?\DateTimeInterface
+    {
+        return $this->birthDate;
+    }
+
+    public function setBirthDate(?\DateTimeInterface $birthDate): void
+    {
+        $this->birthDate = $birthDate;
+    }
+
+    public function getBirthPlace(): ?string
+    {
+        return $this->birthPlace;
+    }
+
+    public function setBirthPlace(?string $birthPlace): void
+    {
+        $this->birthPlace = $birthPlace;
+    }
+
+    public function getAddress(): ?string
+    {
+        return $this->address;
+    }
+
+    public function setAddress(?string $address): void
+    {
+        $this->address = $address;
+    }
+
+    public function getPostalCode(): ?string
+    {
+        return $this->postalCode;
+    }
+
+    public function setPostalCode(?string $postalCode): void
+    {
+        $this->postalCode = $postalCode;
+    }
+
+    public function getCity(): ?string
+    {
+        return $this->city;
+    }
+
+    public function setCity(?string $city): void
+    {
+        $this->city = $city;
+    }
+
+    public function getDriverLicenseFrontFile(): ?string
+    {
+        return $this->driverLicenseFrontFile;
+    }
+
+    public function setDriverLicenseFrontFile(?string $driverLicenseFrontFile): void
+    {
+        $this->driverLicenseFrontFile = $driverLicenseFrontFile;
+    }
+
+    public function getDriverLicenseBackFile(): ?string
+    {
+        return $this->driverLicenseBackFile;
+    }
+
+    public function setDriverLicenseBackFile(?string $driverLicenseBackFile): void
+    {
+        $this->driverLicenseBackFile = $driverLicenseBackFile;
+    }
+
 
     public function getCreatedAt(): ?\DateTimeImmutable
     {

@@ -34,7 +34,6 @@ const AdminSidebar: React.FC = () => {
       submenu: [
         { title: 'Planing des formations', path: '/admin/planning' },
         { title: 'Liste des formations', path: '/admin/formations' },
-        { title: 'Ajouter une formation', path: '/admin/formations/new' },
         { title: 'Sessions', path: '/admin/sessions' }
       ]
     },

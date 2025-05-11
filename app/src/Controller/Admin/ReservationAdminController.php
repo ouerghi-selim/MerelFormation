@@ -75,9 +75,9 @@ class ReservationAdminController extends AbstractController
     public function get(int $id): JsonResponse
     {
         // Vérifier que l'utilisateur est un admin
-        if (!$this->security->isGranted('ROLE_ADMIN')) {
-            return $this->json(['message' => 'Accès refusé'], 403);
-        }
+//        if (!$this->security->isGranted('ROLE_ADMIN')) {
+//            return $this->json(['message' => 'Accès refusé'], 403);
+//        }
 
         // Récupérer la réservation
         $reservation = $this->vehicleRentalRepository->find($id);

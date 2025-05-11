@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import taxiCar from '@assets/images/pages/taxi-car.png';
-import axios from "axios"; // Assurez-vous que cette image existe ou remplacez-la
+import { vehicleRentalsApi } from "../services/api"; // Ajouter cette importation
 
 const LocationPage = () => {
   const [showModal, setShowModal] = useState(false);
@@ -53,44 +53,59 @@ const LocationPage = () => {
 
     try {
       // Préparation des données pour l'API
-      const formData = {
-        // Informations de base pour VehicleRental
-        rentalType: 'exam',
-        status: 'pending',
-        notes: reservationData.observations,
+      const formData = new FormData();
 
-        // Dates d'examen (utilisées comme dates de location)
-        startDate: examDateObj ? examDateObj.toISOString() : null,
-        endDate: examDateObj ? examDateObj.toISOString() : null, // Même jour pour l'examen
+      // Informations de base pour VehicleRental
+      formData.append('rentalType', 'exam');
+      formData.append('status', 'pending');
+      formData.append('notes', reservationData.observations);
 
-        // Lieux
-        pickupLocation: reservationData.examCenter,
-        returnLocation: reservationData.examCenter,
+      // Dates d'examen (utilisées comme dates de location)
+      if (examDateObj) {
+        formData.append('startDate', examDateObj.toISOString());
+        formData.append('endDate', examDateObj.toISOString()); // Même jour pour l'examen
+      }
 
-        // Informations personnelles
-        firstName: reservationData.firstName,
-        lastName: reservationData.name,
-        birthDate: birthDateObj ? birthDateObj.toISOString().split('T')[0] : null,
-        birthPlace: reservationData.birthPlace,
+      // Lieux
+      formData.append('pickupLocation', reservationData.examCenter);
+      formData.append('returnLocation', reservationData.examCenter);
 
-        // Adresse
-        address: reservationData.address,
-        postalCode: reservationData.postalCode,
-        city: reservationData.city,
-        facturation: reservationData.facturation,
+      // Informations personnelles
+      formData.append('firstName', reservationData.firstName);
+      formData.append('lastName', reservationData.name);
+      formData.append('email', reservationData.email);
+      formData.append('phone', reservationData.phone);
+      if (birthDateObj) {
+        formData.append('birthDate', birthDateObj.toISOString().split('T')[0]);
+      }
+      formData.append('birthPlace', reservationData.birthPlace);
 
-        // Informations d'examen
-        examCenter: reservationData.examCenter,
-        formula: reservationData.formula,
-        examTime: reservationData.examTime,
+      // Adresse
+      formData.append('address', reservationData.address);
+      formData.append('postalCode', reservationData.postalCode);
+      formData.append('city', reservationData.city);
+      formData.append('facturation', reservationData.facturation);
 
-        // Paiement
-        financing: reservationData.financing,
-        paymentMethod: reservationData.paymentMethod,
-      };
+      // Informations d'examen
+      formData.append('examCenter', reservationData.examCenter);
+      formData.append('formula', reservationData.formula);
+      formData.append('examTime', reservationData.examTime);
+
+      // Paiement
+      formData.append('financing', reservationData.financing);
+      formData.append('paymentMethod', reservationData.paymentMethod);
+
+      // Permis de conduire
+      if (reservationData.driverLicenseFront) {
+        formData.append('driverLicenseFront', reservationData.driverLicenseFront);
+      }
+      if (reservationData.driverLicenseBack) {
+        formData.append('driverLicenseBack', reservationData.driverLicenseBack);
+      }
 
       // Envoi à l'API
-      await axios.post('/api/vehicle_rentals', formData);
+      const response = await vehicleRentalsApi.create(formData);
+
 
       // Gestion du succès
       alert('Votre demande de réservation a été envoyée. Nous vous contacterons avec un devis personnalisé.');
@@ -685,33 +700,71 @@ const LocationPage = () => {
                         <div className="space-y-4">
                           <div className="space-y-2">
                             <label className="block text-sm font-medium text-gray-700">Permis de conduire recto</label>
-                            <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors cursor-pointer">
+                            <div
+                                className={`relative border-2 border-dashed ${reservationData.driverLicenseFront ? 'border-green-500 bg-green-50' : 'border-gray-300'} rounded-lg p-6 text-center hover:border-blue-500 transition-colors cursor-pointer`}>
                               <input
                                   type="file"
                                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                   required
-                                  accept="image/*,.pdf"
-                                  onChange={(e) => setReservationData({...reservationData,   driverLicenseFront: e.target.files ? e.target.files[0] : null})}
+                                  accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                  onChange={(e) => {
+                                    const file = e.target.files ? e.target.files[0] : null;
+                                    if (file && file.size > 10 * 1024 * 1024) {
+                                      alert("Le fichier est trop volumineux. La taille maximale est de 10 MB.");
+                                      return;
+                                    }
+                                    setReservationData({...reservationData, driverLicenseFront: file});
+                                  }}
                               />
-                              <FileText className="mx-auto h-8 w-8 text-gray-400" />
-                              <p className="mt-2 text-sm text-gray-600">Cliquez pour sélectionner un fichier ou glissez-déposez</p>
-                              <p className="text-xs text-gray-500">PDF ou image (10 MB max)</p>
+                              <FileText
+                                  className={`mx-auto h-8 w-8 ${reservationData.driverLicenseFront ? 'text-green-500' : 'text-gray-400'}`}/>
+                              {reservationData.driverLicenseFront ? (
+                                  <>
+                                    <p className="mt-2 text-sm text-green-600 font-medium">Fichier sélectionné:</p>
+                                    <p className="text-sm text-green-600">{reservationData.driverLicenseFront.name}</p>
+                                  </>
+                              ) : (
+                                  <>
+                                    <p className="mt-2 text-sm text-gray-600">Cliquez pour sélectionner un fichier ou
+                                      glissez-déposez</p>
+                                    <p className="text-xs text-gray-500">PDF ou image (10 MB max)</p>
+                                  </>
+                              )}
                             </div>
                           </div>
 
                           <div className="space-y-2">
                             <label className="block text-sm font-medium text-gray-700">Permis de conduire verso</label>
-                            <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors cursor-pointer">
+                            <div
+                                className={`relative border-2 border-dashed ${reservationData.driverLicenseBack ? 'border-green-500 bg-green-50' : 'border-gray-300'} rounded-lg p-6 text-center hover:border-blue-500 transition-colors cursor-pointer`}>
                               <input
                                   type="file"
                                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                   required
-                                  accept="image/*,.pdf"
-                                  onChange={(e) => setReservationData({...reservationData,   driverLicenseFront: e.target.files ? e.target.files[0] : null})}
+                                  accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                  onChange={(e) => {
+                                    const file = e.target.files ? e.target.files[0] : null;
+                                    if (file && file.size > 10 * 1024 * 1024) {
+                                      alert("Le fichier est trop volumineux. La taille maximale est de 10 MB.");
+                                      return;
+                                    }
+                                    setReservationData({...reservationData, driverLicenseBack: file});
+                                  }}
                               />
-                              <FileText className="mx-auto h-8 w-8 text-gray-400" />
-                              <p className="mt-2 text-sm text-gray-600">Cliquez pour sélectionner un fichier ou glissez-déposez</p>
-                              <p className="text-xs text-gray-500">PDF ou image (10 MB max)</p>
+                              <FileText
+                                  className={`mx-auto h-8 w-8 ${reservationData.driverLicenseBack ? 'text-green-500' : 'text-gray-400'}`}/>
+                              {reservationData.driverLicenseBack ? (
+                                  <>
+                                    <p className="mt-2 text-sm text-green-600 font-medium">Fichier sélectionné:</p>
+                                    <p className="text-sm text-green-600">{reservationData.driverLicenseBack.name}</p>
+                                  </>
+                              ) : (
+                                  <>
+                                    <p className="mt-2 text-sm text-gray-600">Cliquez pour sélectionner un fichier ou
+                                      glissez-déposez</p>
+                                    <p className="text-xs text-gray-500">PDF ou image (10 MB max)</p>
+                                  </>
+                              )}
                             </div>
                           </div>
                         </div>
