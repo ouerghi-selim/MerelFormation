@@ -1,0 +1,67 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: merel_nginx
+    ports:
+      - "80:80"
+      - "443:443"  # Pour HTTPS futur
+    volumes:
+      - ./app:/var/www
+      - ./docker/nginx/default.prod.conf:/etc/nginx/conf.d/default.conf
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    depends_on:
+      - php
+    networks:
+      - merel_network
+    restart: always
+
+  php:
+    build:
+      context: ./docker/php
+      args:
+        TIMEZONE: Europe/Paris
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    container_name: merel_php
+    working_dir: /var/www
+    volumes:
+      - ./app:/var/www
+    environment:
+      - APP_ENV=prod
+      - DATABASE_URL=mysql://merel_user:merel_password@mysql:3306/merel_db
+    depends_on:
+      - mysql
+    networks:
+      - merel_network
+    restart: always
+
+  mysql:
+    image: mysql:8.0
+    container_name: merel_mysql
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: secureRootPass123
+      MYSQL_DATABASE: merel_db
+      MYSQL_USER: merel_user
+      MYSQL_PASSWORD: merel_password
+    networks:
+      - merel_network
+    restart: always
+
+  # Service pour le frontend (construction seulement)
+  node:
+    image: node:18
+    container_name: merel_node
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - ./app/public/build:/app/dist
+    command: /bin/sh -c "npm install && npm run build"
+    networks:
+      - merel_network
+
+networks:
+  merel_network:
+    driver: bridge
