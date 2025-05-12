@@ -14,9 +14,18 @@ cp app/.env.prod app/.env
 # Lancer les conteneurs
 docker-compose -f docker-compose.prod.yml up -d
 
-# Attendre le démarrage des conteneurs
-echo "Attente du démarrage des conteneurs..."
-sleep 10
+# Attendre le démarrage des conteneurs MySQL (temps augmenté)
+echo "Attente du démarrage de MySQL (30 secondes)..."
+sleep 30
+
+# Vérifier si MySQL est prêt
+echo "Vérification de l'état de MySQL..."
+until docker-compose -f docker-compose.prod.yml exec mysql mysqladmin ping -h localhost --silent; do
+    echo "En attente de MySQL..."
+    sleep 5
+done
+
+echo "MySQL est prêt ! Installation des dépendances..."
 
 # Installer les dépendances Symfony
 docker-compose -f docker-compose.prod.yml exec php composer install --no-dev --optimize-autoloader
