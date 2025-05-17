@@ -59,7 +59,7 @@ services:
       - ./frontend:/app
       - ./app/public/build:/app/dist
     # Modifiez cette ligne pour ignorer les erreurs TypeScript en production
-    command: /bin/sh -c "npm install && npm run build:prod"
+    command: /bin/sh -c "npm install && npm run build:prod && mkdir -p /var/www/public/build && cp -r dist/* /var/www/public/build/"
     networks:
       - merel_network
 
