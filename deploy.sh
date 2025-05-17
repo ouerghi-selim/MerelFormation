@@ -7,14 +7,29 @@
 mkdir -p data/mysql
 mkdir -p data/certbot/conf
 mkdir -p data/certbot/www
+mkdir -p app/public/build  # Créer le répertoire pour les fichiers frontend
 
 # Copier le fichier .env.prod vers .env
 cp app/.env.prod app/.env
 
-# Lancer les conteneurs
-docker-compose -f docker-compose.prod.yml up -d
+# Construction du frontend
+echo "Construction du frontend..."
+docker-compose -f docker-compose.prod.yml run --rm node
 
-# Attendre le démarrage des conteneurs MySQL (temps augmenté)
+# Vérifier que les fichiers ont été générés
+echo "Vérification des fichiers frontend..."
+if [ ! -f "app/public/build/index.html" ]; then
+  echo "ERREUR: Le build frontend n'a pas généré index.html"
+  echo "Contenu du répertoire build:"
+  ls -la app/public/build
+  exit 1
+fi
+echo "✅ Build frontend réussi!"
+
+# Lancer les conteneurs
+docker-compose -f docker-compose.prod.yml up -d nginx php mysql
+
+# Attendre le démarrage des conteneurs MySQL
 echo "Attente du démarrage de MySQL (30 secondes)..."
 sleep 30
 
@@ -35,6 +50,9 @@ docker-compose -f docker-compose.prod.yml exec php php bin/console cache:clear -
 
 # Exécuter les migrations
 docker-compose -f docker-compose.prod.yml exec php php bin/console doctrine:migrations:migrate --no-interaction
+
+# Vérifier les permissions des fichiers statiques
+docker-compose -f docker-compose.prod.yml exec nginx chmod -R 755 /var/www/public/build
 
 # Afficher l'état des conteneurs
 docker-compose -f docker-compose.prod.yml ps
