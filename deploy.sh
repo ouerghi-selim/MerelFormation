@@ -1,13 +1,18 @@
 #!/bin/bash
 
 # Script de déploiement pour MerelFormation
-# À exécuter sur le serveur de production
 
 # Créer les répertoires de données
 mkdir -p data/mysql
 mkdir -p data/certbot/conf
 mkdir -p data/certbot/www
-mkdir -p app/public/build  # Créer le répertoire pour les fichiers frontend
+
+# S'assurer que le répertoire de build existe
+mkdir -p app/public/build
+
+# Nettoyer les anciens fichiers de build
+echo "Nettoyage des fichiers précédents..."
+rm -rf app/public/build/*
 
 # Copier le fichier .env.prod vers .env
 cp app/.env.prod app/.env
@@ -20,18 +25,24 @@ docker-compose -f docker-compose.prod.yml run --rm node
 echo "Vérification des fichiers frontend..."
 if [ ! -f "app/public/build/index.html" ]; then
   echo "ERREUR: Le build frontend n'a pas généré index.html"
-  echo "Contenu du répertoire build:"
   ls -la app/public/build
   exit 1
 fi
-echo "✅ Build frontend réussi!"
+
+# Vérifier que l'index.html fait référence aux bons fichiers
+echo "Vérification des références dans index.html..."
+grep -oE "assets/[^\"']*\.(js|css)" app/public/build/index.html
+
+# Lister les fichiers dans le répertoire assets
+echo "Fichiers assets générés:"
+ls -la app/public/build/assets/
 
 # Lancer les conteneurs
 docker-compose -f docker-compose.prod.yml up -d nginx php mysql
 
-# Attendre le démarrage des conteneurs MySQL
-echo "Attente du démarrage de MySQL (30 secondes)..."
-sleep 30
+# Attendre le démarrage des conteneurs MySQL (temps augmenté)
+echo "Attente du démarrage de MySQL (10 secondes)..."
+sleep 10
 
 # Vérifier si MySQL est prêt
 echo "Vérification de l'état de MySQL..."

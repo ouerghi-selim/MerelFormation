@@ -9,7 +9,7 @@
 /var/
 /vendor/
 ###< symfony/framework-bundle ###
-
+/public/build/
 ###> phpunit/phpunit ###
 /phpunit.xml
 .phpunit.result.cache
@@ -26,3 +26,5 @@
 /public/
 
 .idea/
+/var/cache/
+/var/logs/
