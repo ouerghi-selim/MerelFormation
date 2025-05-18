@@ -13,6 +13,8 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
+
 
 #[ORM\Entity(repositoryClass: FormationRepository::class)]
 #[ApiResource(
@@ -104,6 +106,8 @@ class Formation
         $this->updatedAt = new \DateTimeImmutable();
         $this->modules = new ArrayCollection();
         $this->prerequisites = new ArrayCollection();
+        $this->documents = new ArrayCollection();
+        $this->media = new ArrayCollection();
     }
 
     #[ORM\PreUpdate]

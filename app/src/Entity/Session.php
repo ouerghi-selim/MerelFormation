@@ -80,8 +80,9 @@ class Session
 
     public function __construct()
     {
-        $this->participants = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
+        $this->reservations = new ArrayCollection();
+        $this->documents = new ArrayCollection();
     }
 
     public function getId(): ?int
