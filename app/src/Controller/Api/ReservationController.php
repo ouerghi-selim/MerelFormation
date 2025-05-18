@@ -4,6 +4,7 @@ namespace App\Controller\Api;
 
 use App\Entity\Reservation;
 use App\Repository\ReservationRepository;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,11 +17,13 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 #[Route('/api/reservations')]
 class ReservationController extends AbstractController
 {
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private ReservationRepository $reservationRepository,
         private SerializerInterface $serializer,
-        private ValidatorInterface $validator
+        private ValidatorInterface $validator,
+        private NotificationService $notificationService
     ) {
     }
 
@@ -88,6 +91,8 @@ class ReservationController extends AbstractController
 
         $this->entityManager->persist($reservation);
         $this->entityManager->flush();
+        $this->notificationService->notifyAdminAboutRegistration($reservation);
+
 
         return $this->json($reservation, Response::HTTP_CREATED, [], ['groups' => ['reservation:read']]);
     }

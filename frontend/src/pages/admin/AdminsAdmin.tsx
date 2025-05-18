@@ -1,6 +1,4 @@
-// src/pages/admin/AdminsAdmin.tsx
 import React, { useState, useCallback, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { UserPlus, Edit, Trash2, Eye, Shield, Check, X } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
@@ -57,8 +55,6 @@ const AdminsAdmin: React.FC = () => {
         loading,
         error,
         setData: setAdmins,
-        setError,
-        refetch
     }  = useDataFetching<User[]>({
         fetchFn: fetchAdmins
     });
@@ -377,7 +373,7 @@ const AdminsAdmin: React.FC = () => {
                     </div>
 
                     <DataTable<User>
-                        data={admins || []}
+                        data={Array.isArray(admins) ? admins : []}
                         columns={columns}
                         keyField="id"
                         loading={loading}
@@ -443,7 +439,7 @@ const AdminsAdmin: React.FC = () => {
                         <Button
                             type="submit"
                             loading={processing}
-                            onClick={handleAddAdmin}
+                            onClick={() => handleAddAdmin()}
                         >
                             Ajouter
                         </Button>

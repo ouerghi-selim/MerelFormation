@@ -5,6 +5,7 @@ namespace App\Controller\Api;
 use App\Entity\User;
 use App\Entity\VehicleRental;
 use App\Repository\UserRepository;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -19,7 +20,9 @@ class VehicleRentalController extends AbstractController
     public function __construct(
         private EntityManagerInterface $entityManager,
         private UserRepository $userRepository,
-        private UserPasswordHasherInterface $passwordHasher
+        private UserPasswordHasherInterface $passwordHasher,
+        private NotificationService $notificationService
+
     ) {
     }
 
@@ -176,6 +179,7 @@ class VehicleRentalController extends AbstractController
         // Persister la réservation
         $this->entityManager->persist($rental);
         $this->entityManager->flush();
+        $this->notificationService->notifyAdminAboutVehicleRental($rental);
 
         // Logs pour le débogage
         error_log('Réservation créée: ID=' . $rental->getId() . ', Utilisateur=' . $user->getEmail());

@@ -2,11 +2,13 @@
 
 namespace App\Controller\Student;
 
+use AllowDynamicProperties;
 use App\Entity\Reservation;
 use App\Entity\Session;
 use App\Entity\User;
 use App\Repository\SessionRepository;
 use App\Repository\UserRepository;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,7 +18,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class SessionStudentController extends AbstractController
+#[AllowDynamicProperties] class SessionStudentController extends AbstractController
 {
     private $entityManager;
     private $sessionRepository;
@@ -29,13 +31,16 @@ class SessionStudentController extends AbstractController
         SessionRepository $sessionRepository,
         UserRepository $userRepository,
         UserPasswordHasherInterface $passwordHasher,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        NotificationService $notificationService
+
     ) {
         $this->entityManager = $entityManager;
         $this->sessionRepository = $sessionRepository;
         $this->userRepository = $userRepository;
         $this->passwordHasher = $passwordHasher;
         $this->validator = $validator;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -113,8 +118,10 @@ class SessionStudentController extends AbstractController
         $this->entityManager->persist($reservation);
         $this->entityManager->flush();
 
+
         // Envoi d'email de confirmation et/ou notification (à implémenter)
-        // ...
+        $this->notificationService->notifyAdminAboutRegistration($reservation);
+
 
         return $this->json([
             'message' => 'Inscription réussie! Vous recevrez un email de confirmation.',

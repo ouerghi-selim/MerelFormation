@@ -11,7 +11,7 @@ use Symfony\Component\Validator\Constraints as Assert;
     shortName: 'session_registration',
     operations: [
         new Post(
-            uriTemplate: '/api/registration',
+            uriTemplate: '/registration',
             controller: SessionStudentController::class . '::register',
             status: 201
         ),

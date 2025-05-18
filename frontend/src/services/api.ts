@@ -38,7 +38,7 @@ api.interceptors.response.use(
 );
 export const sessionRegistrationApi = {
     register: (registrationData: { name: string; email: string; sessionId: number | null }) =>
-        api.post('/api/registration', registrationData),
+        api.post('/registration', registrationData),
 };
 
 
@@ -157,6 +157,14 @@ export const vehicleRentalsApi = {
         api.get(`/vehicles/available?date=${date}`),
 };
 
-
+export const adminEmailTemplatesApi = {
+    getAll: () => api.get('/admin/email-templates'),
+    get: (id: number) => api.get(`/admin/email-templates/${id}`),
+    create: (data: any) => api.post('/admin/email-templates', data),
+    update: (id: number, data: any) => api.put(`/admin/email-templates/${id}`, data),
+    delete: (id: number) => api.delete(`/admin/email-templates/${id}`),
+    duplicate: (id: number, data: { name: string }) => api.post(`/admin/email-templates/${id}/duplicate`, data),
+    preview: (id: number, testData: {[key: string]: string}) => api.post(`/admin/email-templates/${id}/preview`, testData)
+};
 
 export default api;

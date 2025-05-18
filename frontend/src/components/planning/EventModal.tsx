@@ -70,7 +70,7 @@ const EventModal: React.FC<EventModalProps> = ({
     
     if (name === 'startDate' || name === 'endDate') {
       const dateType = name === 'startDate' ? 'start' : 'end';
-      const timeField = name === 'startDate' ? 'startTime' : 'endTime';
+      // const timeField = name === 'startDate' ? 'startTime' : 'endTime';
       const currentDate = formData[dateType as keyof typeof formData] as Date;
       const newDate = new Date(value);
       

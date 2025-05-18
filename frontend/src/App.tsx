@@ -25,7 +25,9 @@ import AdminsAdmin from './pages/admin/AdminsAdmin';
 import SessionsAdmin from './pages/admin/SessionsAdmin';
 import SessionNew from './pages/admin/SessionNew';
 import VehiclesAdmin from './pages/admin/VehiclesAdmin';
-
+import EmailTemplatesAdmin from "@/pages/admin/EmailTemplatesAdmin.tsx";
+import EmailTemplateEdit from "@/pages/admin/EmailTemplateEdit.tsx";
+import EmailTemplateNew from "@/pages/admin/EmailTemplateNew.tsx";
 
 // Student pages
 import DashboardStudent from './pages/student/DashboardStudent';
@@ -94,7 +96,9 @@ const App = () => {
                     <Route path="/admin/sessions" element={<SessionsAdmin />} />
                     <Route path="/admin/sessions/new" element={<SessionNew />} />
                     <Route path="/admin/vehicles" element={<VehiclesAdmin />} />
-
+                    <Route path="/admin/email-templates" element={<EmailTemplatesAdmin />} />
+                    <Route path="/admin/email-templates/new" element={<EmailTemplateNew />} />
+                    <Route path="/admin/email-templates/:id/edit" element={<EmailTemplateEdit />} />
 
 
                     <Route path="/admin/reservations" element={

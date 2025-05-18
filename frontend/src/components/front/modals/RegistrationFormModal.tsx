@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import axios from 'axios';
 import { sessionRegistrationApi } from '../../../services/api';
 import Alert from '../../../components/common/Alert';
 

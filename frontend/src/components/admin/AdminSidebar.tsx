@@ -64,7 +64,8 @@ const AdminSidebar: React.FC = () => {
       submenu: [
         { title: 'Textes du site', path: '/admin/content/texts' },
         { title: 'Témoignages', path: '/admin/content/testimonials' },
-        { title: 'FAQ', path: '/admin/content/faq' }
+        { title: 'FAQ', path: '/admin/content/faq' },
+        { title: 'email template', path: '/admin/email-templates' },
       ]
     },
     {

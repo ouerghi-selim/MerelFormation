@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Calendar, Clock, Filter, Users, Book, ChevronRight, X, CheckCircle } from 'lucide-react';
+import { Search, Calendar, Clock, Filter, Users, Book, ChevronRight, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 import { Link } from "react-router-dom";
 import SessionSelectionModal from '../components/front/modals/SessionSelectionModal';
@@ -144,7 +144,7 @@ const FormationsPage = () => {
   const handleRegistrationSubmit = async (event: { preventDefault: () => void; }) => {
     event.preventDefault();
     try {
-      await axios.post('/api/registration', registrationData);
+      await axios.post('/registration', registrationData);
       alert("Inscription réussie! Vérifiez votre email.");
       setShowRegistrationForm(false);
     } catch (error) {
