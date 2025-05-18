@@ -24,9 +24,14 @@ services:
         bind:
             $persistProcessor: '@api_platform.doctrine.orm.state.persist_processor'
 
-    App\Command\LoadInitialDataCommand:
-        tags:
-            - { name: 'console.command' }
+    Symfony\Component\DependencyInjection\ContainerInterface:
+        alias: service_container
+        public: true
+
+    # Rendre les fixtures publiques pour qu'elles soient accessibles par le container
+    App\DataFixtures\:
+        resource: '../src/DataFixtures/'
+        public: true
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

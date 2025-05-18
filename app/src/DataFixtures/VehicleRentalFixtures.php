@@ -27,7 +27,6 @@ class VehicleRentalFixtures extends Fixture implements DependentFixtureInterface
                 'examCenter' => '35 Rennes (Bruz)',
                 'formula' => 'Centre examen Rennes: Formule intégrale (240€ TTC)',
                 'examTime' => '09:00',
-                'birthPlace' => 'Rennes',
                 'birthDate' => new \DateTime('1990-05-15'),
                 'address' => '123 Rue des Examens',
                 'postalCode' => '35000',
@@ -49,7 +48,6 @@ class VehicleRentalFixtures extends Fixture implements DependentFixtureInterface
                 'examCenter' => '22 Saint Brieuc',
                 'formula' => 'Centre examen Autres: Formule simple (nous consulter)',
                 'examTime' => '14:30',
-                'birthPlace' => 'Saint Brieuc',
                 'birthDate' => new \DateTime('1988-11-23'),
                 'address' => '45 Boulevard des Tests',
                 'postalCode' => '22000',
@@ -71,7 +69,6 @@ class VehicleRentalFixtures extends Fixture implements DependentFixtureInterface
                 'examCenter' => '35 Rennes (Bruz)',
                 'formula' => 'Centre examen Rennes: Formule simple (120€ TTC)',
                 'examTime' => '10:15',
-                'birthPlace' => 'Nantes',
                 'birthDate' => new \DateTime('1995-08-27'),
                 'address' => '78 Avenue de la Liberté',
                 'postalCode' => '35700',
@@ -98,11 +95,6 @@ class VehicleRentalFixtures extends Fixture implements DependentFixtureInterface
             $rental->setExamCenter($rentalData['examCenter']);
             $rental->setFormula($rentalData['formula']);
             $rental->setExamTime($rentalData['examTime']);
-            $rental->setBirthPlace($rentalData['birthPlace']);
-            $rental->setBirthDate($rentalData['birthDate']);
-            $rental->setAddress($rentalData['address']);
-            $rental->setPostalCode($rentalData['postalCode']);
-            $rental->setCity($rentalData['city']);
             $rental->setFacturation($rentalData['facturation']);
             $rental->setFinancing($rentalData['financing']);
             $rental->setPaymentMethod($rentalData['paymentMethod']);
