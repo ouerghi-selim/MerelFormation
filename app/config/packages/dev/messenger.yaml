@@ -1,0 +1,5 @@
+framework:
+  messenger:
+    routing:
+      # Utiliser "sync" pour traiter immédiatement les messages
+      Symfony\Component\Mailer\Messenger\SendEmailMessage: sync
