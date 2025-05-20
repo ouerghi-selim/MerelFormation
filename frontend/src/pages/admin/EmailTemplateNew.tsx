@@ -17,7 +17,24 @@ const EmailTemplateNew: React.FC = () => {
     const [content, setContent] = useState('');
     const [type, setType] = useState('notification');
     const [variables, setVariables] = useState('');
+    const [targetRole, setTargetRole] = useState<string | null>(null);
+    const [eventType, setEventType] = useState('');
 
+    // Liste des types d'événements disponibles
+    const eventTypes = [
+        { value: 'registration_confirmation', label: 'Confirmation d\'inscription' },
+        { value: 'vehicle_rental_confirmation', label: 'Confirmation de location de véhicule' },
+        { value: 'password_reset', label: 'Réinitialisation de mot de passe' },
+        // Autres types d'événements...
+    ];
+
+    // Liste des rôles disponibles
+    const roles = [
+        { value: '', label: 'Tous les rôles' },
+        { value: 'ROLE_ADMIN', label: 'Administrateur' },
+        { value: 'ROLE_STUDENT', label: 'Étudiant' },
+        { value: 'ROLE_INSTRUCTOR', label: 'Formateur' },
+    ];
     // Erreurs de validation
     const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
 
@@ -58,6 +75,8 @@ const EmailTemplateNew: React.FC = () => {
                 subject,
                 content,
                 type,
+                eventType,
+                targetRole,
                 variables: variablesArray
             };
 
@@ -124,100 +143,142 @@ const EmailTemplateNew: React.FC = () => {
                                         <p className="mt-1 text-sm text-red-500">{formErrors.name}</p>
                                     )}
                                 </div>
-
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Type de template*
+                                        Type d'événement*
                                     </label>
                                     <select
                                         className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                            formErrors.type ? 'border-red-500' : ''
+                                            formErrors.eventType ? 'border-red-500' : ''
                                         }`}
-                                        value={type}
-                                        onChange={(e) => setType(e.target.value)}
+                                        value={eventType}
+                                        onChange={(e) => setEventType(e.target.value)}
                                     >
-                                        <option value="notification">Notification</option>
-                                        <option value="reservation">Réservation</option>
-                                        <option value="invoice">Facturation</option>
-                                        <option value="reminder">Rappel</option>
-                                        <option value="welcome">Bienvenue</option>
+                                        <option value="">Sélectionnez un type d'événement</option>
+                                        {eventTypes.map(type => (
+                                            <option key={type.value} value={type.value}>{type.label}</option>
+                                        ))}
                                     </select>
-                                    {formErrors.type && (
-                                        <p className="mt-1 text-sm text-red-500">{formErrors.type}</p>
+                                    {formErrors.eventType && (
+                                        <p className="mt-1 text-sm text-red-500">{formErrors.eventType}</p>
                                     )}
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Variables (séparées par des virgules)
+                                        Destinataire
                                     </label>
-                                    <input
-                                        type="text"
+                                    <select
                                         className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                        value={variables}
-                                        onChange={(e) => setVariables(e.target.value)}
-                                        placeholder="nom, email, date, session, etc."
-                                    />
+                                        value={targetRole || ''}
+                                        onChange={(e) => setTargetRole(e.target.value || null)}
+                                    >
+                                        {roles.map(role => (
+                                            <option key={role.value} value={role.value}>{role.label}</option>
+                                        ))}
+                                    </select>
                                     <p className="mt-1 text-xs text-gray-500">
-                                        Utilisez ces variables dans votre template sous la forme {'{{'}variable{'}}'}
+                                        Si "Tous les rôles" est sélectionné, ce template sera utilisé pour tous les
+                                        destinataires
+                                        sans template spécifique à leur rôle.
                                     </p>
                                 </div>
 
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Sujet*
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                            formErrors.subject ? 'border-red-500' : ''
-                                        }`}
-                                        value={subject}
-                                        onChange={(e) => setSubject(e.target.value)}
-                                    />
-                                    {formErrors.subject && (
-                                        <p className="mt-1 text-sm text-red-500">{formErrors.subject}</p>
-                                    )}
-                                </div>
-
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Contenu*
-                                    </label>
-                                    <div className="mb-2 text-sm text-gray-500">
-                                        Utilisez le HTML pour formater le contenu. Les variables sont entourées par des accolades doubles: {'{{'}variable{'}}'}
-                                    </div>
-                                    <textarea
-                                        rows={15}
-                                        className={`block w-full font-mono rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                            formErrors.content ? 'border-red-500' : ''
-                                        }`}
-                                        value={content}
-                                        onChange={(e) => setContent(e.target.value)}
-                                    />
-                                    {formErrors.content && (
-                                        <p className="mt-1 text-sm text-red-500">{formErrors.content}</p>
-                                    )}
-                                </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Type de template*
+                                </label>
+                                <select
+                                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                                        formErrors.type ? 'border-red-500' : ''
+                                    }`}
+                                    value={type}
+                                    onChange={(e) => setType(e.target.value)}
+                                >
+                                    <option value="notification">Notification</option>
+                                    <option value="reservation">Réservation</option>
+                                    <option value="invoice">Facturation</option>
+                                    <option value="reminder">Rappel</option>
+                                    <option value="welcome">Bienvenue</option>
+                                </select>
+                                {formErrors.type && (
+                                    <p className="mt-1 text-sm text-red-500">{formErrors.type}</p>
+                                )}
                             </div>
 
-                            <div className="mt-8 border-t border-gray-200 pt-6 flex justify-end">
-                                <button
-                                    type="button"
-                                    onClick={() => navigate('/admin/email-templates')}
-                                    className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mr-3"
-                                >
-                                    Annuler
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                >
-                                    {loading ? (
-                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                    ) : (
-                                        <Save className="h-5 w-5 mr-2" />
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Variables (séparées par des virgules)
+                                </label>
+                                <input
+                                    type="text"
+                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    value={variables}
+                                    onChange={(e) => setVariables(e.target.value)}
+                                    placeholder="nom, email, date, session, etc."
+                                />
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Utilisez ces variables dans votre template sous la forme {'{{'}variable{'}}'}
+                                </p>
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Sujet*
+                                </label>
+                                <input
+                                    type="text"
+                                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                                        formErrors.subject ? 'border-red-500' : ''
+                                    }`}
+                                    value={subject}
+                                    onChange={(e) => setSubject(e.target.value)}
+                                />
+                                {formErrors.subject && (
+                                    <p className="mt-1 text-sm text-red-500">{formErrors.subject}</p>
+                                )}
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Contenu*
+                                </label>
+                                <div className="mb-2 text-sm text-gray-500">
+                                    Utilisez le HTML pour formater le contenu. Les variables sont entourées par des
+                                    accolades doubles: {'{{'}variable{'}}'}
+                                </div>
+                                <textarea
+                                    rows={15}
+                                    className={`block w-full font-mono rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                                        formErrors.content ? 'border-red-500' : ''
+                                    }`}
+                                    value={content}
+                                    onChange={(e) => setContent(e.target.value)}
+                                />
+                                {formErrors.content && (
+                                    <p className="mt-1 text-sm text-red-500">{formErrors.content}</p>
+                                )}
+                            </div>
+                    </div>
+
+                    <div className="mt-8 border-t border-gray-200 pt-6 flex justify-end">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/admin/email-templates')}
+                            className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mr-3"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                            {loading ? (
+                                <div
+                                    className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                            ) : (
+                                <Save className="h-5 w-5 mr-2" />
                                     )}
                                     Enregistrer
                                 </button>

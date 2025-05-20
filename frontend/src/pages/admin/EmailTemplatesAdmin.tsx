@@ -18,7 +18,24 @@ interface EmailTemplate {
     content: string;
     type: string;
     variables: string[];
+    isSystem: boolean;
+    identifier: string;
+    targetRole: string | null;
+    eventType: string;
 }
+
+// Ajouter une fonction pour formater l'affichage du rôle cible
+const formatRole = (targetRole: string | null): string => {
+    if (!targetRole) return 'Tous les rôles';
+
+    const roles: { [key: string]: string } = {
+        'ROLE_ADMIN': 'Administrateur',
+        'ROLE_STUDENT': 'Étudiant',
+        'ROLE_INSTRUCTOR': 'Formateur'
+    };
+
+    return roles[targetRole] || targetRole;
+};
 
 const EmailTemplatesAdmin: React.FC = () => {
     const { addToast } = useNotification();
@@ -50,14 +67,61 @@ const EmailTemplatesAdmin: React.FC = () => {
     const openPreviewModal = (template: EmailTemplate) => {
         setSelectedTemplate(template);
 
-        // Préparer les données de test
+        // Préparer des valeurs de test réalistes en fonction du nom de la variable
         const initialTestData: {[key: string]: string} = {};
         template.variables.forEach(variable => {
-            initialTestData[variable] = `[Valeur de test pour ${variable}]`;
+            // Générer des valeurs de test plus naturelles selon le type de variable
+            switch(variable.toLowerCase()) {
+                case 'adminname':
+                case 'username':
+                case 'firstname':
+                    initialTestData[variable] = 'Jean';
+                    break;
+                case 'lastname':
+                    initialTestData[variable] = 'Dupont';
+                    break;
+                case 'studentname':
+                case 'name':
+                    initialTestData[variable] = 'Jean Dupont';
+                    break;
+                case 'email':
+                    initialTestData[variable] = 'jean.dupont@example.com';
+                    break;
+                case 'formationtitle':
+                case 'formation':
+                    initialTestData[variable] = 'Formation Initiale Taxi';
+                    break;
+                case 'sessiondate':
+                case 'date':
+                case 'startdate':
+                    initialTestData[variable] = '25/06/2025';
+                    break;
+                case 'enddate':
+                    initialTestData[variable] = '30/06/2025';
+                    break;
+                case 'reservationid':
+                case 'rentalid':
+                case 'id':
+                    initialTestData[variable] = '12345';
+                    break;
+                case 'examcenter':
+                case 'center':
+                case 'location':
+                    initialTestData[variable] = 'Centre d\'examen de Marseille';
+                    break;
+                case 'vehicleinfo':
+                case 'vehicle':
+                    initialTestData[variable] = 'Peugeot 308 (AB-123-CD)';
+                    break;
+                default:
+                    // Pour les variables non reconnues, offrir un texte générique mais explicite
+                    initialTestData[variable] = `Exemple de ${variable}`;
+            }
         });
+
         setTestData(initialTestData);
 
-        // Préparer la prévisualisation initiale
+        // Générer la prévisualisation initiale
         generatePreview(template, initialTestData);
         setShowPreviewModal(true);
     };
@@ -137,6 +201,16 @@ const EmailTemplatesAdmin: React.FC = () => {
             sortable: true
         },
         {
+            title: 'Type d\'événement',
+            field: (row: EmailTemplate) => formatEventType(row.eventType),
+            sortable: true
+        },
+        {
+            title: 'Destinataire',
+            field: (row: EmailTemplate) => formatRole(row.targetRole),
+            sortable: true
+        },
+        {
             title: 'Type',
             field: (row: EmailTemplate) => formatType(row.type),
             sortable: true
@@ -146,13 +220,20 @@ const EmailTemplatesAdmin: React.FC = () => {
             field: 'subject' as keyof EmailTemplate,
             sortable: true
         },
-        {
-            title: 'Variables',
-            field: (row: EmailTemplate) => (Array.isArray(row.variables) ? row.variables.join(', ') : '-'),
-            sortable: false
-        }
     ];
 
+
+    // Fonction pour formater le type d'événement
+    const formatEventType = (eventType: string): string => {
+        const eventTypes: { [key: string]: string } = {
+            'registration_confirmation': 'Confirmation d\'inscription',
+            'vehicle_rental_confirmation': 'Confirmation de location de véhicule',
+            'password_reset': 'Réinitialisation de mot de passe',
+            // Autres types d'événements...
+        };
+
+        return eventTypes[eventType] || eventType;
+    };
     // Rendu des actions pour chaque ligne
     const renderActions = (template: EmailTemplate) => (
         <div className="flex justify-end space-x-2">
@@ -170,22 +251,37 @@ const EmailTemplatesAdmin: React.FC = () => {
             >
                 <Edit className="h-5 w-5" />
             </Link>
-            <button
-                onClick={() => handleDuplicate(template)}
-                className="text-green-600 hover:text-green-900"
-                title="Dupliquer"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-            </button>
-            <button
-                onClick={() => openDeleteModal(template)}
-                className="text-red-600 hover:text-red-900"
-                title="Supprimer"
-            >
-                <Trash2 className="h-5 w-5" />
-            </button>
+            {!template.isSystem && (
+                <>
+                    <button
+                        onClick={() => handleDuplicate(template)}
+                        className="text-green-600 hover:text-green-900"
+                        title="Dupliquer"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                    </button>
+                    <button
+                        onClick={() => openDeleteModal(template)}
+                        className="text-red-600 hover:text-red-900"
+                        title="Supprimer"
+                    >
+                        <Trash2 className="h-5 w-5" />
+                    </button>
+                </>
+            )}
+            {template.isSystem && (
+                <button
+                    onClick={() => handleDuplicate(template)}
+                    className="text-green-600 hover:text-green-900"
+                    title="Dupliquer (les templates système ne peuvent pas être supprimés)"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                </button>
+            )}
         </div>
     );
 

@@ -12,6 +12,18 @@ class EmailTemplate
     #[ORM\Column]
     private ?int $id = null;
 
+    #[ORM\Column(length: 255, unique: true)]
+    private ?string $identifier = null;
+
+    #[ORM\Column]
+    private bool $isSystem = false;
+
+    #[ORM\Column(length: 50, nullable: true)]
+    private ?string $targetRole = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $eventType = null;
+
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
@@ -35,6 +47,50 @@ class EmailTemplate
     public function setId(?int $id): void
     {
         $this->id = $id;
+    }
+
+    public function getIdentifier(): ?string
+    {
+        return $this->identifier;
+    }
+
+    public function setIdentifier(string $identifier): self
+    {
+        $this->identifier = $identifier;
+        return $this;
+    }
+
+    public function isSystem(): bool
+    {
+        return $this->isSystem;
+    }
+
+    public function setIsSystem(bool $isSystem): self
+    {
+        $this->isSystem = $isSystem;
+        return $this;
+    }
+
+    public function getTargetRole(): ?string
+    {
+        return $this->targetRole;
+    }
+
+    public function setTargetRole(?string $targetRole): self
+    {
+        $this->targetRole = $targetRole;
+        return $this;
+    }
+
+    public function getEventType(): ?string
+    {
+        return $this->eventType;
+    }
+
+    public function setEventType(string $eventType): self
+    {
+        $this->eventType = $eventType;
+        return $this;
     }
 
     public function getName(): ?string

@@ -49,6 +49,10 @@ class EmailTemplateController extends AbstractController
                 'subject' => $template->getSubject(),
                 'content' => $template->getContent(),
                 'type' => $template->getType(),
+                'identifier' => $template->getIdentifier(),
+                'targetRole' => $template->getTargetRole(),
+                'eventType' => $template->getEventType(),
+                'isSystem' => $template->isSystem(),
                 'variables' => $template->getVariables() ?: [], // Assure que variables est toujours un tableau
             ];
         }, $templates);
@@ -73,6 +77,8 @@ class EmailTemplateController extends AbstractController
                 'subject' => $template->getSubject(),
                 'content' => $template->getContent(),
                 'type' => $template->getType(),
+                'identifier' => $template->getIdentifier(),
+                'isSystem' => $template->isSystem(),
                 'variables' => $template->getVariables() ?: [], // Assure que variables est toujours un tableau
             ];
 

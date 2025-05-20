@@ -13,6 +13,8 @@ interface EmailTemplate {
     content: string;
     type: string;
     variables: string[];
+    isSystem: boolean;
+    identifier: string;
 }
 
 const EmailTemplateEdit: React.FC = () => {
@@ -29,6 +31,8 @@ const EmailTemplateEdit: React.FC = () => {
     const [content, setContent] = useState('');
     const [type, setType] = useState('notification');
     const [variables, setVariables] = useState('');
+    const [isSystem, setIsSystem] = useState(false);
+    const [identifier, setIdentifier] = useState('');
 
     // Erreurs de validation
     const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
@@ -46,6 +50,8 @@ const EmailTemplateEdit: React.FC = () => {
                 setContent(template.content);
                 setType(template.type);
                 setVariables(template.variables.join(', '));
+                setIsSystem(template.isSystem);
+                setIdentifier(template.identifier);
             } catch (err) {
                 console.error('Error fetching template:', err);
                 setError('Erreur lors du chargement du template');
@@ -166,7 +172,13 @@ const EmailTemplateEdit: React.FC = () => {
                                             }`}
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
+                                            disabled={isSystem} // Désactiver si c'est un template système
                                         />
+                                        {isSystem && (
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                Ce template est un template système. Son nom ne peut pas être modifié.
+                                            </p>
+                                        )}
                                         {formErrors.name && (
                                             <p className="mt-1 text-sm text-red-500">{formErrors.name}</p>
                                         )}
@@ -206,10 +218,25 @@ const EmailTemplateEdit: React.FC = () => {
                                             placeholder="nom, email, date, session, etc."
                                         />
                                         <p className="mt-1 text-xs text-gray-500">
-                                            Utilisez ces variables dans votre template sous la forme {'{{'}variable{'}}'}
+                                            Utilisez ces variables dans votre template sous la
+                                            forme {'{{'}variable{'}}'}
                                         </p>
                                     </div>
-
+                                    <div className="md:col-span-2 bg-gray-50 p-4 rounded-lg mt-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Identifiant technique
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm"
+                                            value={identifier}
+                                            disabled
+                                        />
+                                        <p className="mt-1 text-xs text-gray-500">
+                                            Cet identifiant est utilisé dans le code pour référencer ce template. Il ne
+                                            peut pas être modifié.
+                                        </p>
+                                    </div>
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Sujet*
@@ -232,7 +259,8 @@ const EmailTemplateEdit: React.FC = () => {
                                             Contenu*
                                         </label>
                                         <div className="mb-2 text-sm text-gray-500">
-                                            Utilisez le HTML pour formater le contenu. Les variables sont entourées par des accolades doubles: {'{{'}variable{'}}'}
+                                            Utilisez le HTML pour formater le contenu. Les variables sont entourées par
+                                            des accolades doubles: {'{{'}variable{'}}'}
                                         </div>
                                         <textarea
                                             rows={15}
