@@ -8,7 +8,7 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import Layout from './components/layout/Layout';
 import HomePage from './pages/home-page';
 import FormationsPage from './pages/formations-page';
-import LocationPage from './pages/location-page';
+import LocationPage from './pages/location/LocationPage.tsx';
 import FormationDetailPage from "./pages/formation-detail-page";
 import ContactPage from "./pages/contact-page";
 import LoginPage from "./pages/login-page";
