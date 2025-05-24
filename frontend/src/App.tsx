@@ -29,6 +29,11 @@ import EmailTemplatesAdmin from "@/pages/admin/EmailTemplatesAdmin.tsx";
 import EmailTemplateEdit from "@/pages/admin/EmailTemplateEdit.tsx";
 import EmailTemplateNew from "@/pages/admin/EmailTemplateNew.tsx";
 
+// CMS Content Management pages
+import ContentTextsAdmin from './pages/admin/ContentTextsAdmin';
+import TestimonialsAdmin from './pages/admin/TestimonialsAdmin';
+import FAQAdmin from './pages/admin/FAQAdmin';
+
 // Student pages
 import DashboardStudent from './pages/student/DashboardStudent';
 import FormationsStudent from './pages/student/FormationsStudent';
@@ -40,7 +45,7 @@ import PlanningCalendar from './pages/planning/PlanningCalendar';
 
 // Composant pour protéger les routes admin
 // const ProtectedAdminRoute = ({ children }: { children: React.ReactNode }) => {
-//     // // Vérifier si l'utilisateur est connecté et a les droits d'admin
+//     // Vérifier si l'utilisateur est connecté et a les droits d'admin
 //     // const isAuthenticated = localStorage.getItem('token') !== null;
 //     // const userRole = localStorage.getItem('userRole');
 //     //
@@ -83,14 +88,14 @@ const App = () => {
 
                     {/* Routes admin protégées */}
                     <Route path="/admin/dashboard" element={
-                       // <ProtectedAdminRoute>
+                        // <ProtectedAdminRoute>
                             <DashboardAdmin />
-                       // </ProtectedAdminRoute>
+                        // </ProtectedAdminRoute>
                     } />
                     <Route path="/admin/formations" element={
-                     //   <ProtectedAdminRoute>
+                        //   <ProtectedAdminRoute>
                             <FormationsAdmin />
-                       // </ProtectedAdminRoute>
+                        //   </ProtectedAdminRoute>
                     } />
                     <Route path="/admin/formations/new" element={<FormationNew />} />
                     <Route path="/admin/sessions" element={<SessionsAdmin />} />
@@ -100,16 +105,20 @@ const App = () => {
                     <Route path="/admin/email-templates/new" element={<EmailTemplateNew />} />
                     <Route path="/admin/email-templates/:id/edit" element={<EmailTemplateEdit />} />
 
+                    {/* CMS Content Management Routes */}
+                    <Route path="/admin/content/texts" element={<ContentTextsAdmin />} />
+                    <Route path="/admin/content/testimonials" element={<TestimonialsAdmin />} />
+                    <Route path="/admin/content/faq" element={<FAQAdmin />} />
 
                     <Route path="/admin/reservations" element={
-                      //  <ProtectedAdminRoute>
+                        //   <ProtectedAdminRoute>
                             <ReservationsAdmin />
-                       // </ProtectedAdminRoute>
+                        //   </ProtectedAdminRoute>
                     } />
                     <Route path="/admin/users" element={
-                     //   <ProtectedAdminRoute>
+                        //   <ProtectedAdminRoute>
                             <UsersAdmin />
-                     //   </ProtectedAdminRoute>
+                        //   </ProtectedAdminRoute>
                     } />
                     <Route path="/admin/users/students" element={<StudentsAdmin />} />
                     <Route path="/admin/users/instructors" element={<InstructorsAdmin />} />
@@ -117,36 +126,36 @@ const App = () => {
 
                     {/* Routes de planning */}
                     <Route path="/admin/planning" element={
-                     //   <ProtectedAdminRoute>
+                        //   <ProtectedAdminRoute>
                             <PlanningCalendar />
-                     //   </ProtectedAdminRoute>
+                        //   </ProtectedAdminRoute>
                     } />
                     <Route path="/student/planning" element={
-                     //   <ProtectedStudentRoute>
+                        //   <ProtectedStudentRoute>
                             <PlanningCalendar />
-                     //   </ProtectedStudentRoute>
+                        //   </ProtectedStudentRoute>
                     } />
 
                     {/* Routes étudiant protégées */}
                     <Route path="/student" element={
-                     //   <ProtectedStudentRoute>
+                        //   <ProtectedStudentRoute>
                             <DashboardStudent />
-                     //   </ProtectedStudentRoute>
+                        //   </ProtectedStudentRoute>
                     } />
                     <Route path="/student/formations" element={
-                      //  <ProtectedStudentRoute>
+                        //  <ProtectedStudentRoute>
                             <FormationsStudent />
-                      //  </ProtectedStudentRoute>
+                        //  </ProtectedStudentRoute>
                     } />
                     <Route path="/student/formations/:id" element={
-                     //   <ProtectedStudentRoute>
+                        //   <ProtectedStudentRoute>
                             <FormationDetailStudent />
-                     //   </ProtectedStudentRoute>
+                        //   </ProtectedStudentRoute>
                     } />
                     <Route path="/student/documents" element={
-                     //   <ProtectedStudentRoute>
+                        //   <ProtectedStudentRoute>
                             <DocumentsStudent />
-                     //   </ProtectedStudentRoute>
+                        //   </ProtectedStudentRoute>
                     } />
                 </Routes>
             </Router>
