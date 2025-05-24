@@ -8,10 +8,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[Route('/admin/content-texts', name: 'admin_content_texts_')]
 class ContentTextAdminController extends AbstractController
 {
     public function __construct(
@@ -19,7 +17,6 @@ class ContentTextAdminController extends AbstractController
         private ValidatorInterface $validator
     ) {}
 
-    #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
         $page = $request->query->getInt('page', 1);
@@ -73,16 +70,24 @@ class ContentTextAdminController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'show', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function show(ContentText $contentText): JsonResponse
+    public function show(Request $request): JsonResponse
     {
+        $id = $request->attributes->get('id');
+        $contentText = $this->entityManager->getRepository(ContentText::class)->find($id);
+        
+        if (!$contentText) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Contenu non trouvé'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
         return new JsonResponse([
             'success' => true,
             'data' => $this->serializeContentText($contentText)
         ]);
     }
 
-    #[Route('', name: 'create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -109,9 +114,18 @@ class ContentTextAdminController extends AbstractController
         ], Response::HTTP_CREATED);
     }
 
-    #[Route('/{id}', name: 'update', methods: ['PUT'], requirements: ['id' => '\d+'])]
-    public function update(ContentText $contentText, Request $request): JsonResponse
+    public function update(Request $request): JsonResponse
     {
+        $id = $request->attributes->get('id');
+        $contentText = $this->entityManager->getRepository(ContentText::class)->find($id);
+        
+        if (!$contentText) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Contenu non trouvé'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
         $data = json_decode($request->getContent(), true);
         
         $this->updateContentTextFromData($contentText, $data);
@@ -135,9 +149,18 @@ class ContentTextAdminController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
-    public function delete(ContentText $contentText): JsonResponse
+    public function delete(Request $request): JsonResponse
     {
+        $id = $request->attributes->get('id');
+        $contentText = $this->entityManager->getRepository(ContentText::class)->find($id);
+        
+        if (!$contentText) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Contenu non trouvé'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
         $this->entityManager->remove($contentText);
         $this->entityManager->flush();
 
@@ -147,7 +170,6 @@ class ContentTextAdminController extends AbstractController
         ]);
     }
 
-    #[Route('/sections', name: 'sections', methods: ['GET'])]
     public function getSections(): JsonResponse
     {
         $sections = $this->entityManager->createQueryBuilder()
@@ -166,7 +188,6 @@ class ContentTextAdminController extends AbstractController
         ]);
     }
 
-    #[Route('/types', name: 'types', methods: ['GET'])]
     public function getTypes(): JsonResponse
     {
         $types = ['title', 'subtitle', 'paragraph', 'button', 'description', 'slogan'];
@@ -177,9 +198,9 @@ class ContentTextAdminController extends AbstractController
         ]);
     }
 
-    #[Route('/by-section/{section}', name: 'by_section', methods: ['GET'])]
-    public function getBySection(string $section): JsonResponse
+    public function getBySection(Request $request): JsonResponse
     {
+        $section = $request->attributes->get('section');
         $contentTexts = $this->entityManager->getRepository(ContentText::class)
             ->findBy(['section' => $section, 'isActive' => true], ['type' => 'ASC']);
 
