@@ -8,10 +8,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[Route('/admin/testimonials', name: 'admin_testimonials_')]
 class TestimonialAdminController extends AbstractController
 {
     public function __construct(
@@ -19,7 +17,6 @@ class TestimonialAdminController extends AbstractController
         private ValidatorInterface $validator
     ) {}
 
-    #[Route('', name: 'index', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
         $page = $request->query->getInt('page', 1);
@@ -84,16 +81,24 @@ class TestimonialAdminController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'show', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function show(Testimonial $testimonial): JsonResponse
+    public function show(Request $request): JsonResponse
     {
+        $id = $request->attributes->get('id');
+        $testimonial = $this->entityManager->getRepository(Testimonial::class)->find($id);
+        
+        if (!$testimonial) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Témoignage non trouvé'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
         return new JsonResponse([
             'success' => true,
             'data' => $this->serializeTestimonial($testimonial)
         ]);
     }
 
-    #[Route('', name: 'create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -120,9 +125,18 @@ class TestimonialAdminController extends AbstractController
         ], Response::HTTP_CREATED);
     }
 
-    #[Route('/{id}', name: 'update', methods: ['PUT'], requirements: ['id' => '\d+'])]
-    public function update(Testimonial $testimonial, Request $request): JsonResponse
+    public function update(Request $request): JsonResponse
     {
+        $id = $request->attributes->get('id');
+        $testimonial = $this->entityManager->getRepository(Testimonial::class)->find($id);
+        
+        if (!$testimonial) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Témoignage non trouvé'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
         $data = json_decode($request->getContent(), true);
         
         $this->updateTestimonialFromData($testimonial, $data);
@@ -146,9 +160,18 @@ class TestimonialAdminController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
-    public function delete(Testimonial $testimonial): JsonResponse
+    public function delete(Request $request): JsonResponse
     {
+        $id = $request->attributes->get('id');
+        $testimonial = $this->entityManager->getRepository(Testimonial::class)->find($id);
+        
+        if (!$testimonial) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Témoignage non trouvé'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
         $this->entityManager->remove($testimonial);
         $this->entityManager->flush();
 
@@ -158,9 +181,18 @@ class TestimonialAdminController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/toggle-featured', name: 'toggle_featured', methods: ['PATCH'], requirements: ['id' => '\d+'])]
-    public function toggleFeatured(Testimonial $testimonial): JsonResponse
+    public function toggleFeatured(Request $request): JsonResponse
     {
+        $id = $request->attributes->get('id');
+        $testimonial = $this->entityManager->getRepository(Testimonial::class)->find($id);
+        
+        if (!$testimonial) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Témoignage non trouvé'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
         $testimonial->setIsFeatured(!$testimonial->isFeatured());
         $testimonial->setUpdatedAt(new \DateTimeImmutable());
         
@@ -173,9 +205,18 @@ class TestimonialAdminController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/toggle-active', name: 'toggle_active', methods: ['PATCH'], requirements: ['id' => '\d+'])]
-    public function toggleActive(Testimonial $testimonial): JsonResponse
+    public function toggleActive(Request $request): JsonResponse
     {
+        $id = $request->attributes->get('id');
+        $testimonial = $this->entityManager->getRepository(Testimonial::class)->find($id);
+        
+        if (!$testimonial) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Témoignage non trouvé'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
         $testimonial->setIsActive(!$testimonial->isActive());
         $testimonial->setUpdatedAt(new \DateTimeImmutable());
         
@@ -188,7 +229,6 @@ class TestimonialAdminController extends AbstractController
         ]);
     }
 
-    #[Route('/featured', name: 'featured', methods: ['GET'])]
     public function getFeatured(): JsonResponse
     {
         $testimonials = $this->entityManager->getRepository(Testimonial::class)
@@ -200,7 +240,6 @@ class TestimonialAdminController extends AbstractController
         ]);
     }
 
-    #[Route('/formations', name: 'formations', methods: ['GET'])]
     public function getFormations(): JsonResponse
     {
         $formations = $this->entityManager->createQueryBuilder()
