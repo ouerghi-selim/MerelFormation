@@ -39,6 +39,9 @@ const PlanningCalendar: React.FC = () => {
     const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
     const [submitForm, setSubmitForm] = useState<() => boolean>(() => () => false);
 
+    // ✅ Vérifier si l'événement sélectionné est un examen
+    const isExamEvent = selectedEvent && typeof selectedEvent.id === 'string' && selectedEvent.id.startsWith('exam-');
+
     // Gestion des événements
     const handleEventClick = (event: any) => {
         setSelectedEvent(event);
@@ -58,7 +61,7 @@ const PlanningCalendar: React.FC = () => {
         }
     };
 
-    const handleDeleteEvent = async (id: number) => {
+    const handleDeleteEvent = async (id: number | string) => {
         const success = await deleteEvent(id);
         if (success) {
             setShowEventModal(false);
@@ -69,7 +72,7 @@ const PlanningCalendar: React.FC = () => {
     // Modal footer pour l'édition d'événements
     const renderModalFooter = () => (
         <div className="flex justify-between">
-            {selectedEvent && (
+            {selectedEvent && !isExamEvent && (
                 <Button
                     variant="danger"
                     onClick={() => handleDeleteEvent(selectedEvent.id)}
@@ -78,23 +81,35 @@ const PlanningCalendar: React.FC = () => {
                     Supprimer
                 </Button>
             )}
+
+            {/* ✅ Message pour les examens */}
+            {isExamEvent && (
+                <div className="text-sm text-gray-500 italic">
+                    Les examens doivent être gérés depuis la section "Réservations"
+                </div>
+            )}
+
             <div className="flex space-x-3">
                 <Button
                     variant="outline"
                     onClick={() => setShowEventModal(false)}
                 >
-                    Annuler
+                    {isExamEvent ? 'Fermer' : 'Annuler'}
                 </Button>
-                <Button
-                    onClick={() => {
-                        if (submitForm()) {
-                            // Ne rien faire ici, la fonction submitForm s'occupe de tout
-                        }
-                    }}
-                    loading={isProcessing}
-                >
-                    {selectedEvent ? 'Mettre à jour' : 'Créer'}
-                </Button>
+
+                {/* ✅ Masquer le bouton de sauvegarde pour les examens */}
+                {!isExamEvent && (
+                    <Button
+                        onClick={() => {
+                            if (submitForm()) {
+                                // Ne rien faire ici, la fonction submitForm s'occupe de tout
+                            }
+                        }}
+                        loading={isProcessing}
+                    >
+                        {selectedEvent ? 'Mettre à jour' : 'Créer'}
+                    </Button>
+                )}
             </div>
         </div>
     );
@@ -121,13 +136,17 @@ const PlanningCalendar: React.FC = () => {
                     )}
 
                     <div className="bg-white rounded-lg shadow overflow-hidden">
-                        <div className="p-4 border-b flex flex-row justify-end items-center">
+                        <div className="p-4 border-b flex flex-row justify-between items-center">
+                            <div className="text-sm text-gray-600">
+                                <p><strong>Note :</strong> Ce planning affiche uniquement les sessions programmées et les examens confirmés.</p>
+                                <p>Les examens doivent être gérés depuis la section "Réservations".</p>
+                            </div>
                             <Button
                                 onClick={handleAddEvent}
                                 icon={<Plus className="h-4 w-4"/>}
                                 size="sm"
                             >
-                                Ajouter
+                                Ajouter une session
                             </Button>
                         </div>
 
@@ -159,6 +178,21 @@ const PlanningCalendar: React.FC = () => {
                                         setSelectedEvent(null);
                                         setShowEventModal(true);
                                     }}
+                                    // ✅ Format des événements dans le tooltip
+                                    components={{
+                                        event: ({ event }) => (
+                                            <div className="text-xs">
+                                                <div className="font-semibold">{event.title}</div>
+                                                <div>{event.location}</div>
+                                                {event.type === 'exam' && event.clientName && (
+                                                    <div>Client: {event.clientName}</div>
+                                                )}
+                                                {event.type === 'formation' && (
+                                                    <div>{event.currentParticipants}/{event.maxParticipants} participants</div>
+                                                )}
+                                            </div>
+                                        )
+                                    }}
                                 />
                             </div>
                         )}
@@ -168,15 +202,15 @@ const PlanningCalendar: React.FC = () => {
                     <div className="mt-4 flex flex-wrap items-center gap-4">
                         <div className="flex items-center">
                             <div className="w-3 h-3 bg-blue-100 border border-blue-300 rounded mr-2"></div>
-                            <span className="text-sm text-gray-600">Formation</span>
+                            <span className="text-sm text-gray-600">Session de formation</span>
                         </div>
                         <div className="flex items-center">
                             <div className="w-3 h-3 bg-green-100 border border-green-300 rounded mr-2"></div>
-                            <span className="text-sm text-gray-600">Examen</span>
+                            <span className="text-sm text-gray-600">Examen confirmé</span>
                         </div>
                         <div className="flex items-center">
                             <div className="w-3 h-3 bg-red-100 border border-red-300 rounded mr-2"></div>
-                            <span className="text-sm text-gray-600">Formation complète</span>
+                            <span className="text-sm text-gray-600">Session complète</span>
                         </div>
                     </div>
                 </div>
@@ -186,7 +220,13 @@ const PlanningCalendar: React.FC = () => {
             <Modal
                 isOpen={showEventModal}
                 onClose={() => setShowEventModal(false)}
-                title={selectedEvent ? "Modifier l'événement" : "Ajouter un événement"}
+                title={
+                    isExamEvent
+                        ? "Détails de l'examen"
+                        : selectedEvent
+                            ? "Modifier la session"
+                            : "Ajouter une session"
+                }
                 footer={renderModalFooter()}
                 maxWidth="max-w-2xl"
             >

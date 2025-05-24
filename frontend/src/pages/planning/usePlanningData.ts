@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNotification } from '../../contexts/NotificationContext';
-import { adminPlanningApi, adminReservationsApi,adminFormationsApi } from '@/services/api';
-import { CalendarEvent, Formation, Instructor } from './types';
+import { adminPlanningApi, adminReservationsApi, adminFormationsApi, adminSessionsApi } from '@/services/api';
+import {BigCalendarEvent, CalendarEvent, Formation, Instructor} from './types';
 import { DEFAULT_LOCATIONS } from './calendarConfig';
 
 export const usePlanningData = () => {
@@ -64,56 +64,87 @@ export const usePlanningData = () => {
                 const startDate = firstDay.toISOString().split('T')[0];
                 const endDate = lastDay.toISOString().split('T')[0];
 
-                // 1. Récupérer les sessions de formation (seulement celles confirmées)
+                // 1. Récupérer les sessions directement via l'API des sessions
                 const sessionParams = new URLSearchParams();
-                //sessionParams.append('status', 'confirmed');
                 sessionParams.append('startDate', startDate);
                 sessionParams.append('endDate', endDate);
+                sessionParams.append('status', 'scheduled'); // Seulement les sessions programmées
 
-                const sessionResponse = await adminReservationsApi.getSessionReservations(sessionParams.toString());
+                const sessionResponse = await adminSessionsApi.getAll(sessionParams.toString());
 
                 // Transformer les sessions en événements
                 const sessionEvents = sessionResponse.data.map((session: any) => ({
-                    id: session.id,
-                    title: session.session.formation.title,
-                    formation: { id: session.session.formation.id },
-                    start: new Date(session.session.startDate),
-                    end: new Date(session.session.endDate ||
-                        new Date(new Date(session.session.startDate).setHours(
-                            new Date(session.session.startDate).getHours() + 8))), // Par défaut +8h si pas de date de fin
-                    type: 'formation',
-                    location: session.session.location || 'Centre de formation',
-                    instructor: session.session.instructor ? {
-                        id: session.session.instructor.id,
-                        name: `${session.session.instructor.firstName} ${session.session.instructor.lastName}`
+                    id: session.id, // ✅ ID de session directement
+                    title: session.formation.title,
+                    formation: { id: session.formation.id },
+                    start: new Date(session.startDate),
+                    end: new Date(session.endDate ||
+                        new Date(new Date(session.startDate).setHours(
+                            new Date(session.startDate).getHours() + 8))), // Par défaut +8h si pas de date de fin
+                    type: 'formation' as const,
+                    location: session.location || 'Centre de formation',
+                    instructor: session.instructor ? {
+                        id: session.instructor.id,
+                        name: `${session.instructor.firstName} ${session.instructor.lastName}`
                     } : undefined,
-                    maxParticipants: session.session.maxParticipants || 12,
-                    currentParticipants: session.session.participants ? session.session.participants.length : 0
+                    maxParticipants: session.maxParticipants || 12,
+                    currentParticipants: session.participants ? session.participants.length : 0
                 }));
 
-                // 2. Récupérer les réservations de véhicules pour examen (seulement celles confirmées)
+                // 2. Récupérer les réservations de véhicules CONFIRMÉES pour examen
                 const vehicleParams = new URLSearchParams();
                 vehicleParams.append('status', 'confirmed');
-                vehicleParams.append('startDate', startDate);
-                vehicleParams.append('endDate', endDate);
 
                 const vehicleResponse = await adminReservationsApi.getAll(vehicleParams.toString());
 
-                // Transformer les réservations de véhicules en événements
-                const examEvents = vehicleResponse.data.map((reservation: any) => ({
-                    id: `exam-${reservation.id}`, // Préfixe pour éviter les conflits d'ID
-                    title: `Examen - ${reservation.clientName}`,
-                    formation: { id: undefined }, // Pas lié à une formation
-                    start: new Date(reservation.date), // Date de l'examen
-                    end: new Date(new Date(reservation.date).setHours(
-                        new Date(reservation.date).getHours() + 3)), // Par défaut +3h pour un examen
-                    type: 'exam',
-                    location: reservation.examCenter || 'Centre d\'examen',
-                    maxParticipants: 1, // Un seul participant pour un examen
-                    currentParticipants: 1, // Toujours complet
-                    vehicleAssigned: reservation.vehicleAssigned,
-                    clientName: reservation.clientName
-                }));
+
+                // Transformer les réservations de véhicules en événements d'examen
+                const examEvents = vehicleResponse.data
+                    .filter((reservation: any) => {
+                        // ✅ Prendre seulement les réservations confirmées
+                        return reservation.status === 'confirmed';
+                    })
+                    .map((reservation: any) => {
+                        try {
+                            // ✅ Parser la date au format d/m/Y retourné par votre API
+                            const dateParts = reservation.date.split('/');
+                            if (dateParts.length !== 3) {
+                                console.error('Invalid date format:', reservation.date);
+                                return null;
+                            }
+
+                            const day = parseInt(dateParts[0], 10);
+                            const month = parseInt(dateParts[1], 10) - 1; // Les mois sont 0-indexés en JavaScript
+                            const year = parseInt(dateParts[2], 10);
+
+                            // Vérifier que les valeurs sont valides
+                            if (isNaN(day) || isNaN(month) || isNaN(year)) {
+                                console.error('Invalid date parts:', dateParts);
+                                return null;
+                            }
+
+                            const examDate = new Date(year, month, day, 9, 0); // 9h par défaut
+                            const examEndDate = new Date(year, month, day, 12, 0); // 12h par défaut (3h d'examen)
+
+                            return {
+                                id: `exam-${reservation.id}`, // ✅ Garder le préfixe pour éviter les conflits d'ID
+                                title: `Examen - ${reservation.clientName}`,
+                                formation: { id: undefined }, // Pas lié à une formation
+                                start: examDate,
+                                end: examEndDate,
+                                type: 'exam' as const,
+                                location: reservation.examCenter || 'Centre d\'examen',
+                                maxParticipants: 1, // Un seul participant pour un examen
+                                currentParticipants: 1, // Toujours complet
+                                vehicleAssigned: reservation.vehicleAssigned,
+                                clientName: reservation.clientName
+                            };
+                        } catch (error) {
+                            console.error('Error parsing reservation:', reservation, error);
+                            return null;
+                        }
+                    })
+                    .filter(Boolean); // Supprimer les éléments null
 
                 // 3. Fusionner les deux types d'événements
                 const allEvents = [...sessionEvents, ...examEvents];
@@ -138,13 +169,19 @@ export const usePlanningData = () => {
     const calendarEvents: BigCalendarEvent[] = events.map(event => ({
         ...event,
         resourceId: event.formation.id,
-        allDay: true
+        allDay: false // ✅ Afficher avec les heures
     }));
 
     // Gérer la sauvegarde d'un événement (création ou mise à jour)
-    const saveEvent = async (eventData: Partial<CalendarEvent>, selectedEventId?: number) => {
+    const saveEvent = async (eventData: Partial<CalendarEvent>, selectedEventId?: number | string) => {
         try {
             setIsProcessing(true);
+
+            // ✅ Vérifier si c'est un événement d'examen (ne peut pas être modifié ici)
+            if (typeof selectedEventId === 'string' && selectedEventId.startsWith('exam-')) {
+                addToast('Les examens ne peuvent pas être modifiés depuis le planning', 'warning');
+                return false;
+            }
 
             // Préparation des données pour l'API
             const sessionData = {
@@ -153,41 +190,120 @@ export const usePlanningData = () => {
                 endDate: eventData.end?.toISOString(),
                 location: eventData.location,
                 maxParticipants: eventData.maxParticipants,
-                instructor: eventData.instructor ? { id: eventData.instructor.id } : 8,
+                instructor: eventData.instructor ? { id: eventData.instructor.id } : null,
                 notes: eventData.type === 'exam' ? 'Examen' : '',
-                type: eventData.type
+                status: 'scheduled' // ✅ Statut par défaut pour les nouvelles sessions
             };
 
             let updatedEvents: CalendarEvent[];
 
-            if (selectedEventId) {
-                // Mise à jour d'un événement existant
-                await adminPlanningApi.updateEvent(selectedEventId, sessionData);
+            if (selectedEventId && typeof selectedEventId === 'number') {
+                // ✅ Mise à jour d'une session existante (ID numérique uniquement)
+                const response = await adminSessionsApi.update(selectedEventId, sessionData);
 
-                // Mettre à jour la liste des événements
+                // ✅ L'API retourne {message: "...", data: {...}} donc on accède à .data
+                const apiResponse = response.data;
+                const updatedSessionData = apiResponse.data; // ✅ Accéder au bon niveau
+
+                // ✅ Conversion sécurisée des dates
+                let startDate: Date;
+                let endDate: Date;
+
+                try {
+                    startDate = new Date(updatedSessionData.startDate);
+                    endDate = new Date(updatedSessionData.endDate);
+
+                    // Vérifier que les dates sont valides
+                    if (isNaN(startDate.getTime())) {
+                        console.error('Invalid start date:', updatedSessionData.startDate);
+                        startDate = eventData.start || new Date(); // Fallback sur les données du formulaire
+                    }
+                    if (isNaN(endDate.getTime())) {
+                        console.error('Invalid end date:', updatedSessionData.endDate);
+                        endDate = eventData.end || new Date(); // Fallback sur les données du formulaire
+                    }
+                } catch (error) {
+                    console.error('Error converting dates:', error);
+                    startDate = eventData.start || new Date();
+                    endDate = eventData.end || new Date();
+                }
+
+                // Transformer les données de l'API en format CalendarEvent avec vérifications de sécurité
+                const updatedEvent: CalendarEvent = {
+                    id: updatedSessionData.id,
+                    title: updatedSessionData.formation?.title || eventData.title || 'Session sans titre',
+                    formation: {
+                        id: updatedSessionData.formation?.id || eventData.formation?.id
+                    },
+                    start: startDate,
+                    end: endDate,
+                    type: 'formation' as const,
+                    location: updatedSessionData.location || '',
+                    instructor: updatedSessionData.instructor ? {
+                        id: updatedSessionData.instructor.id,
+                        name: `${updatedSessionData.instructor.firstName || ''} ${updatedSessionData.instructor.lastName || ''}`.trim()
+                    } : eventData.instructor,
+                    maxParticipants: updatedSessionData.maxParticipants || 12,
+                    currentParticipants: updatedSessionData.participants ? updatedSessionData.participants.length : 0
+                };
+
+
+                // Mettre à jour la liste des événements avec les vraies données de l'API
                 updatedEvents = events.map(event =>
-                    event.id === selectedEventId ? {...event, ...eventData as CalendarEvent} : event
+                    event.id === selectedEventId ? updatedEvent : event
                 );
 
                 addToast('Session mise à jour avec succès', 'success');
             } else {
-                // Création d'un nouvel événement
-                const response = await adminPlanningApi.createEvent(sessionData);
-                const newEventId = response.data.id;
+                // ✅ Création d'une nouvelle session
+                const response = await adminSessionsApi.create(sessionData);
 
-                // Créer un nouvel événement avec l'ID retourné
+                // ✅ L'API retourne {message: "...", data: {...}} donc on accède à .data
+                const apiResponse = response.data;
+                const newSessionData = apiResponse.data || apiResponse; // ✅ Fallback si la structure est différente
+
+                // ✅ Conversion sécurisée des dates
+                let startDate: Date;
+                let endDate: Date;
+
+                try {
+                    startDate = new Date(newSessionData.startDate);
+                    endDate = new Date(newSessionData.endDate);
+
+                    // Vérifier que les dates sont valides
+                    if (isNaN(startDate.getTime())) {
+                        console.error('Invalid start date:', newSessionData.startDate);
+                        startDate = eventData.start || new Date();
+                    }
+                    if (isNaN(endDate.getTime())) {
+                        console.error('Invalid end date:', newSessionData.endDate);
+                        endDate = eventData.end || new Date();
+                    }
+                } catch (error) {
+                    console.error('Error converting dates for new event:', error);
+                    startDate = eventData.start || new Date();
+                    endDate = eventData.end || new Date();
+                }
+
+                // ✅ Créer un nouvel événement avec les données retournées par l'API
                 const newEvent: CalendarEvent = {
-                    id: newEventId,
-                    title: eventData.title || '',
-                    formation: { id: eventData.formation?.id },
-                    start: eventData.start || new Date(),
-                    end: eventData.end || new Date(),
-                    type: eventData.type || 'formation',
-                    location: eventData.location || '',
-                    instructor: eventData.instructor,
-                    maxParticipants: eventData.maxParticipants || 12,
-                    currentParticipants: eventData.currentParticipants || 0
+                    id: newSessionData.id,
+                    title: newSessionData.formation?.title || eventData.title || 'Session sans titre',
+                    formation: {
+                        id: newSessionData.formation?.id || eventData.formation?.id
+                    },
+                    start: startDate,
+                    end: endDate,
+                    type: 'formation' as const,
+                    location: newSessionData.location || '',
+                    instructor: newSessionData.instructor ? {
+                        id: newSessionData.instructor.id,
+                        name: `${newSessionData.instructor.firstName || ''} ${newSessionData.instructor.lastName || ''}`.trim()
+                    } : eventData.instructor,
+                    maxParticipants: newSessionData.maxParticipants || 12,
+                    currentParticipants: newSessionData.participants ? newSessionData.participants.length : 0
                 };
+
 
                 // Ajouter le nouvel événement à la liste
                 updatedEvents = [...events, newEvent];
@@ -209,18 +325,28 @@ export const usePlanningData = () => {
     };
 
     // Gérer la suppression d'un événement
-    const deleteEvent = async (id: number) => {
+    const deleteEvent = async (id: number | string) => {
         try {
             setIsProcessing(true);
 
-            // Supprimer l'événement via l'API
-            await adminPlanningApi.deleteEvent(id);
+            // ✅ Vérifier si c'est un événement d'examen (ne peut pas être supprimé ici)
+            if (typeof id === 'string' && id.startsWith('exam-')) {
+                addToast('Les examens ne peuvent pas être supprimés depuis le planning', 'warning');
+                return false;
+            }
 
-            // Mettre à jour la liste des événements
-            setEvents(prevEvents => prevEvents.filter(event => event.id !== id));
+            // ✅ Supprimer seulement les sessions (ID numérique)
+            if (typeof id === 'number') {
+                await adminSessionsApi.delete(id);
 
-            addToast('Session supprimée avec succès', 'success');
-            return true;
+                // Mettre à jour la liste des événements
+                setEvents(prevEvents => prevEvents.filter(event => event.id !== id));
+
+                addToast('Session supprimée avec succès', 'success');
+                return true;
+            }
+
+            return false;
         } catch (err) {
             console.error('Error deleting event:', err);
             setError('Erreur lors de la suppression de la session');
@@ -238,7 +364,7 @@ export const usePlanningData = () => {
         calendarEvents: events.map(event => ({
             ...event,
             resourceId: event.formation?.id,
-            allDay: true // Les événements s'étendent sur toute la journée
+            allDay: false // ✅ Afficher avec les heures
         })),
         availableLocations,
         availableInstructors,

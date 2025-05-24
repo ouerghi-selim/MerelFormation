@@ -189,19 +189,22 @@ class SessionAdminController extends AbstractController
         }
 
         // Mettre à jour la formation si elle a changé
-        if (isset($data['formationId'])) {
-            $formation = $this->formationRepository->find($data['formationId']);
+        if (isset($data['formation']['id'])) {
+            $formation = $this->formationRepository->find($data['formation']['id']);
             if (!$formation) {
                 return $this->json(['message' => 'Formation non trouvée'], 404);
             }
             $session->setFormation($formation);
         }
-        $instructor = $this->userRepository->find($data['instructor']['id']);
 
-        if (!$instructor) {
-            return $this->json(['message' => 'vormateur non trouvée'], 404);
+        // Mettre à jour l'instructeur si spécifié
+        if (isset($data['instructor']['id'])) {
+            $instructor = $this->userRepository->find($data['instructor']['id']);
+            if (!$instructor) {
+                return $this->json(['message' => 'Formateur non trouvé'], 404);
+            }
+            $session->setInstructor($instructor);
         }
-        $session->setInstructor($instructor);
 
         // Mettre à jour les autres champs
         if (isset($data['startDate'])) {
@@ -232,10 +235,10 @@ class SessionAdminController extends AbstractController
         $this->entityManager->flush();
 
         return $this->json([
-            'message' => 'Session mise à jour avec succès'
+            'message' => 'Session mise à jour avec succès',
+            'data' => $this->formatSessionData($session)
         ]);
     }
-
     /**
      * @Route("/{id}", name="delete", methods={"DELETE"})
      */
