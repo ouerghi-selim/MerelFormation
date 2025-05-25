@@ -35,7 +35,7 @@ class ContentText
     #[ORM\Column(type: 'integer', options: ['default' => 0])]
     private int $sortOrder = 0; // Pour l'ordre d'affichage
 
-    #[ORM\Column(options: ['default' => true])]
+    #[ORM\Column(type: 'boolean', options: ['default' => true])]
     private bool $isActive = true;
 
     #[ORM\Column(type: 'datetime_immutable')]
