@@ -29,6 +29,7 @@ import VehiclesAdmin from './pages/admin/VehiclesAdmin';
 import EmailTemplatesAdmin from "@/pages/admin/EmailTemplatesAdmin.tsx";
 import EmailTemplateEdit from "@/pages/admin/EmailTemplateEdit.tsx";
 import EmailTemplateNew from "@/pages/admin/EmailTemplateNew.tsx";
+import FormationDetail from "@/pages/admin/FormationDetail.tsx";
 
 // CMS Content Management pages
 import ContentTextsAdmin from './pages/admin/ContentTextsAdmin';
@@ -99,6 +100,7 @@ const App = () => {
                         //   </ProtectedAdminRoute>
                     } />
                     <Route path="/admin/formations/new" element={<FormationNew />} />
+                    <Route path="/admin/formations/:id" element={<FormationDetail />} />
                     <Route path="/admin/sessions" element={<SessionsAdmin />} />
                     <Route path="/admin/sessions/new" element={<SessionNew />} />
                     <Route path="/admin/vehicles" element={<VehiclesAdmin />} />

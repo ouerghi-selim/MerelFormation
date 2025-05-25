@@ -48,44 +48,62 @@ class DashboardStudentController extends AbstractController
             return $this->json(['message' => 'Utilisateur non connecté'], 401);
         }
 
-        // Récupérer les données du dashboard
-        $activeFormations = $this->formationRepository->countActiveFormationsForStudent($user->getId());
-        $documentsCount = $this->documentRepository->countDocumentsForStudent($user->getId());
-        $pendingPayments = 0; // À implémenter selon votre logique métier
-        
-        // Récupérer les prochaines sessions
-        $upcomingSessions = $this->sessionRepository->findUpcomingSessionsForStudent($user->getId(), 3);
-        $formattedSessions = [];
-        foreach ($upcomingSessions as $session) {
-            $formattedSessions[] = [
-                'id' => $session->getId(),
-                'formationTitle' => $session->getFormation()->getTitle(),
-                'date' => $session->getDate()->format('d/m/Y'),
-                'time' => $session->getStartTime()->format('H:i'),
-                'location' => $session->getLocation()
-            ];
-        }
-        
-        // Récupérer les documents récents
-        $recentDocuments = $this->documentRepository->findRecentDocumentsForStudent($user->getId(), 3);
-        $formattedDocuments = [];
-        foreach ($recentDocuments as $document) {
-            $formattedDocuments[] = [
-                'id' => $document->getId(),
-                'title' => $document->getTitle(),
-                'type' => $document->getType(),
-                'date' => $document->getCreatedAt()->format('d/m/Y'),
-                'downloadUrl' => '/documents/' . $document->getId()
-            ];
-        }
+        try {
+            // Récupérer les données du dashboard
+            // TODO: Vérifier que cette méthode existe dans FormationRepository ou la créer
+            $activeFormations = 0; // Temporairement en dur jusqu'à correction du FormationRepository
+            // $activeFormations = $this->formationRepository->countActiveFormationsForStudent($user->getId());
 
-        return $this->json([
-            'activeFormations' => $activeFormations,
-            'documentsCount' => $documentsCount,
-            'pendingPayments' => $pendingPayments,
-            'upcomingSessions' => $formattedSessions,
-            'recentDocuments' => $formattedDocuments
-        ]);
+            // TODO: Vérifier que cette méthode existe dans DocumentRepository ou la créer
+            $documentsCount = 0; // Temporairement en dur
+            // $documentsCount = $this->documentRepository->countDocumentsForStudent($user->getId());
+
+            $pendingPayments = 0; // À implémenter selon votre logique métier
+
+            // Récupérer les prochaines sessions
+            $upcomingSessions = $this->sessionRepository->findUpcomingSessionsForStudent($user->getId(), 3);
+            $formattedSessions = [];
+            foreach ($upcomingSessions as $session) {
+                $formattedSessions[] = [
+                    'id' => $session->getId(),
+                    'formationTitle' => $session->getFormation()->getTitle(),
+                    'startDate' => $session->getStartDate()->format('d/m/Y'),
+                    'startTime' => $session->getStartDate()->format('H:i'),
+                    'location' => $session->getLocation()
+                ];
+            }
+
+            // Récupérer les documents récents
+            // TODO: Vérifier que cette méthode existe dans DocumentRepository ou la créer
+            $recentDocuments = []; // Temporairement vide
+            // $recentDocuments = $this->documentRepository->findRecentDocumentsForStudent($user->getId(), 3);
+            $formattedDocuments = [];
+            foreach ($recentDocuments as $document) {
+                $formattedDocuments[] = [
+                    'id' => $document->getId(),
+                    'title' => $document->getTitle(),
+                    'type' => $document->getType(),
+                    'date' => $document->getCreatedAt()->format('d/m/Y'),
+                    'downloadUrl' => '/documents/' . $document->getId()
+                ];
+            }
+
+            return $this->json([
+                'activeFormations' => $activeFormations,
+                'documentsCount' => $documentsCount,
+                'pendingPayments' => $pendingPayments,
+                'upcomingSessions' => $formattedSessions,
+                'recentDocuments' => $formattedDocuments
+            ]);
+        } catch (\Exception $e) {
+            // Log l'erreur pour debug
+            error_log('Dashboard Student Error: ' . $e->getMessage());
+
+            return $this->json([
+                'message' => 'Erreur lors de la récupération des données du dashboard',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -105,10 +123,10 @@ class DashboardStudentController extends AbstractController
             'firstName' => $user->getFirstName(),
             'lastName' => $user->getLastName(),
             'email' => $user->getEmail(),
-            'phone' => $user->getPhone(),
-            'address' => $user->getAddress(),
-            'city' => $user->getCity(),
-            'postalCode' => $user->getPostalCode()
+            'phone' => $user->getPhone() ?? null,
+            'address' => $user->getAddress() ?? null,
+            'city' => $user->getCity() ?? null,
+            'postalCode' => $user->getPostalCode() ?? null
         ];
 
         return $this->json($profile);

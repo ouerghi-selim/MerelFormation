@@ -121,7 +121,7 @@ class SessionRepository extends ServiceEntityRepository
 
         return [
             'totalSessions' => $this->count([]),
-            
+
             'upcomingSessions' => $qb->select('COUNT(s.id)')
                 ->where('s.startDate > :now')
                 ->andWhere('s.status = :scheduledStatus')
@@ -168,33 +168,33 @@ class SessionRepository extends ServiceEntityRepository
 
         if (isset($criteria['status'])) {
             $qb->andWhere('s.status = :status')
-               ->setParameter('status', $criteria['status']);
+                ->setParameter('status', $criteria['status']);
         }
 
         if (isset($criteria['formation'])) {
             $qb->andWhere('f.id = :formationId')
-               ->setParameter('formationId', $criteria['formation']);
+                ->setParameter('formationId', $criteria['formation']);
         }
 
         if (isset($criteria['dateRange'])) {
             $qb->andWhere('s.startDate BETWEEN :start AND :end')
-               ->setParameter('start', $criteria['dateRange']['start'])
-               ->setParameter('end', $criteria['dateRange']['end']);
+                ->setParameter('start', $criteria['dateRange']['start'])
+                ->setParameter('end', $criteria['dateRange']['end']);
         }
 
         if (isset($criteria['location'])) {
             $qb->andWhere('s.location LIKE :location')
-               ->setParameter('location', '%' . $criteria['location'] . '%');
+                ->setParameter('location', '%' . $criteria['location'] . '%');
         }
 
         if (isset($criteria['hasAvailablePlaces']) && $criteria['hasAvailablePlaces']) {
             $qb->groupBy('s.id')
-               ->having('COUNT(r.id) < s.maxParticipants');
+                ->having('COUNT(r.id) < s.maxParticipants');
         }
 
         return $qb->orderBy('s.startDate', 'ASC')
-                  ->getQuery()
-                  ->getResult();
+            ->getQuery()
+            ->getResult();
     }
 
     /**
@@ -255,6 +255,7 @@ class SessionRepository extends ServiceEntityRepository
 
     /**
      * Find sessions by participant (élève)
+     * Utilise les réservations confirmées au lieu d'une association participants inexistante
      *
      * @param int $participantId The ID of the participant (student)
      * @return array Array of sessions
@@ -262,18 +263,22 @@ class SessionRepository extends ServiceEntityRepository
     public function findByParticipant(int $participantId): array
     {
         return $this->createQueryBuilder('s')
-            ->leftJoin('s.participants', 'p')
+            ->leftJoin('s.reservations', 'r')
+            ->leftJoin('r.user', 'u')
             ->leftJoin('s.formation', 'f')
             ->addSelect('f')
-            ->where('p.id = :participantId')
+            ->where('u.id = :participantId')
+            ->andWhere('r.status IN (:confirmedStatuses)')
             ->setParameter('participantId', $participantId)
+            ->setParameter('confirmedStatuses', ['confirmed', 'completed'])
             ->orderBy('s.startDate', 'ASC')
             ->getQuery()
             ->getResult();
     }
 
     /**
-     * Find upcoming sessions for a student with limit
+     * Find upcoming sessions for a student with limit - CORRIGÉ
+     * Utilise les réservations confirmées au lieu d'une association participants inexistante
      *
      * @param int $userId
      * @param int $limit
@@ -282,13 +287,16 @@ class SessionRepository extends ServiceEntityRepository
     public function findUpcomingSessionsForStudent(int $userId, int $limit): array
     {
         return $this->createQueryBuilder('s')
-            ->leftJoin('s.participants', 'p')
+            ->leftJoin('s.reservations', 'r')
+            ->leftJoin('r.user', 'u')
             ->leftJoin('s.formation', 'f')
             ->addSelect('f')
-            ->where('p.id = :userId')
+            ->where('u.id = :userId')
+            ->andWhere('r.status IN (:confirmedStatuses)')
             ->andWhere('s.startDate > :now')
             ->andWhere('s.status = :status')
             ->setParameter('userId', $userId)
+            ->setParameter('confirmedStatuses', ['confirmed', 'completed'])
             ->setParameter('now', new \DateTimeImmutable())
             ->setParameter('status', 'scheduled')
             ->orderBy('s.startDate', 'ASC')

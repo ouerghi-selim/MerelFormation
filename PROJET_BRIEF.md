@@ -124,10 +124,12 @@
 
 ### Dashboard Admin (/frontend/src/pages/admin/)
 - **DashboardAdmin.tsx** ✅ COMPLET
-- **FormationsAdmin.tsx** - Gestion formations
+- **FormationsAdmin.tsx** ✅ OPTIMISÉ - Gestion formations avec navigation simplifiée
+- **FormationDetail.tsx** ✅ NOUVEAU - Page détails complète avec onglets (Infos, Modules, Prérequis, Documents, Sessions)
+- **FormationNew.tsx** ✅ AMÉLIORÉ - Création avec upload de documents intégré
 - **FormationNew.tsx** - Nouvelle formation
-- **SessionsAdmin.tsx** - Gestion sessions
-- **SessionNew.tsx** - Nouvelle session
+- **SessionsAdmin.tsx** ✅ AMÉLIORÉ - Gestion sessions avec documents et inspection complète
+- **SessionNew.tsx** ✅ COMPLET - Création sessions avec upload de documents
 - **StudentsAdmin.tsx** - Gestion étudiants
 - **InstructorsAdmin.tsx** - Gestion instructeurs
 - **AdminsAdmin.tsx** - Gestion admins
@@ -154,7 +156,7 @@
 - **DashboardStudent.tsx** ✅ COMPLET
 - **FormationsStudent.tsx** - Formations étudiant
 - **FormationDetailStudent.tsx** - Détail formation
-- **DocumentsStudent.tsx** - Documents étudiant
+- **DocumentsStudent.tsx** ✅ OPTIMISÉ - Documents organisés par source (formation/session) avec filtrage avancé
 
 ### Composants Organisés
 ```
@@ -220,6 +222,15 @@
 - **Performance Optimisée** : Récupération des données en parallèle avec mise en cache
 - **Migration Automatique** : Transfert des contenus en dur vers la base de données
 
+### ✅ Gestion Documentaire Formations/Sessions (NOUVEAU)
+- **Upload de documents par formation** - Les admins peuvent ajouter des documents spécifiques à chaque formation
+- **Upload de documents par session** - Documents spécifiques aux sessions de formation
+- **Organisation par source** - Documents organisés et filtrés par formation ou session
+- **API étudiants optimisée** - Accès aux documents avec informations source (sourceTitle, sourceId)
+- **Interface admin simplifiée** - Gestion centralisée des documents dans les pages détails
+- **Téléchargement sécurisé** - Contrôle d'accès basé sur les inscriptions confirmées
+- **Filtrage avancé étudiant** - Filtrage par formation/session côté étudiant
+
 ## 🧠 Environnement de Développement
 
 ### Structure des Dossiers
@@ -279,6 +290,12 @@ MerelFormation/
 - **Page Détails Réservations** - Interface complète pour visualiser toutes les informations d'une réservation véhicule
 - **Modal Amélioré** - Bouton "Voir détails complets" ajouté pour navigation fluide
 - **UX Réservations** - Workflow optimisé avec vue rapide (modal) + vue complète (page dédiée)
+- **Pages Admin Optimisées** - FormationDetail avec onglets, SessionNew complète
+- **Upload Intégré** - Gestion documents dans création formations/sessions
+- **Navigation Simplifiée** - Remplacement modals complexes par pages dédiées
+- **UX Documents** - Interface étudiant repensée avec organisation par source
+- **Filtrage Intelligent** - Recherche et filtres avancés côté étudiant
+- **Sécurité Renforcée** - Contrôle d'accès documents basé sur inscriptions
 
 
 ### 🔧 EN COURS D'OPTIMISATION
@@ -286,6 +303,8 @@ MerelFormation/
 - UI/UX avancée
 - Tests automatisés
 - Documentation
+- **Système documentaire avancé** - Versioning, catégorisation, recherche full-text
+
 
 ### 💡 PROCHAINES ÉTAPES POSSIBLES
 - Système de messagerie interne
@@ -316,6 +335,12 @@ MerelFormation/
 - GET /admin/content-texts - Gestion textes
 - GET /admin/testimonials - Gestion témoignages
 - GET /admin/faq - Gestion FAQ
+
+🆕 Gestion Documents:
+- POST /admin/formations/{id}/documents - Upload documents formation
+- POST /admin/sessions/{id}/documents - Upload documents session  
+- GET /student/documents?source=formation|session - Documents filtrés par source
+- GET /student/documents/{id}/download - Téléchargement sécurisé
 ```
 
 ### Comptes de Test
