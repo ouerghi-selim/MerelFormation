@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Link } from "react-router-dom";
 import SessionSelectionModal from '../components/front/modals/SessionSelectionModal';
 import RegistrationFormModal from '../components/front/modals/RegistrationFormModal';
+import { adminContentTextApi } from '../services/api';
 
 interface Formation {
   slug: number;
@@ -16,6 +17,10 @@ interface Formation {
   description: string;
   type: string;
   isActive: boolean;
+}
+
+interface CMSContent {
+  [key: string]: string;
 }
 
 const FormationsPage = () => {
@@ -43,6 +48,33 @@ const FormationsPage = () => {
   });
   const [totalFormations, setTotalFormations] = useState(0);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  
+  // État pour le contenu CMS
+  const [cmsContent, setCmsContent] = useState<CMSContent>({});
+
+  // Fonction pour récupérer le contenu CMS
+  const fetchCMSContent = async () => {
+    try {
+      const contentResponse = await adminContentTextApi.getAll({
+        section: ['formations_hero', 'formations_advantages'].join(',')
+      });
+      
+      const contentMap: CMSContent = {};
+      if (contentResponse.data?.data) {
+        contentResponse.data.data.forEach((item: any) => {
+          contentMap[item.identifier] = item.content;
+        });
+      }
+      setCmsContent(contentMap);
+    } catch (err) {
+      console.error('Erreur lors du chargement du contenu CMS:', err);
+    }
+  };
+
+  // Fonction helper pour récupérer du contenu CMS avec fallback
+  const getContent = (identifier: string, fallback: string) => {
+    return cmsContent[identifier] || fallback;
+  };
 
   // Fonction pour afficher le modal avec les sessions
   const handleShowSessions = async (formation: Formation) => {
@@ -103,7 +135,11 @@ const FormationsPage = () => {
       }
     };
 
-    fetchFormations();
+    // Récupérer les formations et le contenu CMS en parallèle
+    Promise.all([
+      fetchFormations(),
+      fetchCMSContent()
+    ]);
   }, [searchParams]);
 
   const handleCloseModal = () => {
@@ -216,10 +252,11 @@ const FormationsPage = () => {
         {/* Hero Section */}
         <div className="bg-blue-900 text-white py-16">
           <div className="container mx-auto px-4">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">Nos Formations Taxi</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-6">
+              {getContent('formations_hero_title', 'Nos Formations Taxi')}
+            </h1>
             <p className="text-xl max-w-2xl">
-              Découvrez nos programmes de formation certifiants pour devenir chauffeur de taxi professionnel.
-              Des formations adaptées à tous les niveaux pour réussir dans le métier.
+              {getContent('formations_hero_description', 'Découvrez nos programmes de formation certifiants pour devenir chauffeur de taxi professionnel. Des formations adaptées à tous les niveaux pour réussir dans le métier.')}
             </p>
           </div>
         </div>
@@ -404,36 +441,41 @@ const FormationsPage = () => {
         {/* Section des avantages */}
         <div className="bg-white py-16">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-12">Pourquoi choisir nos formations ?</h2>
+            <h2 className="text-3xl font-bold text-center mb-12">
+              {getContent('formations_advantages_title', 'Pourquoi choisir nos formations ?')}
+            </h2>
             <div className="grid md:grid-cols-3 gap-8">
               <div className="bg-blue-50 p-8 rounded-lg">
                 <div className="bg-blue-900 text-white h-14 w-14 rounded-full flex items-center justify-center mb-6">
                   <CheckCircle className="h-7 w-7"/>
                 </div>
-                <div className="text-blue-900 font-bold text-xl mb-4">Formation Certifiante</div>
+                <div className="text-blue-900 font-bold text-xl mb-4">
+                  {getContent('advantage_certification_title', 'Formation Certifiante')}
+                </div>
                 <p className="text-gray-700">
-                  Nos formations sont reconnues par l'État et vous permettent d'obtenir votre carte professionnelle de
-                  chauffeur de taxi.
+                  {getContent('advantage_certification_description', 'Nos formations sont reconnues par l\'État et vous permettent d\'obtenir votre carte professionnelle de chauffeur de taxi.')}
                 </p>
               </div>
               <div className="bg-blue-50 p-8 rounded-lg">
                 <div className="bg-blue-900 text-white h-14 w-14 rounded-full flex items-center justify-center mb-6">
                   <Users className="h-7 w-7"/>
                 </div>
-                <div className="text-blue-900 font-bold text-xl mb-4">Formateurs Expérimentés</div>
+                <div className="text-blue-900 font-bold text-xl mb-4">
+                  {getContent('advantage_trainers_title', 'Formateurs Expérimentés')}
+                </div>
                 <p className="text-gray-700">
-                  Notre équipe de formateurs possède une solide expérience du métier de chauffeur de taxi et connaît
-                  parfaitement les exigences de l'examen.
+                  {getContent('advantage_trainers_description', 'Notre équipe de formateurs possède une solide expérience du métier de chauffeur de taxi et connaît parfaitement les exigences de l\'examen.')}
                 </p>
               </div>
               <div className="bg-blue-50 p-8 rounded-lg">
                 <div className="bg-blue-900 text-white h-14 w-14 rounded-full flex items-center justify-center mb-6">
                   <Book className="h-7 w-7"/>
                 </div>
-                <div className="text-blue-900 font-bold text-xl mb-4">Accompagnement Personnalisé</div>
+                <div className="text-blue-900 font-bold text-xl mb-4">
+                  {getContent('advantage_support_title', 'Accompagnement Personnalisé')}
+                </div>
                 <p className="text-gray-700">
-                  Un suivi individuel tout au long de votre formation pour garantir votre réussite et vous aider à
-                  préparer efficacement l'examen.
+                  {getContent('advantage_support_description', 'Un suivi individuel tout au long de votre formation pour garantir votre réussite et vous aider à préparer efficacement l\'examen.')}
                 </p>
               </div>
             </div>
@@ -461,7 +503,8 @@ const FormationsPage = () => {
             onClose={handleCloseModal}
             sessionId={registrationData.sessionId}
         />
-      </div>  );
+      </div>
+  );
 };
 
 export default FormationsPage;

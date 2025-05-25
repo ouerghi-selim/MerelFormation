@@ -1,14 +1,14 @@
 # MerelFormation - Brief Projet Complet
 
-## 📋 Informations Générales
+## 🏅 Informations Générales
 
 **Développeur Principal :** Selim OUERGHI (ouerghi-selim)  
 **Repository :** https://github.com/ouerghi-selim/MerelFormation  
 **Type :** Application de gestion de formations taxi + location de véhicules  
-**Status :** 95% fonctionnel - Projet très avancé  
+**Status :** 98% fonctionnel - Projet quasi-complet avec CMS intégré  
 **Dernière mise à jour :** Mai 2025
 
-## 🏗️ Architecture Technique
+## 🖗️ Architecture Technique
 
 ### Backend (Symfony 7.2)
 ```
@@ -49,7 +49,7 @@
 - Monitoring : Logs configurés
 ```
 
-## 🗄️ Structure de la Base de Données (22 Entités)
+## 🗄️ Structure de la Base de Données (25 Entités)
 
 ### Entités Principales
 - **User** - Utilisateurs (admins, étudiants, instructeurs)
@@ -75,6 +75,11 @@
 - **ActivityLog** - Logs d'activité
 - **RefreshToken** - Tokens de rafraîchissement
 
+### 🆕 Entités CMS (Nouvelles)
+- **ContentText** - Textes du site (titres, descriptions, boutons)
+- **Testimonial** - Témoignages clients avec notation
+- **FAQ** - Questions fréquentes organisées
+
 ## 🎛️ Contrôleurs Backend Existants
 
 ### API Controllers (/app/src/Controller/Api/)
@@ -96,6 +101,11 @@
 - **EmailTemplateController** - Templates emails
 - **SessionReservationController** - Réservations sessions
 
+### 🆕 CMS Controllers (Nouveaux)
+- **ContentTextAdminController** ✅ COMPLET - Gestion des textes du site
+- **TestimonialAdminController** ✅ COMPLET - Gestion des témoignages
+- **FAQAdminController** ✅ COMPLET - Gestion des FAQ
+
 ### Student Controllers (/app/src/Controller/Student/)
 - **DashboardStudentController** ✅ COMPLET
 - **FormationStudentController** - Formations étudiants
@@ -105,10 +115,9 @@
 ## 🖥️ Interface Frontend Existante
 
 ### Pages Publiques (/frontend/src/pages/)
-- **home-page.tsx** - Page d'accueil
-- **formations-page.tsx** - Catalogue formations
+- **home-page.tsx** ✅ OPTIMISÉ CMS - Page d'accueil dynamique
+- **formations-page.tsx** ✅ OPTIMISÉ CMS - Catalogue formations dynamique
 - **formation-detail-page.tsx** - Détails formation
-- **location-page.tsx** - Location véhicules
 - **contact-page.tsx** - Contact
 - **login-page.tsx** - Connexion
 
@@ -127,6 +136,18 @@
 - **EmailTemplateEdit.tsx** - Édition template
 - **EmailTemplateNew.tsx** - Nouveau template
 - **UsersAdmin.tsx** - Vue utilisateurs
+
+### Planning Admin (/frontend/src/pages/planning/)
+- **index.tsx** ✅ COMPLET - Planning calendrier intégré
+- **EventForm.tsx** ✅ COMPLET - Formulaire événements avec gestion examens
+- **usePlanningData.ts** ✅ COMPLET - Hook de gestion des données planning
+- **types.ts** - Types TypeScript pour le planning
+- **calendarConfig.ts** - Configuration du calendrier
+
+### 🆕 CMS Admin (Nouvelles Pages)
+- **ContentTextsAdmin.tsx** ✅ COMPLET - Gestion des textes du site
+- **TestimonialsAdmin.tsx** ✅ COMPLET - Gestion des témoignages
+- **FAQAdmin.tsx** ✅ COMPLET - Gestion des FAQ
 
 ### Dashboard Student (/frontend/src/pages/student/)
 - **DashboardStudent.tsx** ✅ COMPLET
@@ -173,6 +194,8 @@
 ### ✅ Administration
 - Dashboard avec statistiques
 - Gestion complète des formations
+- **Planning intégré avec calendrier visuel** 🆕
+- **Gestion différentielle sessions/examens** 🆕
 - Suivi des réservations
 - Gestion financière (factures, paiements)
 - Système de notifications
@@ -184,55 +207,73 @@
 - Système de contact
 - Réservation véhicules sans compte
 
-## 🔧 Environnement de Développement
+### 🆕 ✅ Système CMS Complet (Nouveau)
+- **Gestion des Textes** : Modification de tous les contenus du site (titres, descriptions, boutons)
+- **Témoignages Dynamiques** : Ajout/modification des avis clients avec notation 5 étoiles
+- **FAQ Interactive** : Questions fréquentes organisées par catégories avec réordonnancement
+- **Interface Admin Intuitive** : Pages dédiées pour gérer le contenu sans compétences techniques
+- **Fallbacks Sécurisés** : Contenu par défaut si l'API CMS est indisponible
+- **Performance Optimisée** : Récupération des données en parallèle avec mise en cache
+- **Migration Automatique** : Transfert des contenus en dur vers la base de données
+
+## 🧠 Environnement de Développement
 
 ### Structure des Dossiers
 ```
 MerelFormation/
-├── app/                    # Backend Symfony
+├── app/                      # Backend Symfony
 │   ├── src/
-│   │   ├── Controller/     # Contrôleurs
-│   │   ├── Entity/         # Entités Doctrine
-│   │   ├── Repository/     # Repositories
-│   │   ├── Service/        # Services métier
+│   │   ├── Controller/       # Contrôleurs
+│   │   ├── Entity/           # Entités Doctrine
+│   │   ├── Repository/       # Repositories
+│   │   ├── Service/          # Services métier
 │   │   └── ...
-│   ├── config/             # Configuration
-│   ├── migrations/         # Migrations DB
+│   ├── config/               # Configuration
+│   ├── migrations/           # Migrations DB
 │   └── composer.json
-├── frontend/               # Frontend React
+├── frontend/                 # Frontend React
 │   ├── src/
-│   │   ├── components/     # Composants React
-│   │   ├── pages/          # Pages
-│   │   ├── services/       # Services API
-│   │   ├── contexts/       # Context API
-│   │   └── types/          # Types TypeScript
+│   │   ├── components/       # Composants React
+│   │   ├── pages/            # Pages
+│   │   ├── services/         # Services API
+│   │   ├── contexts/         # Context API
+│   │   └── types/            # Types TypeScript
 │   └── package.json
-├── docker/                 # Configuration Docker
-├── docker-compose.yml      # Orchestration
-└── deploy.sh              # Script déploiement
+├── docker/                   # Configuration Docker
+├── docker-compose.yml        # Orchestration
+└── deploy.sh                 # Script déploiement
 ```
 
 ### Branches Git Actives
 - **main** - Branche principale
 - **develop** - Développement
-- **feature/add-dashboard-admin-student** - Dashboards
+- **feature/cms-content-management** ✅ COMPLET - Système CMS intégré
 - **feature/notification-system** - Notifications
 - **feature/api-controllers** - Contrôleurs API
 
-## 🎯 État Actuel du Projet
+## 🏆 État Actuel du Projet
 
-### ✅ COMPLETEMENT FONCTIONNEL (95%)
+### ✅ COMPLETEMENT FONCTIONNEL (98%) 🚀
 - Architecture complète
 - Backend API complet
 - Dashboards admin et student opérationnels
 - Interface publique complète
+- **Planning administrateur avancé avec calendrier** 🆕
 - Système d'authentification
 - Gestion des formations
 - Gestion des véhicules
 - Système de réservation
 - Facturation et paiements
+- **🆕 Système CMS complet et opérationnel**
 
-### 🔄 EN COURS D'OPTIMISATION
+### 🆕 DERNIÈRES AMÉLIORATIONS (Mai 2025)
+- **Planning Admin** - Calendrier intégré avec React Big Calendar
+- **Gestion Examens** - Différentiation sessions/examens dans le planning
+- **Bug Fixes** - Corrections SessionAdminController pour mise à jour
+- **UX Planning** - Interface intuitive avec gestion des événements
+- **Refactoring** - Optimisation du code frontend planning
+
+### 🔧 EN COURS D'OPTIMISATION
 - Performance frontend/backend
 - UI/UX avancée
 - Tests automatisés
@@ -263,6 +304,10 @@ MerelFormation/
 - POST /api/reservations - Créer réservation
 - GET /admin/dashboard/stats - Stats admin
 - GET /student/dashboard - Stats étudiant
+🆕 CMS APIs:
+- GET /admin/content-texts - Gestion textes
+- GET /admin/testimonials - Gestion témoignages
+- GET /admin/faq - Gestion FAQ
 ```
 
 ### Comptes de Test
@@ -270,7 +315,16 @@ MerelFormation/
 - **Student :** student@merelformation.com
 - **Instructor :** instructor@merelformation.com
 
+### 🆕 URLs CMS (Nouvelles)
+- **Textes du site :** `/admin/content/texts`
+- **Témoignages :** `/admin/content/testimonials`
+- **FAQ :** `/admin/content/faq`
+
 ---
+
+## 🎊 NOUVEAU : Autonomie Complète de Contenu
+
+Grâce au système CMS intégré, **les administrateurs peuvent désormais modifier tout le contenu du site** (textes, témoignages, FAQ) **sans intervention technique**, offrant une **autonomie totale** pour la gestion de contenu avec **fallbacks sécurisés** et **performances optimisées**.
 
 **💡 CONSEIL POUR FUTURES CONVERSATIONS :**
 Copiez-collez ce brief au début de nouvelles conversations avec Claude pour qu'il comprenne immédiatement le contexte et l'état du projet sans avoir à refaire toute l'analyse.

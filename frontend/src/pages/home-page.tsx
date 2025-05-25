@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Star, Calendar, Car, Book, CheckCircle, ArrowRight } from 'lucide-react';
-import axios from 'axios';
+import { adminContentTextApi, adminTestimonialApi } from '../services/api';
 import heroImage from '@assets/images/hero/classroom.jpg';
 
 interface FormationStats {
@@ -16,6 +16,18 @@ interface VehicleStats {
   activeRentals: number;
   maintenanceCount: number;
   averageDailyRate: number;
+}
+
+interface CMSContent {
+  [key: string]: string;
+}
+
+interface Testimonial {
+  id: number;
+  name: string;
+  content: string;
+  rating: number;
+  formationName: string;
 }
 
 const Loader = () => (
@@ -39,7 +51,7 @@ const ErrorDisplay = ({ message }: { message: string }) => (
     </div>
 );
 
-// Composant de comptage animé pour les statistiques
+// Component de comptage animé pour les statistiques
 const AnimatedCounter = ({ value, label, suffix = '' }: { value: number | string, label: string, suffix?: string }) => {
   return (
       <div className="text-center transform hover:scale-105 transition-transform duration-300">
@@ -51,7 +63,7 @@ const AnimatedCounter = ({ value, label, suffix = '' }: { value: number | string
   );
 };
 
-// Composant de carte de service avec animation au survol
+// Component de carte de service avec animation au survol
 const ServiceCard = ({ icon, title, description, items, linkTo, linkText }: any) => {
   return (
       <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
@@ -98,28 +110,80 @@ const HomePage = () => {
   const [vehicleStats, setVehicleStats] = useState<VehicleStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // États pour le contenu CMS
+  const [cmsContent, setCmsContent] = useState<CMSContent>({});
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+
+  // Fonction pour récupérer le contenu CMS
+  const fetchCMSContent = async () => {
+    try {
+      // Récupérer tous les contenus texte
+      const contentResponse = await adminContentTextApi.getAll({
+        section: ['home_hero', 'home_services', 'home_cta', 'home_testimonials'].join(',')
+      });
+      
+      // Transformer en objet avec identifiants comme clés
+      const contentMap: CMSContent = {};
+      if (contentResponse.data?.data) {
+        contentResponse.data.data.forEach((item: any) => {
+          contentMap[item.identifier] = item.content;
+        });
+      }
+      setCmsContent(contentMap);
+
+      // Récupérer les témoignages en vedette
+      const testimonialsResponse = await adminTestimonialApi.getFeatured();
+      if (testimonialsResponse.data?.data) {
+        setTestimonials(testimonialsResponse.data.data);
+      }
+      
+    } catch (err) {
+      console.error('Erreur lors du chargement du contenu CMS:', err);
+      // En cas d'erreur, on peut continuer avec les valeurs par défaut
+    }
+  };
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchAllData = async () => {
       try {
         setLoading(true);
-        const [formationsResponse, vehiclesResponse] = await Promise.all([
-          axios.get('/api/formations/statistics'),
-          axios.get('/api/vehicles/statistics')
+        
+        // Récupérer les statistiques et le contenu CMS en parallèle
+        await Promise.all([
+          fetchCMSContent(),
+          // Garder les appels de statistiques existants
+          (async () => {
+            try {
+              const [formationsResponse, vehiclesResponse] = await Promise.all([
+                import('axios').then(axios => axios.default.get('/api/formations/statistics')),
+                import('axios').then(axios => axios.default.get('/api/vehicles/statistics'))
+              ]);
+              setFormationStats(formationsResponse.data);
+              setVehicleStats(vehiclesResponse.data);
+            } catch (statsErr) {
+              console.error('Erreur statistiques:', statsErr);
+              // Continuer même si les stats échouent
+            }
+          })()
         ]);
-        setFormationStats(formationsResponse.data);
-        setVehicleStats(vehiclesResponse.data);
+        
         setError(null);
       } catch (err) {
-        setError('Erreur lors du chargement des statistiques');
-        console.error('Error fetching stats:', err);
+        setError('Erreur lors du chargement des données');
+        console.error('Error fetching data:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStats();
+    fetchAllData();
   }, []);
+
+  // Fonction helper pour récupérer du contenu CMS avec fallback
+  const getContent = (identifier: string, fallback: string) => {
+    return cmsContent[identifier] || fallback;
+  };
 
   if (loading) return <Loader />;
   if (error) return <ErrorDisplay message={error} />;
@@ -132,20 +196,20 @@ const HomePage = () => {
             <div className="flex flex-col md:flex-row items-center">
               <div className="md:w-1/2 mb-8 md:mb-0 animate-fadeIn">
                 <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-                  Devenez Chauffeur de Taxi Professionnel
+                  {getContent('home_hero_title', 'Devenez Chauffeur de Taxi Professionnel')}
                 </h1>
                 <p className="text-xl mb-8 text-blue-100 leading-relaxed">
-                  Formation certifiante et location de véhicules pour réussir dans le métier de taxi. Plus de 500 professionnels formés avec 95% de réussite.
+                  {getContent('home_hero_description', 'Formation certifiante et location de véhicules pour réussir dans le métier de taxi. Plus de 500 professionnels formés avec 95% de réussite.')}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link to="/formations"
                         className="bg-yellow-500 text-blue-900 px-6 py-3 rounded-lg font-medium text-center hover:bg-yellow-400 transition-colors transform hover:scale-105 hover:shadow-lg inline-flex justify-center items-center">
-                    Découvrir nos formations
+                    {getContent('home_hero_cta_formations', 'Découvrir nos formations')}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                   <Link to="/location"
                         className="bg-white text-blue-900 px-6 py-3 rounded-lg font-medium text-center hover:bg-gray-100 transition-colors transform hover:scale-105 hover:shadow-lg">
-                    Location de véhicules
+                    {getContent('home_hero_cta_location', 'Location de véhicules')}
                   </Link>
                 </div>
                 <div className="mt-8 flex items-center space-x-4">
@@ -156,7 +220,7 @@ const HomePage = () => {
                         />
                     ))}
                   </div>
-                  <p className="text-blue-200">Rejoignez plus de 500 chauffeurs formés</p>
+                  <p className="text-blue-200">{getContent('home_hero_community', 'Rejoignez plus de 500 chauffeurs formés')}</p>
                 </div>
               </div>
               <div className="md:w-1/2 md:pl-8 animate-slideInRight">
@@ -174,17 +238,19 @@ const HomePage = () => {
         <section className="py-16 lg:py-24 bg-gray-50">
           <div className="container mx-auto px-4">
             <div className="text-center mb-16 animate-fadeIn">
-              <h2 className="text-3xl lg:text-4xl font-bold mb-4">Nos Services Complets</h2>
+              <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+                {getContent('home_services_title', 'Nos Services Complets')}
+              </h2>
               <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-                Une offre complète pour votre réussite professionnelle, de la formation à la mise en route.
+                {getContent('home_services_description', 'Une offre complète pour votre réussite professionnelle, de la formation à la mise en route.')}
               </p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">
               <ServiceCard
                   icon={<Book className="text-blue-900 h-8 w-8" />}
-                  title="Formation Taxi"
-                  description="Formation initiale et continue pour les chauffeurs de taxi. Programme complet et certifiant."
+                  title={getContent('service_formation_title', 'Formation Taxi')}
+                  description={getContent('service_formation_description', 'Formation initiale et continue pour les chauffeurs de taxi. Programme complet et certifiant.')}
                   items={[
                     "Formation initiale de 140h",
                     "Formation continue",
@@ -196,8 +262,8 @@ const HomePage = () => {
 
               <ServiceCard
                   icon={<Car className="text-blue-900 h-8 w-8" />}
-                  title="Location Véhicules"
-                  description="Location de véhicules équipés et adaptés pour l'activité de taxi."
+                  title={getContent('service_location_title', 'Location Véhicules')}
+                  description={getContent('service_location_description', 'Location de véhicules équipés et adaptés pour l\'activité de taxi.')}
                   items={[
                     vehicleStats ? `${vehicleStats.totalVehicles} véhicules disponibles` : 'Véhicules récents',
                     "Entretien inclus",
@@ -209,8 +275,8 @@ const HomePage = () => {
 
               <ServiceCard
                   icon={<Calendar className="text-blue-900 h-8 w-8" />}
-                  title="Planning Flexible"
-                  description="Des sessions de formation adaptées à vos disponibilités."
+                  title={getContent('service_planning_title', 'Planning Flexible')}
+                  description={getContent('service_planning_description', 'Des sessions de formation adaptées à vos disponibilités.')}
                   items={[
                     formationStats ? `${formationStats.upcomingSessions} sessions à venir` : 'Sessions régulières',
                     "Horaires adaptés",
@@ -251,23 +317,40 @@ const HomePage = () => {
         {/* Testimonials Section */}
         <section className="py-16 bg-gray-50">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-12">Ils nous font confiance</h2>
+            <h2 className="text-3xl font-bold text-center mb-12">
+              {getContent('home_testimonials_title', 'Ils nous font confiance')}
+            </h2>
             <div className="grid md:grid-cols-3 gap-8">
-              <TestimonialCard
-                  content="Formation excellente et très professionnelle. Les formateurs sont à l'écoute et le contenu est parfaitement adapté."
-                  name="Sarah M."
-                  info="Chauffeur de taxi depuis 2023"
-              />
-              <TestimonialCard
-                  content="Le service de location est impeccable. Véhicules toujours en parfait état et une équipe très réactive."
-                  name="Thomas R."
-                  info="Client depuis 2022"
-              />
-              <TestimonialCard
-                  content="Une formation complète qui m'a permis d'obtenir ma certification du premier coup. Je recommande vivement."
-                  name="Michel P."
-                  info="Diplômé en 2024"
-              />
+              {testimonials.length > 0 ? (
+                testimonials.map((testimonial) => (
+                  <TestimonialCard
+                    key={testimonial.id}
+                    stars={testimonial.rating}
+                    content={testimonial.content}
+                    name={testimonial.name}
+                    info={testimonial.formationName}
+                  />
+                ))
+              ) : (
+                // Fallback vers les témoignages par défaut si pas de données CMS
+                <>
+                  <TestimonialCard
+                      content="Formation excellente et très professionnelle. Les formateurs sont à l'écoute et le contenu est parfaitement adapté."
+                      name="Sarah M."
+                      info="Chauffeur de taxi depuis 2023"
+                  />
+                  <TestimonialCard
+                      content="Le service de location est impeccable. Véhicules toujours en parfait état et une équipe très réactive."
+                      name="Thomas R."
+                      info="Client depuis 2022"
+                  />
+                  <TestimonialCard
+                      content="Une formation complète qui m'a permis d'obtenir ma certification du premier coup. Je recommande vivement."
+                      name="Michel P."
+                      info="Diplômé en 2024"
+                  />
+                </>
+              )}
             </div>
           </div>
         </section>
@@ -277,20 +360,20 @@ const HomePage = () => {
           <div className="container mx-auto px-4">
             <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white rounded-2xl p-8 md:p-12 text-center shadow-xl transform hover:scale-[1.01] transition-transform duration-300">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Prêt à démarrer votre carrière ?
+                {getContent('home_cta_title', 'Prêt à démarrer votre carrière ?')}
               </h2>
               <p className="text-xl mb-8 text-blue-100 max-w-3xl mx-auto">
-                Inscrivez-vous à nos formations et lancez-vous dans l'aventure du taxi professionnel.
+                {getContent('home_cta_description', 'Inscrivez-vous à nos formations et lancez-vous dans l\'aventure du taxi professionnel.')}
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Link to="/contact"
                       className="bg-yellow-500 text-blue-900 px-8 py-4 rounded-lg font-bold hover:bg-yellow-400 transition-colors transform hover:scale-105 hover:shadow-lg inline-flex items-center justify-center">
-                  <span>Nous contacter</span>
+                  <span>{getContent('home_cta_contact', 'Nous contacter')}</span>
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
                 <Link to="/formations"
                       className="bg-white text-blue-900 px-8 py-4 rounded-lg font-bold hover:bg-gray-100 transition-colors transform hover:scale-105 hover:shadow-lg">
-                  Voir les formations
+                  {getContent('home_cta_formations', 'Voir les formations')}
                 </Link>
               </div>
             </div>
@@ -321,7 +404,7 @@ const styles = `
 }
 `;
 
-// Ajoutez ce style au document si nécessaire
+// Ajouter ce style au document si nécessaire
 const styleElement = document.createElement('style');
 styleElement.innerHTML = styles;
 document.head.appendChild(styleElement);
