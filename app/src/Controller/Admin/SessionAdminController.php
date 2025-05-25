@@ -5,6 +5,7 @@ namespace App\Controller\Admin;
 use App\Entity\Formation;
 use App\Entity\Session;
 use App\Entity\User;
+use App\Entity\Document;
 use App\Repository\FormationRepository;
 use App\Repository\SessionRepository;
 use App\Repository\UserRepository;
@@ -16,6 +17,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
  * @Route("/api/admin/sessions", name="api_admin_sessions_")
@@ -112,6 +114,118 @@ class SessionAdminController extends AbstractController
         $formattedSession = $this->formatSessionData($session, true); // true = avec détails
 
         return $this->json($formattedSession);
+    }
+
+    /**
+     * @Route("/{id}/documents", name="get_documents", methods={"GET"})
+     */
+    public function getDocuments(int $id): JsonResponse
+    {
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
+
+        $session = $this->sessionRepository->find($id);
+        if (!$session) {
+            return $this->json(['message' => 'Session non trouvée'], 404);
+        }
+
+        $documents = [];
+        foreach ($session->getDocuments() as $document) {
+            $documents[] = [
+                'id' => $document->getId(),
+                'title' => $document->getTitle(),
+                'fileName' => $document->getFileName(),
+                'type' => $document->getType(),
+                'category' => $document->getCategory(),
+                'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
+                'uploadedBy' => $document->getUploadedBy() ? $document->getUploadedBy()->getEmail() : null
+            ];
+        }
+
+        return $this->json($documents);
+    }
+
+    /**
+     * @Route("/{id}/documents", name="upload_document", methods={"POST"})
+     */
+    public function uploadDocument(int $id, Request $request): JsonResponse
+    {
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
+
+        $session = $this->sessionRepository->find($id);
+        if (!$session) {
+            return $this->json(['message' => 'Session non trouvée'], 404);
+        }
+
+        /** @var UploadedFile $uploadedFile */
+        $uploadedFile = $request->files->get('file');
+        $title = $request->request->get('title');
+        $category = $request->request->get('category', 'support');
+
+        if (!$uploadedFile) {
+            return $this->json(['message' => 'Aucun fichier fourni'], 400);
+        }
+
+        if (!$title) {
+            return $this->json(['message' => 'Titre requis'], 400);
+        }
+
+        // Valider le type de fichier
+        $allowedMimeTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+        if (!in_array($uploadedFile->getMimeType(), $allowedMimeTypes)) {
+            return $this->json(['message' => 'Type de fichier non autorisé'], 400);
+        }
+
+        // Créer le document
+        $document = new Document();
+        $document->setTitle($title);
+        $document->setType($uploadedFile->getClientOriginalExtension());
+        $document->setCategory($category);
+        $document->setSession($session);
+        $document->setUploadedBy($this->getUser());
+        $document->setFile($uploadedFile);
+
+        $this->entityManager->persist($document);
+        $this->entityManager->flush();
+
+        return $this->json([
+            'message' => 'Document ajouté avec succès',
+            'document' => [
+                'id' => $document->getId(),
+                'title' => $document->getTitle(),
+                'fileName' => $document->getFileName(),
+                'type' => $document->getType(),
+                'category' => $document->getCategory()
+            ]
+        ], 201);
+    }
+
+    /**
+     * @Route("/{id}/documents/{documentId}", name="delete_document", methods={"DELETE"})
+     */
+    public function deleteDocument(int $id, int $documentId): JsonResponse
+    {
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
+
+        $session = $this->sessionRepository->find($id);
+        if (!$session) {
+            return $this->json(['message' => 'Session non trouvée'], 404);
+        }
+
+        $document = $this->entityManager->getRepository(Document::class)->find($documentId);
+        if (!$document || $document->getSession() !== $session) {
+            return $this->json(['message' => 'Document non trouvé'], 404);
+        }
+
+        $this->entityManager->remove($document);
+        $this->entityManager->flush();
+
+        return $this->json(['message' => 'Document supprimé avec succès']);
     }
 
     /**
@@ -479,6 +593,22 @@ class SessionAdminController extends AbstractController
             }
 
             $formattedSession['reservations'] = $reservations;
+
+            // Ajouter les documents
+            $documents = [];
+            foreach ($session->getDocuments() as $document) {
+                $documents[] = [
+                    'id' => $document->getId(),
+                    'title' => $document->getTitle(),
+                    'fileName' => $document->getFileName(),
+                    'type' => $document->getType(),
+                    'category' => $document->getCategory(),
+                    'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
+                    'uploadedBy' => $document->getUploadedBy() ? $document->getUploadedBy()->getEmail() : null
+                ];
+            }
+
+            $formattedSession['documents'] = $documents;
         }
 
         return $formattedSession;
