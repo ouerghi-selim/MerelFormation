@@ -64,7 +64,7 @@ class Document
 
     #[ORM\Column(length: 50)]
     #[Groups(['document:read', 'document:write'])]
-    #[Assert\Choice(choices: ['support', 'contrat', 'attestation', 'facture'])]
+    #[Assert\Choice(choices: ['support', 'contract', 'attestation', 'facture'])]
     private ?string $category = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
@@ -93,10 +93,15 @@ class Document
     private ?bool $private = false;
 
     #[ORM\ManyToOne(targetEntity: Session::class, inversedBy: 'documents')]
+    #[ORM\JoinColumn(name: 'session_id', referencedColumnName: 'id', nullable: true)]
+    #[Groups(['document:read', 'document:write'])]
     private ?Session $session = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'documents')]
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true)]
+    #[Groups(['document:read', 'document:write'])]
     private ?User $user = null;
+
     #[ORM\Column]
     #[Groups(['document:read'])]
     private ?\DateTimeImmutable $uploadedAt = null;
@@ -242,6 +247,28 @@ class Document
     public function setVehicleRental(?VehicleRental $vehicleRental): self
     {
         $this->vehicleRental = $vehicleRental;
+        return $this;
+    }
+
+    public function getSession(): ?Session
+    {
+        return $this->session;
+    }
+
+    public function setSession(?Session $session): static
+    {
+        $this->session = $session;
+        return $this;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
         return $this;
     }
 }
