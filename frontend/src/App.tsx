@@ -18,6 +18,7 @@ import DashboardAdmin from './pages/admin/DashboardAdmin';
 import FormationsAdmin from './pages/admin/FormationsAdmin';
 import FormationNew from './pages/admin/FormationNew';
 import ReservationsAdmin from './pages/admin/ReservationsAdmin';
+import VehicleReservationDetail from './pages/admin/VehicleReservationDetail';
 import UsersAdmin from './pages/admin/UsersAdmin';
 import StudentsAdmin from './pages/admin/StudentsAdmin';
 import InstructorsAdmin from './pages/admin/InstructorsAdmin';
@@ -115,6 +116,9 @@ const App = () => {
                             <ReservationsAdmin />
                         //   </ProtectedAdminRoute>
                     } />
+                    {/* Nouvelle route pour les détails de réservation véhicule */}
+                    <Route path="/admin/reservations/vehicle/:id" element={<VehicleReservationDetail />} />
+                    
                     <Route path="/admin/users" element={
                         //   <ProtectedAdminRoute>
                             <UsersAdmin />

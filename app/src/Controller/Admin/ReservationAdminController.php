@@ -101,7 +101,21 @@ class ReservationAdminController extends AbstractController
             'examCenter' => $reservation->getExamCenter(),
             'formula' => $reservation->getFormula(),
             'status' => $reservation->getStatus(),
-            'vehicleAssigned' => $reservation->getVehicle() ? $reservation->getVehicle()->getModel() : null
+            'createdAt' => $reservation->getCreatedAt()->format('d/m/Y'),
+       'startDate'=> $reservation->getStartDate()->format('d/m/Y'),
+ 'endDate'=> $reservation->getEndDate()->format('d/m/Y'),
+    'totalPrice'=> $reservation->getTotalPrice(),
+        'pickupLocation' => $reservation->getPickupLocation(),
+        'returnLocation' => $reservation->getReturnLocation(),
+  'examTime'=>$reservation->getExamTime(),
+  'financing' => $reservation->getFinancing(),
+       'paymentMethod' => $reservation->getPaymentMethod(),
+       'notes' => $reservation->getNotes(),
+   'createdAt' => $reservation->getCreatedAt()->format('d/m/Y'),
+        // Documents et facture
+   'documents'=> $reservation->getDocuments(),
+ 'invoice'=> $reservation->getInvoice(),
+        'vehicleAssigned' => $reservation->getVehicle() ? $reservation->getVehicle()->getModel() : null
         ];
 
         return $this->json($formattedReservation);

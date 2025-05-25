@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { adminReservationsApi } from '../../services/api';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
@@ -50,13 +51,14 @@ interface ReservationDetailModalProps {
 }
 
 const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
-                                                                           isOpen,
-                                                                           onClose,
-                                                                           reservationType,
-                                                                           reservationId,
-                                                                           onStatusChange,
-                                                                           onSuccess
-                                                                       }) => {
+                                                                               isOpen,
+                                                                               onClose,
+                                                                               reservationType,
+                                                                               reservationId,
+                                                                               onStatusChange,
+                                                                               onSuccess
+                                                                           }) => {
+    const navigate = useNavigate();
     const [vehicleReservation, setVehicleReservation] = useState<VehicleReservation | null>(null);
     const [sessionReservation, setSessionReservation] = useState<SessionReservation | null>(null);
     const [loading, setLoading] = useState(false);
@@ -114,44 +116,6 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
                         setSessionReservation(response.data);
                     } catch (sessErr) {
                         console.error("Error loading session reservation:", sessErr);
-                        // Données de secours pour le développement
-                        // Essayer de récupérer les données temporaires du localStorage
-                        // const tempData = localStorage.getItem('temp_session_data');
-                        // if (tempData) {
-                        //     try {
-                        //         const parsedData = JSON.parse(tempData);
-                        //         if (parsedData.id === reservationId) {
-                        //             console.log("Using temporary session data:", parsedData);
-                        //             setSessionReservation(parsedData);
-                        //             localStorage.removeItem('temp_session_data'); // Nettoyer après utilisation
-                        //             return;
-                        //         }
-                        //     } catch (e) {
-                        //         console.error("Error parsing temporary session data:", e);
-                        //     }
-                        // }
-                        //
-                        // // Données de secours pour le développement (existantes)
-                        // setSessionReservation({
-                        //     id: reservationId,
-                        //     user: {
-                        //         id: 101,
-                        //         firstName: 'Jean',
-                        //         lastName: 'Dupont',
-                        //         email: 'jean.dupont@example.com',
-                        //         phone: '06 11 22 33 44'
-                        //     },
-                        //     session: {
-                        //         id: 201,
-                        //         startDate: '2025-03-20T09:00:00',
-                        //         formation: {
-                        //             id: 301,
-                        //             title: 'Formation Initiale Taxi'
-                        //         }
-                        //     },
-                        //     status: 'pending',
-                        //     createdAt: '2025-03-10T14:30:00'
-                        // });
                     }
                 }
             } catch (err) {
@@ -261,6 +225,14 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
         }
     };
 
+    // Fonction pour naviguer vers la page de détails complets
+    const handleViewFullDetails = () => {
+        if (reservationId && reservationType === 'vehicle') {
+            navigate(`/admin/reservations/vehicle/${reservationId}`);
+            onClose(); // Fermer le modal
+        }
+    };
+
     // Rendu du contenu du modal pour véhicule
     const renderVehicleContent = () => {
         if (!vehicleReservation) return null;
@@ -292,9 +264,9 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
                     <div>
                         <p className="text-sm text-gray-500">Statut</p>
                         <p className="font-medium">
-              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(vehicleReservation.status)}`}>
+            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(vehicleReservation.status)}`}>
                 {getStatusLabel(vehicleReservation.status)}
-              </span>
+            </span>
                         </p>
                     </div>
                 </div>
@@ -359,7 +331,7 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
                     <p className="text-sm text-gray-500">Statut</p>
                     <p className="font-medium">
             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(sessionReservation.status)}`}>
-              {getStatusLabel(sessionReservation.status)}
+                {getStatusLabel(sessionReservation.status)}
             </span>
                     </p>
                 </div>
@@ -391,49 +363,65 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
     // Rendu du footer avec les actions
     const renderFooter = () => {
         return (
-            <div className="flex justify-end space-x-3">
-                <Button
-                    variant="outline"
-                    onClick={onClose}
-                >
-                    Fermer
-                </Button>
+            <div className="flex justify-between items-center">
+                {/* Bouton "Voir détails complets" à gauche, seulement pour les véhicules */}
+                <div>
+                    {reservationType === 'vehicle' && vehicleReservation && (
+                        <Button
+                            variant="outline"
+                            onClick={handleViewFullDetails}
+                            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                        >
+                            Voir détails complets
+                        </Button>
+                    )}
+                </div>
 
-                {reservationType === 'vehicle' && vehicleReservation?.status === 'pending' && (
+                {/* Actions principales à droite */}
+                <div className="flex justify-end space-x-3">
                     <Button
-                        variant="success"
-                        onClick={() => handleStatusChange('confirmed')}
+                        variant="outline"
+                        onClick={onClose}
                     >
-                        Confirmer
+                        Fermer
                     </Button>
-                )}
 
-                {reservationType === 'vehicle' && (vehicleReservation?.status === 'pending' || vehicleReservation?.status === 'confirmed') && (
-                    <Button
-                        variant="danger"
-                        onClick={() => handleStatusChange('cancelled')}
-                    >
-                        Annuler
-                    </Button>
-                )}
+                    {reservationType === 'vehicle' && vehicleReservation?.status === 'pending' && (
+                        <Button
+                            variant="success"
+                            onClick={() => handleStatusChange('confirmed')}
+                        >
+                            Confirmer
+                        </Button>
+                    )}
 
-                {reservationType === 'session' && sessionReservation?.status === 'pending' && (
-                    <Button
-                        variant="success"
-                        onClick={() => handleStatusChange('confirmed')}
-                    >
-                        Confirmer l'inscription
-                    </Button>
-                )}
+                    {reservationType === 'vehicle' && (vehicleReservation?.status === 'pending' || vehicleReservation?.status === 'confirmed') && (
+                        <Button
+                            variant="danger"
+                            onClick={() => handleStatusChange('cancelled')}
+                        >
+                            Annuler
+                        </Button>
+                    )}
 
-                {reservationType === 'session' && (sessionReservation?.status === 'pending' || sessionReservation?.status === 'confirmed') && (
-                    <Button
-                        variant="danger"
-                        onClick={() => handleStatusChange('cancelled')}
-                    >
-                        Annuler l'inscription
-                    </Button>
-                )}
+                    {reservationType === 'session' && sessionReservation?.status === 'pending' && (
+                        <Button
+                            variant="success"
+                            onClick={() => handleStatusChange('confirmed')}
+                        >
+                            Confirmer l'inscription
+                        </Button>
+                    )}
+
+                    {reservationType === 'session' && (sessionReservation?.status === 'pending' || sessionReservation?.status === 'confirmed') && (
+                        <Button
+                            variant="danger"
+                            onClick={() => handleStatusChange('cancelled')}
+                        >
+                            Annuler l'inscription
+                        </Button>
+                    )}
+                </div>
             </div>
         );
     };
