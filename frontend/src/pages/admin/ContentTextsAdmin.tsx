@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search, Filter, Eye, EyeOff } from 'lucide-react';
-import { contentTextService } from '../../services/cmsService';
+import { adminContentTextApi } from '../../services/api.ts';
+import AdminSidebar from '../../components/admin/AdminSidebar';
+import AdminHeader from '../../components/admin/AdminHeader';
 import { ContentText, ContentTextFilters, CONTENT_SECTIONS, CONTENT_TYPES } from '../../types/cms';
+import Alert from "@/components/common/Alert.tsx";
 
 const ContentTextsAdmin: React.FC = () => {
   const [contentTexts, setContentTexts] = useState<ContentText[]>([]);
@@ -13,6 +16,8 @@ const ContentTextsAdmin: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedContentText, setSelectedContentText] = useState<ContentText | null>(null);
   const [filters, setFilters] = useState<ContentTextFilters>({});
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
 
   // États pour le formulaire
   const [formData, setFormData] = useState({
@@ -31,16 +36,16 @@ const ContentTextsAdmin: React.FC = () => {
   const fetchContentTexts = async () => {
     try {
       setLoading(true);
-      const response = await contentTextService.getAll({
+      const response = await adminContentTextApi.getAll({
         ...filters,
         page: currentPage,
         limit: 10
       });
-      
-      if (response.success && response.data) {
-        setContentTexts(response.data);
-        if (response.pagination) {
-          setTotalPages(response.pagination.pages);
+
+      if (response.data.success && response.data) {
+        setContentTexts(response.data.data);
+        if (response.data.pagination) {
+          setTotalPages(response.data.pagination.pages);
         }
       }
     } catch (err) {
@@ -54,8 +59,8 @@ const ContentTextsAdmin: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await contentTextService.create(formData);
-      if (response.success) {
+      const response = await adminContentTextApi.create(formData);
+      if (response.data.success) {
         setShowCreateModal(false);
         resetForm();
         fetchContentTexts();
@@ -71,8 +76,8 @@ const ContentTextsAdmin: React.FC = () => {
     if (!selectedContentText) return;
 
     try {
-      const response = await contentTextService.update(selectedContentText.id, formData);
-      if (response.success) {
+      const response = await adminContentTextApi.update(selectedContentText.id, formData);
+      if (response.data.success) {
         setShowEditModal(false);
         setSelectedContentText(null);
         resetForm();
@@ -88,8 +93,8 @@ const ContentTextsAdmin: React.FC = () => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce texte ?')) return;
 
     try {
-      const response = await contentTextService.delete(id);
-      if (response.success) {
+      const response = await adminContentTextApi.delete(id);
+      if (response.data.success) {
         fetchContentTexts();
       }
     } catch (err) {
@@ -141,6 +146,27 @@ const ContentTextsAdmin: React.FC = () => {
   }
 
   return (
+      <div className="flex min-h-screen bg-gray-50">
+        <AdminSidebar />
+        <div className="flex-1">
+          <AdminHeader title="Gestion des réservations" />
+
+          <div className="p-6">
+            {error && (
+                <Alert
+                    type="error"
+                    message={error}
+                    onClose={() => setError(null)}
+                />
+            )}
+
+            {successMessage && (
+                <Alert
+                    type="success"
+                    message={successMessage}
+                    onClose={() => setSuccessMessage(null)}
+                />
+            )}
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
@@ -544,6 +570,9 @@ const ContentTextsAdmin: React.FC = () => {
         </div>
       )}
     </div>
+          </div>
+        </div>
+      </div>
   );
 };
 

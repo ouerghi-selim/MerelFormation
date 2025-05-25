@@ -26,13 +26,15 @@ final class Version20250524231500 extends AbstractMigration
             title VARCHAR(255) NOT NULL, 
             content LONGTEXT NOT NULL, 
             section VARCHAR(100) NOT NULL, 
-            type VARCHAR(50) NOT NULL, 
+            type VARCHAR(50) NOT NULL,
+            sort_order INT NOT NULL DEFAULT 0,  
             is_active TINYINT(1) NOT NULL DEFAULT 1, 
             created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\', 
             updated_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\', 
             PRIMARY KEY(id),
             INDEX IDX_content_text_section (section),
             INDEX IDX_content_text_type (type),
+            INDEX IDX_faq_sort_order (sort_order),
             INDEX IDX_content_text_active (is_active)
         ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
 

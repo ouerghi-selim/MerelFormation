@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search, Star, StarOff, Eye, EyeOff } from 'lucide-react';
-import { testimonialService } from '../../services/cmsService';
+import { adminTestimonialApi } from '@/services/api.ts';
 import { Testimonial, TestimonialFilters } from '../../types/cms';
+import AdminSidebar from "@/components/admin/AdminSidebar.tsx";
+import AdminHeader from "@/components/admin/AdminHeader.tsx";
+import Alert from "@/components/common/Alert.tsx";
 
 const TestimonialsAdmin: React.FC = () => {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
@@ -14,6 +17,8 @@ const TestimonialsAdmin: React.FC = () => {
   const [selectedTestimonial, setSelectedTestimonial] = useState<Testimonial | null>(null);
   const [filters, setFilters] = useState<TestimonialFilters>({});
   const [formations, setFormations] = useState<string[]>([]);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
 
   // États pour le formulaire
   const [formData, setFormData] = useState({
@@ -37,16 +42,16 @@ const TestimonialsAdmin: React.FC = () => {
   const fetchTestimonials = async () => {
     try {
       setLoading(true);
-      const response = await testimonialService.getAll({
+      const response = await adminTestimonialApi.getAll({
         ...filters,
         page: currentPage,
         limit: 10
       });
       
-      if (response.success && response.data) {
-        setTestimonials(response.data);
-        if (response.pagination) {
-          setTotalPages(response.pagination.pages);
+      if (response.data.success && response.data.data) {
+        setTestimonials(response.data.data);
+        if (response.data.pagination) {
+          setTotalPages(response.data.pagination.pages);
         }
       }
     } catch (err) {
@@ -59,9 +64,9 @@ const TestimonialsAdmin: React.FC = () => {
 
   const fetchFormations = async () => {
     try {
-      const response = await testimonialService.getFormations();
-      if (response.success && response.data) {
-        setFormations(response.data);
+      const response = await adminTestimonialApi.getFormations();
+      if (response.data.success && response.data.data) {
+        setFormations(response.data.data);
       }
     } catch (err) {
       console.error('Erreur lors du chargement des formations:', err);
@@ -71,7 +76,7 @@ const TestimonialsAdmin: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await testimonialService.create({
+      const response = await adminTestimonialApi.create({
         ...formData,
         rating: formData.rating || undefined,
         clientJob: formData.clientJob || undefined,
@@ -80,7 +85,7 @@ const TestimonialsAdmin: React.FC = () => {
         clientImage: formData.clientImage || undefined,
         testimonialDate: formData.testimonialDate || undefined
       });
-      if (response.success) {
+      if (response.data.success) {
         setShowCreateModal(false);
         resetForm();
         fetchTestimonials();
@@ -96,7 +101,7 @@ const TestimonialsAdmin: React.FC = () => {
     if (!selectedTestimonial) return;
 
     try {
-      const response = await testimonialService.update(selectedTestimonial.id, {
+      const response = await adminTestimonialApi.update(selectedTestimonial.id, {
         ...formData,
         rating: formData.rating || undefined,
         clientJob: formData.clientJob || undefined,
@@ -105,7 +110,7 @@ const TestimonialsAdmin: React.FC = () => {
         clientImage: formData.clientImage || undefined,
         testimonialDate: formData.testimonialDate || undefined
       });
-      if (response.success) {
+      if (response.data.success) {
         setShowEditModal(false);
         setSelectedTestimonial(null);
         resetForm();
@@ -121,8 +126,8 @@ const TestimonialsAdmin: React.FC = () => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce témoignage ?')) return;
 
     try {
-      const response = await testimonialService.delete(id);
-      if (response.success) {
+      const response = await adminTestimonialApi.delete(id);
+      if (response.data.success) {
         fetchTestimonials();
       }
     } catch (err) {
@@ -133,8 +138,8 @@ const TestimonialsAdmin: React.FC = () => {
 
   const handleToggleFeatured = async (id: number) => {
     try {
-      const response = await testimonialService.toggleFeatured(id);
-      if (response.success) {
+      const response = await adminTestimonialApi.toggleFeatured(id);
+      if (response.data.success) {
         fetchTestimonials();
       }
     } catch (err) {
@@ -145,8 +150,8 @@ const TestimonialsAdmin: React.FC = () => {
 
   const handleToggleActive = async (id: number) => {
     try {
-      const response = await testimonialService.toggleActive(id);
-      if (response.success) {
+      const response = await adminTestimonialApi.toggleActive(id);
+      if (response.data.success) {
         fetchTestimonials();
       }
     } catch (err) {
@@ -221,6 +226,27 @@ const TestimonialsAdmin: React.FC = () => {
   }
 
   return (
+      <div className="flex min-h-screen bg-gray-50">
+        <AdminSidebar />
+        <div className="flex-1">
+          <AdminHeader title="Gestion des réservations" />
+
+          <div className="p-6">
+            {error && (
+                <Alert
+                    type="error"
+                    message={error}
+                    onClose={() => setError(null)}
+                />
+            )}
+
+            {successMessage && (
+                <Alert
+                    type="success"
+                    message={successMessage}
+                    onClose={() => setSuccessMessage(null)}
+                />
+            )}
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
@@ -774,6 +800,9 @@ const TestimonialsAdmin: React.FC = () => {
         </div>
       )}
     </div>
+          </div>
+        </div>
+      </div>
   );
 };
 

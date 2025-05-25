@@ -128,21 +128,24 @@ export interface FAQFilters {
 
 // Types pour les constantes
 export const CONTENT_SECTIONS = [
-  'home',
-  'formations',
-  'contact',
-  'about',
-  'vehicle-rental',
-  'footer'
+  'home_hero',
+  'home_services',
+  'home_cta',
+  'home_testimonials',
+  'formations_hero',
+  'formations_advantages'
 ] as const;
 
 export const CONTENT_TYPES = [
   'title',
-  'subtitle', 
-  'paragraph',
-  'button',
   'description',
-  'slogan'
+  'cta_text',
+  'text',
+  'service_title',
+  'service_description',
+  'button_text',
+  'advantage_title',
+  'advantage_description'
 ] as const;
 
 export const FAQ_CATEGORIES = [

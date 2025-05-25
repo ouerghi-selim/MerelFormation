@@ -5,6 +5,11 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
+#[ORM\Table(name: 'faq')]
+#[ORM\Index(name: 'IDX_faq_category', columns: ['category'])]
+#[ORM\Index(name: 'IDX_faq_active', columns: ['is_active'])]
+#[ORM\Index(name: 'IDX_faq_featured', columns: ['is_featured'])]
+#[ORM\Index(name: 'IDX_faq_sort_order', columns: ['sort_order'])]
 class FAQ
 {
     #[ORM\Id]
@@ -21,13 +26,13 @@ class FAQ
     #[ORM\Column(length: 100)]
     private ?string $category = null; // 'general', 'formation', 'payment', 'location', etc.
 
-    #[ORM\Column(type: 'integer')]
+    #[ORM\Column(type: 'integer', options: ['default' => 0])]
     private int $sortOrder = 0; // Pour l'ordre d'affichage
 
-    #[ORM\Column]
+    #[ORM\Column(options: ['default' => true])]
     private bool $isActive = true;
 
-    #[ORM\Column]
+    #[ORM\Column(options: ['default' => false])]
     private bool $isFeatured = false; // FAQ mise en avant
 
     #[ORM\Column(type: 'json', nullable: true)]
@@ -39,7 +44,7 @@ class FAQ
     #[ORM\Column(type: 'datetime_immutable')]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    #[ORM\Column(type: 'integer')]
+    #[ORM\Column(type: 'integer', options: ['default' => 0])]
     private int $viewCount = 0; // Nombre de fois consultée
 
     public function __construct()

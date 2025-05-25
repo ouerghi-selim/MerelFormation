@@ -5,6 +5,11 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
+#[ORM\Table(name: 'testimonial')]
+#[ORM\Index(name: 'IDX_testimonial_active', columns: ['is_active'])]
+#[ORM\Index(name: 'IDX_testimonial_featured', columns: ['is_featured'])]
+#[ORM\Index(name: 'IDX_testimonial_formation', columns: ['formation'])]
+#[ORM\Index(name: 'IDX_testimonial_rating', columns: ['rating'])]
 class Testimonial
 {
     #[ORM\Id]
@@ -25,19 +30,19 @@ class Testimonial
     private ?string $content = null;
 
     #[ORM\Column(type: 'integer', nullable: true)]
-    private ?int $rating = null; // 1-5 stars
+    private ?int $rating = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $formation = null; // Formation suivie
+    private ?string $formation = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $clientImage = null; // URL ou nom de fichier
+    private ?string $clientImage = null;
 
-    #[ORM\Column]
+    #[ORM\Column(options: ['default' => true])]
     private bool $isActive = true;
 
-    #[ORM\Column]
-    private bool $isFeatured = false; // Témoignage mis en avant
+    #[ORM\Column(options: ['default' => false])]
+    private bool $isFeatured = false;
 
     #[ORM\Column(type: 'datetime_immutable')]
     private ?\DateTimeImmutable $createdAt = null;

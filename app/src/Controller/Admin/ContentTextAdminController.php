@@ -30,8 +30,9 @@ class ContentTextAdminController extends AbstractController
             ->from(ContentText::class, 'ct');
 
         if ($section) {
-            $qb->andWhere('ct.section = :section')
-               ->setParameter('section', $section);
+            $sections = explode(',', $section);
+            $qb->andWhere('ct.section IN (:sections)')
+                ->setParameter('sections', $sections);
         }
 
         if ($type) {

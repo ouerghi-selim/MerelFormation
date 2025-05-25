@@ -118,7 +118,6 @@
 - **home-page.tsx** ✅ OPTIMISÉ CMS - Page d'accueil dynamique
 - **formations-page.tsx** ✅ OPTIMISÉ CMS - Catalogue formations dynamique
 - **formation-detail-page.tsx** - Détails formation
-- **location-page.tsx** - Location véhicules
 - **contact-page.tsx** - Contact
 - **login-page.tsx** - Connexion
 
@@ -137,6 +136,13 @@
 - **EmailTemplateEdit.tsx** - Édition template
 - **EmailTemplateNew.tsx** - Nouveau template
 - **UsersAdmin.tsx** - Vue utilisateurs
+
+### Planning Admin (/frontend/src/pages/planning/)
+- **index.tsx** ✅ COMPLET - Planning calendrier intégré
+- **EventForm.tsx** ✅ COMPLET - Formulaire événements avec gestion examens
+- **usePlanningData.ts** ✅ COMPLET - Hook de gestion des données planning
+- **types.ts** - Types TypeScript pour le planning
+- **calendarConfig.ts** - Configuration du calendrier
 
 ### 🆕 CMS Admin (Nouvelles Pages)
 - **ContentTextsAdmin.tsx** ✅ COMPLET - Gestion des textes du site
@@ -188,6 +194,8 @@
 ### ✅ Administration
 - Dashboard avec statistiques
 - Gestion complète des formations
+- **Planning intégré avec calendrier visuel** 🆕
+- **Gestion différentielle sessions/examens** 🆕
 - Suivi des réservations
 - Gestion financière (factures, paiements)
 - Système de notifications
@@ -245,17 +253,25 @@ MerelFormation/
 
 ## 🏆 État Actuel du Projet
 
-### ✅ COMPLETEMENT FONCTIONNEL (98%)
+### ✅ COMPLETEMENT FONCTIONNEL (98%) 🚀
 - Architecture complète
 - Backend API complet
 - Dashboards admin et student opérationnels
 - Interface publique complète
+- **Planning administrateur avancé avec calendrier** 🆕
 - Système d'authentification
 - Gestion des formations
 - Gestion des véhicules
 - Système de réservation
 - Facturation et paiements
 - **🆕 Système CMS complet et opérationnel**
+
+### 🆕 DERNIÈRES AMÉLIORATIONS (Mai 2025)
+- **Planning Admin** - Calendrier intégré avec React Big Calendar
+- **Gestion Examens** - Différentiation sessions/examens dans le planning
+- **Bug Fixes** - Corrections SessionAdminController pour mise à jour
+- **UX Planning** - Interface intuitive avec gestion des événements
+- **Refactoring** - Optimisation du code frontend planning
 
 ### 🔧 EN COURS D'OPTIMISATION
 - Performance frontend/backend

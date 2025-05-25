@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search, Star, StarOff, Eye, EyeOff, ArrowUp, ArrowDown, Hash } from 'lucide-react';
-import { faqService } from '../../services/cmsService';
-import { FAQ, FAQFilters, FAQ_CATEGORIES } from '../../types/cms';
+import { adminFaqApi } from '@/services/api.ts';
+import { FAQ, FAQFilters, FAQ_CATEGORIES } from '@/types/cms.ts';
+import AdminSidebar from "@/components/admin/AdminSidebar.tsx";
+import AdminHeader from "@/components/admin/AdminHeader.tsx";
+import Alert from "@/components/common/Alert.tsx";
 
 const FAQAdmin: React.FC = () => {
   const [faqs, setFaqs] = useState<FAQ[]>([]);
@@ -14,6 +17,7 @@ const FAQAdmin: React.FC = () => {
   const [selectedFAQ, setSelectedFAQ] = useState<FAQ | null>(null);
   const [filters, setFilters] = useState<FAQFilters>({});
   const [categories, setCategories] = useState<string[]>([]);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // États pour le formulaire
   const [formData, setFormData] = useState({
@@ -35,16 +39,16 @@ const FAQAdmin: React.FC = () => {
   const fetchFAQs = async () => {
     try {
       setLoading(true);
-      const response = await faqService.getAll({
+      const response = await adminFaqApi.getAll({
         ...filters,
         page: currentPage,
         limit: 10
       });
       
-      if (response.success && response.data) {
-        setFaqs(response.data);
-        if (response.pagination) {
-          setTotalPages(response.pagination.pages);
+      if (response.data.success && response.data.data) {
+        setFaqs(response.data.data);
+        if (response.data.pagination) {
+          setTotalPages(response.data.pagination.pages);
         }
       }
     } catch (err) {
@@ -57,9 +61,9 @@ const FAQAdmin: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await faqService.getCategories();
-      if (response.success && response.data) {
-        setCategories(response.data);
+      const response = await adminFaqApi.getCategories();
+      if (response.data.success && response.data.data) {
+        setCategories(response.data.data);
       }
     } catch (err) {
       console.error('Erreur lors du chargement des catégories:', err);
@@ -69,7 +73,7 @@ const FAQAdmin: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await faqService.create({
+      const response = await adminFaqApi.create({
         question: formData.question,
         answer: formData.answer,
         category: formData.category,
@@ -78,7 +82,7 @@ const FAQAdmin: React.FC = () => {
         isFeatured: formData.isFeatured,
         tags: formData.tags.length > 0 ? formData.tags : undefined
       });
-      if (response.success) {
+      if (response.data.success) {
         setShowCreateModal(false);
         resetForm();
         fetchFAQs();
@@ -94,7 +98,7 @@ const FAQAdmin: React.FC = () => {
     if (!selectedFAQ) return;
 
     try {
-      const response = await faqService.update(selectedFAQ.id, {
+      const response = await adminFaqApi.update(selectedFAQ.id, {
         question: formData.question,
         answer: formData.answer,
         category: formData.category,
@@ -103,7 +107,7 @@ const FAQAdmin: React.FC = () => {
         isFeatured: formData.isFeatured,
         tags: formData.tags.length > 0 ? formData.tags : undefined
       });
-      if (response.success) {
+      if (response.data.success) {
         setShowEditModal(false);
         setSelectedFAQ(null);
         resetForm();
@@ -119,8 +123,8 @@ const FAQAdmin: React.FC = () => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette FAQ ?')) return;
 
     try {
-      const response = await faqService.delete(id);
-      if (response.success) {
+      const response = await adminFaqApi.delete(id);
+      if (response.data.success) {
         fetchFAQs();
       }
     } catch (err) {
@@ -131,8 +135,8 @@ const FAQAdmin: React.FC = () => {
 
   const handleToggleFeatured = async (id: number) => {
     try {
-      const response = await faqService.toggleFeatured(id);
-      if (response.success) {
+      const response = await adminFaqApi.toggleFeatured(id);
+      if (response.data.success) {
         fetchFAQs();
       }
     } catch (err) {
@@ -143,8 +147,8 @@ const FAQAdmin: React.FC = () => {
 
   const handleToggleActive = async (id: number) => {
     try {
-      const response = await faqService.toggleActive(id);
-      if (response.success) {
+      const response = await adminFaqApi.toggleActive(id);
+      if (response.data.success) {
         fetchFAQs();
       }
     } catch (err) {
@@ -160,10 +164,10 @@ const FAQAdmin: React.FC = () => {
     const newSortOrder = direction === 'up' ? faq.sortOrder - 1 : faq.sortOrder + 1;
     
     try {
-      const response = await faqService.reorder([
+      const response = await adminFaqApi.reorder([
         { id: faqId, sortOrder: newSortOrder }
       ]);
-      if (response.success) {
+      if (response.data.success) {
         fetchFAQs();
       }
     } catch (err) {
@@ -238,6 +242,27 @@ const FAQAdmin: React.FC = () => {
   }
 
   return (
+      <div className="flex min-h-screen bg-gray-50">
+        <AdminSidebar />
+        <div className="flex-1">
+          <AdminHeader title="Gestion des réservations" />
+
+          <div className="p-6">
+            {error && (
+                <Alert
+                    type="error"
+                    message={error}
+                    onClose={() => setError(null)}
+                />
+            )}
+
+            {successMessage && (
+                <Alert
+                    type="success"
+                    message={successMessage}
+                    onClose={() => setSuccessMessage(null)}
+                />
+            )}
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
@@ -769,6 +794,9 @@ const FAQAdmin: React.FC = () => {
         </div>
       )}
     </div>
+          </div>
+        </div>
+      </div>
   );
 };
 

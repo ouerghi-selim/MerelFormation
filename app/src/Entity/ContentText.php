@@ -5,6 +5,11 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
+#[ORM\Table(name: 'content_text')]
+#[ORM\Index(name: 'IDX_content_text_section', columns: ['section'])]
+#[ORM\Index(name: 'IDX_content_text_type', columns: ['type'])]
+#[ORM\Index(name: 'IDX_content_text_sort_order', columns: ['sort_order'])]
+#[ORM\Index(name: 'IDX_content_text_active', columns: ['is_active'])]
 class ContentText
 {
     #[ORM\Id]
@@ -27,7 +32,10 @@ class ContentText
     #[ORM\Column(length: 50)]
     private ?string $type = null; // 'title', 'paragraph', 'button', 'subtitle'
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'integer', options: ['default' => 0])]
+    private int $sortOrder = 0; // Pour l'ordre d'affichage
+
+    #[ORM\Column(options: ['default' => true])]
     private bool $isActive = true;
 
     #[ORM\Column(type: 'datetime_immutable')]
@@ -99,6 +107,17 @@ class ContentText
     public function setType(string $type): self
     {
         $this->type = $type;
+        return $this;
+    }
+
+    public function getSortOrder(): int
+    {
+        return $this->sortOrder;
+    }
+
+    public function setSortOrder(int $sortOrder): self
+    {
+        $this->sortOrder = $sortOrder;
         return $this;
     }
 
