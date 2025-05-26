@@ -61,8 +61,7 @@ class VehicleRentalTrackingService
                     'startDate' => $rental->getStartDate(),
                     'endDate' => $rental->getEndDate(),
                     'totalPrice' => $rental->getTotalPrice(),
-                    'isExamRental' => $rental->getIsExamRental(),
-                    'examDate' => $rental->getExamDate()
+                    'examTime' => $rental->getExamTime()
                 ]);
 
             $this->mailer->send($email);
