@@ -29,6 +29,13 @@ interface Session {
         firstName: string;
         lastName: string;
     };
+    documents?: Array<{  // AJOUTER CETTE LIGNE
+        id: number;
+        title: string;
+        type: string;
+        fileSize: string;
+        downloadUrl: string;
+    }>;
 }
 
 interface Formation {
@@ -55,6 +62,8 @@ const SessionsAdmin: React.FC = () => {
     const [loadingInstructors, setLoadingInstructors] = useState(false);
     const [showInspectModal, setShowInspectModal] = useState(false);
     const [sessionToInspect, setSessionToInspect] = useState<Session | null>(null);
+    const [newDocuments, setNewDocuments] = useState<File[]>([]);
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -129,6 +138,7 @@ const SessionsAdmin: React.FC = () => {
     const openEditModal = (session: Session) => {
         setSessionToEdit({...session});
         setFormErrors({});
+        setNewDocuments([]); // Reset nouveaux documents
         setShowEditModal(true);
     };
 
@@ -155,7 +165,7 @@ const SessionsAdmin: React.FC = () => {
         if (!session.location?.trim()) errors.location = 'Le lieu est requis';
 
         if (!session.status) errors.status = 'Le statut est requis';
-        if (!session.instructor?.id) errors.instructor = 'Le formateur est requis';
+        //if (!session.instructor?.id) errors.instructor = 'Le formateur est requis';
 
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
@@ -170,9 +180,30 @@ const SessionsAdmin: React.FC = () => {
 
         try {
             setUpdating(true);
+
+            // 1. Mettre à jour la session (JSON)
             await adminSessionsApi.update(sessionToEdit.id, sessionToEdit);
 
-            // Mettre à jour la liste des sessions
+            // 2. Ajouter chaque nouveau document individuellement
+            for (const document of newDocuments) {
+                const formData = new FormData();
+                formData.append('file', document);
+                formData.append('title', document.name);
+                formData.append('category', 'support');
+
+                // Utiliser fetch directement pour éviter la transformation JSON
+                const token = localStorage.getItem('token');
+                await fetch(`/api/admin/sessions/${sessionToEdit.id}/documents`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        // NE PAS ajouter Content-Type, le navigateur le fait automatiquement pour FormData
+                    },
+                    body: formData
+                });
+            }
+
+            // 3. Mettre à jour la liste des sessions
             setSessions(
                 sessions.map(s =>
                     s.id === sessionToEdit.id ? sessionToEdit : s
@@ -181,6 +212,7 @@ const SessionsAdmin: React.FC = () => {
 
             setShowEditModal(false);
             setSessionToEdit(null);
+            setNewDocuments([]);
             addToast('Session mise à jour avec succès', 'success');
         } catch (err) {
             console.error('Error updating session:', err);
@@ -189,7 +221,6 @@ const SessionsAdmin: React.FC = () => {
             setUpdating(false);
         }
     };
-
     const formatStatus = (status: string): string => {
         const statuses: { [key: string]: string } = {
             'scheduled': 'Programmée',
@@ -627,9 +658,94 @@ const SessionsAdmin: React.FC = () => {
                                     onChange={(e) => setSessionToEdit({...sessionToEdit, notes: e.target.value})}
                                 />
                             </div>
+
+
+                            {/* AJOUTER CETTE SECTION après la section participants */}
+                            <div className="md:col-span-2 mt-6">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-medium text-gray-900">Documents associés</h3>
+                                    <input
+                                        type="file"
+                                        multiple
+                                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                                        onChange={(e) => setNewDocuments(Array.from(e.target.files || []))}
+                                        className="hidden"
+                                        id="documents-upload-edit"
+                                    />
+                                    <label
+                                        htmlFor="documents-upload-edit"
+                                        className="inline-flex items-center px-3 py-1.5 border border-blue-700 text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 cursor-pointer"
+                                    >
+                                        <Plus className="h-4 w-4 mr-1"/>
+                                        Ajouter des documents
+                                    </label>
+                                </div>
+
+                                {/* Documents existants */}
+                                {sessionToEdit.documents && sessionToEdit.documents.length > 0 && (
+                                    <div className="mb-4">
+                                        <h4 className="text-sm font-medium text-gray-700 mb-2">Documents existants</h4>
+                                        <div className="bg-white shadow overflow-hidden sm:rounded-md">
+                                            <ul className="divide-y divide-gray-200">
+                                                {sessionToEdit.documents.map((document) => (
+                                                    <li key={document.id} className="px-4 py-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="text-sm font-medium text-gray-900 truncate">
+                                                                    {document.title}
+                                                                </p>
+                                                                <p className="text-sm text-gray-500 truncate">
+                                                                    {document.type} • {document.fileSize}
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex-shrink-0">
+
+                                                               <a href={document.downloadUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-indigo-600 hover:text-indigo-900 text-sm
+                                                                font-medium"
+                                                                >
+                                                                Télécharger
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                    </li>
+                                                    ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    )}
+
+                                {/* Nouveaux documents à ajouter */}
+                                {newDocuments.length > 0 && (
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-700 mb-2">Nouveaux documents</h4>
+                                        <div className="space-y-2">
+                                            {newDocuments.map((file, index) => (
+                                                <div key={index}
+                                                     className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                                    <span className="text-sm">{file.name}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setNewDocuments(docs => docs.filter((_, i) => i !== index))}
+                                                        className="text-red-600 hover:text-red-900"
+                                                    >
+                                                        <Trash2 className="h-4 w-4"/>
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!sessionToEdit.documents?.length && newDocuments.length === 0 && (
+                                    <p className="text-sm text-gray-500">Aucun document associé à cette session.</p>
+                                )}
+                            </div>
                         </div>
                     </form>
-                )}
+                    )}
             </Modal>
 
             <Modal
@@ -681,7 +797,8 @@ const SessionsAdmin: React.FC = () => {
                             </div>
                             <div>
                                 <h4 className="font-medium text-gray-700">Statut</h4>
-                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(sessionToInspect.status)}`}>
+                                <span
+                                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(sessionToInspect.status)}`}>
                         {formatStatus(sessionToInspect.status)}
                     </span>
                             </div>
@@ -718,6 +835,42 @@ const SessionsAdmin: React.FC = () => {
                             ) : (
                                 <p className="text-sm text-gray-500">Aucun participant inscrit à cette session.</p>
                             )}
+                        </div>
+                        {/* AJOUTER CETTE SECTION après la section participants dans le modal d'inspection */}
+                        <div className="mt-6">
+                            <h3 className="text-lg font-medium text-gray-900 mb-3">Documents associés</h3>
+                            {sessionToInspect.documents && sessionToInspect.documents.length > 0 ? (
+                                <div className="bg-white shadow overflow-hidden sm:rounded-md">
+                                    <ul className="divide-y divide-gray-200">
+                                        {sessionToInspect.documents.map((document) => (
+                                            <li key={document.id} className="px-4 py-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-sm font-medium text-gray-900 truncate">
+                                                            {document.title}
+                                                        </p>
+                                                        <p className="text-sm text-gray-500 truncate">
+                                                            {document.type} • {document.fileSize}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex-shrink-0">
+
+                                                        <a href={document.downloadUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+                                                        >
+                                                        Télécharger
+                                                    </a>
+                                                </div>
+                                            </div>
+                                            </li>
+                                            ))}
+                                    </ul>
+                                </div>
+                                ) : (
+                                <p className="text-sm text-gray-500">Aucun document associé à cette session.</p>
+                                )}
                         </div>
                     </div>
                 )}

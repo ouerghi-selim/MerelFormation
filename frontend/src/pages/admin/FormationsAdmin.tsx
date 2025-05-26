@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import {Plus, Edit, Trash2, Eye} from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
 import DataTable from '../../components/common/DataTable';
@@ -303,12 +303,9 @@ const FormationsAdmin: React.FC = () => {
   // Rendu des actions pour chaque ligne
   const renderActions = (formation: Formation) => (
       <div className="flex justify-end space-x-2">
-        <button
-            onClick={() => openEditModal(formation)}
-            className="text-blue-700 hover:text-blue-900"
-        >
-          <Edit className="h-5 w-5" />
-        </button>
+        <Link to={`/admin/formations/${formation.id}`}>
+          <Eye className="h-5 w-5 text-indigo-600 hover:text-indigo-900" />
+        </Link>
         <button
             onClick={() => openDeleteModal(formation)}
             className="text-red-600 hover:text-red-900"

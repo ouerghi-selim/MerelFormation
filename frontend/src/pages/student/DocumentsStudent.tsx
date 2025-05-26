@@ -7,11 +7,15 @@ interface Document {
   id: number;
   title: string;
   type: string;
-  formationTitle: string | null;
-  date: string;
-  downloadUrl: string;
-  fileSize: string;
+  source: string; // 'formation' | 'session'
+  sourceTitle: string;
+  sourceId: number;
+  date: string; // Format d/m/Y
+  uploadedAt: string; // Format Y-m-d H:i:s
+  fileName: string;
+  fileSize: string; // Formaté (ex: "1.2 MB")
   fileType: string;
+  downloadUrl: string;
 }
 
 const DocumentsStudent: React.FC = () => {
@@ -19,7 +23,7 @@ const DocumentsStudent: React.FC = () => {
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
@@ -45,25 +49,24 @@ const DocumentsStudent: React.FC = () => {
 
 
   useEffect(() => {
-    // Apply filters when type filter or search query changes
     let filtered = documents;
-    
-    // Apply type filter
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(document => document.type === typeFilter);
+
+    // Apply source filter
+    if (sourceFilter !== 'all') {
+      filtered = filtered.filter(document => document.source === sourceFilter);
     }
-    
+
     // Apply search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(document => 
-        document.title.toLowerCase().includes(query) || 
-        (document.formationTitle && document.formationTitle.toLowerCase().includes(query))
+      filtered = filtered.filter(document =>
+          document.title.toLowerCase().includes(query) ||
+          document.sourceTitle.toLowerCase().includes(query)
       );
     }
-    
+
     setFilteredDocuments(filtered);
-  }, [typeFilter, searchQuery, documents]);
+  }, [sourceFilter, searchQuery, documents]); // Changer typeFilter en sourceFilter
 
   const getTypeIcon = (fileType: string) => {
     switch (fileType) {
@@ -115,34 +118,31 @@ const DocumentsStudent: React.FC = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            
+
             <div className="relative w-full sm:w-48">
-              <Filter className="absolute left-3 top-3 text-gray-400" />
+              <Filter className="absolute left-3 top-3 text-gray-400"/>
               <select
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg appearance-none bg-white w-full"
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg appearance-none bg-white w-full"
+                  value={sourceFilter}
+                  onChange={(e) => setSourceFilter(e.target.value)}
               >
-                <option value="all">Tous les types</option>
-                <option value="support">Support de cours</option>
-                <option value="attestation">Attestation</option>
-                <option value="certificat">Certificat</option>
-                <option value="contrat">Contrat</option>
-                <option value="facture">Facture</option>
+                <option value="all">Toutes les sources</option>
+                <option value="formation">Formations</option>
+                <option value="session">Sessions</option>
               </select>
-              <ChevronDown className="absolute right-3 top-3 text-gray-400" />
+              <ChevronDown className="absolute right-3 top-3 text-gray-400"/>
             </div>
           </div>
         </div>
-        
+
         {error && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
-            <p>{error}</p>
-          </div>
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
+              <p>{error}</p>
+            </div>
         )}
-        
+
         {filteredDocuments.length === 0 ? (
-          <div className="bg-white p-8 rounded-lg shadow text-center">
+            <div className="bg-white p-8 rounded-lg shadow text-center">
             <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-gray-800 mb-2">Aucun document trouvé</h2>
             <p className="text-gray-600 mb-4">
@@ -151,50 +151,56 @@ const DocumentsStudent: React.FC = () => {
                 : "Vous n'avez aucun document disponible pour le moment."}
             </p>
             {documents.length > 0 && (
-              <button
-                onClick={() => {
-                  setTypeFilter('all');
-                  setSearchQuery('');
-                }}
-                className="bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors"
-              >
-                Réinitialiser les filtres
-              </button>
+                <button
+                    onClick={() => {
+                      setSourceFilter('all');
+                      setSearchQuery('');
+                    }}
+                    className="bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors"
+                >
+                  Réinitialiser les filtres
+                </button>
             )}
-          </div>
+            </div>
         ) : (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Nom du document
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Formation associée
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date d'ajout
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Taille
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
+                <tr>
+                  <th scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Nom du document
+                  </th>
+                  <th scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Source
+                  </th>
+                  <th scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date d'ajout
+                  </th>
+                  <th scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Taille
+                  </th>
+                  <th scope="col"
+                      className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredDocuments.map((document) => (
+                {filteredDocuments.map((document) => (
                     <tr key={document.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0">
-                            <FileText className={`h-5 w-5 ${getTypeIcon(document.fileType)}`} />
+                            <FileText className={`h-5 w-5 ${getTypeIcon(document.fileType)}`}/>
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">{document.title}</div>
@@ -206,7 +212,16 @@ const DocumentsStudent: React.FC = () => {
                         <div className="text-sm text-gray-900">{document.type}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{document.formationTitle || 'N/A'}</div>
+                        <div className="flex items-center">
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+        document.source === 'formation'
+            ? 'bg-blue-100 text-blue-800'
+            : 'bg-green-100 text-green-800'
+    }`}>
+      {document.source === 'formation' ? 'Formation' : 'Session'}
+    </span>
+                          <span className="ml-2 text-sm text-gray-900">{document.sourceTitle}</span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{document.date}</div>
@@ -216,16 +231,16 @@ const DocumentsStudent: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <a
-                          href={`/api/student/documents/${document.id}/download`}
-                          download
-                          className="inline-flex items-center px-3 py-1 border border-blue-700 text-blue-700 text-sm font-medium rounded-md hover:bg-blue-700 hover:text-white transition-colors"
+                            href={`/api/student/documents/${document.id}/download`}
+                            download
+                            className="inline-flex items-center px-3 py-1 border border-blue-700 text-blue-700 text-sm font-medium rounded-md hover:bg-blue-700 hover:text-white transition-colors"
                         >
-                          <Download className="h-4 w-4 mr-1" />
+                          <Download className="h-4 w-4 mr-1"/>
                           Télécharger
                         </a>
                       </td>
                     </tr>
-                  ))}
+                ))}
                 </tbody>
               </table>
             </div>

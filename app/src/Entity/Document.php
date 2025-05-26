@@ -8,6 +8,8 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use App\Repository\DocumentRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 use Vich\UploaderBundle\Mapping\Annotation as Vich;
@@ -44,13 +46,13 @@ class Document
     #[Assert\Choice(choices: ['pdf', 'doc', 'docx'])]
     private ?string $type = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(type: 'string', length: 255)]
     #[Groups(['document:read'])]
     private ?string $fileName = null;
 
     /**
      * @Vich\UploadableFile(
-     *     mapping="document_files",
+     *     mapping="session_documents",
      *     mimeTypes={
      *         "application/pdf",
      *         "application/msword",
@@ -60,11 +62,13 @@ class Document
      * )
      */
     #[Assert\NotNull]
-    private ?string $file = null;
+    #[Vich\UploadableField(mapping: 'session_documents', fileNameProperty: 'fileName')]
+
+    private ?File $file = null;
 
     #[ORM\Column(length: 50)]
     #[Groups(['document:read', 'document:write'])]
-    #[Assert\Choice(choices: ['support', 'contrat', 'attestation', 'facture'])]
+    #[Assert\Choice(choices: ['support', 'contract', 'attestation', 'facture'])]
     private ?string $category = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
@@ -93,10 +97,15 @@ class Document
     private ?bool $private = false;
 
     #[ORM\ManyToOne(targetEntity: Session::class, inversedBy: 'documents')]
+    #[ORM\JoinColumn(name: 'session_id', referencedColumnName: 'id', nullable: true)]
+    #[Groups(['document:read', 'document:write'])]
     private ?Session $session = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'documents')]
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true)]
+    #[Groups(['document:read', 'document:write'])]
     private ?User $user = null;
+
     #[ORM\Column]
     #[Groups(['document:read'])]
     private ?\DateTimeImmutable $uploadedAt = null;
@@ -155,18 +164,17 @@ class Document
         return $this;
     }
 
-    public function getFile(): ?string
+    public function getFile(): ?File
     {
         return $this->file;
     }
 
-    public function setFile(?string $file): static
+    public function setFile(?File $file = null): void
     {
         $this->file = $file;
-        if ($file) {
+        if (null !== $file) {
             $this->updatedAt = new \DateTimeImmutable();
         }
-        return $this;
     }
 
     public function getUploadedBy(): ?User
@@ -242,6 +250,28 @@ class Document
     public function setVehicleRental(?VehicleRental $vehicleRental): self
     {
         $this->vehicleRental = $vehicleRental;
+        return $this;
+    }
+
+    public function getSession(): ?Session
+    {
+        return $this->session;
+    }
+
+    public function setSession(?Session $session): static
+    {
+        $this->session = $session;
+        return $this;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
         return $this;
     }
 }

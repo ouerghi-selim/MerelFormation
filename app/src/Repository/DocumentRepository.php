@@ -63,6 +63,18 @@ class DocumentRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+    /**
+     * Find documents by formation
+     */
+    public function findBySession(int $sessionId): array
+    {
+        return $this->createQueryBuilder('d')
+            ->andWhere('d.session = :sessionId')
+            ->setParameter('sessionId', $sessionId)
+            ->orderBy('d.uploadedAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 
     /**
      * Find public documents
@@ -170,12 +182,18 @@ class DocumentRepository extends ServiceEntityRepository
      * @param int $userId
      * @return int
      */
-    public function countDocumentsForStudent(int $userId): int
+    public function countDocumentsForStudent(int $studentId): int
     {
-        return $this->createQueryBuilder('d')
+        // Récupérer les IDs des formations/sessions de l'étudiant
+        $qb = $this->createQueryBuilder('d');
+        return $qb
             ->select('COUNT(d.id)')
-            ->where('d.user = :userId')
-            ->setParameter('userId', $userId)
+            ->leftJoin('d.formation', 'f')
+            ->leftJoin('d.session', 's')
+            //->leftJoin('s.participants', 'sp')
+            ->leftJoin('f.students', 'fs') // Supposant une relation students
+            ->where('sp.id = :studentId OR fs.id = :studentId')
+            ->setParameter('studentId', $studentId)
             ->getQuery()
             ->getSingleScalarResult();
     }
@@ -187,14 +205,21 @@ class DocumentRepository extends ServiceEntityRepository
      * @param int $limit
      * @return Document[]
      */
-    public function findRecentDocumentsForStudent(int $userId, int $limit): array
+    public function findRecentDocumentsForStudent(int $studentId, int $limit): array
     {
-        return $this->createQueryBuilder('d')
-            ->where('d.user = :userId')
-            ->setParameter('userId', $userId)
+        $qb = $this->createQueryBuilder('d');
+        return $qb
+            ->leftJoin('d.formation', 'f')
+            ->leftJoin('d.session', 's')
+           // ->leftJoin('s.participants', 'sp')
+            ->leftJoin('f.students', 'fs')
+            ->where('sp.id = :studentId OR fs.id = :studentId')
+            ->setParameter('studentId', $studentId)
             ->orderBy('d.uploadedAt', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
     }
+
+
 }

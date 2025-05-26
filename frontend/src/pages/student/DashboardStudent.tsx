@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, FileText, Bell, Calendar, CreditCard } from 'lucide-react';
+import {BookOpen, FileText, Bell, Calendar, CreditCard, Download} from 'lucide-react';
 import StudentHeader from '../../components/student/StudentHeader';
-import { studentDashboardApi } from '@/services/api.ts';
+import { studentDashboardApi, studentDocumentsApi } from '@/services/api.ts';
 
 interface DashboardData {
   activeFormations: number;
@@ -21,12 +21,35 @@ interface Session {
 }
 
 interface Document {
+  body: any;
+  fileName: string;
   id: number;
   title: string;
   type: string;
   date: string;
   downloadUrl: string;
+
 }
+
+const handleDownload = async (doc: Document) => {
+  try {
+    const response = await studentDocumentsApi.download(doc.id);
+
+    // Créer un blob et déclencher le téléchargement
+    const blob = new Blob([response.data]);
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = doc.title || doc.fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Erreur de téléchargement:', error);
+    // Afficher un message d'erreur à l'utilisateur
+  }
+};
 
 const DashboardStudent: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -197,33 +220,34 @@ const DashboardStudent: React.FC = () => {
             {dashboardData?.recentDocuments && dashboardData.recentDocuments.length > 0 ? (
               <div className="space-y-4">
                 {dashboardData.recentDocuments.map((document) => (
-                  <div key={document.id} className="flex items-start p-4 border border-gray-200 rounded-lg hover:border-green-400 transition-colors">
-                    <div className="bg-green-100 p-3 rounded-full mr-4">
-                      <FileText className="h-5 w-5 text-green-700" />
+                    <div key={document.id}
+                         className="flex items-start p-4 border border-gray-200 rounded-lg hover:border-green-400 transition-colors">
+                      <div className="bg-green-100 p-3 rounded-full mr-4">
+                        <FileText className="h-5 w-5 text-green-700"/>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900">{document.title}</h3>
+                        <p className="text-gray-600 text-sm mt-1">Type: {document.type}</p>
+                        <p className="text-gray-500 text-sm mt-1">Ajouté le {document.date}</p>
+                      </div>
+                      <button
+                          onClick={() => handleDownload(document)}
+                          className="inline-flex items-center px-3 py-1 border border-blue-700 text-blue-700 text-sm font-medium rounded-md hover:bg-blue-700 hover:text-white transition-colors"
+                      >
+                        <Download className="h-4 w-4 mr-1"/>
+                        Télécharger
+                      </button>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">{document.title}</h3>
-                      <p className="text-gray-600 text-sm mt-1">Type: {document.type}</p>
-                      <p className="text-gray-500 text-sm mt-1">Ajouté le {document.date}</p>
-                    </div>
-                    <a 
-                      href={document.downloadUrl} 
-                      download
-                      className="inline-flex items-center justify-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium hover:bg-green-200 transition-colors"
-                    >
-                      Télécharger
-                    </a>
-                  </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                Aucun document récent
-              </div>
+                <div className="text-center py-8 text-gray-500">
+                  Aucun document récent
+                </div>
             )}
           </div>
         </div>
-        
+
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-bold text-gray-800 mb-6">Progression des formations</h2>
           

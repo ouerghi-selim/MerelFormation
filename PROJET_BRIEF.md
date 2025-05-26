@@ -124,10 +124,12 @@
 
 ### Dashboard Admin (/frontend/src/pages/admin/)
 - **DashboardAdmin.tsx** ✅ COMPLET
-- **FormationsAdmin.tsx** - Gestion formations
+- **FormationsAdmin.tsx** ✅ OPTIMISÉ - Gestion formations avec navigation simplifiée
+- **FormationDetail.tsx** ✅ NOUVEAU - Page détails complète avec onglets (Infos, Modules, Prérequis, Documents, Sessions)
+- **FormationNew.tsx** ✅ AMÉLIORÉ - Création avec upload de documents intégré
 - **FormationNew.tsx** - Nouvelle formation
-- **SessionsAdmin.tsx** - Gestion sessions
-- **SessionNew.tsx** - Nouvelle session
+- **SessionsAdmin.tsx** ✅ AMÉLIORÉ - Gestion sessions avec documents et inspection complète
+- **SessionNew.tsx** ✅ COMPLET - Création sessions avec upload de documents
 - **StudentsAdmin.tsx** - Gestion étudiants
 - **InstructorsAdmin.tsx** - Gestion instructeurs
 - **AdminsAdmin.tsx** - Gestion admins
@@ -154,7 +156,7 @@
 - **DashboardStudent.tsx** ✅ COMPLET
 - **FormationsStudent.tsx** - Formations étudiant
 - **FormationDetailStudent.tsx** - Détail formation
-- **DocumentsStudent.tsx** - Documents étudiant
+- **DocumentsStudent.tsx** ✅ OPTIMISÉ - Documents organisés par source (formation/session) avec filtrage avancé
 
 ### Composants Organisés
 ```
@@ -220,6 +222,18 @@
 - **Performance Optimisée** : Récupération des données en parallèle avec mise en cache
 - **Migration Automatique** : Transfert des contenus en dur vers la base de données
 
+### ✅ Gestion Documentaire Formations/Sessions (NOUVEAU)
+- **Upload de documents par formation** - Les admins peuvent ajouter des documents spécifiques à chaque formation
+- **Upload de documents par session** - Documents spécifiques aux sessions de formation
+- **Organisation par source** - Documents organisés et filtrés par formation ou session
+- **API étudiants optimisée** - Accès aux documents avec informations source (sourceTitle, sourceId)
+- **Interface admin complète** - Gestion centralisée des documents dans les pages détails
+- **Modal inspection sessions** - Section Documents ajoutée dans SessionsAdmin.tsx
+- **Téléchargement sécurisé** - Contrôle d'accès basé sur les inscriptions confirmées
+- **Filtrage avancé étudiant** - Filtrage par formation/session côté étudiant
+- **Gestion d'erreurs robuste** - Upload avec types étendus (PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX)
+- **Routes API complètes** - AdminSessions.php avec endpoint `/admin/sessions/{id}/documents`
+
 ## 🧠 Environnement de Développement
 
 ### Structure des Dossiers
@@ -269,6 +283,8 @@ MerelFormation/
 - Système de réservation
 - Facturation et paiements
 - **🆕 Système CMS complet et opérationnel**
+- **🆕 Gestion documentaire formations/sessions complète et testée**
+
 
 ### 🆕 DERNIÈRES AMÉLIORATIONS (Mai 2025)
 - **Planning Admin** - Calendrier intégré avec React Big Calendar
@@ -279,6 +295,19 @@ MerelFormation/
 - **Page Détails Réservations** - Interface complète pour visualiser toutes les informations d'une réservation véhicule
 - **Modal Amélioré** - Bouton "Voir détails complets" ajouté pour navigation fluide
 - **UX Réservations** - Workflow optimisé avec vue rapide (modal) + vue complète (page dédiée)
+- **Pages Admin Optimisées** - FormationDetail avec onglets, SessionNew complète
+- **Upload Intégré** - Gestion documents dans création formations/sessions
+- **Navigation Simplifiée** - Remplacement modals complexes par pages dédiées
+- **UX Documents** - Interface étudiant repensée avec organisation par source
+- **Filtrage Intelligent** - Recherche et filtres avancés côté étudiant
+- **Sécurité Renforcée** - Contrôle d'accès documents basé sur inscriptions
+- **🆕 Système Documentaire Finalisé** - Upload formations/sessions avec validation complète
+- **🆕 Interface Upload Intégrée** - FormData dans FormationNew.tsx et SessionNew.tsx
+- **🆕 API Documents Sessions** - Endpoint POST `/admin/sessions/{id}/documents` ajouté
+- **🆕 Contrôle Accès Documents** - Vérification basée sur réservations confirmées
+- **🆕 Download Sécurisé** - Utilisation de `$this->file()` Symfony avec token
+- **🆕 Modal Session Complet** - Section Documents dans inspection SessionsAdmin.tsx
+- **🆕 Bug Fixes Documents** - Corrections DocumentStudentController accumulation
 
 
 ### 🔧 EN COURS D'OPTIMISATION
@@ -286,6 +315,8 @@ MerelFormation/
 - UI/UX avancée
 - Tests automatisés
 - Documentation
+- ~~Système documentaire avancé~~ ✅ **TERMINÉ**
+
 
 ### 💡 PROCHAINES ÉTAPES POSSIBLES
 - Système de messagerie interne
@@ -294,6 +325,9 @@ MerelFormation/
 - Intégrations tierces (CPF, Pôle Emploi)
 - Mobile app
 - Optimisations SEO
+- **Versioning documents** - Gestion des versions multiples
+- **Recherche full-text** - Indexation contenu documents
+- **Catégorisation avancée** - Tags et métadonnées documents
 
 ## 🚀 Comment Commencer
 
@@ -316,6 +350,13 @@ MerelFormation/
 - GET /admin/content-texts - Gestion textes
 - GET /admin/testimonials - Gestion témoignages
 - GET /admin/faq - Gestion FAQ
+
+🆕 Gestion Documents (COMPLET):
+- POST /admin/formations/{id}/documents - Upload documents formation (FormData)
+- POST /admin/sessions/{id}/documents - Upload documents session avec validation  
+- GET /student/documents?source=formation|session - Documents filtrés par source
+- GET /student/documents/{id}/download - Téléchargement sécurisé Symfony
+- PUT /admin/sessions/{id} - Mise à jour session (JSON)
 ```
 
 ### Comptes de Test
