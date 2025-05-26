@@ -282,27 +282,25 @@ const RentalTrackingPage: React.FC = () => {
         </div>
 
         {/* Informations examen */}
-        {rental.isExamRental && (
+        {rental.examTime && (
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mt-6">
             <h2 className="text-lg font-semibold mb-4 flex items-center text-purple-800">
               <FileText className="mr-2 h-5 w-5" />
               Réservation pour examen
             </h2>
-            {rental.examDate && (
-              <div className="bg-white rounded-lg p-4">
-                <label className="block text-sm font-medium text-purple-600 mb-1">Date d'examen</label>
-                <p className="text-lg font-medium text-purple-900">
-                  {new Date(rental.examDate).toLocaleDateString('fr-FR', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </p>
-              </div>
-            )}
+            <div className="bg-white rounded-lg p-4">
+              <label className="block text-sm font-medium text-purple-600 mb-1">Date d'examen</label>
+              <p className="text-lg font-medium text-purple-900">
+                {new Date(rental.examTime).toLocaleDateString('fr-FR', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+            </div>
           </div>
         )}
 
