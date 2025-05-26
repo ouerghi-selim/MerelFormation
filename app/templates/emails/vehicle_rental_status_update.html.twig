@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mise à jour de votre réservation - MerelFormation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #2c5282;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo {
+            background-color: #2c5282;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 5px;
+            display: inline-block;
+            font-weight: bold;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        .status-update {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .status-confirmed {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        .status-cancelled {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+        .status-completed {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+        .tracking-button {
+            display: inline-block;
+            background-color: white;
+            color: #2c5282;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .vehicle-info {
+            background-color: #f8f9fa;
+            border-left: 4px solid #2c5282;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .admin-notes {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">MerelFormation</div>
+            <h1>Mise à jour de votre réservation</h1>
+        </div>
+
+        <p>Bonjour <strong>{{ customerName }}</strong>,</p>
+
+        <p>Le statut de votre réservation de véhicule a été mis à jour :</p>
+
+        <!-- Mise à jour du statut -->
+        <div class="status-update status-{{ newStatus }}">
+            {% if newStatus == 'confirmed' %}
+                <h2 style="margin: 0 0 10px 0;">✅ Réservation confirmée !</h2>
+                <p style="margin: 0 0 15px 0;">Votre réservation a été validée et confirmée par notre équipe.</p>
+            {% elseif newStatus == 'cancelled' %}
+                <h2 style="margin: 0 0 10px 0;">❌ Réservation annulée</h2>
+                <p style="margin: 0 0 15px 0;">Votre réservation a été annulée. Nous vous prions de nous excuser pour ce désagrément.</p>
+            {% elseif newStatus == 'completed' %}
+                <h2 style="margin: 0 0 10px 0;">🏁 Location terminée</h2>
+                <p style="margin: 0 0 15px 0;">Votre location s'est terminée avec succès. Merci pour votre confiance !</p>
+            {% endif %}
+            
+            <a href="{{ trackingUrl }}" class="tracking-button">Voir les détails complets</a>
+        </div>
+
+        <!-- Informations du véhicule -->
+        <div class="vehicle-info">
+            <h3 style="margin-top: 0; color: #2c5282;">🚗 Véhicule concerné</h3>
+            <p><strong>{{ vehicleModel }}</strong></p>
+            <p>Réservation #{{ rental.id }}</p>
+        </div>
+
+        {% if rental.adminNotes %}
+        <div class="admin-notes">
+            <h4 style="margin-top: 0; color: #d97706;">💬 Message de l'équipe</h4>
+            <p style="margin-bottom: 0;">{{ rental.adminNotes }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Instructions selon le statut -->
+        {% if newStatus == 'confirmed' %}
+        <h3>📝 Prochaines étapes</h3>
+        <ul>
+            <li><strong>Préparation du véhicule</strong> - Le véhicule est en cours de préparation</li>
+            <li><strong>Récupération</strong> - Présentez-vous aux dates prévues pour récupérer le véhicule</li>
+            <li><strong>Documents</strong> - N'oubliez pas d'apporter vos documents (permis, pièce d'identité)</li>
+        </ul>
+
+        <div style="background-color: #ecfdf5; border: 1px solid #10b981; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h4 style="color: #065f46; margin-top: 0;">✅ Votre réservation est confirmée</h4>
+            <p style="margin-bottom: 0;">Le véhicule vous est maintenant assigné et sera disponible aux dates prévues.</p>
+        </div>
+
+        {% elseif newStatus == 'cancelled' %}
+        <h3>💡 Que faire maintenant ?</h3>
+        <ul>
+            <li><strong>Nouvelle réservation</strong> - Vous pouvez effectuer une nouvelle réservation sur notre site</li>
+            <li><strong>Contact</strong> - Contactez-nous pour connaître les raisons de l'annulation</li>
+            <li><strong>Remboursement</strong> - Si un paiement a été effectué, il sera remboursé sous 3-5 jours ouvrés</li>
+        </ul>
+
+        {% elseif newStatus == 'completed' %}
+        <h3>⭐ Votre avis nous intéresse</h3>
+        <p>Nous espérons que votre expérience s'est bien déroulée. N'hésitez pas à nous faire part de vos commentaires pour nous aider à améliorer nos services.</p>
+        
+        <div style="background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <h4 style="color: #1e40af; margin-top: 0;">🙏 Merci pour votre confiance</h4>
+            <p style="margin-bottom: 0;">Nous espérons vous revoir bientôt pour de futures réservations !</p>
+        </div>
+        {% endif %}
+
+        <!-- Contact -->
+        <h3>📞 Besoin d'aide ?</h3>
+        <p>Notre équipe reste à votre disposition :</p>
+        <ul>
+            <li><strong>Téléphone :</strong> 01 23 45 67 89</li>
+            <li><strong>Email :</strong> contact@merelformation.com</li>
+            <li><strong>Horaires :</strong> Lundi - Vendredi, 9h - 18h</li>
+        </ul>
+
+        <div class="footer">
+            <p>
+                <strong>MerelFormation</strong><br>
+                Formations taxi et location de véhicules<br>
+                <a href="{{ trackingUrl }}" style="color: #2c5282;">Suivre votre réservation</a>
+            </p>
+            <p style="margin-top: 15px; font-size: 10px;">
+                Cet email a été envoyé automatiquement, merci de ne pas y répondre directement.<br>
+                Pour toute question, utilisez nos coordonnées ci-dessus.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
