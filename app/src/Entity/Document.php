@@ -8,6 +8,8 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use App\Repository\DocumentRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 use Vich\UploaderBundle\Mapping\Annotation as Vich;
@@ -44,13 +46,13 @@ class Document
     #[Assert\Choice(choices: ['pdf', 'doc', 'docx'])]
     private ?string $type = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(type: 'string', length: 255)]
     #[Groups(['document:read'])]
     private ?string $fileName = null;
 
     /**
      * @Vich\UploadableFile(
-     *     mapping="document_files",
+     *     mapping="session_documents",
      *     mimeTypes={
      *         "application/pdf",
      *         "application/msword",
@@ -60,7 +62,9 @@ class Document
      * )
      */
     #[Assert\NotNull]
-    private ?string $file = null;
+    #[Vich\UploadableField(mapping: 'session_documents', fileNameProperty: 'fileName')]
+
+    private ?File $file = null;
 
     #[ORM\Column(length: 50)]
     #[Groups(['document:read', 'document:write'])]
@@ -160,18 +164,17 @@ class Document
         return $this;
     }
 
-    public function getFile(): ?string
+    public function getFile(): ?File
     {
         return $this->file;
     }
 
-    public function setFile(?string $file): static
+    public function setFile(?File $file = null): void
     {
         $this->file = $file;
-        if ($file) {
+        if (null !== $file) {
             $this->updatedAt = new \DateTimeImmutable();
         }
-        return $this;
     }
 
     public function getUploadedBy(): ?User

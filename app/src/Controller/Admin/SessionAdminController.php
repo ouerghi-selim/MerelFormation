@@ -87,7 +87,7 @@ class SessionAdminController extends AbstractController
         // Formater les données pour la réponse
         $formattedSessions = [];
         foreach ($sessions as $session) {
-            $formattedSessions[] = $this->formatSessionData($session);
+            $formattedSessions[] = $this->formatSessionData($session, true); // Ajouter true ici
         }
 
         return $this->json($formattedSessions);
@@ -173,34 +173,92 @@ class SessionAdminController extends AbstractController
             return $this->json(['message' => 'Titre requis'], 400);
         }
 
-        // Valider le type de fichier
-        $allowedMimeTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+        // AMÉLIORATION 1: Types de fichiers étendus
+        $allowedMimeTypes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        ];
+
         if (!in_array($uploadedFile->getMimeType(), $allowedMimeTypes)) {
-            return $this->json(['message' => 'Type de fichier non autorisé'], 400);
+            return $this->json([
+                'message' => 'Type de fichier non autorisé. Types acceptés : PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX',
+                'receivedType' => $uploadedFile->getMimeType()
+            ], 400);
         }
 
-        // Créer le document
-        $document = new Document();
-        $document->setTitle($title);
-        $document->setType($uploadedFile->getClientOriginalExtension());
-        $document->setCategory($category);
-        $document->setSession($session);
-        $document->setUploadedBy($this->getUser());
-        $document->setFile($uploadedFile);
+        // AMÉLIORATION 2: Validation de la taille (10MB max)
+        $maxSize = 10 * 1024 * 1024; // 10MB
+        if ($uploadedFile->getSize() > $maxSize) {
+            return $this->json([
+                'message' => 'Fichier trop volumineux. Taille maximum : 10MB',
+                'receivedSize' => round($uploadedFile->getSize() / 1024 / 1024, 2) . 'MB'
+            ], 400);
+        }
 
-        $this->entityManager->persist($document);
-        $this->entityManager->flush();
+        // AMÉLIORATION 3: Validation du titre
+        if (strlen($title) < 3 || strlen($title) > 255) {
+            return $this->json(['message' => 'Le titre doit contenir entre 3 et 255 caractères'], 400);
+        }
 
-        return $this->json([
-            'message' => 'Document ajouté avec succès',
-            'document' => [
-                'id' => $document->getId(),
-                'title' => $document->getTitle(),
-                'fileName' => $document->getFileName(),
-                'type' => $document->getType(),
-                'category' => $document->getCategory()
-            ]
-        ], 201);
+        // AMÉLIORATION 4: Validation d'erreur d'upload
+        if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
+            return $this->json([
+                'message' => 'Erreur lors de l\'upload du fichier',
+                'error' => $uploadedFile->getErrorMessage()
+            ], 400);
+        }
+
+        try {
+            // Créer le document
+            $document = new Document();
+            $document->setTitle($title);
+            $document->setType($uploadedFile->getClientOriginalExtension());
+            $document->setCategory($category);
+            $document->setSession($session);
+            $document->setUploadedBy($this->getUser());
+            $document->setFile($uploadedFile); // VichUploader gère tout !
+
+            $this->entityManager->persist($document);
+            $this->entityManager->flush();
+
+            // AMÉLIORATION 5: Réponse plus complète
+            return $this->json([
+                'message' => 'Document ajouté avec succès',
+                'document' => [
+                    'id' => $document->getId(),
+                    'title' => $document->getTitle(),
+                    'fileName' => $document->getFileName(),
+                    'type' => $document->getType(),
+                    'category' => $document->getCategory(),
+                    //'fileSize' => $this->formatFileSize($uploadedFile->getSize()),
+                    'uploadedAt' => (new \DateTime())->format('Y-m-d H:i:s'),
+                    'downloadUrl' => '/api/admin/sessions/' . $id . '/documents/' . $document->getId() . '/download'
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            // AMÉLIORATION 6: Gestion d'erreurs
+            return $this->json([
+                'message' => 'Erreur lors de la sauvegarde du document',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+// AMÉLIORATION 7: Méthode utilitaire pour formater la taille
+    private function formatFileSize(int $bytes): string
+    {
+        if ($bytes >= 1048576) {
+            return round($bytes / 1048576, 2) . ' MB';
+        } elseif ($bytes >= 1024) {
+            return round($bytes / 1024, 2) . ' KB';
+        }
+        return $bytes . ' B';
     }
 
     /**

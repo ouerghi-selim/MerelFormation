@@ -71,23 +71,36 @@ const FormationNew: React.FC = () => {
             setLoading(true);
             setError(null);
 
-            const formationData = {
-                title,
-                description,
-                price: parseFloat(price),
-                duration: parseInt(duration),
-                type,
-                isActive,
-                modules: modules.map((module, index) => ({
-                    ...module,
-                    order: index + 1
-                })),
-                prerequisites: prerequisites.map(prerequisite => ({
-                    description: prerequisite.description
-                }))
-            };
+            // Utiliser FormData pour envoyer les fichiers
+            const formData = new FormData();
 
-            await adminFormationsApi.create(formationData);
+            // Ajouter les champs de base
+            formData.append('title', title);
+            formData.append('description', description);
+            formData.append('price', price);
+            formData.append('duration', duration);
+            formData.append('type', type);
+            formData.append('isActive', isActive.toString());
+
+            // Ajouter les modules (en JSON)
+            const modulesData = modules.map((module, index) => ({
+                ...module,
+                order: index + 1
+            }));
+            formData.append('modules', JSON.stringify(modulesData));
+
+            // Ajouter les prérequis (en JSON)
+            const prerequisitesData = prerequisites.map(prerequisite => ({
+                description: prerequisite.description
+            }));
+            formData.append('prerequisites', JSON.stringify(prerequisitesData));
+
+            // Ajouter les documents
+            documents.forEach((document, index) => {
+                formData.append(`documents[${index}]`, document);
+            });
+
+            await adminFormationsApi.create(formData);
 
             setSuccess('Formation créée avec succès');
             setTimeout(() => {

@@ -45,6 +45,10 @@ use App\Controller\Admin\SessionAdminController;
             uriTemplate: '/admin/sessions/{id}/add-participant',
             controller: SessionAdminController::class . '::addParticipant',
         ),
+        new Post(
+            uriTemplate: '/admin/sessions/{id}/documents',
+            controller: SessionAdminController::class . '::uploadDocument',
+        ),
         new Delete(
             uriTemplate: '/admin/sessions/{id}/remove-participant/{userId}',
             controller: SessionAdminController::class . '::removeParticipant',

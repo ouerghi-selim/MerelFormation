@@ -88,7 +88,9 @@ export const studentFormationsApi = {
 export const studentDocumentsApi = {
     getAll: () => api.get('/student/documents'),
     getById: (id: number) => api.get(`/student/documents/${id}`),
-    download: (id: number) => api.get(`/student/documents/${id}/download`),
+    download: (id: number) => api.get(`/student/documents/${id}/download`, {
+        responseType: 'blob' // Important pour les fichiers !
+    }),
 };
 
 // Service d'authentification
@@ -106,6 +108,11 @@ export const adminSessionsApi = {
     update: (id:number, sessionData:any) => api.put(`/admin/sessions/${id}`, sessionData),
     delete: (id:number) => api.delete(`/admin/sessions/${id}`),
     getInstructors: () => api.get('/admin/users?role=ROLE_INSTRUCTOR'),
+    uploadDocument: (sessionId: number, formData: FormData) =>
+        api.post(`/admin/sessions/${sessionId}/documents`, {
+            method: 'POST',
+            body: formData, // Pas de Content-Type header, le navigateur le gère
+        }),
 };
 
 export const adminVehiclesApi = {

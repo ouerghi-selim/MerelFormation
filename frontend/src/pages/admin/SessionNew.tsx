@@ -1,13 +1,14 @@
 // src/pages/admin/SessionNew.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, ArrowLeft } from 'lucide-react';
+import { Save, ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
 import { useNotification } from '../../contexts/NotificationContext';
 import useDataFetching from '../../hooks/useDataFetching';
+
 import { adminSessionsApi, adminFormationsApi } from '../../services/api';
 
 interface Formation {
@@ -29,6 +30,8 @@ const SessionNew: React.FC = () => {
     const [location, setLocation] = useState('7 RUE Georges Maillols, 35000 RENNES');
     const [status, setStatus] = useState('scheduled');
     const [notes, setNotes] = useState('');
+    const [documents, setDocuments] = useState<File[]>([]);
+
 
     const [instructorId, setInstructorId] = useState('');
     const [instructors, setInstructors] = useState<Array<{id: number, firstName: string, lastName: string}>>([]);
@@ -111,21 +114,27 @@ const SessionNew: React.FC = () => {
             setLoading(true);
             setError(null);
 
-            const sessionData = {
-                formation: { id: parseInt(formationId) },
-                startDate: new Date(startDate).toISOString(),
-                endDate: new Date(endDate).toISOString(),
-                maxParticipants: parseInt(maxParticipants),
-                location,
-                status,
-                notes: notes.trim() || null,
-                instructor: instructorId ? { id: parseInt(instructorId) } : null
-            };
+            // Utiliser FormData pour envoyer les fichiers
+            const formData = new FormData();
 
-            await adminSessionsApi.create(sessionData);
+            // Ajouter les champs de base
+            formData.append('formationId', formationId);
+            formData.append('startDate', new Date(startDate).toISOString());
+            formData.append('endDate', new Date(endDate).toISOString());
+            formData.append('maxParticipants', maxParticipants);
+            formData.append('location', location);
+            formData.append('status', status);
+            if (notes.trim()) formData.append('notes', notes.trim());
+            if (instructorId) formData.append('instructorId', instructorId);
+
+            // Ajouter les documents
+            documents.forEach((document, index) => {
+                formData.append(`documents[${index}]`, document);
+            });
+
+            await adminSessionsApi.create(formData);
             addToast('Session créée avec succès', 'success');
 
-            // Redirection après un court délai
             setTimeout(() => {
                 navigate('/admin/sessions');
             }, 1500);
@@ -138,14 +147,13 @@ const SessionNew: React.FC = () => {
             setLoading(false);
         }
     };
-
     // Calcul automatique de la date de fin en fonction de la formation sélectionnée
     const handleFormationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedFormationId = e.target.value;
         setFormationId(selectedFormationId);
 
         if (selectedFormationId && startDate) {
-            const selectedFormation = formationsDataData.find(f => f.id.toString() === selectedFormationId);
+            const selectedFormation = formationsData.find(f => f.id.toString() === selectedFormationId);
             if (selectedFormation) {
                 // Déterminer la durée en fonction du type de formation
                 let durationDays = 28; // Par défaut 4 semaines pour formation initiale
@@ -361,7 +369,46 @@ const SessionNew: React.FC = () => {
                                         <p className="mt-1 text-sm text-red-500">{formErrors.status}</p>
                                     )}
                                 </div>
+                                {/* Section Documents */}
+                                <div className="mt-8 mb-6">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-lg font-medium text-gray-900">Documents</h3>
+                                        <input
+                                            type="file"
+                                            multiple
+                                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                                            onChange={(e) => setDocuments(Array.from(e.target.files || []))}
+                                            className="hidden"
+                                            id="documents-upload"
+                                        />
+                                        <label
+                                            htmlFor="documents-upload"
+                                            className="inline-flex items-center px-3 py-1.5 border border-blue-700 text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 cursor-pointer"
+                                        >
+                                            <Plus className="h-4 w-4 mr-1" />
+                                            Ajouter des documents
+                                        </label>
+                                    </div>
 
+                                    {documents.length === 0 ? (
+                                        <p className="text-gray-500 text-sm italic">Aucun document ajouté</p>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {documents.map((file, index) => (
+                                                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                                    <span className="text-sm">{file.name}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setDocuments(docs => docs.filter((_, i) => i !== index))}
+                                                        className="text-red-600 hover:text-red-900"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                                 <div className="md:col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Notes (facultatif)

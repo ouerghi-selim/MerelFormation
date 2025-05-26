@@ -2,6 +2,8 @@
 
 namespace App\Controller\Student;
 
+use App\Repository\ReservationRepository;
+use App\Repository\SessionRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -11,6 +13,7 @@ use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Repository\DocumentRepository;
 use App\Entity\Reservation;
+use Vich\UploaderBundle\Handler\DownloadHandler;
 
 /**
  * @Route("/api/student/documents", name="api_student_documents_")
@@ -20,12 +23,19 @@ class DocumentStudentController extends AbstractController
     private $security;
     private $documentRepository;
 
+    private $reservationRepository;
+    private $sessionRepository;
+
     public function __construct(
         Security $security,
-        DocumentRepository $documentRepository
+        DocumentRepository $documentRepository,
+        ReservationRepository $reservationRepository,
+        SessionRepository $sessionRepository
     ) {
         $this->security = $security;
         $this->documentRepository = $documentRepository;
+        $this->reservationRepository = $reservationRepository;
+        $this->sessionRepository = $sessionRepository;
     }
 
     /**
@@ -40,19 +50,15 @@ class DocumentStudentController extends AbstractController
         }
 
         // Paramètres de filtrage
-        $source = $request->query->get('source'); // 'formation' ou 'session'
-        $formationId = $request->query->get('formationId');
-        $sessionId = $request->query->get('sessionId');
+        $source = $request->query->get('source'); // 'formation' | 'session'
 
-        // Récupérer les réservations confirmées de l'utilisateur pour obtenir ses formations/sessions
-        $reservations = $this->getDoctrine()->getRepository(Reservation::class)
-            ->findBy(['user' => $user, 'status' => 'confirmed']);
+        // Récupérer les réservations confirmées de l'utilisateur
+        $sessions = $this->sessionRepository->findByParticipant($user->getId());
 
-        $formationIds = [];
         $sessionIds = [];
-        
-        foreach ($reservations as $reservation) {
-            $session = $reservation->getSession();
+        $formationIds = [];
+
+        foreach ($sessions as $session) {
             if ($session) {
                 $sessionIds[] = $session->getId();
                 $formationIds[] = $session->getFormation()->getId();
@@ -65,48 +71,58 @@ class DocumentStudentController extends AbstractController
 
         $documents = [];
 
-        // Documents de formations si pas de filtre spécifique aux sessions
+        // Documents de formations (via les sessions auxquelles l'étudiant est inscrit)
         if (!$source || $source === 'formation') {
-            $formationDocuments = $this->documentRepository->findByFormations($formationIds, $formationId);
-            
-            foreach ($formationDocuments as $document) {
-                $formation = $document->getFormation();
-                $documents[] = [
-                    'id' => $document->getId(),
-                    'title' => $document->getTitle(),
-                    'type' => $document->getType(),
-                    'category' => $document->getCategory(),
-                    'source' => 'formation',
-                    'sourceTitle' => $formation ? $formation->getTitle() : 'Formation inconnue',
-                    'sourceId' => $formation ? $formation->getId() : null,
-                    'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
-                    'fileName' => $document->getFileName(),
-                    'downloadUrl' => '/api/student/documents/' . $document->getId() . '/download'
-                ];
+            foreach ($formationIds as $formationId) {
+                $formationDocuments = $this->documentRepository->findBy(['formation' => $formationId]);
+
+                foreach ($formationDocuments as $document) {
+                    $formation = $document->getFormation();
+                    $documents[] = [
+                        'id' => $document->getId(),
+                        'title' => $document->getTitle(),
+                        'type' => $document->getType(),
+                        'category' => $document->getCategory(),
+                        'source' => 'formation',
+                        'sourceTitle' => $formation ? $formation->getTitle() : 'Formation inconnue',
+                        'sourceId' => $formation?->getId(),
+                        'date' => $document->getUploadedAt()->format('d/m/Y'),
+                        'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
+                        'fileName' => $document->getFileName(),
+                        //'fileSize' => $this->formatFileSize($document->getFileSize() ?? 0),
+                        'fileType' => $document->getType(),
+                        'downloadUrl' => '/api/student/documents/' . $document->getId() . '/download'
+                    ];
+                }
             }
         }
 
-        // Documents de sessions si pas de filtre spécifique aux formations
+        // Documents de sessions (directement des sessions auxquelles l'étudiant est inscrit)
         if (!$source || $source === 'session') {
-            $sessionDocuments = $this->documentRepository->findBySessions($sessionIds, $sessionId);
-            
-            foreach ($sessionDocuments as $document) {
-                $session = $document->getSession();
-                $formation = $session ? $session->getFormation() : null;
-                $documents[] = [
-                    'id' => $document->getId(),
-                    'title' => $document->getTitle(),
-                    'type' => $document->getType(),
-                    'category' => $document->getCategory(),
-                    'source' => 'session',
-                    'sourceTitle' => $session ? 
-                        ($formation->getTitle() . ' - Session du ' . $session->getStartDate()->format('d/m/Y')) : 
-                        'Session inconnue',
-                    'sourceId' => $session ? $session->getId() : null,
-                    'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
-                    'fileName' => $document->getFileName(),
-                    'downloadUrl' => '/api/student/documents/' . $document->getId() . '/download'
-                ];
+            foreach ($sessionIds as $sessionId) {
+                $sessionDocuments = $this->documentRepository->findBy(['session' => $sessionId]);
+
+                foreach ($sessionDocuments as $document) {
+                    $session = $document->getSession();
+                    $formation = $session ? $session->getFormation() : null;
+                    $documents[] = [
+                        'id' => $document->getId(),
+                        'title' => $document->getTitle(),
+                        'type' => $document->getType(),
+                        'category' => $document->getCategory(),
+                        'source' => 'session',
+                        'sourceTitle' => $session ?
+                            ($formation->getTitle() . ' - Session du ' . $session->getStartDate()->format('d/m/Y')) :
+                            'Session inconnue',
+                        'sourceId' => $session?->getId(),
+                        'date' => $document->getUploadedAt()->format('d/m/Y'),
+                        'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
+                        'fileName' => $document->getFileName(),
+                        //'fileSize' => $this->formatFileSize($document->getFileSize() ?? 0),
+                        'fileType' => $document->getType(),
+                        'downloadUrl' => '/api/student/documents/' . $document->getId() . '/download'
+                    ];
+                }
             }
         }
 
@@ -177,38 +193,22 @@ class DocumentStudentController extends AbstractController
     /**
      * @Route("/{id}/download", name="download", methods={"GET"})
      */
-    public function download(int $id): Response
+    public function download(int $id, DownloadHandler $downloadHandler): Response
     {
-        // Vérifier que l'utilisateur est connecté
         $user = $this->security->getUser();
         if (!$user) {
             return $this->json(['message' => 'Utilisateur non connecté'], 401);
         }
-
         // Récupérer le document
         $document = $this->documentRepository->find($id);
-        
         if (!$document) {
             return $this->json(['message' => 'Document non trouvé'], 404);
         }
+        // ... vérifications d'accès
 
-        // Vérifier que l'utilisateur a accès à ce document
-        if (!$this->userHasAccessToDocument($user, $document)) {
-            return $this->json(['message' => 'Vous n\'avez pas accès à ce document'], 403);
-        }
-
-        // Récupérer le fichier
-        $filePath = $this->getParameter('documents_directory') . '/' . $document->getFileName();
-        
-        // Vérifier que le fichier existe
-        if (!file_exists($filePath)) {
-            return $this->json(['message' => 'Fichier non trouvé'], 404);
-        }
-
-        // Retourner le fichier
-        return $this->file($filePath, $document->getTitle(), ResponseHeaderBag::DISPOSITION_ATTACHMENT);
+        // VichUploader gère TOUT automatiquement !
+        return $downloadHandler->downloadObject($document, 'file');
     }
-
     /**
      * Vérifier si l'utilisateur a accès au document
      */

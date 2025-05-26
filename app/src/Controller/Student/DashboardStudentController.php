@@ -2,6 +2,7 @@
 
 namespace App\Controller\Student;
 
+use App\Repository\ReservationRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,19 +23,22 @@ class DashboardStudentController extends AbstractController
     private $formationRepository;
     private $sessionRepository;
     private $documentRepository;
+    private $reservationRepository;
 
     public function __construct(
         Security $security,
         UserRepository $userRepository,
         FormationRepository $formationRepository,
         SessionRepository $sessionRepository,
-        DocumentRepository $documentRepository
+        DocumentRepository $documentRepository,
+        ReservationRepository $reservationRepository
     ) {
         $this->security = $security;
         $this->userRepository = $userRepository;
         $this->formationRepository = $formationRepository;
         $this->sessionRepository = $sessionRepository;
         $this->documentRepository = $documentRepository;
+        $this->reservationRepository = $reservationRepository;
     }
 
     /**
@@ -54,8 +58,7 @@ class DashboardStudentController extends AbstractController
             $activeFormations = 0; // Temporairement en dur jusqu'à correction du FormationRepository
             // $activeFormations = $this->formationRepository->countActiveFormationsForStudent($user->getId());
 
-            // TODO: Vérifier que cette méthode existe dans DocumentRepository ou la créer
-            $documentsCount = 0; // Temporairement en dur
+            $documentsCount = count($this->getStudentDocuments($user->getId()));
             // $documentsCount = $this->documentRepository->countDocumentsForStudent($user->getId());
 
             $pendingPayments = 0; // À implémenter selon votre logique métier
@@ -74,8 +77,7 @@ class DashboardStudentController extends AbstractController
             }
 
             // Récupérer les documents récents
-            // TODO: Vérifier que cette méthode existe dans DocumentRepository ou la créer
-            $recentDocuments = []; // Temporairement vide
+            $recentDocuments = array_slice($this->getStudentDocuments($user->getId()), 0, 3);
             // $recentDocuments = $this->documentRepository->findRecentDocumentsForStudent($user->getId(), 3);
             $formattedDocuments = [];
             foreach ($recentDocuments as $document) {
@@ -83,8 +85,8 @@ class DashboardStudentController extends AbstractController
                     'id' => $document->getId(),
                     'title' => $document->getTitle(),
                     'type' => $document->getType(),
-                    'date' => $document->getCreatedAt()->format('d/m/Y'),
-                    'downloadUrl' => '/documents/' . $document->getId()
+                    'date' => $document->getUploadedAt()->format('d/m/Y'),
+                    'downloadUrl' => '/api/student/documents/' . $document->getId() . '/download'
                 ];
             }
 
@@ -106,6 +108,24 @@ class DashboardStudentController extends AbstractController
         }
     }
 
+    private function getStudentDocuments(int $userId): array
+    {
+        $sessions = $this->sessionRepository->findByParticipant($userId);
+        $documents = [];
+        foreach ($sessions as $session) {
+            if ($session) {
+                // Documents de session
+                $sessionDocs = $this->documentRepository->findBy(['session' => $session->getId()]);
+                $documents = array_merge($documents, $sessionDocs);
+
+                // Documents de formation
+                $formationDocs = $this->documentRepository->findBy(['formation' => $session->getFormation()->getId()]);
+                $documents = array_merge($documents, $formationDocs);
+            }
+        }
+
+        return array_unique($documents, SORT_REGULAR);
+    }
     /**
      * @Route("/profile", name="profile", methods={"GET"})
      */
