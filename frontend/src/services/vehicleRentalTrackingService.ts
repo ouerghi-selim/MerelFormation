@@ -16,8 +16,7 @@ export interface VehicleRentalTracking {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
-  isExamRental: boolean;
-  examDate?: string;
+  examTime?: string;
   notes?: string;
   adminNotes?: string;
   statusHistory: StatusHistoryItem[];
