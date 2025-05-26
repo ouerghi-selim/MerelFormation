@@ -156,13 +156,11 @@
             </div>
         </div>
 
-        {% if isExamRental %}
+        {% if examTime %}
         <div class="exam-highlight">
             <h3>🎓 Réservation pour examen</h3>
             <p><strong>Votre réservation concerne un examen.</strong></p>
-            {% if examDate %}
-            <p><strong>Date d'examen :</strong> {{ examDate|date('l d F Y à H:i') }}</p>
-            {% endif %}
+            <p><strong>Date d'examen :</strong> {{ examTime|date('l d F Y à H:i') }}</p>
             <p>Notre équipe accordera une attention particulière à votre demande pour s'assurer que le véhicule soit disponible et adapté à votre examen.</p>
         </div>
         {% endif %}
