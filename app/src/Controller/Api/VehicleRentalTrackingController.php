@@ -33,6 +33,9 @@ class VehicleRentalTrackingController extends AbstractController
             ], 404);
         }
 
+        // Récupérer les infos depuis le User associé
+        $user = $rental->getUser();
+
         return $this->json([
             'id' => $rental->getId(),
             'trackingToken' => $rental->getTrackingToken(),
@@ -46,12 +49,13 @@ class VehicleRentalTrackingController extends AbstractController
             'status' => $rental->getStatus(),
             'totalPrice' => $rental->getTotalPrice(),
             'createdAt' => $rental->getCreatedAt()?->format('Y-m-d H:i'),
-            'customerName' => $rental->getCustomerName(),
-            'customerEmail' => $rental->getCustomerEmail(),
-            'customerPhone' => $rental->getCustomerPhone(),
-            'examTime' => $rental->getExamTime()?->format('Y-m-d H:i'),
+            // Récupérer depuis le User associé
+            'customerName' => $user ? $user->getFirstName() . ' ' . $user->getLastName() : null,
+            'customerEmail' => $user?->getEmail(),
+            'customerPhone' => $user?->getPhone(),
+            'examTime' => $rental->getExamTime(),
             'notes' => $rental->getNotes(),
-            'adminNotes' => $rental->getAdminNotes(),
+            //'adminNotes' => $rental->getAdminNotes(),
             'statusHistory' => $this->getStatusHistory($rental)
         ]);
     }
@@ -62,7 +66,7 @@ class VehicleRentalTrackingController extends AbstractController
     private function getStatusHistory(VehicleRental $rental): array
     {
         $history = [];
-        
+
         // Toujours créé
         $history[] = [
             'status' => 'pending',

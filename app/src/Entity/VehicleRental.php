@@ -139,6 +139,11 @@ class VehicleRental
     #[Groups(['rental:read', 'rental:item:read'])]
     private Collection $documents;
 
+    #[ORM\Column(type: 'string', length: 64, unique: true)]
+    private ?string $trackingToken = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $adminNotes = null;
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -401,4 +406,17 @@ class VehicleRental
 
         return $this;
     }
+
+    public function getAdminNotes(): ?string
+    {
+        return $this->adminNotes;
+    }
+
+    public function setAdminNotes(?string $adminNotes): void
+    {
+        $this->adminNotes = $adminNotes;
+    }
+
+    public function getTrackingToken(): ?string { return $this->trackingToken; }
+    public function setTrackingToken(string $trackingToken): self { $this->trackingToken = $trackingToken; return $this; }
 }
