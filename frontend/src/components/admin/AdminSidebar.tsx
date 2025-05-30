@@ -43,7 +43,11 @@ const AdminSidebar: React.FC = () => {
       path: '/admin/reservations',
       submenu: [
         { title: 'Liste des réservations', path: '/admin/reservations' },
-        { title: 'Véhicules', path: '/admin/vehicles' }
+        { title: 'Véhicules', path: '/admin/vehicles' },
+        { title: 'Centers', path: '/admin/reservations/examencenter' },
+        { title: 'Formules', path: '/admin/reservations/formules' }
+
+
       ]
     },
     {

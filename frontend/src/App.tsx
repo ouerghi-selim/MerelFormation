@@ -37,6 +37,10 @@ import ContentTextsAdmin from './pages/admin/ContentTextsAdmin';
 import TestimonialsAdmin from './pages/admin/TestimonialsAdmin';
 import FAQAdmin from './pages/admin/FAQAdmin';
 
+// Exam Centers and Formulas Management pages
+import ExamCentersAdmin from './pages/admin/ExamCentersAdmin';
+import FormulasAdmin from './pages/admin/FormulasAdmin';
+
 // Student pages
 import DashboardStudent from './pages/student/DashboardStudent';
 import FormationsStudent from './pages/student/FormationsStudent';
@@ -122,7 +126,10 @@ const App = () => {
                     } />
                     {/* Nouvelle route pour les détails de réservation véhicule */}
                     <Route path="/admin/reservations/vehicle/:id" element={<VehicleReservationDetail />} />
-                    
+                    <Route path="/admin/reservations/examencenter" element={<ExamCentersAdmin />} />
+                    <Route path="/admin/reservations/formules" element={<FormulasAdmin />} />
+
+
                     <Route path="/admin/users" element={
                         //   <ProtectedAdminRoute>
                             <UsersAdmin />

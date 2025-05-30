@@ -267,5 +267,128 @@ export const adminFaqApi = {
     // Récupérer les FAQ par catégorie
     getByCategory: (category: string) => api.get(`/admin/faq/by-category/${category}`)
 };
+// ========== EXAM CENTERS & FORMULAS SERVICES ==========
 
+// Services API pour la gestion des centres d'examen (Admin)
+export const adminExamCentersApi = {
+    // Récupérer tous les centres d'examen
+    getAll: (params: { search?: string; page?: number; limit?: number } = {}) => {
+        const queryParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+                queryParams.append(key, value.toString());
+            }
+        });
+        const queryString = queryParams.toString();
+        return api.get(`/admin/exam-centers${queryString ? '?' + queryString : ''}`);
+    },
+
+    // Récupérer un centre d'examen par ID
+    getById: (id: number) => api.get(`/admin/exam-centers/${id}`),
+
+    // Créer un nouveau centre d'examen
+    create: (data: {
+        name: string;
+        code: string;
+        city: string;
+        departmentCode: string;
+        address?: string;
+        isActive: boolean;
+    }) => api.post('/admin/exam-centers', data),
+
+    // Modifier un centre d'examen
+    update: (id: number, data: {
+        name?: string;
+        code?: string;
+        city?: string;
+        departmentCode?: string;
+        address?: string;
+        isActive?: boolean;
+    }) => api.put(`/admin/exam-centers/${id}`, data),
+
+    // Supprimer un centre d'examen
+    delete: (id: number) => api.delete(`/admin/exam-centers/${id}`),
+
+    // Récupérer les centres d'examen actifs
+    getActive: () => api.get('/admin/exam-centers/active'),
+
+    // Récupérer les centres avec leurs formules
+    getWithFormulas: () => api.get('/admin/exam-centers/with-formulas'),
+
+    // Récupérer les statistiques
+    getStats: () => api.get('/admin/exam-centers/stats')
+};
+
+// Services API pour la gestion des formules (Admin)
+export const adminFormulasApi = {
+    // Récupérer toutes les formules
+    getAll: (params: { search?: string; examCenter?: number; page?: number; limit?: number } = {}) => {
+        const queryParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+                queryParams.append(key, value.toString());
+            }
+        });
+        const queryString = queryParams.toString();
+        return api.get(`/admin/formulas${queryString ? '?' + queryString : ''}`);
+    },
+
+    // Récupérer une formule par ID
+    getById: (id: number) => api.get(`/admin/formulas/${id}`),
+
+    // Créer une nouvelle formule
+    create: (data: {
+        name: string;
+        description: string;
+        price?: number;
+        type: string;
+        additionalInfo?: string;
+        isActive: boolean;
+        examCenterId: number;
+    }) => api.post('/admin/formulas', data),
+
+    // Modifier une formule
+    update: (id: number, data: {
+        name?: string;
+        description?: string;
+        price?: number;
+        type?: string;
+        additionalInfo?: string;
+        isActive?: boolean;
+        examCenterId?: number;
+    }) => api.put(`/admin/formulas/${id}`, data),
+
+    // Supprimer une formule
+    delete: (id: number) => api.delete(`/admin/formulas/${id}`),
+
+    // Récupérer les formules actives
+    getActive: () => api.get('/admin/formulas/active'),
+
+    // Récupérer les formules d'un centre d'examen
+    getByCenter: (centerId: number) => api.get(`/admin/formulas/by-center/${centerId}`),
+
+    // Récupérer les formules groupées par centre
+    getGroupedByCenter: () => api.get('/admin/formulas/grouped-by-center'),
+
+    // Récupérer les statistiques
+    getStats: () => api.get('/admin/formulas/stats')
+};
+
+// Services API publiques pour les centres d'examen (sans authentification)
+export const publicExamCentersApi = {
+    // Récupérer les centres actifs
+    getActiveCenters: () => api.get('/api/exam-centers'),
+
+    // Récupérer les centres actifs avec leurs formules
+    getActiveCentersWithFormulas: () => api.get('/api/exam-centers/with-formulas'),
+
+    // Récupérer les formules actives
+    getActiveFormulas: () => api.get('/api/formulas'),
+
+    // Récupérer les formules groupées par centre
+    getFormulasGroupedByCenter: () => api.get('/api/formulas/grouped-by-center'),
+
+    // Récupérer les formules d'un centre spécifique
+    getCenterFormulas: (centerId: number) => api.get(`/api/exam-centers/${centerId}/formulas`)
+};
 export default api;
