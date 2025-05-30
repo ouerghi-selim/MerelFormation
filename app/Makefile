@@ -61,7 +61,7 @@ symfony-diff: ## Exécuter les migrations
 	docker exec -it $(PHP_CONTAINER) php bin/console doctrine:migrations:diff --no-interaction
 
 fixtures:
-	docker exec -it $(PHP_CONTAINER) php bin/console doctrine:fixtures:load
+	docker exec -it $(PHP_CONTAINER) php bin/console app:fixtures:load
 
 # Commandes Node/NPM
 node-install: ## Installer les dépendances Node
