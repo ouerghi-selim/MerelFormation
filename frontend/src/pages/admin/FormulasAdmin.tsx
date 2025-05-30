@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Calculator, 
-    Plus, 
-    Search, 
-    Edit, 
-    Trash2, 
-    ArrowLeft, 
+import {
+    Calculator,
+    Plus,
+    Search,
+    Edit,
+    Trash2,
+    ArrowLeft,
     Building,
     Euro,
     Tag,
@@ -14,9 +14,10 @@ import {
     Filter
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import AdminLayout from '@/components/layout/AdminLayout';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { useNotification } from '@/contexts/NotificationContext';
+import AdminLayout from '../../components/layout/AdminLayout';
+import { useNotification } from '../../contexts/NotificationContext';
+import { adminFormulasApi, adminExamCentersApi } from '@/services/api';
+
 
 interface ExamCenter {
     id: number;
@@ -77,28 +78,15 @@ const FormulasAdmin: React.FC = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            
+
             // Récupérer les formules et centres d'examen en parallèle
             const [formulasResponse, centersResponse] = await Promise.all([
-                fetch('/admin/formulas', {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                }),
-                fetch('/admin/exam-centers/active', {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                })
+                adminFormulasApi.getAll(),
+                adminExamCentersApi.getAll()
             ]);
 
-            if (!formulasResponse.ok || !centersResponse.ok) {
-                throw new Error('Erreur lors du chargement');
-            }
-
-            const [formulasResult, centersResult] = await Promise.all([
-                formulasResponse.json(),
-                centersResponse.json()
-            ]);
-
-            setFormulas(formulasResult.data || []);
-            setExamCenters(centersResult || []);
+            setFormulas(formulasResponse.data.data || []);
+            setExamCenters(centersResponse.data || []);
         } catch (error) {
             console.error('Erreur:', error);
             addNotification('Erreur lors du chargement des données', 'error');
@@ -113,27 +101,17 @@ const FormulasAdmin: React.FC = () => {
 
         try {
             setSubmitting(true);
-            const url = editingFormula ? `/admin/formulas/${editingFormula.id}` : '/admin/formulas';
-            const method = editingFormula ? 'PUT' : 'POST';
 
             const payload = {
                 ...formData,
-                price: formData.price ? parseFloat(formData.price) : null,
+                price: formData.price ? parseFloat(formData.price) : undefined,
                 examCenterId: formData.examCenterId
             };
 
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Erreur lors de la sauvegarde');
+            if (editingFormula) {
+                await adminFormulasApi.update(editingFormula.id, payload);
+            } else {
+                await adminFormulasApi.create(payload);
             }
 
             addNotification(
@@ -145,7 +123,7 @@ const FormulasAdmin: React.FC = () => {
             handleCloseModal();
         } catch (error: any) {
             console.error('Erreur:', error);
-            addNotification(error.message || 'Erreur lors de la sauvegarde', 'error');
+            addNotification(error.response?.data?.message || error.message || 'Erreur lors de la sauvegarde', 'error');
         } finally {
             setSubmitting(false);
         }
@@ -157,23 +135,12 @@ const FormulasAdmin: React.FC = () => {
         }
 
         try {
-            const response = await fetch(`/admin/formulas/${formula.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Erreur lors de la suppression');
-            }
-
+            await adminFormulasApi.delete(formula.id);
             addNotification('Formule supprimée avec succès', 'success');
             await fetchData();
         } catch (error: any) {
             console.error('Erreur:', error);
-            addNotification(error.message || 'Erreur lors de la suppression', 'error');
+            addNotification(error.response?.data?.error || error.message || 'Erreur lors de la suppression', 'error');
         }
     };
 
@@ -206,7 +173,7 @@ const FormulasAdmin: React.FC = () => {
     };
 
     const filteredFormulas = formulas.filter(formula => {
-        const matchesSearch = 
+        const matchesSearch =
             formula.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             formula.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
             formula.examCenter.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -218,16 +185,20 @@ const FormulasAdmin: React.FC = () => {
 
     if (loading) {
         return (
-            <AdminLayout>
+            <AdminLayout title="Chargement...">
                 <div className="flex justify-center items-center h-64">
-                    <LoadingSpinner />
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900"></div>
                 </div>
             </AdminLayout>
         );
     }
 
     return (
-        <AdminLayout>
+        <AdminLayout title="Formules d'examen" breadcrumbItems={[
+            { label: 'Admin', path: '/admin' },
+            { label: 'Réservations', path: '/admin/reservations' },
+            { label: 'Formules' }
+        ]}>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -281,7 +252,7 @@ const FormulasAdmin: React.FC = () => {
                             onChange={(e) => setSelectedCenterFilter(e.target.value ? parseInt(e.target.value) : '')}
                         >
                             <option value="">Tous les centres</option>
-                            {examCenters.map(center => (
+                            {examCenters.data.map(center => (
                                 <option key={center.id} value={center.id}>
                                     {center.name}
                                 </option>
@@ -337,7 +308,7 @@ const FormulasAdmin: React.FC = () => {
                             <div className="ml-4">
                                 <p className="text-sm font-medium text-gray-600">Prix moyen</p>
                                 <p className="text-2xl font-bold text-gray-900">
-                                    {formulas.filter(f => f.price).length > 0 
+                                    {formulas.filter(f => f.price).length > 0
                                         ? Math.round(formulas.filter(f => f.price).reduce((sum, f) => sum + (f.price || 0), 0) / formulas.filter(f => f.price).length)
                                         : 0
                                     }€
@@ -357,48 +328,48 @@ const FormulasAdmin: React.FC = () => {
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Formule
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Centre d'examen
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Type / Prix
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Statut
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Actions
-                                    </th>
-                                </tr>
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Formule
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Centre d'examen
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Type / Prix
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Statut
+                                </th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {filteredFormulas.map((formula) => (
-                                    <tr key={formula.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4">
-                                            <div>
-                                                <div className="text-sm font-medium text-gray-900">
-                                                    {formula.name}
-                                                </div>
-                                                <div className="text-sm text-gray-500 max-w-xs truncate">
-                                                    {formula.description}
-                                                </div>
+                            {filteredFormulas.map((formula) => (
+                                <tr key={formula.id} className="hover:bg-gray-50">
+                                    <td className="px-6 py-4">
+                                        <div>
+                                            <div className="text-sm font-medium text-gray-900">
+                                                {formula.name}
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900 flex items-center">
-                                                <Building className="h-4 w-4 mr-1 text-gray-400" />
-                                                {formula.examCenter.name}
+                                            <div className="text-sm text-gray-500 max-w-xs truncate">
+                                                {formula.description}
                                             </div>
-                                            <div className="text-xs text-gray-500">
-                                                {formula.examCenter.city}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-gray-900 flex items-center">
+                                            <Building className="h-4 w-4 mr-1 text-gray-400" />
+                                            {formula.examCenter.name}
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                            {formula.examCenter.city}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div>
                                                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                                     formula.type === 'simple'
                                                         ? 'bg-blue-100 text-blue-800'
@@ -406,18 +377,18 @@ const FormulasAdmin: React.FC = () => {
                                                 }`}>
                                                     {formula.type === 'simple' ? 'Simple' : 'Intégrale'}
                                                 </span>
-                                                <div className="text-sm text-gray-900 mt-1">
-                                                    {formula.price ? (
-                                                        <span className="font-medium text-green-600">
+                                            <div className="text-sm text-gray-900 mt-1">
+                                                {formula.price ? (
+                                                    <span className="font-medium text-green-600">
                                                             {formula.price}€ TTC
                                                         </span>
-                                                    ) : (
-                                                        <span className="text-gray-500">Nous consulter</span>
-                                                    )}
-                                                </div>
+                                                ) : (
+                                                    <span className="text-gray-500">Nous consulter</span>
+                                                )}
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                                 formula.isActive
                                                     ? 'bg-green-100 text-green-800'
@@ -435,27 +406,27 @@ const FormulasAdmin: React.FC = () => {
                                                     </>
                                                 )}
                                             </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex justify-end space-x-2">
-                                                <button
-                                                    onClick={() => handleEdit(formula)}
-                                                    className="text-indigo-600 hover:text-indigo-900"
-                                                    title="Modifier"
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(formula)}
-                                                    className="text-red-600 hover:text-red-900"
-                                                    title="Supprimer"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div className="flex justify-end space-x-2">
+                                            <button
+                                                onClick={() => handleEdit(formula)}
+                                                className="text-indigo-600 hover:text-indigo-900"
+                                                title="Modifier"
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(formula)}
+                                                className="text-red-600 hover:text-red-900"
+                                                title="Supprimer"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
                             </tbody>
                         </table>
                     </div>
@@ -482,7 +453,7 @@ const FormulasAdmin: React.FC = () => {
                                         onChange={(e) => setFormData({...formData, examCenterId: e.target.value ? parseInt(e.target.value) : ''})}
                                     >
                                         <option value="">Sélectionnez un centre</option>
-                                        {examCenters.map(center => (
+                                        {examCenters.data.map(center => (
                                             <option key={center.id} value={center.id}>
                                                 {center.name} - {center.city}
                                             </option>

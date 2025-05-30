@@ -196,8 +196,9 @@ class ExamCenterAdminController extends AbstractController
     #[Route('/active', name: 'active', methods: ['GET'])]
     public function getActive(): JsonResponse
     {
+        dd('test');
         try {
-            $examCenters = $this->examCenterRepository->findActive();
+            $examCenters = $this->examCenterRepository->findAll();
 
             return new JsonResponse(
                 $this->serializer->serialize($examCenters, 'json', ['groups' => ['exam_center:read']]),
@@ -207,7 +208,7 @@ class ExamCenterAdminController extends AbstractController
             );
         } catch (\Exception $e) {
             return new JsonResponse([
-                'error' => 'Erreur lors de la récupération des centres d\'examen actifs',
+                'error' => 'Erreur lors de la récupération des centres d\'examen',
                 'message' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }

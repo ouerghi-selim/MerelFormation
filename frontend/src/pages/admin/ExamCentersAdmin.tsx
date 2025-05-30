@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Building, 
-    Plus, 
-    Search, 
-    Edit, 
-    Trash2, 
-    ArrowLeft, 
+import {
+    Building,
+    Plus,
+    Search,
+    Edit,
+    Trash2,
+    ArrowLeft,
     MapPin,
     Hash,
     Users,
@@ -14,9 +14,10 @@ import {
     XCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import AdminLayout from '@/components/layout/AdminLayout';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { useNotification } from '@/contexts/NotificationContext';
+import AdminLayout from '../../components/layout/AdminLayout';
+import { useNotification } from '../../contexts/NotificationContext';
+import { adminExamCentersApi } from '@/services/api';
+
 
 interface ExamCenter {
     id: number;
@@ -75,17 +76,9 @@ const ExamCentersAdmin: React.FC = () => {
     const fetchExamCenters = async () => {
         try {
             setLoading(true);
-            const response = await fetch('/admin/exam-centers', {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-
-            if (!response.ok) throw new Error('Erreur lors du chargement');
-
-            const result = await response.json();
-            setExamCenters(result.data || []);
-        } catch (error) {
+            const response = await adminExamCentersApi.getAll();
+            setExamCenters(response.data.data || []);
+        } catch (error: any) {
             console.error('Erreur:', error);
             addNotification('Erreur lors du chargement des centres d\'examen', 'error');
         } finally {
@@ -99,21 +92,11 @@ const ExamCentersAdmin: React.FC = () => {
 
         try {
             setSubmitting(true);
-            const url = editingCenter ? `/admin/exam-centers/${editingCenter.id}` : '/admin/exam-centers';
-            const method = editingCenter ? 'PUT' : 'POST';
 
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify(formData)
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Erreur lors de la sauvegarde');
+            if (editingCenter) {
+                await adminExamCentersApi.update(editingCenter.id, formData);
+            } else {
+                await adminExamCentersApi.create(formData);
             }
 
             addNotification(
@@ -125,7 +108,7 @@ const ExamCentersAdmin: React.FC = () => {
             handleCloseModal();
         } catch (error: any) {
             console.error('Erreur:', error);
-            addNotification(error.message || 'Erreur lors de la sauvegarde', 'error');
+            addNotification(error.response?.data?.message || error.message || 'Erreur lors de la sauvegarde', 'error');
         } finally {
             setSubmitting(false);
         }
@@ -137,23 +120,12 @@ const ExamCentersAdmin: React.FC = () => {
         }
 
         try {
-            const response = await fetch(`/admin/exam-centers/${center.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Erreur lors de la suppression');
-            }
-
+            await adminExamCentersApi.delete(center.id);
             addNotification('Centre d\'examen supprimé avec succès', 'success');
             await fetchExamCenters();
         } catch (error: any) {
             console.error('Erreur:', error);
-            addNotification(error.message || 'Erreur lors de la suppression', 'error');
+            addNotification(error.response?.data?.error || error.message || 'Erreur lors de la suppression', 'error');
         }
     };
 
@@ -196,16 +168,20 @@ const ExamCentersAdmin: React.FC = () => {
 
     if (loading) {
         return (
-            <AdminLayout>
+            <AdminLayout title="Chargement...">
                 <div className="flex justify-center items-center h-64">
-                    <LoadingSpinner />
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900"></div>
                 </div>
             </AdminLayout>
         );
     }
 
     return (
-        <AdminLayout>
+        <AdminLayout title="Centres d'examen" breadcrumbItems={[
+            { label: 'Admin', path: '/admin' },
+            { label: 'Réservations', path: '/admin/reservations' },
+            { label: 'Centres d\'examen' }
+        ]}>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -304,58 +280,58 @@ const ExamCentersAdmin: React.FC = () => {
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Centre
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Localisation
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Formules
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Statut
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Actions
-                                    </th>
-                                </tr>
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Centre
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Localisation
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Formules
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Statut
+                                </th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {filteredCenters.map((center) => (
-                                    <tr key={center.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div>
-                                                <div className="text-sm font-medium text-gray-900">
-                                                    {center.name}
-                                                </div>
-                                                <div className="text-sm text-gray-500 flex items-center">
-                                                    <Hash className="h-4 w-4 mr-1" />
-                                                    {center.code}
-                                                </div>
+                            {filteredCenters.map((center) => (
+                                <tr key={center.id} className="hover:bg-gray-50">
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div>
+                                            <div className="text-sm font-medium text-gray-900">
+                                                {center.name}
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900 flex items-center">
-                                                <MapPin className="h-4 w-4 mr-1 text-gray-400" />
-                                                {center.city} ({center.departmentCode})
+                                            <div className="text-sm text-gray-500 flex items-center">
+                                                <Hash className="h-4 w-4 mr-1" />
+                                                {center.code}
                                             </div>
-                                            {center.address && (
-                                                <div className="text-xs text-gray-500 mt-1">
-                                                    {center.address}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">
-                                                {center.formulas.length} formule{center.formulas.length > 1 ? 's' : ''}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-gray-900 flex items-center">
+                                            <MapPin className="h-4 w-4 mr-1 text-gray-400" />
+                                            {center.city} ({center.departmentCode})
+                                        </div>
+                                        {center.address && (
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                {center.address}
                                             </div>
-                                            <div className="text-xs text-gray-500">
-                                                {center.formulas.filter(f => f.isActive).length} active{center.formulas.filter(f => f.isActive).length > 1 ? 's' : ''}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-gray-900">
+                                            {center.formulas.length} formule{center.formulas.length > 1 ? 's' : ''}
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                            {center.formulas.filter(f => f.isActive).length} active{center.formulas.filter(f => f.isActive).length > 1 ? 's' : ''}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                                 center.isActive
                                                     ? 'bg-green-100 text-green-800'
@@ -373,35 +349,35 @@ const ExamCentersAdmin: React.FC = () => {
                                                     </>
                                                 )}
                                             </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex justify-end space-x-2">
-                                                <button
-                                                    onClick={() => handleViewDetails(center)}
-                                                    className="text-blue-600 hover:text-blue-900"
-                                                    title="Voir les détails"
-                                                >
-                                                    <Eye className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleEdit(center)}
-                                                    className="text-indigo-600 hover:text-indigo-900"
-                                                    title="Modifier"
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(center)}
-                                                    className="text-red-600 hover:text-red-900"
-                                                    title="Supprimer"
-                                                    disabled={center.formulas.length > 0}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div className="flex justify-end space-x-2">
+                                            <button
+                                                onClick={() => handleViewDetails(center)}
+                                                className="text-blue-600 hover:text-blue-900"
+                                                title="Voir les détails"
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleEdit(center)}
+                                                className="text-indigo-600 hover:text-indigo-900"
+                                                title="Modifier"
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(center)}
+                                                className="text-red-600 hover:text-red-900"
+                                                title="Supprimer"
+                                                disabled={center.formulas.length > 0}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
                             </tbody>
                         </table>
                     </div>
