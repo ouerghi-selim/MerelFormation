@@ -62,6 +62,10 @@ docker-compose -f docker-compose.prod.yml exec php php bin/console cache:clear -
 # Exécuter les migrations
 docker-compose -f docker-compose.prod.yml exec php php bin/console doctrine:migrations:migrate --no-interaction
 
+# Charger les fixtures de données de démonstration
+echo "Chargement des fixtures de données de démonstration..."
+docker-compose -f docker-compose.prod.yml exec php php bin/console doctrine:fixtures:load --no-interaction
+
 # Vérifier les permissions des fichiers statiques
 docker-compose -f docker-compose.prod.yml exec nginx chmod -R 755 /var/www/public/build
 
@@ -69,3 +73,4 @@ docker-compose -f docker-compose.prod.yml exec nginx chmod -R 755 /var/www/publi
 docker-compose -f docker-compose.prod.yml ps
 
 echo "Déploiement terminé avec succès!"
+echo "L'application est maintenant disponible avec des données de démonstration."
