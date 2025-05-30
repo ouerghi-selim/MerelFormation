@@ -64,6 +64,8 @@ class LoadInitialDataCommand extends Command
     private DocumentFixtures $documentFixtures;
     private ReservationFixtures $reservationFixtures;
     private VehicleRentalFixtures $vehicleRentalFixtures;
+    // Nouvelles fixtures ajoutées à la fin pour respecter l'ordre d'injection
+
     private PaymentFixtures $paymentFixtures;
     private EmailTemplateFixtures $emailTemplateFixtures;
     private ExamCenterFixtures $examCenterFixtures;
@@ -81,6 +83,8 @@ class LoadInitialDataCommand extends Command
         DocumentFixtures $documentFixtures,
         ReservationFixtures $reservationFixtures,
         VehicleRentalFixtures $vehicleRentalFixtures,
+        // Nouvelles fixtures ajoutées à la fin pour éviter les conflits d'injection
+
         PaymentFixtures $paymentFixtures,
         EmailTemplateFixtures $emailTemplateFixtures,
         ExamCenterFixtures $examCenterFixtures,
