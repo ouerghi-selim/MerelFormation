@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Entity\VehicleRental;
 use App\Repository\UserRepository;
 use App\Service\NotificationService;
+use App\Service\VehicleRentalTrackingService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -21,7 +22,8 @@ class VehicleRentalController extends AbstractController
         private EntityManagerInterface $entityManager,
         private UserRepository $userRepository,
         private UserPasswordHasherInterface $passwordHasher,
-        private NotificationService $notificationService
+        private NotificationService $notificationService,
+        private VehicleRentalTrackingService $trackingService
 
     ) {
     }
@@ -180,6 +182,15 @@ class VehicleRentalController extends AbstractController
         $this->entityManager->persist($rental);
         $this->entityManager->flush();
         $this->notificationService->notifyAdminAboutVehicleRental($rental);
+        // Générer le token de suivi
+        $trackingToken = $this->trackingService->generateTrackingToken($rental);
+        $rental->setTrackingToken($trackingToken);
+
+        // Sauvegarder
+        $this->entityManager->flush();
+
+        // Envoyer l'email de confirmation
+        $this->trackingService->sendTrackingEmail($rental);
 
         // Logs pour le débogage
         error_log('Réservation créée: ID=' . $rental->getId() . ', Utilisateur=' . $user->getEmail());

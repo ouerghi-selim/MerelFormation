@@ -419,4 +419,10 @@ class VehicleRental
 
     public function getTrackingToken(): ?string { return $this->trackingToken; }
     public function setTrackingToken(string $trackingToken): self { $this->trackingToken = $trackingToken; return $this; }
+
+    public function setUpdatedAt(\DateTimeImmutable $updatedAt)
+    {
+        $this->updatedAt = $updatedAt;
+        return $this;
+    }
 }

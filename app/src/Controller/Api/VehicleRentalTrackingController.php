@@ -55,7 +55,7 @@ class VehicleRentalTrackingController extends AbstractController
             'customerPhone' => $user?->getPhone(),
             'examTime' => $rental->getExamTime(),
             'notes' => $rental->getNotes(),
-            //'adminNotes' => $rental->getAdminNotes(),
+            'adminNotes' => $rental->getAdminNotes(),
             'statusHistory' => $this->getStatusHistory($rental)
         ]);
     }

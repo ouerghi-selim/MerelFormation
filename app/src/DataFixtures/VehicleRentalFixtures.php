@@ -61,7 +61,7 @@ class VehicleRentalFixtures extends Fixture implements DependentFixtureInterface
                 'paymentMethod' => 'Carte bancaire',
                 'notes' => 'Arrivera 15 minutes en avance',
                 'adminNotes' => 'Réservation confirmée. Véhicule préparé et disponible.',
-                'updatedAt' => new \DateTime('-2 days')
+                'updatedAt' => new \DateTimeImmutable('-2 days')
             ],
             [
                 'startDate' => new \DateTimeImmutable('+3 weeks'),
@@ -99,7 +99,7 @@ class VehicleRentalFixtures extends Fixture implements DependentFixtureInterface
                 'paymentMethod' => 'Carte bancaire',
                 'notes' => 'Demande de remboursement suite à annulation',
                 'adminNotes' => 'Annulation suite à report d\'examen. Remboursement en cours.',
-                'updatedAt' => new \DateTime('-1 day')
+                'updatedAt' => new \DateTimeImmutable('-1 day')
             ],
             [
                 'startDate' => new \DateTimeImmutable('-1 week'),
@@ -118,7 +118,7 @@ class VehicleRentalFixtures extends Fixture implements DependentFixtureInterface
                 'paymentMethod' => 'Virement bancaire',
                 'notes' => 'Examen réussi avec succès !',
                 'adminNotes' => 'Examen réussi ! Félicitations au client. Véhicule rendu en parfait état.',
-                'updatedAt' => new \DateTime('-1 week')
+                'updatedAt' => new \DateTimeImmutable('-1 week')
             ]
         ];
 

@@ -13,7 +13,7 @@ class VehicleRentalTrackingService
     public function __construct(
         private MailerInterface $mailer,
         private LoggerInterface $logger,
-        private string $appUrl = 'http://localhost:3000' // À configurer selon l'environnement
+        private string $appUrl = 'http://merelformation.localhost/' // À configurer selon l'environnement
     ) {}
 
     /**
@@ -24,7 +24,7 @@ class VehicleRentalTrackingService
         $data = sprintf(
             '%d_%s_%s_%s',
             $rental->getId() ?? 0,
-            $rental->getCustomerEmail(),
+            $rental->getUser()->getEmail(),
             $rental->getCreatedAt()?->format('YmdHis') ?? date('YmdHis'),
             uniqid()
         );
@@ -50,13 +50,13 @@ class VehicleRentalTrackingService
             
             $email = (new TemplatedEmail())
                 ->from('noreply@merelformation.com')
-                ->to($rental->getCustomerEmail())
+                ->to($rental->getUser()->getEmail())
                 ->subject('Confirmation de votre réservation de véhicule - MerelFormation')
                 ->htmlTemplate('emails/vehicle_rental_confirmation.html.twig')
                 ->context([
                     'rental' => $rental,
                     'trackingUrl' => $trackingUrl,
-                    'customerName' => $rental->getCustomerName(),
+                    'customerName' => $rental->getUser()->getFirstName().' '.$rental->getUser()->getLastName(),
                     'vehicleModel' => $rental->getVehicle()?->getModel(),
                     'startDate' => $rental->getStartDate(),
                     'endDate' => $rental->getEndDate(),
@@ -68,7 +68,7 @@ class VehicleRentalTrackingService
             
             $this->logger->info('Tracking email sent successfully', [
                 'rental_id' => $rental->getId(),
-                'customer_email' => $rental->getCustomerEmail(),
+                'customer_email' => $rental->getUser()->getEmail(),
                 'tracking_token' => $rental->getTrackingToken()
             ]);
             
@@ -77,7 +77,7 @@ class VehicleRentalTrackingService
         } catch (\Exception $e) {
             $this->logger->error('Failed to send tracking email', [
                 'rental_id' => $rental->getId(),
-                'customer_email' => $rental->getCustomerEmail(),
+                'customer_email' => $rental->getUser()->getEmail(),
                 'error' => $e->getMessage()
             ]);
             
@@ -92,7 +92,7 @@ class VehicleRentalTrackingService
     {
         $oldStatus = $rental->getStatus();
         $rental->setStatus($newStatus);
-        $rental->setUpdatedAt(new \DateTime());
+        $rental->setUpdatedAt(new \DateTimeImmutable());
         
         if ($adminNotes) {
             $rental->setAdminNotes($adminNotes);
@@ -116,7 +116,7 @@ class VehicleRentalTrackingService
             
             $email = (new TemplatedEmail())
                 ->from('noreply@merelformation.com')
-                ->to($rental->getCustomerEmail())
+                ->to($rental->getUser()->getEmail()())
                 ->subject($this->getStatusEmailSubject($newStatus))
                 ->htmlTemplate('emails/vehicle_rental_status_update.html.twig')
                 ->context([
@@ -125,7 +125,7 @@ class VehicleRentalTrackingService
                     'oldStatus' => $oldStatus,
                     'newStatus' => $newStatus,
                     'statusText' => $this->getStatusText($newStatus),
-                    'customerName' => $rental->getCustomerName(),
+                    'customerName' => $rental->getUser()->getFirstName().' '.$rental->getUser()->getLastName(),
                     'vehicleModel' => $rental->getVehicle()?->getModel()
                 ]);
 
@@ -133,7 +133,7 @@ class VehicleRentalTrackingService
             
             $this->logger->info('Status update email sent successfully', [
                 'rental_id' => $rental->getId(),
-                'customer_email' => $rental->getCustomerEmail(),
+                'customer_email' => $rental->getUser()->getEmail()(),
                 'old_status' => $oldStatus,
                 'new_status' => $newStatus
             ]);
@@ -143,7 +143,7 @@ class VehicleRentalTrackingService
         } catch (\Exception $e) {
             $this->logger->error('Failed to send status update email', [
                 'rental_id' => $rental->getId(),
-                'customer_email' => $rental->getCustomerEmail(),
+                'customer_email' => $rental->getUser()->getEmail()(),
                 'error' => $e->getMessage()
             ]);
             
