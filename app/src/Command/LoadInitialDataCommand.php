@@ -4,8 +4,11 @@ namespace App\Command;
 
 use App\DataFixtures\CategoryFixtures;
 use App\DataFixtures\DocumentFixtures;
+use App\DataFixtures\EmailTemplateFixtures;
+use App\DataFixtures\ExamCenterFixtures;
 use App\DataFixtures\FormationFixtures;
 use App\DataFixtures\ModuleFixtures;
+use App\DataFixtures\PaymentFixtures;
 use App\DataFixtures\PrerequisiteFixtures;
 use App\DataFixtures\ReservationFixtures;
 use App\DataFixtures\SessionFixtures;
@@ -38,7 +41,7 @@ class ConsoleLogger extends AbstractLogger
 
     public function log($level, $message, array $context = []): void
     {
-        $this->io->text(sprintf('  <comment>></comment> <info>%s</info>', $message));
+        $this->io->text(sprintf('  <comment></comment> <info>%s</info>', $message));
     }
 }
 
@@ -61,6 +64,9 @@ class LoadInitialDataCommand extends Command
     private DocumentFixtures $documentFixtures;
     private ReservationFixtures $reservationFixtures;
     private VehicleRentalFixtures $vehicleRentalFixtures;
+    private PaymentFixtures $paymentFixtures;
+    private EmailTemplateFixtures $emailTemplateFixtures;
+    private ExamCenterFixtures $examCenterFixtures;
     private ?LoggerInterface $logger;
 
     public function __construct(
@@ -75,6 +81,9 @@ class LoadInitialDataCommand extends Command
         DocumentFixtures $documentFixtures,
         ReservationFixtures $reservationFixtures,
         VehicleRentalFixtures $vehicleRentalFixtures,
+        PaymentFixtures $paymentFixtures,
+        EmailTemplateFixtures $emailTemplateFixtures,
+        ExamCenterFixtures $examCenterFixtures,
         ?LoggerInterface $logger = null
     ) {
         parent::__construct();
@@ -90,6 +99,9 @@ class LoadInitialDataCommand extends Command
         $this->documentFixtures = $documentFixtures;
         $this->reservationFixtures = $reservationFixtures;
         $this->vehicleRentalFixtures = $vehicleRentalFixtures;
+        $this->paymentFixtures = $paymentFixtures;
+        $this->emailTemplateFixtures = $emailTemplateFixtures;
+        $this->examCenterFixtures = $examCenterFixtures;
         $this->logger = $logger;
     }
 
@@ -143,15 +155,17 @@ class LoadInitialDataCommand extends Command
             // Chargement des fixtures dans un ordre spécifique pour respecter les dépendances
             $io->section('Loading fixtures');
 
-            // 1. Chargement des fixtures sans dépendances
+            // 1. Chargement des fixtures sans dépendances (données de base)
             $io->text('Loading base fixtures...');
             $executor->execute([$this->userFixtures], $append);
             $executor->execute([$this->categoryFixtures], $append);
             $executor->execute([$this->vehicleFixtures], $append);
+            $executor->execute([$this->examCenterFixtures], $append);
 
-            // 2. Chargement des fixtures avec une dépendance
-            $io->text('Loading formation fixtures...');
+            // 2. Chargement des fixtures avec une dépendance (formations et templates)
+            $io->text('Loading formation and template fixtures...');
             $executor->execute([$this->formationFixtures], $append);
+            $executor->execute([$this->emailTemplateFixtures], $append);
 
             // 3. Chargement des fixtures avec des dépendances de formations
             $io->text('Loading formation-related fixtures...');
@@ -160,12 +174,33 @@ class LoadInitialDataCommand extends Command
             $executor->execute([$this->sessionFixtures], $append);
 
             // 4. Chargement des fixtures avec des dépendances multiples
-            $io->text('Loading reservation fixtures...');
+            $io->text('Loading transaction and reservation fixtures...');
             $executor->execute([$this->documentFixtures], $append);
             $executor->execute([$this->reservationFixtures], $append);
             $executor->execute([$this->vehicleRentalFixtures], $append);
 
+            // 5. Chargement des paiements en dernier (dépendant des réservations/locations)
+            $io->text('Loading payment fixtures...');
+            $executor->execute([$this->paymentFixtures], $append);
+
             $io->success('Initial data loaded successfully!');
+            $io->text('📊 Fixtures loaded:');
+            $io->listing([
+                '👥 Users (admins, students, instructors)',
+                '🏷️ Categories',
+                '🚗 Vehicles',
+                '🏢 Exam Centers',
+                '🎓 Formations',
+                '📧 Email Templates',
+                '📚 Modules',
+                '⚠️ Prerequisites',
+                '📅 Sessions',
+                '📄 Documents',
+                '📋 Reservations',
+                '🚙 Vehicle Rentals',
+                '💰 Payments'
+            ]);
+
             return Command::SUCCESS;
         } catch (\Exception $e) {
             $io->error('An error occurred during fixture loading: ' . $e->getMessage());
