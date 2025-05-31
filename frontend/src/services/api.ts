@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Créer une instance axios avec la configuration de base
 const api = axios.create({
-    baseURL: import.meta.env.REACT_APP_API_URL || 'http://merelformation.localhost/api',
+    baseURL: import.meta.env.REACT_APP_API_URL || 'http://193.108.53.178/api',
     headers: {
         'Content-Type': 'application/json',
     },
