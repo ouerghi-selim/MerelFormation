@@ -2,7 +2,6 @@
 
 namespace App\Command;
 
-use App\DataFixtures\AppFixtures;
 use App\DataFixtures\CategoryFixtures;
 use App\DataFixtures\CMSContentFixtures;
 use App\DataFixtures\DocumentFixtures;
@@ -56,7 +55,6 @@ class LoadInitialDataCommand extends Command
     protected static $defaultName = 'app:fixtures:load';
 
     private EntityManagerInterface $entityManager;
-    private AppFixtures $appFixtures;
     private UserFixtures $userFixtures;
     private CategoryFixtures $categoryFixtures;
     private CMSContentFixtures $cmsContentFixtures;
@@ -75,7 +73,6 @@ class LoadInitialDataCommand extends Command
 
     public function __construct(
         EntityManagerInterface $entityManager,
-        AppFixtures $appFixtures,
         UserFixtures $userFixtures,
         CategoryFixtures $categoryFixtures,
         CMSContentFixtures $cmsContentFixtures,
@@ -95,7 +92,6 @@ class LoadInitialDataCommand extends Command
         parent::__construct();
 
         $this->entityManager = $entityManager;
-        $this->appFixtures = $appFixtures;
         $this->userFixtures = $userFixtures;
         $this->categoryFixtures = $categoryFixtures;
         $this->cmsContentFixtures = $cmsContentFixtures;
@@ -165,7 +161,6 @@ class LoadInitialDataCommand extends Command
 
             // 1. Chargement des fixtures de base (sans dépendances)
             $io->text('Loading base fixtures...');
-            $executor->execute([$this->appFixtures], $append);
             $executor->execute([$this->userFixtures], $append);
             $executor->execute([$this->categoryFixtures], $append);
             $executor->execute([$this->examCenterFixtures], $append);
@@ -193,7 +188,6 @@ class LoadInitialDataCommand extends Command
             $io->success('All fixtures loaded successfully!');
             $io->text('Loaded fixtures:');
             $io->listing([
-                'AppFixtures',
                 'UserFixtures',
                 'CategoryFixtures',
                 'CMSContentFixtures',
