@@ -61,6 +61,8 @@ services:
     command: /bin/sh -c "npm install && npm run build:prod && cp -rv dist/* /build_output/ && echo 'Build frontend terminé avec succès!'"
     networks:
       - merel_network
+    environment:
+      - REACT_APP_API_URL=http://193.108.53.178/api
 
 networks:
   merel_network:
