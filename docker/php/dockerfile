@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip\
     nodejs \
-    npm
+    npm \
+    openssl
 
 # Installation de Yarn via npm
 RUN npm install -g yarn
@@ -44,6 +45,13 @@ RUN mkdir -p /var/www/var/cache/prod/vich_uploader \
     && mkdir -p /var/www/var/log \
     && chown -R www-data:www-data /var/www/var \
     && chmod -R 755 /var/www/var
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Set entrypoint
+ENTRYPOINT ["docker-entrypoint.sh"]
 
 # On garde le conteneur actif
 CMD ["php-fpm"]
