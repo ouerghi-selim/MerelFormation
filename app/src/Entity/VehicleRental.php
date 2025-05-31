@@ -139,7 +139,7 @@ class VehicleRental
     #[Groups(['rental:read', 'rental:item:read'])]
     private Collection $documents;
 
-    #[ORM\Column(type: 'string', length: 64, unique: true)]
+    #[ORM\Column(type: 'string', length: 64, unique: true,  nullable: true)]
     private ?string $trackingToken = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
