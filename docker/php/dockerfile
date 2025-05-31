@@ -16,7 +16,9 @@ RUN apt-get update && apt-get install -y \
     unzip\
     nodejs \
     npm \
-    openssl
+    openssl \
+    # Ajout pour wkhtmltopdf si nécessaire
+    wkhtmltopdf
 
 # Installation de Yarn via npm
 RUN npm install -g yarn
@@ -39,12 +41,21 @@ RUN usermod -u ${USER_ID} www-data && groupmod -g ${GROUP_ID} www-data
 
 WORKDIR /var/www/
 
-# Create cache directories and set proper permissions
+# Create directories and set proper permissions - VERSION CORRIGÉE
 RUN mkdir -p /var/www/var/cache/prod/vich_uploader \
     && mkdir -p /var/www/var/cache/dev/vich_uploader \
+    && mkdir -p /var/www/var/cache/prod/jms_metadata \
+    && mkdir -p /var/www/var/cache/dev/jms_metadata \
     && mkdir -p /var/www/var/log \
+    && mkdir -p /var/www/public/uploads/sessions \
+    && mkdir -p /var/www/public/uploads/formations \
+    && mkdir -p /var/www/config/jwt \
+    # Permissions très permissives pour éviter les problèmes en production
     && chown -R www-data:www-data /var/www/var \
-    && chmod -R 755 /var/www/var
+    && chown -R www-data:www-data /var/www/public \
+    && chmod -R 777 /var/www/var/cache \
+    && chmod -R 777 /var/www/var/log \
+    && chmod -R 755 /var/www/public
 
 # Copy entrypoint script from the correct path
 COPY docker-entrypoint.sh /usr/local/bin/
@@ -53,5 +64,5 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # Set entrypoint
 ENTRYPOINT ["docker-entrypoint.sh"]
 
-# On garde le conteneur actif
+# Keep container active
 CMD ["php-fpm"]
