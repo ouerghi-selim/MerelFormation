@@ -10,11 +10,11 @@ if [ ! -f "/var/www/config/jwt/private.pem" ] || [ ! -f "/var/www/config/jwt/pub
     # Get passphrase from environment or use default
     JWT_PASSPHRASE=${JWT_PASSPHRASE:-"3267f4905090f6d6101061ac512ba5f0a839aaa609761f8d2f21645533e879e52"}
     
-    # Generate private key
-    openssl genpkey -algorithm RSA -pkcs8 -out /var/www/config/jwt/private.pem -pass pass:"$JWT_PASSPHRASE" -aes256 2048
+    # Generate private key with passphrase
+    openssl genrsa -aes256 -passout pass:"$JWT_PASSPHRASE" -out /var/www/config/jwt/private.pem 2048
     
     # Generate public key
-    openssl pkey -in /var/www/config/jwt/private.pem -passin pass:"$JWT_PASSPHRASE" -out /var/www/config/jwt/public.pem -pubout
+    openssl rsa -in /var/www/config/jwt/private.pem -passin pass:"$JWT_PASSPHRASE" -pubout -out /var/www/config/jwt/public.pem
     
     # Set proper permissions
     chown www-data:www-data /var/www/config/jwt/private.pem /var/www/config/jwt/public.pem
