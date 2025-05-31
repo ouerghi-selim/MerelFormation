@@ -38,5 +38,12 @@ RUN usermod -u ${USER_ID} www-data && groupmod -g ${GROUP_ID} www-data
 
 WORKDIR /var/www/
 
+# Create cache directories and set proper permissions
+RUN mkdir -p /var/www/var/cache/prod/vich_uploader \
+    && mkdir -p /var/www/var/cache/dev/vich_uploader \
+    && mkdir -p /var/www/var/log \
+    && chown -R www-data:www-data /var/www/var \
+    && chmod -R 755 /var/www/var
+
 # On garde le conteneur actif
 CMD ["php-fpm"]

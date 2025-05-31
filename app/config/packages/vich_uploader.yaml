@@ -1,5 +1,9 @@
 vich_uploader:
     db_driver: orm
+    metadata:
+        type: attribute
+        cache: file
+        cache_dir: '%kernel.cache_dir%/vich_uploader'
     mappings:
         session_documents:
             uri_prefix: /uploads/sessions
