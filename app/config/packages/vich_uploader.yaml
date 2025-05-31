@@ -1,11 +1,29 @@
 vich_uploader:
     db_driver: orm
+    
+    # Configuration corrigée pour la production
     metadata:
         type: attribute
-        cache: file
-        cache_dir: '%kernel.cache_dir%/vich_uploader'
+        # Désactiver le cache de métadonnées pour éviter les erreurs de permissions en production
+        cache: false
+        # Optionnel: utiliser un cache alternatif si nécessaire
+        # cache: array
+        
     mappings:
+        # Documents de sessions
         session_documents:
             uri_prefix: /uploads/sessions
             upload_destination: '%kernel.project_dir%/public/uploads/sessions'
             namer: Vich\UploaderBundle\Naming\UniqidNamer
+            inject_on_load: false
+            delete_on_update: true
+            delete_on_remove: true
+            
+        # Documents de formations
+        formation_documents:
+            uri_prefix: /uploads/formations
+            upload_destination: '%kernel.project_dir%/public/uploads/formations'
+            namer: Vich\UploaderBundle\Naming\UniqidNamer
+            inject_on_load: false
+            delete_on_update: true
+            delete_on_remove: true
