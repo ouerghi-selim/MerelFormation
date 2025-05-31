@@ -10,7 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'IDX_faq_active', columns: ['is_active'])]
 #[ORM\Index(name: 'IDX_faq_featured', columns: ['is_featured'])]
 #[ORM\Index(name: 'IDX_faq_sort_order', columns: ['sort_order'])]
-class FAQ
+class Faq
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]

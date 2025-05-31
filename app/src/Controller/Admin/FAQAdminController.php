@@ -2,7 +2,7 @@
 
 namespace App\Controller\Admin;
 
-use App\Entity\FAQ;
+use App\Entity\Faq;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -31,7 +31,7 @@ class FAQAdminController extends AbstractController
 
         $qb = $this->entityManager->createQueryBuilder()
             ->select('f')
-            ->from(FAQ::class, 'f');
+            ->from(Faq::class, 'f');
 
         if ($category) {
             $qb->andWhere('f.category = :category')
@@ -80,7 +80,7 @@ class FAQAdminController extends AbstractController
     }
 
     #[Route('/{id}', name: 'show', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function show(FAQ $faq): JsonResponse
+    public function show(Faq $faq): JsonResponse
     {
         // Increment view count
         $faq->incrementViewCount();
@@ -97,7 +97,7 @@ class FAQAdminController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        $faq = new FAQ();
+        $faq = new Faq();
         $this->updateFAQFromData($faq, $data);
 
         $errors = $this->validator->validate($faq);
@@ -120,7 +120,7 @@ class FAQAdminController extends AbstractController
     }
 
     #[Route('/{id}', name: 'update', methods: ['PUT'], requirements: ['id' => '\d+'])]
-    public function update(FAQ $faq, Request $request): JsonResponse
+    public function update(Faq $faq, Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
         
@@ -146,7 +146,7 @@ class FAQAdminController extends AbstractController
     }
 
     #[Route('/{id}', name: 'delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
-    public function delete(FAQ $faq): JsonResponse
+    public function delete(Faq $faq): JsonResponse
     {
         $this->entityManager->remove($faq);
         $this->entityManager->flush();
@@ -158,7 +158,7 @@ class FAQAdminController extends AbstractController
     }
 
     #[Route('/{id}/toggle-featured', name: 'toggle_featured', methods: ['PATCH'], requirements: ['id' => '\d+'])]
-    public function toggleFeatured(FAQ $faq): JsonResponse
+    public function toggleFeatured(Faq $faq): JsonResponse
     {
         $faq->setIsFeatured(!$faq->isFeatured());
         $faq->setUpdatedAt(new \DateTimeImmutable());
@@ -173,7 +173,7 @@ class FAQAdminController extends AbstractController
     }
 
     #[Route('/{id}/toggle-active', name: 'toggle_active', methods: ['PATCH'], requirements: ['id' => '\d+'])]
-    public function toggleActive(FAQ $faq): JsonResponse
+    public function toggleActive(Faq $faq): JsonResponse
     {
         $faq->setIsActive(!$faq->isActive());
         $faq->setUpdatedAt(new \DateTimeImmutable());
@@ -201,7 +201,7 @@ class FAQAdminController extends AbstractController
 
         foreach ($data['items'] as $item) {
             if (isset($item['id']) && isset($item['sortOrder'])) {
-                $faq = $this->entityManager->getRepository(FAQ::class)->find($item['id']);
+                $faq = $this->entityManager->getRepository(Faq::class)->find($item['id']);
                 if ($faq) {
                     $faq->setSortOrder($item['sortOrder']);
                     $faq->setUpdatedAt(new \DateTimeImmutable());
@@ -222,7 +222,7 @@ class FAQAdminController extends AbstractController
     {
         $categories = $this->entityManager->createQueryBuilder()
             ->select('DISTINCT f.category')
-            ->from(FAQ::class, 'f')
+            ->from(Faq::class, 'f')
             ->where('f.category IS NOT NULL')
             ->orderBy('f.category', 'ASC')
             ->getQuery()
@@ -239,7 +239,7 @@ class FAQAdminController extends AbstractController
     #[Route('/featured', name: 'featured', methods: ['GET'])]
     public function getFeatured(): JsonResponse
     {
-        $faqs = $this->entityManager->getRepository(FAQ::class)
+        $faqs = $this->entityManager->getRepository(Faq::class)
             ->findBy(['isFeatured' => true, 'isActive' => true], ['sortOrder' => 'ASC']);
 
         return new JsonResponse([
@@ -251,7 +251,7 @@ class FAQAdminController extends AbstractController
     #[Route('/by-category/{category}', name: 'by_category', methods: ['GET'])]
     public function getByCategory(string $category): JsonResponse
     {
-        $faqs = $this->entityManager->getRepository(FAQ::class)
+        $faqs = $this->entityManager->getRepository(Faq::class)
             ->findBy(['category' => $category, 'isActive' => true], ['sortOrder' => 'ASC']);
 
         return new JsonResponse([
@@ -260,7 +260,7 @@ class FAQAdminController extends AbstractController
         ]);
     }
 
-    private function updateFAQFromData(FAQ $faq, array $data): void
+    private function updateFAQFromData(Faq $faq, array $data): void
     {
         if (isset($data['question'])) {
             $faq->setQuestion($data['question']);
@@ -285,7 +285,7 @@ class FAQAdminController extends AbstractController
         }
     }
 
-    private function serializeFAQ(FAQ $faq): array
+    private function serializeFAQ(Faq $faq): array
     {
         return [
             'id' => $faq->getId(),
