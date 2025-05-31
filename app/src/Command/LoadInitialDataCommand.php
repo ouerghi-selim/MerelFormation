@@ -2,10 +2,15 @@
 
 namespace App\Command;
 
+use App\DataFixtures\AppFixtures;
 use App\DataFixtures\CategoryFixtures;
+use App\DataFixtures\CMSContentFixtures;
 use App\DataFixtures\DocumentFixtures;
+use App\DataFixtures\EmailTemplateFixtures;
+use App\DataFixtures\ExamCenterFixtures;
 use App\DataFixtures\FormationFixtures;
 use App\DataFixtures\ModuleFixtures;
+use App\DataFixtures\PaymentFixtures;
 use App\DataFixtures\PrerequisiteFixtures;
 use App\DataFixtures\ReservationFixtures;
 use App\DataFixtures\SessionFixtures;
@@ -51,28 +56,38 @@ class LoadInitialDataCommand extends Command
     protected static $defaultName = 'app:fixtures:load';
 
     private EntityManagerInterface $entityManager;
+    private AppFixtures $appFixtures;
     private UserFixtures $userFixtures;
     private CategoryFixtures $categoryFixtures;
+    private CMSContentFixtures $cmsContentFixtures;
+    private EmailTemplateFixtures $emailTemplateFixtures;
+    private ExamCenterFixtures $examCenterFixtures;
     private VehicleFixtures $vehicleFixtures;
     private FormationFixtures $formationFixtures;
     private ModuleFixtures $moduleFixtures;
     private PrerequisiteFixtures $prerequisiteFixtures;
     private SessionFixtures $sessionFixtures;
     private DocumentFixtures $documentFixtures;
+    private PaymentFixtures $paymentFixtures;
     private ReservationFixtures $reservationFixtures;
     private VehicleRentalFixtures $vehicleRentalFixtures;
     private ?LoggerInterface $logger;
 
     public function __construct(
         EntityManagerInterface $entityManager,
+        AppFixtures $appFixtures,
         UserFixtures $userFixtures,
         CategoryFixtures $categoryFixtures,
+        CMSContentFixtures $cmsContentFixtures,
+        EmailTemplateFixtures $emailTemplateFixtures,
+        ExamCenterFixtures $examCenterFixtures,
         VehicleFixtures $vehicleFixtures,
         FormationFixtures $formationFixtures,
         ModuleFixtures $moduleFixtures,
         PrerequisiteFixtures $prerequisiteFixtures,
         SessionFixtures $sessionFixtures,
         DocumentFixtures $documentFixtures,
+        PaymentFixtures $paymentFixtures,
         ReservationFixtures $reservationFixtures,
         VehicleRentalFixtures $vehicleRentalFixtures,
         ?LoggerInterface $logger = null
@@ -80,14 +95,19 @@ class LoadInitialDataCommand extends Command
         parent::__construct();
 
         $this->entityManager = $entityManager;
+        $this->appFixtures = $appFixtures;
         $this->userFixtures = $userFixtures;
         $this->categoryFixtures = $categoryFixtures;
+        $this->cmsContentFixtures = $cmsContentFixtures;
+        $this->emailTemplateFixtures = $emailTemplateFixtures;
+        $this->examCenterFixtures = $examCenterFixtures;
         $this->vehicleFixtures = $vehicleFixtures;
         $this->formationFixtures = $formationFixtures;
         $this->moduleFixtures = $moduleFixtures;
         $this->prerequisiteFixtures = $prerequisiteFixtures;
         $this->sessionFixtures = $sessionFixtures;
         $this->documentFixtures = $documentFixtures;
+        $this->paymentFixtures = $paymentFixtures;
         $this->reservationFixtures = $reservationFixtures;
         $this->vehicleRentalFixtures = $vehicleRentalFixtures;
         $this->logger = $logger;
@@ -143,14 +163,18 @@ class LoadInitialDataCommand extends Command
             // Chargement des fixtures dans un ordre spécifique pour respecter les dépendances
             $io->section('Loading fixtures');
 
-            // 1. Chargement des fixtures sans dépendances
+            // 1. Chargement des fixtures de base (sans dépendances)
             $io->text('Loading base fixtures...');
+            $executor->execute([$this->appFixtures], $append);
             $executor->execute([$this->userFixtures], $append);
             $executor->execute([$this->categoryFixtures], $append);
+            $executor->execute([$this->examCenterFixtures], $append);
             $executor->execute([$this->vehicleFixtures], $append);
 
             // 2. Chargement des fixtures avec une dépendance
-            $io->text('Loading formation fixtures...');
+            $io->text('Loading content fixtures...');
+            $executor->execute([$this->cmsContentFixtures], $append);
+            $executor->execute([$this->emailTemplateFixtures], $append);
             $executor->execute([$this->formationFixtures], $append);
 
             // 3. Chargement des fixtures avec des dépendances de formations
@@ -160,12 +184,32 @@ class LoadInitialDataCommand extends Command
             $executor->execute([$this->sessionFixtures], $append);
 
             // 4. Chargement des fixtures avec des dépendances multiples
-            $io->text('Loading reservation fixtures...');
+            $io->text('Loading transaction fixtures...');
             $executor->execute([$this->documentFixtures], $append);
+            $executor->execute([$this->paymentFixtures], $append);
             $executor->execute([$this->reservationFixtures], $append);
             $executor->execute([$this->vehicleRentalFixtures], $append);
 
-            $io->success('Initial data loaded successfully!');
+            $io->success('All fixtures loaded successfully!');
+            $io->text('Loaded fixtures:');
+            $io->listing([
+                'AppFixtures',
+                'UserFixtures',
+                'CategoryFixtures',
+                'CMSContentFixtures',
+                'EmailTemplateFixtures',
+                'ExamCenterFixtures',
+                'VehicleFixtures',
+                'FormationFixtures',
+                'ModuleFixtures',
+                'PrerequisiteFixtures',
+                'SessionFixtures',
+                'DocumentFixtures',
+                'PaymentFixtures',
+                'ReservationFixtures',
+                'VehicleRentalFixtures'
+            ]);
+
             return Command::SUCCESS;
         } catch (\Exception $e) {
             $io->error('An error occurred during fixture loading: ' . $e->getMessage());
