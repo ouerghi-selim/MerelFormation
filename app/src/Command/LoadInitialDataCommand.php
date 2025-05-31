@@ -3,19 +3,21 @@
 namespace App\Command;
 
 use App\DataFixtures\CategoryFixtures;
-use App\DataFixtures\CMSContentFixtures;
 use App\DataFixtures\DocumentFixtures;
-use App\DataFixtures\EmailTemplateFixtures;
-use App\DataFixtures\ExamCenterFixtures;
 use App\DataFixtures\FormationFixtures;
 use App\DataFixtures\ModuleFixtures;
-use App\DataFixtures\PaymentFixtures;
 use App\DataFixtures\PrerequisiteFixtures;
 use App\DataFixtures\ReservationFixtures;
 use App\DataFixtures\SessionFixtures;
 use App\DataFixtures\UserFixtures;
 use App\DataFixtures\VehicleFixtures;
 use App\DataFixtures\VehicleRentalFixtures;
+// Ajouter conditionnellement les fixtures qui existent
+use App\DataFixtures\AppFixtures;
+use App\DataFixtures\PaymentFixtures;
+use App\DataFixtures\EmailTemplateFixtures;
+use App\DataFixtures\ExamCenterFixtures;
+use App\DataFixtures\CMSContentFixtures;
 use Doctrine\Common\DataFixtures\Executor\ORMExecutor;
 use Doctrine\Common\DataFixtures\Purger\ORMPurger;
 use Doctrine\ORM\EntityManagerInterface;
@@ -57,56 +59,64 @@ class LoadInitialDataCommand extends Command
     private EntityManagerInterface $entityManager;
     private UserFixtures $userFixtures;
     private CategoryFixtures $categoryFixtures;
-    private CMSContentFixtures $cmsContentFixtures;
-    private EmailTemplateFixtures $emailTemplateFixtures;
-    private ExamCenterFixtures $examCenterFixtures;
     private VehicleFixtures $vehicleFixtures;
     private FormationFixtures $formationFixtures;
     private ModuleFixtures $moduleFixtures;
     private PrerequisiteFixtures $prerequisiteFixtures;
     private SessionFixtures $sessionFixtures;
     private DocumentFixtures $documentFixtures;
-    private PaymentFixtures $paymentFixtures;
     private ReservationFixtures $reservationFixtures;
     private VehicleRentalFixtures $vehicleRentalFixtures;
+
+    // Fixtures optionnelles (peuvent ne pas exister)
+    private ?AppFixtures $appFixtures = null;
+    private ?PaymentFixtures $paymentFixtures = null;
+    private ?EmailTemplateFixtures $emailTemplateFixtures = null;
+    private ?ExamCenterFixtures $examCenterFixtures = null;
+    private ?CMSContentFixtures $cmsContentFixtures = null;
+
     private ?LoggerInterface $logger;
 
     public function __construct(
         EntityManagerInterface $entityManager,
         UserFixtures $userFixtures,
         CategoryFixtures $categoryFixtures,
-        CMSContentFixtures $cmsContentFixtures,
-        EmailTemplateFixtures $emailTemplateFixtures,
-        ExamCenterFixtures $examCenterFixtures,
         VehicleFixtures $vehicleFixtures,
         FormationFixtures $formationFixtures,
         ModuleFixtures $moduleFixtures,
         PrerequisiteFixtures $prerequisiteFixtures,
         SessionFixtures $sessionFixtures,
         DocumentFixtures $documentFixtures,
-        PaymentFixtures $paymentFixtures,
         ReservationFixtures $reservationFixtures,
         VehicleRentalFixtures $vehicleRentalFixtures,
-        ?LoggerInterface $logger = null
+        ?LoggerInterface $logger = null,
+        ?AppFixtures $appFixtures = null,
+        ?PaymentFixtures $paymentFixtures = null,
+        ?EmailTemplateFixtures $emailTemplateFixtures = null,
+        ?ExamCenterFixtures $examCenterFixtures = null,
+        ?CMSContentFixtures $cmsContentFixtures = null
     ) {
         parent::__construct();
 
         $this->entityManager = $entityManager;
         $this->userFixtures = $userFixtures;
         $this->categoryFixtures = $categoryFixtures;
-        $this->cmsContentFixtures = $cmsContentFixtures;
-        $this->emailTemplateFixtures = $emailTemplateFixtures;
-        $this->examCenterFixtures = $examCenterFixtures;
         $this->vehicleFixtures = $vehicleFixtures;
         $this->formationFixtures = $formationFixtures;
         $this->moduleFixtures = $moduleFixtures;
         $this->prerequisiteFixtures = $prerequisiteFixtures;
         $this->sessionFixtures = $sessionFixtures;
         $this->documentFixtures = $documentFixtures;
-        $this->paymentFixtures = $paymentFixtures;
         $this->reservationFixtures = $reservationFixtures;
         $this->vehicleRentalFixtures = $vehicleRentalFixtures;
         $this->logger = $logger;
+
+        // Fixtures optionnelles
+        $this->appFixtures = $appFixtures;
+        $this->paymentFixtures = $paymentFixtures;
+        $this->emailTemplateFixtures = $emailTemplateFixtures;
+        $this->examCenterFixtures = $examCenterFixtures;
+        $this->cmsContentFixtures = $cmsContentFixtures;
     }
 
     protected function configure(): void
@@ -159,50 +169,69 @@ class LoadInitialDataCommand extends Command
             // Chargement des fixtures dans un ordre spécifique pour respecter les dépendances
             $io->section('Loading fixtures');
 
-            // 1. Chargement des fixtures de base (sans dépendances)
+            // 1. Chargement des fixtures de base (obligatoires)
             $io->text('Loading base fixtures...');
             $executor->execute([$this->userFixtures], $append);
             $executor->execute([$this->categoryFixtures], $append);
-            $executor->execute([$this->examCenterFixtures], $append);
             $executor->execute([$this->vehicleFixtures], $append);
 
-            // 2. Chargement des fixtures avec une dépendance
-            $io->text('Loading content fixtures...');
-            $executor->execute([$this->cmsContentFixtures], $append);
-            $executor->execute([$this->emailTemplateFixtures], $append);
+            // 2. Chargement des fixtures optionnelles de base
+            if ($this->appFixtures) {
+                $executor->execute([$this->appFixtures], $append);
+            }
+            if ($this->examCenterFixtures) {
+                $executor->execute([$this->examCenterFixtures], $append);
+            }
+            if ($this->cmsContentFixtures) {
+                $executor->execute([$this->cmsContentFixtures], $append);
+            }
+            if ($this->emailTemplateFixtures) {
+                $executor->execute([$this->emailTemplateFixtures], $append);
+            }
+
+            // 3. Chargement des fixtures avec une dépendance
+            $io->text('Loading formation fixtures...');
             $executor->execute([$this->formationFixtures], $append);
 
-            // 3. Chargement des fixtures avec des dépendances de formations
+            // 4. Chargement des fixtures avec des dépendances de formations
             $io->text('Loading formation-related fixtures...');
             $executor->execute([$this->moduleFixtures], $append);
             $executor->execute([$this->prerequisiteFixtures], $append);
             $executor->execute([$this->sessionFixtures], $append);
 
-            // 4. Chargement des fixtures avec des dépendances multiples
+            // 5. Chargement des fixtures avec des dépendances multiples
             $io->text('Loading transaction fixtures...');
             $executor->execute([$this->documentFixtures], $append);
-            $executor->execute([$this->paymentFixtures], $append);
+            if ($this->paymentFixtures) {
+                $executor->execute([$this->paymentFixtures], $append);
+            }
             $executor->execute([$this->reservationFixtures], $append);
             $executor->execute([$this->vehicleRentalFixtures], $append);
 
-            $io->success('All fixtures loaded successfully!');
-            $io->text('Loaded fixtures:');
-            $io->listing([
+            $io->success('All available fixtures loaded successfully!');
+
+            // Afficher quelles fixtures ont été chargées
+            $loadedFixtures = [
                 'UserFixtures',
                 'CategoryFixtures',
-                'CMSContentFixtures',
-                'EmailTemplateFixtures',
-                'ExamCenterFixtures',
                 'VehicleFixtures',
                 'FormationFixtures',
                 'ModuleFixtures',
                 'PrerequisiteFixtures',
                 'SessionFixtures',
                 'DocumentFixtures',
-                'PaymentFixtures',
                 'ReservationFixtures',
                 'VehicleRentalFixtures'
-            ]);
+            ];
+
+            if ($this->appFixtures) $loadedFixtures[] = 'AppFixtures';
+            if ($this->examCenterFixtures) $loadedFixtures[] = 'ExamCenterFixtures';
+            if ($this->cmsContentFixtures) $loadedFixtures[] = 'CMSContentFixtures';
+            if ($this->emailTemplateFixtures) $loadedFixtures[] = 'EmailTemplateFixtures';
+            if ($this->paymentFixtures) $loadedFixtures[] = 'PaymentFixtures';
+
+            $io->text('Loaded fixtures:');
+            $io->listing($loadedFixtures);
 
             return Command::SUCCESS;
         } catch (\Exception $e) {
