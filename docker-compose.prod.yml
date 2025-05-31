@@ -29,7 +29,7 @@ services:
       - ./app:/var/www
     environment:
       - APP_ENV=prod
-      - DATABASE_URL=mysql://merel_user:merel_password@mysql:3306/merel_db
+      - DATABASE_URL=mysql://merel_user:merel_pass@mysql:3306/merel_db
     depends_on:
       - mysql
     networks:
@@ -45,7 +45,7 @@ services:
       MYSQL_ROOT_PASSWORD: secureRootPass123
       MYSQL_DATABASE: merel_db
       MYSQL_USER: merel_user
-      MYSQL_PASSWORD: merel_password
+      MYSQL_PASSWORD: merel_pass
     networks:
       - merel_network
     restart: always
