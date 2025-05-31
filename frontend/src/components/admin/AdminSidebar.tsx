@@ -72,31 +72,31 @@ const AdminSidebar: React.FC = () => {
         { title: 'email template', path: '/admin/email-templates' },
       ]
     },
-    {
-      title: 'Finances',
-      icon: <CreditCard size={20} />,
-      path: '/admin/finances',
-      submenu: [
-        { title: 'Factures', path: '/admin/finances/invoices' },
-        { title: 'Paiements', path: '/admin/finances/payments' },
-        { title: 'Rapports', path: '/admin/finances/reports' }
-      ]
-    },
-    {
-      title: 'Documents',
-      icon: <FileText size={20} />,
-      path: '/admin/documents'
-    },
-    {
-      title: 'Notifications',
-      icon: <Bell size={20} />,
-      path: '/admin/notifications'
-    },
-    {
-      title: 'Paramètres',
-      icon: <Settings size={20} />,
-      path: '/admin/settings'
-    }
+    // {
+    //   title: 'Finances',
+    //   icon: <CreditCard size={20} />,
+    //   path: '/admin/finances',
+    //   submenu: [
+    //     { title: 'Factures', path: '/admin/finances/invoices' },
+    //     { title: 'Paiements', path: '/admin/finances/payments' },
+    //     { title: 'Rapports', path: '/admin/finances/reports' }
+    //   ]
+    // },
+    // {
+    //   title: 'Documents',
+    //   icon: <FileText size={20} />,
+    //   path: '/admin/documents'
+    // },
+    // {
+    //   title: 'Notifications',
+    //   icon: <Bell size={20} />,
+    //   path: '/admin/notifications'
+    // },
+    // {
+    //   title: 'Paramètres',
+    //   icon: <Settings size={20} />,
+    //   path: '/admin/settings'
+    // }
   ];
   
   const toggleSubmenu = (title: string) => {
