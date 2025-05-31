@@ -127,6 +127,12 @@ class LoadInitialDataCommand extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Purge database before loading fixtures (USE WITH CAUTION)'
+            )
+            ->addOption(
+                'force',
+                null,
+                InputOption::VALUE_NONE,
+                'Force loading even if data already exists (may cause duplicates)'
             );
     }
 
@@ -134,6 +140,23 @@ class LoadInitialDataCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
         $io->title('Loading initial data for MerelFormation');
+
+        // Vérifier s'il y a déjà des données
+        $hasExistingData = $this->checkExistingData();
+
+        if ($hasExistingData && !$input->getOption('purge') && !$input->getOption('force')) {
+            $io->warning('Database already contains data.');
+            $io->text('Options:');
+            $io->listing([
+                'Use --purge to clear all data before loading fixtures',
+                'Use --force to load anyway (may cause duplicates)',
+                'Run without options to cancel'
+            ]);
+
+            if (!$io->confirm('Continue anyway? This may cause duplicate errors.', false)) {
+                return Command::SUCCESS;
+            }
+        }
 
         // Avertissement si l'option purge est activée
         if ($input->getOption('purge')) {
@@ -169,75 +192,95 @@ class LoadInitialDataCommand extends Command
             // Chargement des fixtures dans un ordre spécifique pour respecter les dépendances
             $io->section('Loading fixtures');
 
-            // 1. Chargement des fixtures de base (obligatoires)
-            $io->text('Loading base fixtures...');
-            $executor->execute([$this->userFixtures], $append);
-            $executor->execute([$this->categoryFixtures], $append);
-            $executor->execute([$this->vehicleFixtures], $append);
+            $this->loadFixturesWithErrorHandling($executor, $io, $append);
 
-            // 2. Chargement des fixtures optionnelles de base
-            if ($this->appFixtures) {
-                $executor->execute([$this->appFixtures], $append);
-            }
-            if ($this->examCenterFixtures) {
-                $executor->execute([$this->examCenterFixtures], $append);
-            }
-            if ($this->cmsContentFixtures) {
-                $executor->execute([$this->cmsContentFixtures], $append);
-            }
-            if ($this->emailTemplateFixtures) {
-                $executor->execute([$this->emailTemplateFixtures], $append);
-            }
-
-            // 3. Chargement des fixtures avec une dépendance
-            $io->text('Loading formation fixtures...');
-            $executor->execute([$this->formationFixtures], $append);
-
-            // 4. Chargement des fixtures avec des dépendances de formations
-            $io->text('Loading formation-related fixtures...');
-            $executor->execute([$this->moduleFixtures], $append);
-            $executor->execute([$this->prerequisiteFixtures], $append);
-            $executor->execute([$this->sessionFixtures], $append);
-
-            // 5. Chargement des fixtures avec des dépendances multiples
-            $io->text('Loading transaction fixtures...');
-            $executor->execute([$this->documentFixtures], $append);
-            if ($this->paymentFixtures) {
-                $executor->execute([$this->paymentFixtures], $append);
-            }
-            $executor->execute([$this->reservationFixtures], $append);
-            $executor->execute([$this->vehicleRentalFixtures], $append);
-
-            $io->success('All available fixtures loaded successfully!');
-
-            // Afficher quelles fixtures ont été chargées
-            $loadedFixtures = [
-                'UserFixtures',
-                'CategoryFixtures',
-                'VehicleFixtures',
-                'FormationFixtures',
-                'ModuleFixtures',
-                'PrerequisiteFixtures',
-                'SessionFixtures',
-                'DocumentFixtures',
-                'ReservationFixtures',
-                'VehicleRentalFixtures'
-            ];
-
-            if ($this->appFixtures) $loadedFixtures[] = 'AppFixtures';
-            if ($this->examCenterFixtures) $loadedFixtures[] = 'ExamCenterFixtures';
-            if ($this->cmsContentFixtures) $loadedFixtures[] = 'CMSContentFixtures';
-            if ($this->emailTemplateFixtures) $loadedFixtures[] = 'EmailTemplateFixtures';
-            if ($this->paymentFixtures) $loadedFixtures[] = 'PaymentFixtures';
-
-            $io->text('Loaded fixtures:');
-            $io->listing($loadedFixtures);
+            $io->success('Fixtures loading completed!');
 
             return Command::SUCCESS;
         } catch (\Exception $e) {
             $io->error('An error occurred during fixture loading: ' . $e->getMessage());
+            $io->text('Stack trace:');
             $io->text($e->getTraceAsString());
+
+            if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                $io->note('This error suggests data already exists. Try using --purge option to clear the database first.');
+            }
+
             return Command::FAILURE;
+        }
+    }
+
+    private function checkExistingData(): bool
+    {
+        // Vérifier s'il y a des données dans les principales tables
+        $tables = ['user', 'vehicle', 'formation', 'category'];
+
+        foreach ($tables as $table) {
+            try {
+                $count = $this->entityManager->getConnection()
+                    ->executeQuery("SELECT COUNT(*) FROM {$table}")
+                    ->fetchOne();
+
+                if ($count > 0) {
+                    return true;
+                }
+            } catch (\Exception $e) {
+                // Si la table n'existe pas, continuer
+                continue;
+            }
+        }
+
+        return false;
+    }
+
+    private function loadFixturesWithErrorHandling(ORMExecutor $executor, SymfonyStyle $io, bool $append): void
+    {
+        $fixturesGroups = [
+            'Base fixtures' => [
+                $this->userFixtures,
+                $this->categoryFixtures,
+            ],
+            'Optional base fixtures' => [
+                $this->appFixtures,
+                $this->examCenterFixtures,
+                $this->cmsContentFixtures,
+                $this->emailTemplateFixtures,
+            ],
+            'Vehicle fixtures' => [
+                $this->vehicleFixtures,
+            ],
+            'Formation fixtures' => [
+                $this->formationFixtures,
+                $this->moduleFixtures,
+                $this->prerequisiteFixtures,
+                $this->sessionFixtures,
+            ],
+            'Transaction fixtures' => [
+                $this->documentFixtures,
+                $this->paymentFixtures,
+                $this->reservationFixtures,
+                $this->vehicleRentalFixtures,
+            ]
+        ];
+
+        foreach ($fixturesGroups as $groupName => $fixtures) {
+            $io->text("Loading {$groupName}...");
+
+            foreach ($fixtures as $fixture) {
+                if ($fixture === null) {
+                    continue; // Ignorer les fixtures optionnelles qui n'existent pas
+                }
+
+                try {
+                    $executor->execute([$fixture], $append);
+                } catch (\Exception $e) {
+                    if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                        $io->warning("Skipping fixture " . get_class($fixture) . " (data already exists)");
+                        continue;
+                    }
+                    throw $e; // Relancer l'exception si ce n'est pas un problème de doublon
+                }
+            }
         }
     }
 }
