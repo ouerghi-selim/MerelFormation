@@ -3,7 +3,8 @@ vich_uploader:
     metadata:
         type: attribute
         cache: file
-        cache_dir: '%kernel.cache_dir%/vich_uploader'
+        file_cache:
+            dir: '%kernel.cache_dir%/vich_uploader'
     mappings:
         session_documents:
             uri_prefix: /uploads/sessions
