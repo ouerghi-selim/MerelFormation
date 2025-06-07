@@ -21,7 +21,7 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Alert from '../../components/common/Alert';
 import { useNotification } from '../../contexts/NotificationContext';
-import { adminFormationsApi } from '../../services/api';
+import { adminFormationsApi } from '@/services/api.ts';
 
 interface Formation {
   id: number;
@@ -60,7 +60,7 @@ interface DocumentInput {
   title: string;
   fileName: string;
   fileSize: string;
-  uploadDate: string;
+  uploadDate: String;
   downloadUrl: string;
 }
 
@@ -266,10 +266,13 @@ const FormationDetail: React.FC = () => {
 
       for (const file of Array.from(files)) {
         const formData = new FormData();
-        formData.append('document', file);
+        formData.append('file', file);
+        formData.append('title', file.name);
+        formData.append('category', 'support');
+        formData.append('uploadedAt',formatDate(document.uploadedAt));
 
         const response = await adminFormationsApi.uploadDocument(formation.id, formData);
-        const newDocument = response.data;
+        const newDocument = response.data.document; // Assure-toi que c'est la bonne structure
 
         setDocuments(prev => [...prev, newDocument]);
       }
@@ -280,6 +283,8 @@ const FormationDetail: React.FC = () => {
       addToast('Erreur lors de l\'upload', 'error');
     } finally {
       setUploadingDocument(false);
+        event.target.value = '';
+
     }
   };
 
@@ -306,11 +311,22 @@ const FormationDetail: React.FC = () => {
   };
 
   const formatDate = (dateString: string): string => {
+
+    if (!dateString) {
+      return 'Date non disponible';
+    }
     const date = new Date(dateString);
+
+    if (isNaN(date.getTime())) {
+      return 'Date invalide';
+    }
+
     return date.toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -717,7 +733,7 @@ const FormationDetail: React.FC = () => {
                                   Document
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Taille
+                                  Type
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                   Date d'ajout
@@ -740,10 +756,14 @@ const FormationDetail: React.FC = () => {
                                       </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                      {document.fileSize}
+                                      {document.type && typeof document.type === 'string'
+                                          ? document.type.toUpperCase()
+                                          : 'N/A'
+                                      }
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                      {formatDate(document.uploadDate)}
+
+                                      {formatDate(document.uploadedAt)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                       <div className="flex justify-end space-x-2">

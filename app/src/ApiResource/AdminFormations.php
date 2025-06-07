@@ -37,6 +37,21 @@ use App\Controller\Admin\FormationAdminController;
             uriTemplate: '/admin/formations/sessions',
             controller: FormationAdminController::class . '::getSessions',
         ),
+
+        new Post(
+            uriTemplate: '/admin/formations/{id}/documents',
+            controller: FormationAdminController::class . '::uploadDocument',
+        ),
+        new Delete(
+            uriTemplate: '/admin/formations/{id}/documents/{documentId}',
+            controller: FormationAdminController::class . '::deleteDocument',
+        ),
+
+        // OPTIONNEL - pour récupérer la liste des documents :
+        new GetCollection(
+            uriTemplate: '/admin/formations/{id}/documents',
+            controller: FormationAdminController::class . '::getDocuments',
+        ),
     ]
 )]
 class AdminFormations

@@ -58,6 +58,15 @@ export const adminFormationsApi = {
     update: (id: number, data: any) => api.put(`/admin/formations/${id}`, data),
     delete: (id: number) => api.delete(`/admin/formations/${id}`),
     getSessions: () => api.get('/admin/formations/sessions'),
+    // AJOUTER CETTE FONCTION :
+    uploadDocument: (formationId: number, formData: FormData) =>
+        api.post(`/admin/formations/${formationId}/documents`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+
+    // AJOUTER AUSSI CETTE FONCTION :
+    deleteDocument: (formationId: number, documentId: number) =>
+        api.delete(`/admin/formations/${formationId}/documents/${documentId}`),
 };
 
 // Services API pour les réservations administrateur
@@ -108,10 +117,11 @@ export const adminSessionsApi = {
     update: (id:number, sessionData:any) => api.put(`/admin/sessions/${id}`, sessionData),
     delete: (id:number) => api.delete(`/admin/sessions/${id}`),
     getInstructors: () => api.get('/admin/users?role=ROLE_INSTRUCTOR'),
+
+// PAR CETTE LIGNE CORRECTE :
     uploadDocument: (sessionId: number, formData: FormData) =>
-        api.post(`/admin/sessions/${sessionId}/documents`, {
-            method: 'POST',
-            body: formData, // Pas de Content-Type header, le navigateur le gère
+        api.post(`/admin/sessions/${sessionId}/documents`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
         }),
 };
 

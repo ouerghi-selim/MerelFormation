@@ -159,14 +159,18 @@ class FormationAdminController extends AbstractController
         // Formater les documents
         $documents = [];
         foreach ($formation->getDocuments() as $document) {
+            $filePath = '/path/to/uploads/' . $document->getFileName();
+            $fileSize = file_exists($filePath) ? filesize($filePath) : null;
             $documents[] = [
                 'id' => $document->getId(),
                 'title' => $document->getTitle(),
                 'fileName' => $document->getFileName(),
                 'type' => $document->getType(),
                 'category' => $document->getCategory(),
-                'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
-                'uploadedBy' => $document->getUploadedBy() ? $document->getUploadedBy()->getEmail() : null
+                'uploadedAt' => $document->getUploadedAt()->format('Y-m-d\TH:i:s.v\Z'), // Format ISO
+                'uploadedBy' => $document->getUploadedBy() ? $document->getUploadedBy()->getEmail() : null,
+                'fileSize' => $fileSize ? $this->formatFileSize($fileSize) : 'N/A',
+                'downloadUrl' => '/uploads/documents/' . $document->getFileName() // AJOUTER cette ligne
             ];
         }
 
@@ -203,15 +207,20 @@ class FormationAdminController extends AbstractController
         }
 
         $documents = [];
+
         foreach ($formation->getDocuments() as $document) {
+            $filePath = '/path/to/uploads/' . $document->getFileName();
+            $fileSize = file_exists($filePath) ? filesize($filePath) : null;
             $documents[] = [
                 'id' => $document->getId(),
                 'title' => $document->getTitle(),
                 'fileName' => $document->getFileName(),
                 'type' => $document->getType(),
                 'category' => $document->getCategory(),
-                'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
-                'uploadedBy' => $document->getUploadedBy() ? $document->getUploadedBy()->getEmail() : null
+                'uploadedAt' => $document->getUploadedAt()->format('Y-m-d\TH:i:s.v\Z'), // Format ISO
+                'uploadedBy' => $document->getUploadedBy() ? $document->getUploadedBy()->getEmail() : null,
+                'fileSize' => $fileSize ? $this->formatFileSize($fileSize) : 'N/A',
+                'downloadUrl' => '/uploads/documents/' . $document->getFileName() // AJOUTER cette ligne
             ];
         }
 
@@ -234,7 +243,7 @@ class FormationAdminController extends AbstractController
 
         /** @var UploadedFile $uploadedFile */
         $uploadedFile = $request->files->get('file');
-        $title = $request->request->get('title');
+        $title = $uploadedFile->getClientOriginalName();
         $category = $request->request->get('category', 'support');
 
         if (!$uploadedFile) {
@@ -262,7 +271,8 @@ class FormationAdminController extends AbstractController
 
         $this->entityManager->persist($document);
         $this->entityManager->flush();
-
+        $filePath = '/path/to/uploads/' . $document->getFileName();
+        $fileSize = file_exists($filePath) ? filesize($filePath) : null;
         return $this->json([
             'message' => 'Document ajouté avec succès',
             'document' => [
@@ -270,7 +280,11 @@ class FormationAdminController extends AbstractController
                 'title' => $document->getTitle(),
                 'fileName' => $document->getFileName(),
                 'type' => $document->getType(),
-                'category' => $document->getCategory()
+                'category' => $document->getCategory(),
+                'uploadedAt' => $document->getUploadedAt()->format('Y-m-d\TH:i:s.v\Z'), // Format ISO
+                'uploadedBy' => $document->getUploadedBy() ? $document->getUploadedBy()->getEmail() : null,
+                'fileSize' => $fileSize ? $this->formatFileSize($fileSize) : 'N/A',
+                'downloadUrl' => '/uploads/documents/' . $document->getFileName() // AJOUTER cette ligne
             ]
         ], 201);
     }
@@ -293,11 +307,26 @@ class FormationAdminController extends AbstractController
         if (!$document || $document->getFormation() !== $formation) {
             return $this->json(['message' => 'Document non trouvé'], 404);
         }
+        try {
 
         $this->entityManager->remove($document);
         $this->entityManager->flush();
+        $this->entityManager->clear(); // AJOUTER CETTE LIGNE
+
 
         return $this->json(['message' => 'Document supprimé avec succès']);
+        } catch (\Exception $e) {
+            // Log l'erreur mais retourner un succès si le document n'existe plus
+        $documentStillExists = $this->entityManager->getRepository(Document::class)->find($documentId);
+
+        if (!$documentStillExists) {
+            // Le document a été supprimé malgré l'erreur
+        return $this->json(['message' => 'Document supprimé avec succès']);
+        }
+
+        // Si le document existe encore, il y a eu un vrai problème
+        return $this->json(['message' => 'Erreur lors de la suppression du document'], 500);
+        }
     }
 
     /**
@@ -519,5 +548,17 @@ class FormationAdminController extends AbstractController
         return $this->json([
             'message' => 'Fonctionnalité à implémenter'
         ]);
+    }
+
+    private function formatFileSize(?int $bytes): string
+    {
+        if (!$bytes) return 'N/A';
+
+        if ($bytes >= 1048576) {
+            return round($bytes / 1048576, 2) . ' MB';
+        } elseif ($bytes >= 1024) {
+            return round($bytes / 1024, 2) . ' KB';
+        }
+        return $bytes . ' B';
     }
 }

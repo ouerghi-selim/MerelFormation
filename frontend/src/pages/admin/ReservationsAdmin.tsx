@@ -132,20 +132,28 @@ const ReservationsAdmin: React.FC = () => {
   };
 
   // Fonction pour mettre à jour le statut d'une réservation
-  const handleReservationStatusChange = (id: number, newStatus: string) => {
-    if (selectedReservationType === 'vehicle') {
-      setVehicleReservations(vehicleReservations.map(r =>
-          r.id === id ? { ...r, status: newStatus } : r
-      ));
-    } else {
-      setSessionReservations(sessionReservations.map(r =>
-          r.id === id ? { ...r, status: newStatus } : r
-      ));
-    }
+  const handleReservationStatusChange = async (id: number, newStatus: string) => {
+    try {
+      // Faire l'appel API
+      await adminReservationsApi.updateStatus(id, newStatus);
 
-    setSuccessMessage(`Statut de la réservation mis à jour avec succès`);
-    setTimeout(() => setSuccessMessage(null), 3000);
-    setShowDetailModal(false);
+      // Mettre à jour l'état local seulement après le succès de l'API
+      if (selectedReservationType === 'vehicle') {
+        setVehicleReservations(vehicleReservations.map(r =>
+            r.id === id ? { ...r, status: newStatus } : r
+        ));
+      } else {
+        setSessionReservations(sessionReservations.map(r =>
+            r.id === id ? { ...r, status: newStatus } : r
+        ));
+      }
+
+      setSuccessMessage(`Statut de la réservation mis à jour avec succès`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      console.error('Error updating reservation status:', err);
+      setError('Erreur lors de la mise à jour du statut');
+    }
   };
 
   // Fonction pour gérer le succès des opérations
