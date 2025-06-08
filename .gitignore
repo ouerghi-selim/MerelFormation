@@ -1,0 +1,134 @@
+# ===========================================
+# MerelFormation - .gitignore
+# ===========================================
+
+# ===== PRODUCTION DATA =====
+# Données MySQL et volumes Docker
+data/
+*.sql
+*.db
+
+# Certificats SSL et Let's Encrypt
+data/certbot/
+data/letsencrypt/
+
+# ===== SYMFONY BACKEND =====
+# Environment files
+app/.env
+app/.env.local
+app/.env.local.php
+app/.env.*.local
+
+# Cache and logs
+app/var/cache/
+app/var/log/
+app/var/sessions/
+
+# Uploads
+app/public/uploads/
+app/public/media/
+
+# Composer
+app/vendor/
+
+# JWT Keys (should be generated)
+app/config/jwt/*.pem
+
+# Doctrine
+app/migrations/*.php.bak
+
+# PHPUnit
+app/.phpunit
+app/.phpunit.result.cache
+
+# ===== REACT FRONTEND =====
+# Dependencies
+frontend/node_modules/
+frontend/.pnp
+frontend/.pnp.js
+
+# Production build
+frontend/dist/
+frontend/build/
+
+# Build artifacts copied to Symfony public
+app/public/build/
+app/public/assets/
+
+# Runtime data
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# Logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# ESLint cache
+frontend/.eslintcache
+
+# Vite cache
+frontend/.vite/
+
+# ===== DOCKER =====
+# Docker volumes
+docker/volumes/
+
+# ===== SYSTEM FILES =====
+# MacOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+*.tmp
+*.swp
+*.swo
+*~
+
+# Linux
+*~
+
+# ===== IDE FILES =====
+# VSCode
+.vscode/
+
+# PhpStorm
+.idea/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ===== TEMPORARY FILES =====
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# ===== CUSTOM SCRIPTS =====
+# Local deployment scripts (keep deploy.sh but ignore local variants)
+deploy.local.sh
+*.local.sh
+
+# Backup files
+*.bak
+*.backup
+
+# ===== SECURITY =====
+# Private keys
+*.pem
+*.key
+*.crt
+
+# Secrets
+secrets/
+.secrets
