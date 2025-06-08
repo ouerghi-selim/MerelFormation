@@ -41,13 +41,13 @@ grep -oE "assets/[^\"']*\.(js|css)" app/public/build/index.html
 echo "📁 Fichiers assets générés:"
 ls -la app/public/build/assets/ 2>/dev/null || echo "Pas de répertoire assets"
 
-# Lancer les conteneurs
+# ✅ CORRECTION: Lancer TOUS les services, y compris MailHog
 echo "🐳 Lancement des conteneurs..."
-docker-compose -f docker-compose.prod.yml up -d nginx php mysql
+docker-compose -f docker-compose.prod.yml up -d
 
-# Attendre le démarrage des conteneurs MySQL
-echo "⏳ Attente du démarrage de MySQL (15 secondes)..."
-sleep 15
+# Attendre le démarrage des conteneurs
+echo "⏳ Attente du démarrage des services (20 secondes)..."
+sleep 20
 
 # Vérifier si MySQL est prêt
 echo "🔄 Vérification de l'état de MySQL..."
@@ -56,7 +56,17 @@ until docker-compose -f docker-compose.prod.yml exec mysql mysqladmin ping -h lo
     sleep 5
 done
 
-echo "✅ MySQL est prêt ! Installation des dépendances..."
+echo "✅ MySQL est prêt !"
+
+# ✅ AJOUT: Vérifier que MailHog est aussi démarré
+echo "📧 Vérification de MailHog..."
+if docker-compose -f docker-compose.prod.yml ps mailhog | grep -q "Up"; then
+    echo "✅ MailHog est opérationnel"
+else
+    echo "⚠️ MailHog a un problème, mais on continue..."
+fi
+
+echo "📦 Installation des dépendances..."
 
 # Installer les dépendances Symfony
 echo "📦 Installation des dépendances Composer..."
@@ -126,7 +136,9 @@ echo ""
 echo "🎉 Déploiement terminé avec succès!"
 echo "🌐 Votre application est accessible sur: http://your-server-ip"
 echo "🔧 Admin: http://your-server-ip/admin"
+echo "📧 MailHog: http://your-server-ip:8025"
 echo ""
 echo "📋 Pour vérifier les logs en cas de problème:"
 echo "   docker-compose -f docker-compose.prod.yml logs php"
 echo "   docker-compose -f docker-compose.prod.yml logs nginx"
+echo "   docker-compose -f docker-compose.prod.yml logs mailhog"
