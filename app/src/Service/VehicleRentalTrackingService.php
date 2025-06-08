@@ -13,7 +13,7 @@ class VehicleRentalTrackingService
     public function __construct(
         private MailerInterface $mailer,
         private LoggerInterface $logger,
-        private string $appUrl = 'http://merelformation.localhost/' // À configurer selon l'environnement
+        private string $appUrl = 'http://193.108.53.178/' // À configurer selon l'environnement
     ) {}
 
     /**
