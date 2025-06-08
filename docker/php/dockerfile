@@ -63,6 +63,7 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Set entrypoint
 ENTRYPOINT ["docker-entrypoint.sh"]
+RUN echo "listen = 0.0.0.0:9000" >> /usr/local/etc/php-fpm.d/www.conf
 
 # Keep container active
 CMD ["php-fpm"]

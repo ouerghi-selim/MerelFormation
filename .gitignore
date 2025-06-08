@@ -54,6 +54,10 @@ frontend/build/
 # Build artifacts copied to Symfony public
 app/public/build/
 app/public/assets/
+app/public/build/.vite/
+app/public/build/index.html
+deploy.sh
+
 
 # Runtime data
 frontend/.env.local
