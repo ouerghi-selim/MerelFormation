@@ -123,7 +123,7 @@ docker-compose -f docker-compose.prod.yml ps
 # Test de l'API
 echo "🧪 Test de l'API..."
 sleep 3
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/api/login_check -X POST -H "Content-Type: application/json" -d '{"email":"test","password":"test"}' || echo "000")
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://193.108.53.178/api/login_check -X POST -H "Content-Type: application/json" -d '{"email":"test","password":"test"}' || echo "000")
 if [ "$HTTP_CODE" = "401" ]; then
     echo "✅ API fonctionne (401 attendu pour mauvais credentials)"
 elif [ "$HTTP_CODE" = "200" ]; then
@@ -134,9 +134,9 @@ fi
 
 echo ""
 echo "🎉 Déploiement terminé avec succès!"
-echo "🌐 Votre application est accessible sur: http://your-server-ip"
-echo "🔧 Admin: http://your-server-ip/admin"
-echo "📧 MailHog: http://your-server-ip:8025"
+echo "🌐 Votre application est accessible sur: http://193.108.53.178"
+echo "🔧 Admin: http://193.108.53.178/admin"
+echo "📧 MailHog: http://193.108.53.178:8025"
 echo ""
 echo "📋 Pour vérifier les logs en cas de problème:"
 echo "   docker-compose -f docker-compose.prod.yml logs php"

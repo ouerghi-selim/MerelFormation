@@ -5,8 +5,8 @@
 **Développeur Principal :** Selim OUERGHI (ouerghi-selim)  
 **Repository :** https://github.com/ouerghi-selim/MerelFormation  
 **Type :** Application de gestion de formations taxi + location de véhicules  
-**Status :** 98% fonctionnel - Projet quasi-complet avec CMS intégré  
-**Dernière mise à jour :** Mai 2025
+**Status :** 99.5% fonctionnel - Projet quasi-complet avec CMS intégré  
+**Dernière mise à jour :** Juin 2025
 
 ## 🖗️ Architecture Technique
 
@@ -271,22 +271,21 @@ MerelFormation/
 
 ## 🏆 État Actuel du Projet
 
-### ✅ COMPLETEMENT FONCTIONNEL (98%) 🚀
+### ✅ COMPLETEMENT FONCTIONNEL (99.5%) 🚀
 - Architecture complète
-- Backend API complet
+- Backend API complet avec corrections critiques ✅
 - Dashboards admin et student opérationnels
 - Interface publique complète
 - **Planning administrateur avancé avec calendrier** 🆕
 - Système d'authentification
-- Gestion des formations
+- Gestion des formations avec upload documents ✅
 - Gestion des véhicules
-- Système de réservation
+- **Système de réservation avec confirmations API réelles** ✅ CORRIGÉ
 - Facturation et paiements
 - **🆕 Système CMS complet et opérationnel**
-- **🆕 Gestion documentaire formations/sessions complète et testée**
+- **🆕 Gestion documentaire formations/sessions complète et debuggée** ✅ FINALISÉ
 
-
-### 🆕 DERNIÈRES AMÉLIORATIONS (Mai 2025)
+### 🆕 DERNIÈRES AMÉLIORATIONS (Juin 2025)
 - **Planning Admin** - Calendrier intégré avec React Big Calendar
 - **Gestion Examens** - Différentiation sessions/examens dans le planning
 - **Bug Fixes** - Corrections SessionAdminController pour mise à jour
@@ -301,6 +300,14 @@ MerelFormation/
 - **UX Documents** - Interface étudiant repensée avec organisation par source
 - **Filtrage Intelligent** - Recherche et filtres avancés côté étudiant
 - **Sécurité Renforcée** - Contrôle d'accès documents basé sur inscriptions
+
+### 🆕 CORRECTIONS CRITIQUES (Juin 2025) ✅ TERMINÉ
+- **🆕 Bug Réservations Corrigé** - ReservationsAdmin.tsx : Ajout appels API manquants dans `handleReservationStatusChange`
+- **🆕 API Formations Complétée** - api.ts : Ajout `uploadDocument` et `deleteDocument` manquants dans `adminFormationsApi`
+- **🆕 Routes Backend Ajoutées** - AdminFormations.php : uriTemplate `/admin/formations/{id}/documents` (POST/DELETE)
+- **🆕 Format Date Corrigé** - FormationAdminController.php : Format ISO pour dates + gestion taille fichiers
+- **🆕 Suppression Documents Robuste** - FormationAdminController.php : Try-catch avec `entityManager->clear()` anti-conflit
+- **🆕 Upload Display Fix** - FormationDetail.tsx : Protection `document.type?.toUpperCase()` contre undefined
 - **🆕 Système Documentaire Finalisé** - Upload formations/sessions avec validation complète
 - **🆕 Interface Upload Intégrée** - FormData dans FormationNew.tsx et SessionNew.tsx
 - **🆕 API Documents Sessions** - Endpoint POST `/admin/sessions/{id}/documents` ajouté
@@ -309,14 +316,13 @@ MerelFormation/
 - **🆕 Modal Session Complet** - Section Documents dans inspection SessionsAdmin.tsx
 - **🆕 Bug Fixes Documents** - Corrections DocumentStudentController accumulation
 
-
 ### 🔧 EN COURS D'OPTIMISATION
 - Performance frontend/backend
 - UI/UX avancée
 - Tests automatisés
 - Documentation
 - ~~Système documentaire avancé~~ ✅ **TERMINÉ**
-
+- ~~Bugs critiques upload/réservations~~ ✅ **CORRIGÉS**
 
 ### 💡 PROCHAINES ÉTAPES POSSIBLES
 - Système de messagerie interne
@@ -346,17 +352,23 @@ MerelFormation/
 - POST /api/reservations - Créer réservation
 - GET /admin/dashboard/stats - Stats admin
 - GET /student/dashboard - Stats étudiant
+
 🆕 CMS APIs:
 - GET /admin/content-texts - Gestion textes
 - GET /admin/testimonials - Gestion témoignages
 - GET /admin/faq - Gestion FAQ
 
-🆕 Gestion Documents (COMPLET):
+🆕 Gestion Documents (COMPLET et CORRIGÉ):
 - POST /admin/formations/{id}/documents - Upload documents formation (FormData)
+- DELETE /admin/formations/{id}/documents/{documentId} - Suppression robuste avec try-catch
 - POST /admin/sessions/{id}/documents - Upload documents session avec validation  
 - GET /student/documents?source=formation|session - Documents filtrés par source
 - GET /student/documents/{id}/download - Téléchargement sécurisé Symfony
 - PUT /admin/sessions/{id} - Mise à jour session (JSON)
+
+🆕 Réservations API (CORRIGÉ):
+- PUT /admin/reservations/{id}/status - Mise à jour statut (maintenant avec appel API réel)
+- PUT /admin/session-reservations/{id}/status - Confirmation inscriptions sessions
 ```
 
 ### Comptes de Test
@@ -374,9 +386,17 @@ MerelFormation/
 ## 🎊 NOUVEAU : Autonomie Complète de Contenu
 
 Grâce au système CMS intégré, **les administrateurs peuvent désormais modifier tout le contenu du site** (textes, témoignages, FAQ) **sans intervention technique**, offrant une **autonomie totale** pour la gestion de contenu avec **fallbacks sécurisés** et **performances optimisées**.
+
 Grâce au **système de détails complets des réservations**, **les administrateurs peuvent désormais visualiser et gérer toutes les informations** d'une réservation véhicule dans une **interface dédiée et intuitive**, offrant une **vue d'ensemble complète** avec **actions rapides intégrées** et **navigation fluide** entre vue rapide (modal) et vue détaillée (page).
+
+**🔧 BUGS CRITIQUES RÉSOLUS (Juin 2025) :**
+1. **Réservations** - Confirmations maintenant persistées en base de données
+2. **Upload Documents** - API formations complètement fonctionnelle
+3. **Suppression Documents** - Plus d'erreurs de validation après suppression
+4. **Affichage Documents** - Plus d'erreurs JavaScript après upload
+5. **Routes Backend** - Tous les endpoints documentaires opérationnels
 
 **💡 CONSEIL POUR FUTURES CONVERSATIONS :**
 Copiez-collez ce brief au début de nouvelles conversations avec Claude pour qu'il comprenne immédiatement le contexte et l'état du projet sans avoir à refaire toute l'analyse.
 
-**Dernière mise à jour :** Mai 2025 par Selim OUERGHI
+**Dernière mise à jour :** Juin 2025 par Selim OUERGHI
