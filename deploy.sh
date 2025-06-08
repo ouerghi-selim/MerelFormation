@@ -1,13 +1,31 @@
 #!/bin/bash
 
-# Script de déploiement pour MerelFormation - Version corrigée
+# Script de déploiement pour MerelFormation - Version avec gestion MySQL améliorée
 
 echo "🚀 Démarrage du déploiement MerelFormation..."
 
-# Créer les répertoires de données
-mkdir -p data/mysql
+# ✅ AJOUT: Arrêter tous les conteneurs d'abord pour éviter les conflits
+echo "🛑 Arrêt des conteneurs existants..."
+docker-compose -f docker-compose.prod.yml down
+
+# ✅ AMÉLIORATION: Gestion complète des répertoires de données
+echo "📁 Préparation des répertoires de données..."
+
+# Créer les répertoires de base
 mkdir -p data/certbot/conf
 mkdir -p data/certbot/www
+
+# ✅ CORRECTION MYSQL: Supprimer et recréer le répertoire MySQL avec les bonnes permissions
+if [ -d "data/mysql" ]; then
+    echo "🗑️ Suppression de l'ancien répertoire MySQL corrompu..."
+    sudo rm -rf data/mysql
+fi
+
+echo "🆕 Création du nouveau répertoire MySQL avec les bonnes permissions..."
+mkdir -p data/mysql
+# MySQL s'exécute avec l'utilisateur ID 999 dans le conteneur
+sudo chown -R 999:999 data/mysql
+sudo chmod -R 755 data/mysql
 
 # S'assurer que le répertoire de build existe
 mkdir -p app/public/build
@@ -19,7 +37,12 @@ echo "🧹 Nettoyage des fichiers précédents..."
 rm -rf app/public/build/*
 
 # Copier le fichier .env.prod vers .env
-cp app/.env.prod app/.env
+if [ -f "app/.env.prod" ]; then
+    cp app/.env.prod app/.env
+    echo "✅ Fichier .env.prod copié vers .env"
+else
+    echo "⚠️ Attention: app/.env.prod n'existe pas"
+fi
 
 # Construction du frontend
 echo "🏗️ Construction du frontend..."
@@ -45,18 +68,45 @@ ls -la app/public/build/assets/ 2>/dev/null || echo "Pas de répertoire assets"
 echo "🐳 Lancement des conteneurs..."
 docker-compose -f docker-compose.prod.yml up -d
 
-# Attendre le démarrage des conteneurs
-echo "⏳ Attente du démarrage des services (20 secondes)..."
-sleep 20
+# ✅ AMÉLIORATION: Attente plus longue pour MySQL et vérifications
+echo "⏳ Attente du démarrage des services (30 secondes)..."
+sleep 30
 
-# Vérifier si MySQL est prêt
+# ✅ AMÉLIORATION: Vérification avec timeout pour MySQL
 echo "🔄 Vérification de l'état de MySQL..."
-until docker-compose -f docker-compose.prod.yml exec mysql mysqladmin ping -h localhost --silent; do
-    echo "⏳ En attente de MySQL..."
-    sleep 5
+MYSQL_MAX_ATTEMPTS=12
+MYSQL_ATTEMPT=0
+
+while [ $MYSQL_ATTEMPT -lt $MYSQL_MAX_ATTEMPTS ]; do
+    if docker-compose -f docker-compose.prod.yml exec mysql mysqladmin ping -h localhost --silent; then
+        echo "✅ MySQL est prêt !"
+        break
+    else
+        MYSQL_ATTEMPT=$((MYSQL_ATTEMPT + 1))
+        echo "⏳ En attente de MySQL... (tentative $MYSQL_ATTEMPT/$MYSQL_MAX_ATTEMPTS)"
+        
+        # Afficher les logs MySQL si problème persistant
+        if [ $MYSQL_ATTEMPT -eq 6 ]; then
+            echo "🔍 Logs MySQL pour diagnostic:"
+            docker-compose -f docker-compose.prod.yml logs --tail=10 mysql
+        fi
+        
+        sleep 10
+    fi
 done
 
-echo "✅ MySQL est prêt !"
+# Vérifier si MySQL a finalement démarré
+if [ $MYSQL_ATTEMPT -eq $MYSQL_MAX_ATTEMPTS ]; then
+    echo "❌ ERREUR: MySQL n'a pas pu démarrer après $((MYSQL_MAX_ATTEMPTS * 10)) secondes"
+    echo "📋 Logs MySQL complets:"
+    docker-compose -f docker-compose.prod.yml logs mysql
+    echo ""
+    echo "🔧 Solutions possibles:"
+    echo "   1. Vérifier les permissions: ls -la data/"
+    echo "   2. Supprimer data/mysql: sudo rm -rf data/mysql && mkdir data/mysql && sudo chown 999:999 data/mysql"
+    echo "   3. Redémarrer: docker-compose -f docker-compose.prod.yml down && docker-compose -f docker-compose.prod.yml up -d"
+    exit 1
+fi
 
 # ✅ AJOUT: Vérifier que MailHog est aussi démarré
 echo "📧 Vérification de MailHog..."
@@ -123,7 +173,7 @@ docker-compose -f docker-compose.prod.yml ps
 # Test de l'API
 echo "🧪 Test de l'API..."
 sleep 3
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://193.108.53.178/api/login_check -X POST -H "Content-Type: application/json" -d '{"email":"test","password":"test"}' || echo "000")
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/api/login_check -X POST -H "Content-Type: application/json" -d '{"email":"test","password":"test"}' || echo "000")
 if [ "$HTTP_CODE" = "401" ]; then
     echo "✅ API fonctionne (401 attendu pour mauvais credentials)"
 elif [ "$HTTP_CODE" = "200" ]; then
@@ -142,3 +192,4 @@ echo "📋 Pour vérifier les logs en cas de problème:"
 echo "   docker-compose -f docker-compose.prod.yml logs php"
 echo "   docker-compose -f docker-compose.prod.yml logs nginx"
 echo "   docker-compose -f docker-compose.prod.yml logs mailhog"
+echo "   docker-compose -f docker-compose.prod.yml logs mysql"
