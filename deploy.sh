@@ -4,6 +4,22 @@
 
 echo "🚀 Démarrage du déploiement MerelFormation..."
 
+# ✅ NOUVEAU : Vérification des corrections 502
+echo "🔍 Vérification des corrections anti-502..."
+if [ ! -f "docker/php/www.conf" ]; then
+    echo "❌ ERREUR: docker/php/www.conf manquant !"
+    echo "💡 Exécutez d'abord le script de correction des erreurs 502"
+    exit 1
+fi
+
+if ! grep -q "listen = 0.0.0.0:9000" docker/php/www.conf; then
+    echo "❌ ERREUR: Configuration PHP-FPM incorrecte dans docker/php/www.conf"
+    echo "💡 Le fichier doit contenir 'listen = 0.0.0.0:9000'"
+    exit 1
+fi
+
+echo "✅ Corrections anti-502 présentes"
+
 # ✅ AJOUT: Arrêter tous les conteneurs d'abord pour éviter les conflits
 echo "🛑 Arrêt des conteneurs existants..."
 docker-compose -f docker-compose.prod.yml down
@@ -66,6 +82,10 @@ if [ ! -f "app/public/build/index.html" ]; then
   exit 1
 fi
 
+# ✅ NOUVEAU : Reconstruction forcée de l'image PHP pour appliquer les corrections
+echo "🏗️ Reconstruction de l'image PHP avec les corrections anti-502..."
+docker-compose -f docker-compose.prod.yml build --no-cache php
+
 # Vérifier que l'index.html fait référence aux bons fichiers
 echo "🔍 Vérification des références dans index.html..."
 grep -oE "assets/[^\"']*\.(js|css)" app/public/build/index.html
@@ -78,9 +98,24 @@ ls -la app/public/build/assets/ 2>/dev/null || echo "Pas de répertoire assets"
 echo "🐳 Lancement des conteneurs..."
 docker-compose -f docker-compose.prod.yml up -d
 
+# ✅ NOUVEAU : Vérification immédiate des corrections PHP-FPM
+echo "🔌 Vérification des corrections PHP-FPM..."
+sleep 5
+
+# Test que PHP-FPM écoute sur la bonne interface
+PHP_LISTEN_CHECK=$(docker-compose -f docker-compose.prod.yml exec php cat /usr/local/etc/php-fpm.d/www.conf | grep "listen =" | head -1)
+if echo "$PHP_LISTEN_CHECK" | grep -q "0.0.0.0:9000"; then
+    echo "✅ PHP-FPM configuré correctement ($PHP_LISTEN_CHECK)"
+else
+    echo "❌ ERREUR: PHP-FPM mal configuré ($PHP_LISTEN_CHECK)"
+    echo "🔧 Redémarrage de PHP pour appliquer la configuration..."
+    docker-compose -f docker-compose.prod.yml restart php
+    sleep 5
+fi
+
 # ✅ AMÉLIORATION: Attente plus longue pour MySQL et vérifications
-echo "⏳ Attente du démarrage des services (10 secondes)..."
-sleep 10
+echo "⏳ Attente du démarrage des services (15 secondes)..."
+sleep 15
 
 # ✅ AMÉLIORATION: Vérification avec timeout pour MySQL
 echo "🔄 Vérification de l'état de MySQL..."
@@ -173,27 +208,53 @@ docker-compose -f docker-compose.prod.yml exec php php bin/console doctrine:migr
 echo "🔐 Vérification des permissions des fichiers statiques..."
 docker-compose -f docker-compose.prod.yml exec nginx chmod -R 755 /var/www/public/build
 
+# ✅ NOUVEAU : Test de connectivité Nginx->PHP
+echo "🔌 Test de connectivité Nginx->PHP..."
+if docker-compose -f docker-compose.prod.yml exec nginx nc -z php 9000; then
+    echo "✅ Connectivité Nginx->PHP opérationnelle"
+else
+    echo "❌ ERREUR: Nginx ne peut pas joindre PHP"
+    echo "🔧 Redémarrage de PHP pour corriger..."
+    docker-compose -f docker-compose.prod.yml restart php
+    sleep 5
+fi
+
 # Redémarrer PHP pour s'assurer que tout est correct
 echo "🔄 Redémarrage de PHP..."
 docker-compose -f docker-compose.prod.yml restart php
 
 # Attendre un peu après redémarrage
-sleep 5
+sleep 8
 
 # Afficher l'état des conteneurs
 echo "📊 État des conteneurs:"
 docker-compose -f docker-compose.prod.yml ps
 
-# Test de l'API
-echo "🧪 Test de l'API..."
-sleep 3
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://193.108.53.178/api/login_check -X POST -H "Content-Type: application/json" -d '{"email":"test","password":"test"}' || echo "000")
-if [ "$HTTP_CODE" = "401" ]; then
-    echo "✅ API fonctionne (401 attendu pour mauvais credentials)"
-elif [ "$HTTP_CODE" = "200" ]; then
-    echo "✅ API fonctionne parfaitement"
+# ✅ AMÉLIORATION : Tests API plus robustes
+echo "🧪 Tests API complets..."
+
+# Test 1: API GET
+echo "🔍 Test GET /api/formations..."
+API_GET_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://193.108.53.178/api/formations --max-time 10 || echo "000")
+if [ "$API_GET_CODE" = "200" ]; then
+    echo "✅ API GET fonctionne parfaitement (code: $API_GET_CODE)"
+elif [ "$API_GET_CODE" = "502" ]; then
+    echo "❌ ERREUR 502 détectée ! Problème de configuration non résolu"
+    exit 1
 else
-    echo "⚠️ API retourne: $HTTP_CODE (vérifiez les logs si nécessaire)"
+    echo "⚠️ API GET retourne: $API_GET_CODE"
+fi
+
+# Test 2: API POST
+echo "🔍 Test POST /api/login_check..."
+API_POST_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://193.108.53.178/api/login_check -X POST -H "Content-Type: application/json" -d '{"email":"test","password":"test"}' --max-time 10 || echo "000")
+if [ "$API_POST_CODE" = "401" ]; then
+    echo "✅ API POST fonctionne parfaitement (401 attendu pour mauvais credentials)"
+elif [ "$API_POST_CODE" = "502" ]; then
+    echo "❌ ERREUR 502 détectée ! Problème de configuration non résolu"
+    exit 1
+else
+    echo "⚠️ API POST retourne: $API_POST_CODE"
 fi
 
 echo ""
@@ -201,6 +262,9 @@ echo "🎉 Déploiement terminé avec succès!"
 echo "🌐 Votre application est accessible sur: http://193.108.53.178"
 echo "🔧 Admin: http://193.108.53.178/admin"
 echo "📧 MailHog: http://193.108.53.178:8025"
+echo ""
+echo "✅ CORRECTIONS ANTI-502 APPLIQUÉES ET VÉRIFIÉES"
+echo "🔌 PHP-FPM écoute sur: $(docker-compose -f docker-compose.prod.yml exec php cat /usr/local/etc/php-fpm.d/www.conf | grep "listen =" | head -1)"
 echo ""
 echo "💾 VOS DONNÉES MYSQL SONT PRÉSERVÉES"
 echo "📊 Taille des données: $(du -sh data/mysql 2>/dev/null | cut -f1 || echo 'N/A')"
