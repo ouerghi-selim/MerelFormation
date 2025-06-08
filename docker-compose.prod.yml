@@ -30,8 +30,10 @@ services:
     environment:
       - APP_ENV=prod
       - DATABASE_URL=mysql://merel_user:merel_password@mysql:3306/merel_db
+      - MAILER_DSN=smtp://mailhog:1025
     depends_on:
       - mysql
+      - mailhog
     networks:
       - merel_network
     restart: always
@@ -46,6 +48,17 @@ services:
       MYSQL_DATABASE: merel_db
       MYSQL_USER: merel_user
       MYSQL_PASSWORD: merel_password
+    networks:
+      - merel_network
+    restart: always
+
+  # ✅ AJOUT : MailHog pour tester les emails en production
+  mailhog:
+    image: mailhog/mailhog
+    container_name: merel_mailhog_prod
+    ports:
+      - "1025:1025"   # Port SMTP
+      - "8025:8025"   # Interface web MailHog
     networks:
       - merel_network
     restart: always
