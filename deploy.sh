@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script de déploiement pour MerelFormation - Version avec gestion MySQL améliorée
+# Script de déploiement pour MerelFormation - Version SÉCURISÉE avec préservation des données
 
 echo "🚀 Démarrage du déploiement MerelFormation..."
 
@@ -8,24 +8,34 @@ echo "🚀 Démarrage du déploiement MerelFormation..."
 echo "🛑 Arrêt des conteneurs existants..."
 docker-compose -f docker-compose.prod.yml down
 
-# ✅ AMÉLIORATION: Gestion complète des répertoires de données
+# ✅ AMÉLIORATION: Gestion SÉCURISÉE des répertoires de données
 echo "📁 Préparation des répertoires de données..."
 
 # Créer les répertoires de base
 mkdir -p data/certbot/conf
 mkdir -p data/certbot/www
 
-# ✅ CORRECTION MYSQL: Supprimer et recréer le répertoire MySQL avec les bonnes permissions
+# ✅ CORRECTION CRITIQUE: Préservation des données MySQL existantes
 if [ -d "data/mysql" ]; then
-    echo "🗑️ Suppression de l'ancien répertoire MySQL corrompu..."
-    sudo rm -rf data/mysql
+    echo "📊 Données MySQL existantes détectées - PRÉSERVATION des données"
+    
+    # Vérifier et corriger seulement les permissions
+    echo "🔧 Correction des permissions MySQL (sans suppression des données)..."
+    sudo chown -R 999:999 data/mysql
+    sudo chmod -R 755 data/mysql
+    
+    # Vérifier s'il y a des fichiers dans le répertoire
+    if [ "$(ls -A data/mysql)" ]; then
+        echo "✅ Données MySQL préservées ($(du -sh data/mysql | cut -f1))"
+    else
+        echo "ℹ️ Répertoire MySQL vide - première installation"
+    fi
+else
+    echo "🆕 Première installation - création du répertoire MySQL..."
+    mkdir -p data/mysql
+    sudo chown -R 999:999 data/mysql
+    sudo chmod -R 755 data/mysql
 fi
-
-echo "🆕 Création du nouveau répertoire MySQL avec les bonnes permissions..."
-mkdir -p data/mysql
-# MySQL s'exécute avec l'utilisateur ID 999 dans le conteneur
-sudo chown -R 999:999 data/mysql
-sudo chmod -R 755 data/mysql
 
 # S'assurer que le répertoire de build existe
 mkdir -p app/public/build
@@ -101,10 +111,14 @@ if [ $MYSQL_ATTEMPT -eq $MYSQL_MAX_ATTEMPTS ]; then
     echo "📋 Logs MySQL complets:"
     docker-compose -f docker-compose.prod.yml logs mysql
     echo ""
-    echo "🔧 Solutions possibles:"
+    echo "🔧 Solutions possibles SANS PERTE DE DONNÉES:"
     echo "   1. Vérifier les permissions: ls -la data/"
-    echo "   2. Supprimer data/mysql: sudo rm -rf data/mysql && mkdir data/mysql && sudo chown 999:999 data/mysql"
-    echo "   3. Redémarrer: docker-compose -f docker-compose.prod.yml down && docker-compose -f docker-compose.prod.yml up -d"
+    echo "   2. Corriger les permissions: sudo chown -R 999:999 data/mysql && sudo chmod -R 755 data/mysql"
+    echo "   3. Redémarrer: docker-compose -f docker-compose.prod.yml restart mysql"
+    echo ""
+    echo "⚠️ ATTENTION: NE PAS supprimer data/mysql - vos données sont là !"
+    echo "💡 Si vraiment nécessaire, faire une sauvegarde d'abord:"
+    echo "   sudo tar -czf mysql_backup_$(date +%Y%m%d_%H%M%S).tar.gz data/mysql"
     exit 1
 fi
 
@@ -187,6 +201,9 @@ echo "🎉 Déploiement terminé avec succès!"
 echo "🌐 Votre application est accessible sur: http://193.108.53.178"
 echo "🔧 Admin: http://193.108.53.178/admin"
 echo "📧 MailHog: http://193.108.53.178:8025"
+echo ""
+echo "💾 VOS DONNÉES MYSQL SONT PRÉSERVÉES"
+echo "📊 Taille des données: $(du -sh data/mysql 2>/dev/null | cut -f1 || echo 'N/A')"
 echo ""
 echo "📋 Pour vérifier les logs en cas de problème:"
 echo "   docker-compose -f docker-compose.prod.yml logs php"
