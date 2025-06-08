@@ -4,7 +4,7 @@ services:
     container_name: merel_nginx
     ports:
       - "80:80"
-      - "443:443"  # Pour HTTPS futur
+      - "443:443"
     volumes:
       - ./app:/var/www
       - ./docker/nginx/default.prod.conf:/etc/nginx/conf.d/default.conf
@@ -33,7 +33,7 @@ services:
       - MAILER_DSN=smtp://mailhog:1025
     depends_on:
       - mysql
-      - mailhog
+      # ✅ RETIRÉ la dépendance mailhog qui causait le blocage
     networks:
       - merel_network
     restart: always
@@ -52,16 +52,18 @@ services:
       - merel_network
     restart: always
 
-  # ✅ AJOUT : MailHog pour tester les emails en production
+  # ✅ MailHog en service indépendant (démarrage optionnel)
   mailhog:
     image: mailhog/mailhog
     container_name: merel_mailhog_prod
     ports:
-      - "1025:1025"   # Port SMTP
-      - "8025:8025"   # Interface web MailHog
+      - "1025:1025"
+      - "8025:8025"
     networks:
       - merel_network
     restart: always
+    # ✅ AJOUT : démarrage toujours, même si autres services ont des problèmes
+    depends_on: []
 
   # Service pour le frontend (construction seulement)
   node:
