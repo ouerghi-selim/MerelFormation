@@ -36,6 +36,9 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Configure PHP
 COPY php.ini /usr/local/etc/php/conf.d/
 
+# ✅ CORRECTION CRITIQUE : Copier notre configuration PHP-FPM personnalisée
+COPY www.conf /usr/local/etc/php-fpm.d/www.conf
+
 # Create user with same permissions as host machine user
 RUN usermod -u ${USER_ID} www-data && groupmod -g ${GROUP_ID} www-data
 
@@ -50,12 +53,20 @@ RUN mkdir -p /var/www/var/cache/prod/vich_uploader \
     && mkdir -p /var/www/public/uploads/sessions \
     && mkdir -p /var/www/public/uploads/formations \
     && mkdir -p /var/www/config/jwt \
-    # Permissions très permissives pour éviter les problèmes en production
+    # ✅ AJOUT : Répertoires pour PHP-FPM logs
+    && mkdir -p /var/log/php-fpm \
+    && mkdir -p /var/lib/php/sessions \
+    && mkdir -p /var/lib/php/wsdlcache \
+    # Permissions correctes
     && chown -R www-data:www-data /var/www/var \
     && chown -R www-data:www-data /var/www/public \
+    && chown -R www-data:www-data /var/log/php-fpm \
+    && chown -R www-data:www-data /var/lib/php \
     && chmod -R 777 /var/www/var/cache \
     && chmod -R 777 /var/www/var/log \
-    && chmod -R 755 /var/www/public
+    && chmod -R 755 /var/www/public \
+    && chmod -R 755 /var/log/php-fpm \
+    && chmod -R 755 /var/lib/php
 
 # Copy entrypoint script from the correct path
 COPY docker-entrypoint.sh /usr/local/bin/
@@ -63,7 +74,9 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Set entrypoint
 ENTRYPOINT ["docker-entrypoint.sh"]
-RUN echo "listen = 0.0.0.0:9000" >> /usr/local/etc/php-fpm.d/www.conf
+
+# ✅ SUPPRESSION de la ligne problématique qui ajoutait listen à la fin
+# RUN echo "listen = 0.0.0.0:9000" >> /usr/local/etc/php-fpm.d/www.conf
 
 # Keep container active
 CMD ["php-fpm"]
