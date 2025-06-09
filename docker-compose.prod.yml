@@ -77,7 +77,7 @@ services:
     networks:
       - merel_network
     environment:
-      - REACT_APP_API_URL=http://193.108.53.178/api
+      - VITE_API_URL=http://193.108.53.178/api
 
 networks:
   merel_network:

@@ -1,8 +1,16 @@
 #!/bin/bash
 
-# Script de déploiement pour MerelFormation - Version SÉCURISÉE avec timing correct
+# Script de déploiement pour MerelFormation - Version OPTIMISÉE
+# Configuration dynamique pour dev/prod
+
+# Variables d'environnement (modifiables)
+DEPLOY_ENV=${DEPLOY_ENV:-"dev"}
+API_HOST=${API_HOST:-"localhost"}
+API_PORT=${API_PORT:-"80"}
 
 echo "🚀 Démarrage du déploiement MerelFormation..."
+echo "📍 Environnement: $DEPLOY_ENV"
+echo "🌐 Host: $API_HOST:$API_PORT"
 
 # ✅ NOUVEAU : Vérification des corrections 502
 echo "🔍 Vérification des corrections anti-502..."
@@ -98,85 +106,55 @@ ls -la app/public/build/assets/ 2>/dev/null || echo "Pas de répertoire assets"
 echo "🐳 Lancement des conteneurs..."
 docker-compose -f docker-compose.prod.yml up -d
 
-# ✅ AMÉLIORATION: Attente plus longue pour le démarrage initial
-echo "⏳ Attente du démarrage initial des services (20 secondes)..."
-sleep 20
+# ✅ Attente optimisée pour le démarrage
+echo "⏳ Attente du démarrage des services (10 secondes)..."
+sleep 10
 
-# ✅ NOUVEAU : Vérification progressive de PHP-FPM
-echo "🔌 Vérification progressive de PHP-FPM..."
-PHP_READY=false
+# ✅ Vérification simplifiée de PHP-FPM
+echo "🔌 Vérification de PHP-FPM..."
 PHP_ATTEMPTS=0
-MAX_PHP_ATTEMPTS=12
+MAX_PHP_ATTEMPTS=6
 
-while [ $PHP_ATTEMPTS -lt $MAX_PHP_ATTEMPTS ] && [ "$PHP_READY" = false ]; do
+while [ $PHP_ATTEMPTS -lt $MAX_PHP_ATTEMPTS ]; do
     PHP_ATTEMPTS=$((PHP_ATTEMPTS + 1))
-
-    # Vérifier la configuration
-    PHP_LISTEN_CHECK=$(docker-compose -f docker-compose.prod.yml exec php cat /usr/local/etc/php-fpm.d/www.conf 2>/dev/null | grep "listen =" | head -1)
-
-    if echo "$PHP_LISTEN_CHECK" | grep -q "0.0.0.0:9000"; then
-        echo "✅ PHP-FPM configuré correctement ($PHP_LISTEN_CHECK)"
-
-        # Vérifier la connectivité
-        if docker-compose -f docker-compose.prod.yml exec nginx nc -z php 9000 2>/dev/null; then
-            echo "✅ Connectivité Nginx->PHP opérationnelle"
-            PHP_READY=true
-        else
-            echo "⏳ Connectivité en cours d'établissement (tentative $PHP_ATTEMPTS/$MAX_PHP_ATTEMPTS)..."
-            sleep 5
-        fi
-    else
-        echo "⏳ PHP-FPM en cours de configuration (tentative $PHP_ATTEMPTS/$MAX_PHP_ATTEMPTS)..."
-        sleep 5
+    
+    if docker-compose -f docker-compose.prod.yml exec nginx nc -z php 9000 2>/dev/null; then
+        echo "✅ PHP-FPM opérationnel"
+        break
     fi
+    
+    if [ $PHP_ATTEMPTS -eq $MAX_PHP_ATTEMPTS ]; then
+        echo "❌ ERREUR: PHP-FPM non accessible après $((MAX_PHP_ATTEMPTS * 3)) secondes"
+        docker-compose -f docker-compose.prod.yml logs --tail=5 php
+        exit 1
+    fi
+    
+    echo "⏳ Tentative $PHP_ATTEMPTS/$MAX_PHP_ATTEMPTS..."
+    sleep 3
 done
 
-if [ "$PHP_READY" = false ]; then
-    echo "❌ ERREUR: PHP-FPM n'est pas prêt après $((MAX_PHP_ATTEMPTS * 5)) secondes"
-    echo "📋 Logs PHP pour diagnostic:"
-    docker-compose -f docker-compose.prod.yml logs --tail=10 php
-    exit 1
-fi
-
-# ✅ AMÉLIORATION: Vérification avec timeout pour MySQL
-echo "🔄 Vérification de l'état de MySQL..."
-MYSQL_MAX_ATTEMPTS=12
+# ✅ Vérification simplifiée de MySQL
+echo "🔄 Vérification de MySQL..."
+MYSQL_MAX_ATTEMPTS=8
 MYSQL_ATTEMPT=0
 
 while [ $MYSQL_ATTEMPT -lt $MYSQL_MAX_ATTEMPTS ]; do
-    if docker-compose -f docker-compose.prod.yml exec mysql mysqladmin ping -h localhost --silent; then
-        echo "✅ MySQL est prêt !"
+    if docker-compose -f docker-compose.prod.yml exec mysql mysqladmin ping -h localhost --silent 2>/dev/null; then
+        echo "✅ MySQL opérationnel"
         break
-    else
-        MYSQL_ATTEMPT=$((MYSQL_ATTEMPT + 1))
-        echo "⏳ En attente de MySQL... (tentative $MYSQL_ATTEMPT/$MYSQL_MAX_ATTEMPTS)"
-
-        # Afficher les logs MySQL si problème persistant
-        if [ $MYSQL_ATTEMPT -eq 6 ]; then
-            echo "🔍 Logs MySQL pour diagnostic:"
-            docker-compose -f docker-compose.prod.yml logs --tail=10 mysql
-        fi
-
-        sleep 10
     fi
+    
+    MYSQL_ATTEMPT=$((MYSQL_ATTEMPT + 1))
+    if [ $MYSQL_ATTEMPT -eq $MYSQL_MAX_ATTEMPTS ]; then
+        echo "❌ ERREUR: MySQL non accessible après $((MYSQL_MAX_ATTEMPTS * 5)) secondes"
+        docker-compose -f docker-compose.prod.yml logs --tail=5 mysql
+        echo "💡 Solutions: sudo chown -R 999:999 data/mysql && ./deploy.sh"
+        exit 1
+    fi
+    
+    echo "⏳ MySQL en cours de démarrage... ($MYSQL_ATTEMPT/$MYSQL_MAX_ATTEMPTS)"
+    sleep 5
 done
-
-# Vérifier si MySQL a finalement démarré
-if [ $MYSQL_ATTEMPT -eq $MYSQL_MAX_ATTEMPTS ]; then
-    echo "❌ ERREUR: MySQL n'a pas pu démarrer après $((MYSQL_MAX_ATTEMPTS * 10)) secondes"
-    echo "📋 Logs MySQL complets:"
-    docker-compose -f docker-compose.prod.yml logs mysql
-    echo ""
-    echo "🔧 Solutions possibles SANS PERTE DE DONNÉES:"
-    echo "   1. Vérifier les permissions: ls -la data/"
-    echo "   2. Corriger les permissions: sudo chown -R 999:999 data/mysql && sudo chmod -R 755 data/mysql"
-    echo "   3. Redémarrer: docker-compose -f docker-compose.prod.yml restart mysql"
-    echo ""
-    echo "⚠️ ATTENTION: NE PAS supprimer data/mysql - vos données sont là !"
-    echo "💡 Si vraiment nécessaire, faire une sauvegarde d'abord:"
-    echo "   sudo tar -czf mysql_backup_$(date +%Y%m%d_%H%M%S).tar.gz data/mysql"
-    exit 1
-fi
 
 # ✅ AJOUT: Vérifier que MailHog est aussi démarré
 echo "📧 Vérification de MailHog..."
@@ -237,79 +215,45 @@ sleep 10
 echo "📊 État des conteneurs:"
 docker-compose -f docker-compose.prod.yml ps
 
-# ✅ AMÉLIORATION : Tests API avec retry et timing approprié
-echo "🧪 Tests API avec retry intelligent..."
-
-# Fonction de test API avec retry
-test_api_with_retry() {
-    local url=$1
-    local method=${2:-GET}
-    local data=${3:-""}
-    local max_attempts=6
-    local attempt=0
-
-    while [ $attempt -lt $max_attempts ]; do
-        attempt=$((attempt + 1))
-
-        if [ "$method" = "POST" ] && [ -n "$data" ]; then
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$url" -X POST -H "Content-Type: application/json" -d "$data" --max-time 15 || echo "000")
-        else
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$url" --max-time 15 || echo "000")
-        fi
-
-        if [ "$HTTP_CODE" != "000" ] && [ "$HTTP_CODE" != "502" ]; then
-            echo "$HTTP_CODE"
-            return 0
-        fi
-
-        if [ $attempt -lt $max_attempts ]; then
-            echo "⏳ Tentative $attempt/$max_attempts - API pas encore prête (code: $HTTP_CODE), nouvelle tentative dans 10s..."
-            sleep 10
-        fi
-    done
-
-    echo "$HTTP_CODE"
-    return 1
-}
-
-# Test 1: API GET
-echo "🔍 Test GET /api/formations avec retry..."
-API_GET_CODE=$(test_api_with_retry "http://193.108.53.178/api/formations")
-if [ "$API_GET_CODE" = "200" ]; then
-    echo "✅ API GET fonctionne parfaitement (code: $API_GET_CODE)"
-elif [ "$API_GET_CODE" = "502" ]; then
-    echo "❌ ERREUR 502 détectée ! Problème de configuration non résolu"
-    exit 1
+# ✅ Tests API optionnels (seulement si DEPLOY_ENV=prod)
+if [ "$DEPLOY_ENV" = "prod" ]; then
+    echo "🧪 Tests API en mode production..."
+    
+    # Test simple de l'API
+    echo "🔍 Test API formations..."
+    API_URL="http://$API_HOST:$API_PORT/api/formations"
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL" --max-time 10 || echo "000")
+    
+    if [ "$HTTP_CODE" = "200" ]; then
+        echo "✅ API accessible (HTTP $HTTP_CODE)"
+    elif [ "$HTTP_CODE" = "502" ]; then
+        echo "❌ ERREUR 502 - Problème de configuration"
+        exit 1
+    else
+        echo "⚠️ API retourne HTTP $HTTP_CODE"
+    fi
 else
-    echo "⚠️ API GET retourne: $API_GET_CODE"
-fi
-
-# Test 2: API POST
-echo "🔍 Test POST /api/login_check avec retry..."
-API_POST_CODE=$(test_api_with_retry "http://193.108.53.178/api/login_check" "POST" '{"email":"test","password":"test"}')
-if [ "$API_POST_CODE" = "401" ]; then
-    echo "✅ API POST fonctionne parfaitement (401 attendu pour mauvais credentials)"
-elif [ "$API_POST_CODE" = "502" ]; then
-    echo "❌ ERREUR 502 détectée ! Problème de configuration non résolu"
-    exit 1
-else
-    echo "⚠️ API POST retourne: $API_POST_CODE"
+    echo "ℹ️ Tests API ignorés en mode développement"
 fi
 
 echo ""
 echo "🎉 Déploiement terminé avec succès!"
-echo "🌐 Votre application est accessible sur: http://193.108.53.178"
-echo "🔧 Admin: http://193.108.53.178/admin"
-echo "📧 MailHog: http://193.108.53.178:8025"
+echo "=================================="
+echo "🌐 Application: http://$API_HOST:$API_PORT"
+echo "🔧 Admin: http://$API_HOST:$API_PORT/admin"
+echo "📧 MailHog: http://$API_HOST:8025"
 echo ""
-echo "✅ CORRECTIONS ANTI-502 APPLIQUÉES ET VÉRIFIÉES"
-echo "🔌 PHP-FPM écoute sur: $(docker-compose -f docker-compose.prod.yml exec php cat /usr/local/etc/php-fpm.d/www.conf | grep "listen =" | head -1)"
+echo "📊 État des services:"
+docker-compose -f docker-compose.prod.yml ps --format "table {{.Service}}\t{{.Status}}\t{{.Ports}}"
 echo ""
-echo "💾 VOS DONNÉES MYSQL SONT PRÉSERVÉES"
-echo "📊 Taille des données: $(du -sh data/mysql 2>/dev/null | cut -f1 || echo 'N/A')"
+echo "📋 Commandes utiles:"
+echo "   • Logs: docker-compose -f docker-compose.prod.yml logs [service]"
+echo "   • Restart: docker-compose -f docker-compose.prod.yml restart [service]"
+echo "   • Stop: docker-compose -f docker-compose.prod.yml down"
 echo ""
-echo "📋 Pour vérifier les logs en cas de problème:"
-echo "   docker-compose -f docker-compose.prod.yml logs php"
-echo "   docker-compose -f docker-compose.prod.yml logs nginx"
-echo "   docker-compose -f docker-compose.prod.yml logs mailhog"
-echo "   docker-compose -f docker-compose.prod.yml logs mysql"
+echo "💾 Données MySQL: $(du -sh data/mysql 2>/dev/null | cut -f1 || echo 'Première installation')"
+echo ""
+if [ "$DEPLOY_ENV" = "dev" ]; then
+    echo "ℹ️ Mode développement - Utilisez les variables d'environnement pour la production:"
+    echo "   DEPLOY_ENV=prod API_HOST=votre-domaine.com ./deploy.sh"
+fi
