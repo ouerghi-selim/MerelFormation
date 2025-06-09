@@ -6,13 +6,9 @@ use App\Service\NotificationService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-/**
- * @Route("/api/contact", name="api_contact_")
- */
 class ContactController extends AbstractController
 {
     private $notificationService;
@@ -26,9 +22,6 @@ class ContactController extends AbstractController
         $this->validator = $validator;
     }
 
-    /**
-     * @Route("", name="submit", methods={"POST"})
-     */
     public function submitContact(Request $request): JsonResponse
     {
         // Récupérer les données de la requête

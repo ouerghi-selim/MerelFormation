@@ -411,7 +411,7 @@ export const contactApi = {
         phone?: string;
         subject: string;
         message: string;
-    }) => api.post('/contact', contactData)
+    }) => api.post('/api/contact', contactData)
 };
 
 export default api;
