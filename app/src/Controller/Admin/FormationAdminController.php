@@ -276,8 +276,7 @@ class FormationAdminController extends AbstractController
         $this->entityManager->persist($document);
         $this->entityManager->flush();
 
-        // Notification email - Document ajouté
-        $this->notificationService->notifyDocumentAdded($document, $formation);
+        // Note: L'envoi d'email se fait maintenant dans DocumentController::finalizeDocuments
 
         $filePath = '/path/to/uploads/' . $document->getFileName();
         $fileSize = file_exists($filePath) ? filesize($filePath) : null;

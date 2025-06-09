@@ -58,15 +58,6 @@ export const adminFormationsApi = {
     update: (id: number, data: any) => api.put(`/admin/formations/${id}`, data),
     delete: (id: number) => api.delete(`/admin/formations/${id}`),
     getSessions: () => api.get('/admin/formations/sessions'),
-    // AJOUTER CETTE FONCTION :
-    uploadDocument: (formationId: number, formData: FormData) =>
-        api.post(`/admin/formations/${formationId}/documents`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        }),
-
-    // AJOUTER AUSSI CETTE FONCTION :
-    deleteDocument: (formationId: number, documentId: number) =>
-        api.delete(`/admin/formations/${formationId}/documents/${documentId}`),
 };
 
 // Services API pour les réservations administrateur
@@ -117,12 +108,6 @@ export const adminSessionsApi = {
     update: (id:number, sessionData:any) => api.put(`/admin/sessions/${id}`, sessionData),
     delete: (id:number) => api.delete(`/admin/sessions/${id}`),
     getInstructors: () => api.get('/admin/users?role=ROLE_INSTRUCTOR'),
-
-// PAR CETTE LIGNE CORRECTE :
-    uploadDocument: (sessionId: number, formData: FormData) =>
-        api.post(`/admin/sessions/${sessionId}/documents`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        }),
 };
 
 export const adminVehiclesApi = {
@@ -411,7 +396,30 @@ export const contactApi = {
         phone?: string;
         subject: string;
         message: string;
-    }) => api.post('/api/contact', contactData)
+    }) => api.post('/contact', contactData)
+};
+
+// Services API pour la gestion des documents (nouveau système)
+export const documentsApi = {
+    // Upload temporaire de document
+    tempUpload: (formData: FormData) =>
+        api.post('/admin/documents/temp-upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+    
+    // Supprimer un document temporaire
+    deleteTempDocument: (tempId: string) =>
+        api.delete(`/admin/documents/temp/${tempId}`),
+    
+    // Finaliser les documents lors de la sauvegarde
+    finalizeDocuments: (data: {
+        tempIds: string[];
+        entityType: 'formation' | 'session';
+        entityId: number;
+    }) => api.post('/admin/documents/finalize', data),
+    
+    // Nettoyer les fichiers temporaires anciens
+    cleanupTemp: () => api.post('/admin/documents/cleanup-temp')
 };
 
 export default api;

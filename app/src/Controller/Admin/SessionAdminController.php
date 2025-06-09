@@ -230,8 +230,7 @@ class SessionAdminController extends AbstractController
             $this->entityManager->persist($document);
             $this->entityManager->flush();
 
-            // Notification email - Document ajouté à la session
-            $this->notificationService->notifyDocumentAdded($document, $session->getFormation(), $session);
+            // Note: L'envoi d'email se fait maintenant dans DocumentController::finalizeDocuments
 
             // AMÉLIORATION 5: Réponse plus complète
             return $this->json([
