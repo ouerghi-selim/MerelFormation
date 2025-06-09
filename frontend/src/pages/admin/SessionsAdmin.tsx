@@ -191,16 +191,8 @@ const SessionsAdmin: React.FC = () => {
                 formData.append('title', document.name);
                 formData.append('category', 'support');
 
-                // Utiliser fetch directement pour éviter la transformation JSON
-                const token = localStorage.getItem('token');
-                await fetch(`/api/admin/sessions/${sessionToEdit.id}/documents`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        // NE PAS ajouter Content-Type, le navigateur le fait automatiquement pour FormData
-                    },
-                    body: formData
-                });
+                // Utiliser l'API standardisée
+                await adminSessionsApi.uploadDocument(sessionToEdit.id, formData);
             }
 
             // 3. Mettre à jour la liste des sessions
