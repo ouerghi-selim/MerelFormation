@@ -1,8 +1,19 @@
 import axios from 'axios';
 
+// Configuration de l'API
+const baseURL = import.meta.env.VITE_API_URL || '/api';
+
+// Log de configuration (uniquement en mode développement)
+if (import.meta.env.DEV) {
+    console.log('🌍 API Configuration:', {
+        environment: import.meta.env.MODE,
+        baseURL
+    });
+}
+
 // Créer une instance axios avec la configuration de base
 const api = axios.create({
-    baseURL: import.meta.env.REACT_APP_API_URL || 'http://merelformation.localhost/api',
+    baseURL,
     headers: {
         'Content-Type': 'application/json',
     },

@@ -5,9 +5,11 @@ namespace App\Controller\Admin;
 use App\Entity\Document;
 use App\Entity\Formation;
 use App\Entity\Session;
+use App\Entity\TempDocument;
 use App\Repository\DocumentRepository;
 use App\Repository\FormationRepository;
 use App\Repository\SessionRepository;
+use App\Repository\TempDocumentRepository;
 use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -26,6 +28,7 @@ class DocumentController extends AbstractController
     private $documentRepository;
     private $formationRepository;
     private $sessionRepository;
+    private $tempDocumentRepository;
     private $entityManager;
     private $notificationService;
 
@@ -34,6 +37,7 @@ class DocumentController extends AbstractController
         DocumentRepository $documentRepository,
         FormationRepository $formationRepository,
         SessionRepository $sessionRepository,
+        TempDocumentRepository $tempDocumentRepository,
         EntityManagerInterface $entityManager,
         NotificationService $notificationService
     ) {
@@ -41,6 +45,7 @@ class DocumentController extends AbstractController
         $this->documentRepository = $documentRepository;
         $this->formationRepository = $formationRepository;
         $this->sessionRepository = $sessionRepository;
+        $this->tempDocumentRepository = $tempDocumentRepository;
         $this->entityManager = $entityManager;
         $this->notificationService = $notificationService;
     }
@@ -66,60 +71,70 @@ class DocumentController extends AbstractController
             return $this->json(['message' => 'Aucun fichier téléchargé'], 400);
         }
 
-        $allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'];
-        $extension = strtolower($uploadedFile->getClientOriginalExtension());
+        // Vérifier si le fichier est valide avant toute manipulation
+        if (!$uploadedFile->isValid()) {
+            return $this->json(['message' => 'Fichier invalide ou corrompu'], 400);
+        }
+
+        // Stocker les informations avant que le fichier temporaire soit déplacé
+        $originalName = $uploadedFile->getClientOriginalName();
+        $fileSize = $uploadedFile->getSize();
+        $mimeType = $uploadedFile->getMimeType();
         
+        // Détecter l'extension depuis le nom du fichier original
+        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        
+        $allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'];
         if (!in_array($extension, $allowedExtensions)) {
             return $this->json(['message' => 'Type de fichier non autorisé'], 400);
         }
 
         $maxSize = 4 * 1024 * 1024; // 4MB
-        if ($uploadedFile->getSize() > $maxSize) {
+        if ($fileSize > $maxSize) {
             return $this->json(['message' => 'Fichier trop volumineux (max 4MB)'], 400);
         }
 
-        // Créer le document temporaire (pas encore persisté en BDD)
-        $document = new Document();
-        $document->setTitle($title ?: $uploadedFile->getClientOriginalName());
-        $document->setType($extension);
-        $document->setCategory($category);
-        $document->setUploadedBy($this->getUser());
+        // Générer un ID unique et un nom de fichier
+        $tempId = uniqid();
+        $tempFileName = $tempId . '_' . $originalName;
 
-        // Générer un nom unique pour le fichier temporaire
-        $tempFileName = uniqid() . '_' . $uploadedFile->getClientOriginalName();
-        
         // Stocker dans un dossier temporaire
         $tempDir = $this->getParameter('kernel.project_dir') . '/public/uploads/temp/';
+
         if (!is_dir($tempDir)) {
             mkdir($tempDir, 0755, true);
         }
 
-        $uploadedFile->move($tempDir, $tempFileName);
+        // Déplacer le fichier vers le dossier temporaire
+        try {
+            $uploadedFile->move($tempDir, $tempFileName);
+        } catch (\Exception $e) {
+            return $this->json(['message' => 'Erreur lors du déplacement du fichier: ' . $e->getMessage()], 500);
+        }
 
-        // Stocker les informations dans la session pour récupération ultérieure
-        $tempId = uniqid();
-        $session = $request->getSession();
-        $tempDocuments = $session->get('temp_documents', []);
-        $tempDocuments[$tempId] = [
-            'title' => $document->getTitle(),
-            'type' => $document->getType(),
-            'category' => $document->getCategory(),
-            'fileName' => $tempFileName,
-            'originalName' => $uploadedFile->getClientOriginalName(),
-            'uploadedBy' => $this->getUser()->getId(),
-            'uploadedAt' => new \DateTime()
-        ];
-        $session->set('temp_documents', $tempDocuments);
+        // Créer l'entité TempDocument en BDD
+        $tempDocument = new TempDocument();
+        $tempDocument->setTempId($tempId);
+        $tempDocument->setTitle($title ?: $originalName);
+        $tempDocument->setType($extension);
+        $tempDocument->setCategory($category);
+        $tempDocument->setFileName($tempFileName);
+        $tempDocument->setOriginalName($originalName);
+        $tempDocument->setUploadedBy($this->getUser()->getId());
+        $tempDocument->setFileSize($fileSize);
+
+        $this->entityManager->persist($tempDocument);
+        $this->entityManager->flush();
 
         return $this->json([
             'tempId' => $tempId,
             'document' => [
-                'title' => $document->getTitle(),
-                'type' => $document->getType(),
-                'category' => $document->getCategory(),
-                'fileName' => $tempFileName,
-                'originalName' => $uploadedFile->getClientOriginalName(),
-                'size' => $uploadedFile->getSize()
+                'title' => $tempDocument->getTitle(),
+                'type' => $tempDocument->getType(),
+                'category' => $tempDocument->getCategory(),
+                'fileName' => $tempDocument->getFileName(),
+                'originalName' => $tempDocument->getOriginalName(),
+                'size' => $tempDocument->getFileSize()
             ]
         ], 201);
     }
@@ -135,23 +150,23 @@ class DocumentController extends AbstractController
             return $this->json(['message' => 'Accès refusé'], 403);
         }
 
-        $session = $request->getSession();
-        $tempDocuments = $session->get('temp_documents', []);
-
-        if (!isset($tempDocuments[$tempId])) {
+        // Récupérer le document temporaire
+        $tempDocument = $this->tempDocumentRepository->findOneBy(['tempId' => $tempId]);
+        
+        if (!$tempDocument) {
             return $this->json(['message' => 'Document temporaire non trouvé'], 404);
         }
 
         // Supprimer le fichier physique
         $tempDir = $this->getParameter('kernel.project_dir') . '/public/uploads/temp/';
-        $filePath = $tempDir . $tempDocuments[$tempId]['fileName'];
+        $filePath = $tempDir . $tempDocument->getFileName();
         if (file_exists($filePath)) {
             unlink($filePath);
         }
 
-        // Supprimer de la session
-        unset($tempDocuments[$tempId]);
-        $session->set('temp_documents', $tempDocuments);
+        // Supprimer l'entité de la BDD
+        $this->entityManager->remove($tempDocument);
+        $this->entityManager->flush();
 
         return $this->json(['message' => 'Document temporaire supprimé']);
     }
@@ -172,13 +187,19 @@ class DocumentController extends AbstractController
         $entityType = $data['entityType']; // 'formation' ou 'session'
         $entityId = $data['entityId'];
 
-        $session = $request->getSession();
-        $tempDocuments = $session->get('temp_documents', []);
+        if (empty($tempIds)) {
+            return $this->json(['message' => 'Aucun document temporaire fourni'], 400);
+        }
 
-        $finalizedDocuments = [];
-        $entity = null;
+        // Récupérer les documents temporaires
+        $tempDocuments = $this->tempDocumentRepository->findByTempIds($tempIds);
+
+        if (empty($tempDocuments)) {
+            return $this->json(['message' => 'Aucun document temporaire trouvé'], 404);
+        }
 
         // Récupérer l'entité parent
+        $entity = null;
         if ($entityType === 'formation') {
             $entity = $this->formationRepository->find($entityId);
         } elseif ($entityType === 'session') {
@@ -196,25 +217,21 @@ class DocumentController extends AbstractController
             mkdir($finalDir, 0755, true);
         }
 
-        foreach ($tempIds as $tempId) {
-            if (!isset($tempDocuments[$tempId])) {
-                continue;
-            }
+        $finalizedDocuments = [];
 
-            $tempDoc = $tempDocuments[$tempId];
-            
-            // Créer l'entité Document en BDD
+        foreach ($tempDocuments as $tempDoc) {
+            // Créer l'entité Document définitive
             $document = new Document();
-            $document->setTitle($tempDoc['title']);
-            $document->setType($tempDoc['type']);
-            $document->setCategory($tempDoc['category']);
+            $document->setTitle($tempDoc->getTitle());
+            $document->setType($tempDoc->getType());
+            $document->setCategory($tempDoc->getCategory());
             $document->setUploadedBy($this->getUser());
 
             // Générer un nom final unique
-            $finalFileName = uniqid() . '_' . $tempDoc['originalName'];
+            $finalFileName = uniqid() . '_' . $tempDoc->getOriginalName();
             
             // Déplacer le fichier du dossier temp vers le dossier final
-            $tempPath = $tempDir . $tempDoc['fileName'];
+            $tempPath = $tempDir . $tempDoc->getFileName();
             $finalPath = $finalDir . $finalFileName;
             
             if (file_exists($tempPath)) {
@@ -230,21 +247,23 @@ class DocumentController extends AbstractController
 
                 $this->entityManager->persist($document);
                 $finalizedDocuments[] = $document;
-
-                // Notification email - Document ajouté
-                if ($entityType === 'formation') {
-                    $this->notificationService->notifyDocumentAdded($document, $entity);
-                } elseif ($entityType === 'session') {
-                    $this->notificationService->notifyDocumentAdded($document, $entity->getFormation(), $entity);
-                }
             }
-
-            // Supprimer de la session
-            unset($tempDocuments[$tempId]);
         }
 
+        // Sauvegarder les nouveaux documents
         $this->entityManager->flush();
-        $session->set('temp_documents', $tempDocuments);
+
+        // Notification email groupée pour tous les documents ajoutés
+        if (!empty($finalizedDocuments)) {
+            if ($entityType === 'formation') {
+                $this->notificationService->notifyDocumentsAdded($finalizedDocuments, $entity, null, $this->getUser());
+            } elseif ($entityType === 'session') {
+                $this->notificationService->notifyDocumentsAdded($finalizedDocuments, $entity->getFormation(), $entity, $this->getUser());
+            }
+        }
+
+        // Supprimer les documents temporaires
+        $this->tempDocumentRepository->deleteByTempIds($tempIds);
 
         return $this->json([
             'message' => 'Documents finalisés avec succès',
@@ -271,8 +290,12 @@ class DocumentController extends AbstractController
             return $this->json(['message' => 'Accès refusé'], 403);
         }
 
+        // Supprimer les documents temporaires anciens (> 24h) de la BDD
+        $deletedCount = $this->tempDocumentRepository->cleanupOldTempDocuments();
+
+        // Nettoyer les fichiers orphelins sur le disque
         $tempDir = $this->getParameter('kernel.project_dir') . '/public/uploads/temp/';
-        $cleanedCount = 0;
+        $orphanFilesCount = 0;
 
         if (is_dir($tempDir)) {
             $files = glob($tempDir . '*');
@@ -281,13 +304,13 @@ class DocumentController extends AbstractController
             foreach ($files as $file) {
                 if (is_file($file) && (time() - filemtime($file)) > $maxAge) {
                     unlink($file);
-                    $cleanedCount++;
+                    $orphanFilesCount++;
                 }
             }
         }
 
         return $this->json([
-            'message' => "Nettoyage terminé. {$cleanedCount} fichiers supprimés."
+            'message' => "Nettoyage terminé. {$deletedCount} documents temporaires et {$orphanFilesCount} fichiers orphelins supprimés."
         ]);
     }
 }

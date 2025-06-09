@@ -696,7 +696,7 @@ class NotificationService
     // === DOCUMENT NOTIFICATIONS ===
 
     /**
-     * Notify about document addition
+     * Notify about document addition (single document - deprecated)
      */
     public function notifyDocumentAdded($document, $formation, $session = null): void
     {
@@ -733,6 +733,81 @@ class NotificationService
             $this->logger->info('Notifications d\'ajout de document envoyées');
         } catch (\Exception $e) {
             $this->logger->error('Erreur lors des notifications d\'ajout de document: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notify about multiple documents added (new improved version)
+     */
+    public function notifyDocumentsAdded(array $documents, $formation, $session = null, $addedByUser = null): void
+    {
+        try {
+            if (empty($documents)) {
+                return;
+            }
+
+            $documentCount = count($documents);
+            $isInstructor = $addedByUser && in_array('ROLE_INSTRUCTOR', $addedByUser->getRoles());
+
+            // Préparer la liste des documents pour les emails (HTML)
+            $documentListHtml = '<ul style="margin: 0; padding-left: 20px;">';
+            foreach ($documents as $document) {
+                $documentListHtml .= '<li style="margin-bottom: 5px;">' . 
+                    htmlspecialchars($document->getTitle()) . ' <span style="color: #666;">(' . 
+                    strtoupper(htmlspecialchars($document->getType())) . ')</span></li>';
+            }
+            $documentListHtml .= '</ul>';
+
+            $baseVariables = [
+                'documentCount' => $documentCount,
+                'documentListHtml' => $documentListHtml,
+                'formationTitle' => $formation->getTitle(),
+                'sessionTitle' => $session ? $session->getLocation() . ' (' . $session->getStartDate()->format('d/m/Y') . ')' : '',
+                'addedAt' => (new \DateTime())->format('d/m/Y H:i'),
+                'addedByName' => $addedByUser ? $addedByUser->getFirstName() . ' ' . $addedByUser->getLastName() : 'Administrateur'
+            ];
+
+            // 1. Notification aux étudiants
+            $students = [];
+            if ($session) {
+                $students = $this->getSessionParticipants($session);
+            } else {
+                $students = $this->getStudentsEnrolledInFormation($formation);
+            }
+
+            foreach ($students as $student) {
+                $studentVariables = array_merge($baseVariables, [
+                    'studentName' => $student->getFirstName()
+                ]);
+                $this->emailService->sendTemplatedEmailByEventAndRole(
+                    $student->getEmail(),
+                    NotificationEventType::DOCUMENTS_ADDED,
+                    'ROLE_STUDENT',
+                    $studentVariables
+                );
+            }
+
+            // 2. Notification aux admins si c'est un instructeur qui a ajouté les documents
+            if ($isInstructor) {
+                $admins = $this->em->getRepository(User::class)->findByRole('ROLE_ADMIN');
+                
+                foreach ($admins as $admin) {
+                    $adminVariables = array_merge($baseVariables, [
+                        'adminName' => $admin->getFirstName(),
+                        'instructorName' => $addedByUser->getFirstName() . ' ' . $addedByUser->getLastName()
+                    ]);
+                    $this->emailService->sendTemplatedEmailByEventAndRole(
+                        $admin->getEmail(),
+                        NotificationEventType::DOCUMENTS_ADDED_BY_INSTRUCTOR,
+                        'ROLE_ADMIN',
+                        $adminVariables
+                    );
+                }
+            }
+
+            $this->logger->info("Notifications d'ajout de {$documentCount} documents envoyées à " . count($students) . " étudiants" . ($isInstructor ? " et aux admins" : ""));
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors des notifications d\'ajout de documents: ' . $e->getMessage());
         }
     }
 

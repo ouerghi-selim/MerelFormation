@@ -49,7 +49,7 @@
 - Monitoring : Logs configurés
 ```
 
-## 🗄️ Structure de la Base de Données (25 Entités)
+## 🗄️ Structure de la Base de Données (26 Entités)
 
 ### Entités Principales
 - **User** - Utilisateurs (admins, étudiants, instructeurs)
@@ -60,6 +60,7 @@
 - **Payment** - Gestion des paiements
 - **Invoice** - Facturation
 - **Document** - Gestion documentaire
+- **🆕 TempDocument** - Documents temporaires (architecture stateless)
 
 ### Entités Support
 - **Category** - Catégories de formations
@@ -230,6 +231,9 @@
 ### ✅ Gestion Documentaire Formations/Sessions (NOUVEAU)
 - **Upload de documents par formation** - Les admins peuvent ajouter des documents spécifiques à chaque formation
 - **Upload de documents par session** - Documents spécifiques aux sessions de formation
+- **🆕 Système d'upload temporaire** - Architecture stateless avec entité TempDocument
+- **🆕 Finalisation automatique** - Documents temporaires convertis en définitifs lors de la sauvegarde
+- **🆕 Nettoyage automatique** - Suppression des fichiers temporaires anciens (>24h)
 - **Organisation par source** - Documents organisés et filtrés par formation ou session
 - **API étudiants optimisée** - Accès aux documents avec informations source (sourceTitle, sourceId)
 - **Interface admin complète** - Gestion centralisée des documents dans les pages détails
@@ -238,6 +242,8 @@
 - **Filtrage avancé étudiant** - Filtrage par formation/session côté étudiant
 - **Gestion d'erreurs robuste** - Upload avec types étendus (PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX)
 - **Routes API complètes** - AdminSessions.php avec endpoint `/admin/sessions/{id}/documents`
+- **🆕 Validation précoce** - Vérification fichiers avant traitement pour éviter les erreurs
+- **🆕 Gestion stateless** - Compatible avec l'architecture API Platform sans sessions
 
 ## 🧠 Environnement de Développement
 
@@ -306,6 +312,9 @@ MerelFormation/
 - **Filtrage Intelligent** - Recherche et filtres avancés côté étudiant
 - **Sécurité Renforcée** - Contrôle d'accès documents basé sur inscriptions
 - **🆕 Notifications d'ajout** - Emails automatiques lors d'ajout de documents
+- **🆕 Système Upload Temporaire** - Architecture stateless avec entité TempDocument
+- **🆕 Upload Robuste** - Validation précoce et gestion d'erreurs améliorée
+- **🆕 Migration Automatique** - Base de données mise à jour automatiquement
 
 ### 🆕 CORRECTIONS CRITIQUES (Juin 2025) ✅ TERMINÉ
 - **🆕 Bug Réservations Corrigé** - ReservationsAdmin.tsx : Ajout appels API manquants dans `handleReservationStatusChange`
@@ -387,6 +396,12 @@ MerelFormation/
 - GET /student/documents/{id}/download - Téléchargement sécurisé Symfony
 - PUT /admin/sessions/{id} - Mise à jour session (JSON)
 
+🆕 Upload Temporaire (NOUVEAU):
+- POST /admin/documents/temp-upload - Upload temporaire avec entité TempDocument
+- DELETE /admin/documents/temp/{tempId} - Suppression document temporaire
+- POST /admin/documents/finalize - Finalisation lors sauvegarde formation/session
+- POST /admin/documents/cleanup-temp - Nettoyage automatique fichiers anciens
+
 🆕 Réservations API (CORRIGÉ):
 - PUT /admin/reservations/{id}/status - Mise à jour statut (maintenant avec appel API réel)
 - PUT /admin/session-reservations/{id}/status - Confirmation inscriptions sessions
@@ -424,6 +439,9 @@ Grâce au **système de détails complets des réservations**, **les administrat
 3. **Suppression Documents** - Plus d'erreurs de validation après suppression
 4. **Affichage Documents** - Plus d'erreurs JavaScript après upload
 5. **Routes Backend** - Tous les endpoints documentaires opérationnels
+6. **🆕 Architecture Stateless** - Système d'upload temporaire compatible API Platform
+7. **🆕 Validation Précoce** - Plus d'erreurs "stat failed" lors de l'upload
+8. **🆕 Migration Automatique** - Base de données mise à jour pour TempDocument
 
 **💡 CONSEIL POUR FUTURES CONVERSATIONS :**
 Copiez-collez ce brief au début de nouvelles conversations avec Claude pour qu'il comprenne immédiatement le contexte et l'état du projet sans avoir à refaire toute l'analyse.

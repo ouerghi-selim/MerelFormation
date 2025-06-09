@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script de déploiement pour MerelFormation - Version SÉCURISÉE avec préservation des données
+# Script de déploiement pour MerelFormation - Version SÉCURISÉE avec timing correct
 
 echo "🚀 Démarrage du déploiement MerelFormation..."
 
@@ -98,24 +98,45 @@ ls -la app/public/build/assets/ 2>/dev/null || echo "Pas de répertoire assets"
 echo "🐳 Lancement des conteneurs..."
 docker-compose -f docker-compose.prod.yml up -d
 
-# ✅ NOUVEAU : Vérification immédiate des corrections PHP-FPM
-echo "🔌 Vérification des corrections PHP-FPM..."
-sleep 5
+# ✅ AMÉLIORATION: Attente plus longue pour le démarrage initial
+echo "⏳ Attente du démarrage initial des services (20 secondes)..."
+sleep 20
 
-# Test que PHP-FPM écoute sur la bonne interface
-PHP_LISTEN_CHECK=$(docker-compose -f docker-compose.prod.yml exec php cat /usr/local/etc/php-fpm.d/www.conf | grep "listen =" | head -1)
-if echo "$PHP_LISTEN_CHECK" | grep -q "0.0.0.0:9000"; then
-    echo "✅ PHP-FPM configuré correctement ($PHP_LISTEN_CHECK)"
-else
-    echo "❌ ERREUR: PHP-FPM mal configuré ($PHP_LISTEN_CHECK)"
-    echo "🔧 Redémarrage de PHP pour appliquer la configuration..."
-    docker-compose -f docker-compose.prod.yml restart php
-    sleep 5
+# ✅ NOUVEAU : Vérification progressive de PHP-FPM
+echo "🔌 Vérification progressive de PHP-FPM..."
+PHP_READY=false
+PHP_ATTEMPTS=0
+MAX_PHP_ATTEMPTS=12
+
+while [ $PHP_ATTEMPTS -lt $MAX_PHP_ATTEMPTS ] && [ "$PHP_READY" = false ]; do
+    PHP_ATTEMPTS=$((PHP_ATTEMPTS + 1))
+
+    # Vérifier la configuration
+    PHP_LISTEN_CHECK=$(docker-compose -f docker-compose.prod.yml exec php cat /usr/local/etc/php-fpm.d/www.conf 2>/dev/null | grep "listen =" | head -1)
+
+    if echo "$PHP_LISTEN_CHECK" | grep -q "0.0.0.0:9000"; then
+        echo "✅ PHP-FPM configuré correctement ($PHP_LISTEN_CHECK)"
+
+        # Vérifier la connectivité
+        if docker-compose -f docker-compose.prod.yml exec nginx nc -z php 9000 2>/dev/null; then
+            echo "✅ Connectivité Nginx->PHP opérationnelle"
+            PHP_READY=true
+        else
+            echo "⏳ Connectivité en cours d'établissement (tentative $PHP_ATTEMPTS/$MAX_PHP_ATTEMPTS)..."
+            sleep 5
+        fi
+    else
+        echo "⏳ PHP-FPM en cours de configuration (tentative $PHP_ATTEMPTS/$MAX_PHP_ATTEMPTS)..."
+        sleep 5
+    fi
+done
+
+if [ "$PHP_READY" = false ]; then
+    echo "❌ ERREUR: PHP-FPM n'est pas prêt après $((MAX_PHP_ATTEMPTS * 5)) secondes"
+    echo "📋 Logs PHP pour diagnostic:"
+    docker-compose -f docker-compose.prod.yml logs --tail=10 php
+    exit 1
 fi
-
-# ✅ AMÉLIORATION: Attente plus longue pour MySQL et vérifications
-echo "⏳ Attente du démarrage des services (15 secondes)..."
-sleep 15
 
 # ✅ AMÉLIORATION: Vérification avec timeout pour MySQL
 echo "🔄 Vérification de l'état de MySQL..."
@@ -208,34 +229,52 @@ docker-compose -f docker-compose.prod.yml exec php php bin/console doctrine:migr
 echo "🔐 Vérification des permissions des fichiers statiques..."
 docker-compose -f docker-compose.prod.yml exec nginx chmod -R 755 /var/www/public/build
 
-# ✅ NOUVEAU : Test de connectivité Nginx->PHP
-echo "🔌 Test de connectivité Nginx->PHP..."
-if docker-compose -f docker-compose.prod.yml exec nginx nc -z php 9000; then
-    echo "✅ Connectivité Nginx->PHP opérationnelle"
-else
-    echo "❌ ERREUR: Nginx ne peut pas joindre PHP"
-    echo "🔧 Redémarrage de PHP pour corriger..."
-    docker-compose -f docker-compose.prod.yml restart php
-    sleep 5
-fi
-
-# Redémarrer PHP pour s'assurer que tout est correct
-echo "🔄 Redémarrage de PHP..."
-docker-compose -f docker-compose.prod.yml restart php
-
-# Attendre un peu après redémarrage
-sleep 8
+# ✅ CORRECTION : Pas de redémarrage PHP inutile qui cause des problèmes de timing
+echo "🔄 Stabilisation des services..."
+sleep 10
 
 # Afficher l'état des conteneurs
 echo "📊 État des conteneurs:"
 docker-compose -f docker-compose.prod.yml ps
 
-# ✅ AMÉLIORATION : Tests API plus robustes
-echo "🧪 Tests API complets..."
+# ✅ AMÉLIORATION : Tests API avec retry et timing approprié
+echo "🧪 Tests API avec retry intelligent..."
+
+# Fonction de test API avec retry
+test_api_with_retry() {
+    local url=$1
+    local method=${2:-GET}
+    local data=${3:-""}
+    local max_attempts=6
+    local attempt=0
+
+    while [ $attempt -lt $max_attempts ]; do
+        attempt=$((attempt + 1))
+
+        if [ "$method" = "POST" ] && [ -n "$data" ]; then
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$url" -X POST -H "Content-Type: application/json" -d "$data" --max-time 15 || echo "000")
+        else
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$url" --max-time 15 || echo "000")
+        fi
+
+        if [ "$HTTP_CODE" != "000" ] && [ "$HTTP_CODE" != "502" ]; then
+            echo "$HTTP_CODE"
+            return 0
+        fi
+
+        if [ $attempt -lt $max_attempts ]; then
+            echo "⏳ Tentative $attempt/$max_attempts - API pas encore prête (code: $HTTP_CODE), nouvelle tentative dans 10s..."
+            sleep 10
+        fi
+    done
+
+    echo "$HTTP_CODE"
+    return 1
+}
 
 # Test 1: API GET
-echo "🔍 Test GET /api/formations..."
-API_GET_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://193.108.53.178/api/formations --max-time 10 || echo "000")
+echo "🔍 Test GET /api/formations avec retry..."
+API_GET_CODE=$(test_api_with_retry "http://193.108.53.178/api/formations")
 if [ "$API_GET_CODE" = "200" ]; then
     echo "✅ API GET fonctionne parfaitement (code: $API_GET_CODE)"
 elif [ "$API_GET_CODE" = "502" ]; then
@@ -246,8 +285,8 @@ else
 fi
 
 # Test 2: API POST
-echo "🔍 Test POST /api/login_check..."
-API_POST_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://193.108.53.178/api/login_check -X POST -H "Content-Type: application/json" -d '{"email":"test","password":"test"}' --max-time 10 || echo "000")
+echo "🔍 Test POST /api/login_check avec retry..."
+API_POST_CODE=$(test_api_with_retry "http://193.108.53.178/api/login_check" "POST" '{"email":"test","password":"test"}')
 if [ "$API_POST_CODE" = "401" ]; then
     echo "✅ API POST fonctionne parfaitement (401 attendu pour mauvais credentials)"
 elif [ "$API_POST_CODE" = "502" ]; then

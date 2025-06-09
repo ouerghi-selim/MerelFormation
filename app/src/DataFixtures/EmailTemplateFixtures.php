@@ -727,6 +727,80 @@ class EmailTemplateFixtures extends Fixture
         $contactRequestClient->setVariables(['contactName', 'contactSubject', 'receivedAt']);
         $manager->persist($contactRequestClient);
 
+        // === DOCUMENTS TEMPLATES (GROUPÉS) ===
+
+        // Documents Added - Student notification (multiple docs)
+        $documentsAddedStudent = new EmailTemplate();
+        $documentsAddedStudent->setName('Nouveaux documents ajoutés');
+        $documentsAddedStudent->setIdentifier('documents_added_student');
+        $documentsAddedStudent->setEventType('documents_added');
+        $documentsAddedStudent->setTargetRole('ROLE_STUDENT');
+        $documentsAddedStudent->setIsSystem(true);
+        $documentsAddedStudent->setType('notification');
+        $documentsAddedStudent->setSubject('{{documentCount}} nouveaux document(s) disponible(s)');
+        $documentsAddedStudent->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #2c5282;">Nouveaux documents disponibles</h2>
+                <p>Bonjour {{studentName}},</p>
+                <p>{{documentCount}} nouveau(x) document(s) a/ont été ajouté(s) à votre formation:</p>
+                
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <p><strong>Formation:</strong> {{formationTitle}}</p>
+                    <p><strong>Session:</strong> {{sessionTitle}}</p>
+                    <p><strong>Ajouté par:</strong> {{addedByName}}</p>
+                    <p><strong>Date d\'ajout:</strong> {{addedAt}}</p>
+                </div>
+
+                <div style="background-color: #e6fffa; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #38b2ac;">
+                    <p><strong>Documents ajoutés:</strong></p>
+                    <div style="padding-left: 20px;">
+                        {{documentListHtml}}
+                    </div>
+                </div>
+
+                <p>Vous pouvez accéder à ces documents depuis votre espace étudiant dans la section "Mes Documents".</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $documentsAddedStudent->setVariables(['studentName', 'documentCount', 'formationTitle', 'sessionTitle', 'addedByName', 'addedAt', 'documentListHtml']);
+        $manager->persist($documentsAddedStudent);
+
+        // Documents Added by Instructor - Admin notification
+        $documentsAddedByInstructor = new EmailTemplate();
+        $documentsAddedByInstructor->setName('Documents ajoutés par un formateur');
+        $documentsAddedByInstructor->setIdentifier('documents_added_by_instructor_admin');
+        $documentsAddedByInstructor->setEventType('documents_added_by_instructor');
+        $documentsAddedByInstructor->setTargetRole('ROLE_ADMIN');
+        $documentsAddedByInstructor->setIsSystem(true);
+        $documentsAddedByInstructor->setType('notification');
+        $documentsAddedByInstructor->setSubject('Documents ajoutés par {{instructorName}}');
+        $documentsAddedByInstructor->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #2c5282;">Documents ajoutés par un formateur</h2>
+                <p>Bonjour {{adminName}},</p>
+                <p>Le formateur <strong>{{instructorName}}</strong> a ajouté {{documentCount}} document(s) à une formation:</p>
+                
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <p><strong>Formation:</strong> {{formationTitle}}</p>
+                    <p><strong>Session:</strong> {{sessionTitle}}</p>
+                    <p><strong>Ajouté le:</strong> {{addedAt}}</p>
+                </div>
+
+                <div style="background-color: #fef5e7; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #d69e2e;">
+                    <p><strong>Documents ajoutés:</strong></p>
+                    <div style="padding-left: 20px;">
+                        {{documentListHtml}}
+                    </div>
+                </div>
+
+                <p><strong>Action requise:</strong> Veuillez vérifier et valider ces documents si nécessaire.</p>
+                <p>Les étudiants ont été automatiquement notifiés de l\'ajout de ces documents.</p>
+                <p>Cordialement,<br>Système MerelFormation</p>
+            </div>
+        ');
+        $documentsAddedByInstructor->setVariables(['adminName', 'instructorName', 'documentCount', 'formationTitle', 'sessionTitle', 'addedAt', 'documentListHtml']);
+        $manager->persist($documentsAddedByInstructor);
+
         $manager->flush();
     }
 }
