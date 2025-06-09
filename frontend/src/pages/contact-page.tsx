@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { Phone, MapPin, Clock, AlertCircle, Info, Send, User, Mail, Smartphone, MessageSquare, Building, MapPinned } from 'lucide-react';
 import { GoogleMap, useJsApiLoader, InfoWindow } from '@react-google-maps/api';
 import { MarkerF } from '@react-google-maps/api';  // Utiliser MarkerF au lieu de Marker
+import { contactApi } from '../services/api';
 
 // Centre de la carte (coordonnées pour Rennes)
 const center = { lat: 48.12876519256196, lng: -1.7044696431394817 };
@@ -16,6 +17,7 @@ const ContactPage = () => {
         ville: '',
         telephone: '',
         email: '',
+        subject: '',
         message: ''
     });
 
@@ -73,6 +75,7 @@ const ContactPage = () => {
         else if (!/^[0-9\s\+\-\.]{10,15}$/.test(formData.telephone))
             newErrors.telephone = "Format de téléphone invalide";
 
+        if (!formData.subject.trim()) newErrors.subject = "Le sujet est requis";
         if (!formData.message.trim()) newErrors.message = "Le message est requis";
 
         setErrors(newErrors);
@@ -80,16 +83,27 @@ const ContactPage = () => {
     }, [formData]);
 
     // Gérer la soumission du formulaire
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
 
         if (validateForm()) {
-            // Simulation d'envoi du formulaire (à remplacer par l'API réelle)
-            setTimeout(() => {
-                console.log('Formulaire envoyé:', formData);
+            try {
+                // Préparer les données pour l'API
+                const contactData = {
+                    name: `${formData.prenom} ${formData.nom}`.trim(),
+                    email: formData.email,
+                    phone: formData.telephone,
+                    subject: formData.subject,
+                    message: formData.message
+                };
+
+                // Envoyer la demande de contact
+                await contactApi.submit(contactData);
+
                 setIsSubmitting(false);
                 setSubmitSuccess(true);
+
                 // Réinitialiser le formulaire après quelques secondes
                 setTimeout(() => {
                     setFormData({
@@ -100,11 +114,18 @@ const ContactPage = () => {
                         ville: '',
                         telephone: '',
                         email: '',
+                        subject: '',
                         message: ''
                     });
                     setSubmitSuccess(false);
                 }, 5000);
-            }, 1500);
+
+            } catch (error) {
+                console.error('Erreur lors de l\'envoi du formulaire:', error);
+                setIsSubmitting(false);
+                // Afficher une erreur à l'utilisateur
+                alert('Une erreur est survenue lors de l\'envoi de votre message. Veuillez réessayer.');
+            }
         } else {
             setIsSubmitting(false);
         }
@@ -421,6 +442,29 @@ const ContactPage = () => {
                                     <p className="text-red-500 text-sm mt-1">{errors.email}</p>
                                 )}
                             </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-gray-700 mb-2 font-medium" htmlFor="subject">
+                                        <span className="flex items-center">
+                                            <Info className="h-4 w-4 mr-2" />
+                                            Sujet
+                                        </span>
+                            </label>
+                            <input
+                                type="text"
+                                id="subject"
+                                name="subject"
+                                value={formData.subject}
+                                onChange={handleChange}
+                                className={`w-full px-4 py-3 border rounded-lg focus:ring focus:ring-blue-300 transition-all duration-300 ${
+                                    errors.subject ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                                }`}
+                                placeholder="Ex: Demande d'informations sur les formations"
+                            />
+                            {errors.subject && (
+                                <p className="text-red-500 text-sm mt-1">{errors.subject}</p>
+                            )}
                         </div>
 
                         <div>

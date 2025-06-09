@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use App\Service\NotificationService;
 
 /**
  * @Route("/api/admin/vehicles", name="api_admin_vehicles_")
@@ -23,19 +24,22 @@ class VehicleAdminController extends AbstractController
     private $entityManager;
     private $serializer;
     private $validator;
+    private $notificationService;
 
     public function __construct(
         Security $security,
         VehicleRepository $vehicleRepository,
         EntityManagerInterface $entityManager,
         SerializerInterface $serializer,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        NotificationService $notificationService
     ) {
         $this->security = $security;
         $this->vehicleRepository = $vehicleRepository;
         $this->entityManager = $entityManager;
         $this->serializer = $serializer;
         $this->validator = $validator;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -131,6 +135,9 @@ class VehicleAdminController extends AbstractController
         $this->entityManager->persist($vehicle);
         $this->entityManager->flush();
 
+        // Notification email - Véhicule ajouté
+        $this->notificationService->notifyVehicleAdded($vehicle, $this->getUser());
+
         return $this->json([
             'message' => 'Véhicule créé avec succès',
             'data' => $vehicle
@@ -161,6 +168,17 @@ class VehicleAdminController extends AbstractController
         $errors = $this->validateVehicleData($data);
         if (count($errors) > 0) {
             return $this->json(['errors' => $errors], 400);
+        }
+
+        // Vérifier si le véhicule passe en maintenance
+        $wasAvailable = $vehicle->getStatus() !== 'maintenance';
+        $goingToMaintenance = isset($data['status']) && $data['status'] === 'maintenance';
+
+        if ($wasAvailable && $goingToMaintenance) {
+            // Notification de maintenance avant la mise à jour
+            $maintenanceReason = 'Passage en maintenance programmée';
+            $alternativeVehicles = 'Nos équipes vous proposeront un véhicule de remplacement.';
+            $this->notificationService->notifyVehicleMaintenance($vehicle, $maintenanceReason, $alternativeVehicles);
         }
 
         // Mettre à jour le véhicule

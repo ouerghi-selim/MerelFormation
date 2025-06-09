@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Créer une instance axios avec la configuration de base
 const api = axios.create({
-    baseURL: import.meta.env.REACT_APP_API_URL || 'http://193.108.53.178/api',
+    baseURL: import.meta.env.REACT_APP_API_URL || 'http://merelformation.localhost/api',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -401,4 +401,17 @@ export const publicExamCentersApi = {
     // Récupérer les formules d'un centre spécifique
     getCenterFormulas: (centerId: number) => api.get(`/api/exam-centers/${centerId}/formulas`)
 };
+
+// Services API pour le contact (public)
+export const contactApi = {
+    // Envoyer une demande de contact
+    submit: (contactData: {
+        name: string;
+        email: string;
+        phone?: string;
+        subject: string;
+        message: string;
+    }) => api.post('/contact', contactData)
+};
+
 export default api;

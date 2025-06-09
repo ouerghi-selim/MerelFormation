@@ -15,6 +15,7 @@ use App\Entity\Prerequisite;
 use App\Entity\Document;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use App\Service\NotificationService;
 
 /**
  * @Route("/api/admin/formations", name="api_admin_formations_")
@@ -24,15 +25,18 @@ class FormationAdminController extends AbstractController
     private $security;
     private $formationRepository;
     private $entityManager;
+    private $notificationService;
 
     public function __construct(
         Security $security,
         FormationRepository $formationRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        NotificationService $notificationService
     ) {
         $this->security = $security;
         $this->formationRepository = $formationRepository;
         $this->entityManager = $entityManager;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -271,6 +275,10 @@ class FormationAdminController extends AbstractController
 
         $this->entityManager->persist($document);
         $this->entityManager->flush();
+
+        // Notification email - Document ajouté
+        $this->notificationService->notifyDocumentAdded($document, $formation);
+
         $filePath = '/path/to/uploads/' . $document->getFileName();
         $fileSize = file_exists($filePath) ? filesize($filePath) : null;
         return $this->json([
@@ -393,6 +401,9 @@ class FormationAdminController extends AbstractController
         $this->entityManager->persist($formation);
         $this->entityManager->flush();
 
+        // Notification email - Formation créée
+        $this->notificationService->notifyAboutFormationCreated($formation, $this->getUser());
+
         return $this->json([
             'message' => 'Formation créée avec succès',
             'id' => $formation->getId()
@@ -418,6 +429,21 @@ class FormationAdminController extends AbstractController
 
         // Récupérer les données de la requête
         $data = json_decode($request->getContent(), true);
+
+        // Construire la description des changements pour la notification
+        $changes = [];
+        if (isset($data['title']) && $data['title'] !== $formation->getTitle()) {
+            $changes[] = 'Titre modifié: ' . $data['title'];
+        }
+        if (isset($data['description']) && $data['description'] !== $formation->getDescription()) {
+            $changes[] = 'Description mise à jour';
+        }
+        if (isset($data['duration']) && $data['duration'] !== $formation->getDuration()) {
+            $changes[] = 'Durée modifiée: ' . $data['duration'] . 'h';
+        }
+        if (isset($data['price']) && $data['price'] !== $formation->getPrice()) {
+            $changes[] = 'Prix modifié: ' . $data['price'] . '€';
+        }
 
         // Mettre à jour la formation
         if (isset($data['title'])) {
@@ -500,6 +526,12 @@ class FormationAdminController extends AbstractController
         // Persister les modifications
         $this->entityManager->flush();
 
+        // Notification email - Formation modifiée (si des changements significatifs)
+        if (!empty($changes)) {
+            $changesDescription = implode(', ', $changes);
+            $this->notificationService->notifyAboutFormationUpdated($formation, $changesDescription);
+        }
+
         return $this->json([
             'message' => 'Formation mise à jour avec succès'
         ]);
@@ -521,6 +553,11 @@ class FormationAdminController extends AbstractController
         if (!$formation) {
             return $this->json(['message' => 'Formation non trouvée'], 404);
         }
+
+        // Notification email - Formation supprimée (avant suppression)
+        $reason = 'Suppression par l\'administrateur';
+        $alternativeFormations = 'Consultez notre catalogue de formations pour découvrir d\'autres possibilités.';
+        $this->notificationService->notifyAboutFormationDeleted($formation, $reason, $alternativeFormations);
 
         // Supprimer la formation
         $this->entityManager->remove($formation);

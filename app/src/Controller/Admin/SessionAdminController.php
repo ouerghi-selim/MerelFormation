@@ -18,6 +18,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use App\Service\NotificationService;
 
 /**
  * @Route("/api/admin/sessions", name="api_admin_sessions_")
@@ -31,6 +32,7 @@ class SessionAdminController extends AbstractController
     private $entityManager;
     private $serializer;
     private $validator;
+    private $notificationService;
 
     public function __construct(
         Security $security,
@@ -39,7 +41,8 @@ class SessionAdminController extends AbstractController
         UserRepository $userRepository,
         EntityManagerInterface $entityManager,
         SerializerInterface $serializer,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        NotificationService $notificationService
     ) {
         $this->security = $security;
         $this->sessionRepository = $sessionRepository;
@@ -48,6 +51,7 @@ class SessionAdminController extends AbstractController
         $this->entityManager = $entityManager;
         $this->serializer = $serializer;
         $this->validator = $validator;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -226,6 +230,9 @@ class SessionAdminController extends AbstractController
             $this->entityManager->persist($document);
             $this->entityManager->flush();
 
+            // Notification email - Document ajouté à la session
+            $this->notificationService->notifyDocumentAdded($document, $session->getFormation(), $session);
+
             // AMÉLIORATION 5: Réponse plus complète
             return $this->json([
                 'message' => 'Document ajouté avec succès',
@@ -328,6 +335,9 @@ class SessionAdminController extends AbstractController
         $this->entityManager->persist($session);
         $this->entityManager->flush();
 
+        // Notification email - Session créée
+        $this->notificationService->notifyAboutSessionCreated($session);
+
         return $this->json([
             'message' => 'Session créée avec succès',
             'id' => $session->getId()
@@ -358,6 +368,21 @@ class SessionAdminController extends AbstractController
         $errors = $this->validateSessionData($data);
         if (count($errors) > 0) {
             return $this->json(['errors' => $errors], 400);
+        }
+
+        // Construire la description des changements pour la notification
+        $changes = [];
+        if (isset($data['startDate']) && $data['startDate'] !== $session->getStartDate()->format('Y-m-d\TH:i:s.v\Z')) {
+            $changes[] = 'Date de début modifiée: ' . (new \DateTimeImmutable($data['startDate']))->format('d/m/Y H:i');
+        }
+        if (isset($data['endDate']) && $data['endDate'] !== $session->getEndDate()->format('Y-m-d\TH:i:s.v\Z')) {
+            $changes[] = 'Date de fin modifiée: ' . (new \DateTimeImmutable($data['endDate']))->format('d/m/Y H:i');
+        }
+        if (isset($data['location']) && $data['location'] !== $session->getLocation()) {
+            $changes[] = 'Lieu modifié: ' . $data['location'];
+        }
+        if (isset($data['maxParticipants']) && $data['maxParticipants'] !== $session->getMaxParticipants()) {
+            $changes[] = 'Nombre de participants modifié: ' . $data['maxParticipants'];
         }
 
         // Mettre à jour la formation si elle a changé
@@ -406,6 +431,12 @@ class SessionAdminController extends AbstractController
         // Persister les modifications
         $this->entityManager->flush();
 
+        // Notification email - Session modifiée (si des changements significatifs)
+        if (!empty($changes)) {
+            $changesDescription = implode(', ', $changes);
+            $this->notificationService->notifyAboutSessionUpdated($session, $changesDescription);
+        }
+
         return $this->json([
             'message' => 'Session mise à jour avec succès',
             'data' => $this->formatSessionData($session)
@@ -427,6 +458,11 @@ class SessionAdminController extends AbstractController
         if (!$session) {
             return $this->json(['message' => 'Session non trouvée'], 404);
         }
+
+        // Notification email - Session annulée (avant suppression)
+        $reason = 'Suppression par l\'administrateur';
+        $rescheduleInfo = 'Nous vous contacterons pour vous proposer une nouvelle date de session.';
+        $this->notificationService->notifyAboutSessionCancelled($session, $reason, $rescheduleInfo);
 
         // Vérifier s'il existe des réservations pour cette session
         if (count($session->getReservations()) > 0) {

@@ -330,6 +330,578 @@ class NotificationService
             $this->logger->error('Erreur dans notifyAdminAboutVehicleRental: ' . $e->getMessage());
         }
     }
+    // === FORMATION NOTIFICATIONS ===
+
+    /**
+     * Notify about formation creation
+     */
+    public function notifyAboutFormationCreated($formation, $createdBy): void
+    {
+        try {
+            // Variables communes
+            $variables = [
+                'formationTitle' => $formation->getTitle(),
+                'createdBy' => $createdBy->getFirstName() . ' ' . $createdBy->getLastName(),
+                'createdAt' => (new \DateTime())->format('d/m/Y H:i'),
+                'duration' => $formation->getDuration(),
+                'category' => $formation->getCategory() ? $formation->getCategory()->getName() : 'Non définie'
+            ];
+
+            // Notifier les admins
+            $admins = $this->em->getRepository(User::class)->findByRole('ROLE_ADMIN');
+            foreach ($admins as $admin) {
+                $this->emailService->sendTemplatedEmailByEventAndRole(
+                    $admin->getEmail(),
+                    NotificationEventType::FORMATION_CREATED,
+                    'ROLE_ADMIN',
+                    $variables
+                );
+            }
+
+            // Notifier les instructeurs
+            $instructors = $this->em->getRepository(User::class)->findByRole('ROLE_INSTRUCTOR');
+            foreach ($instructors as $instructor) {
+                $instructorVariables = array_merge($variables, [
+                    'instructorName' => $instructor->getFirstName()
+                ]);
+                $this->emailService->sendTemplatedEmailByEventAndRole(
+                    $instructor->getEmail(),
+                    NotificationEventType::FORMATION_CREATED,
+                    'ROLE_INSTRUCTOR',
+                    $instructorVariables
+                );
+            }
+
+            $this->logger->info('Notifications de création de formation envoyées');
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors des notifications de création de formation: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notify about formation updates
+     */
+    public function notifyAboutFormationUpdated($formation, $changesDescription): void
+    {
+        try {
+            // Récupérer les étudiants inscrits à cette formation
+            $students = $this->getStudentsEnrolledInFormation($formation);
+
+            $variables = [
+                'formationTitle' => $formation->getTitle(),
+                'changesDescription' => $changesDescription,
+                'updatedAt' => (new \DateTime())->format('d/m/Y H:i')
+            ];
+
+            foreach ($students as $student) {
+                $studentVariables = array_merge($variables, [
+                    'studentName' => $student->getFirstName()
+                ]);
+                $this->emailService->sendTemplatedEmailByEventAndRole(
+                    $student->getEmail(),
+                    NotificationEventType::FORMATION_UPDATED,
+                    'ROLE_STUDENT',
+                    $studentVariables
+                );
+            }
+
+            $this->logger->info('Notifications de modification de formation envoyées à ' . count($students) . ' étudiants');
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors des notifications de modification de formation: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notify about formation deletion
+     */
+    public function notifyAboutFormationDeleted($formation, $reason, $alternativeFormations): void
+    {
+        try {
+            $students = $this->getStudentsEnrolledInFormation($formation);
+
+            $variables = [
+                'formationTitle' => $formation->getTitle(),
+                'deletedAt' => (new \DateTime())->format('d/m/Y H:i'),
+                'reason' => $reason,
+                'alternativeFormations' => $alternativeFormations
+            ];
+
+            foreach ($students as $student) {
+                $studentVariables = array_merge($variables, [
+                    'studentName' => $student->getFirstName()
+                ]);
+                $this->emailService->sendTemplatedEmailByEventAndRole(
+                    $student->getEmail(),
+                    NotificationEventType::FORMATION_DELETED,
+                    'ROLE_STUDENT',
+                    $studentVariables
+                );
+            }
+
+            $this->logger->info('Notifications d\'annulation de formation envoyées à ' . count($students) . ' étudiants');
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors des notifications d\'annulation de formation: ' . $e->getMessage());
+        }
+    }
+
+    // === SESSION NOTIFICATIONS ===
+
+    /**
+     * Notify about session creation
+     */
+    public function notifyAboutSessionCreated($session): void
+    {
+        try {
+            // Récupérer les étudiants potentiellement intéressés
+            $students = $this->em->getRepository(User::class)->findByRole('ROLE_STUDENT');
+
+            $variables = [
+                'formationTitle' => $session->getFormation()->getTitle(),
+                'sessionDate' => $session->getStartDate()->format('d/m/Y H:i'),
+                'location' => $session->getLocation() ?? 'À confirmer',
+                'availableSeats' => $session->getMaxParticipants() - count($session->getReservations()),
+                'price' => $session->getFormation()->getPrice() . ' €'
+            ];
+
+            foreach ($students as $student) {
+                $studentVariables = array_merge($variables, [
+                    'studentName' => $student->getFirstName()
+                ]);
+                $this->emailService->sendTemplatedEmailByEventAndRole(
+                    $student->getEmail(),
+                    NotificationEventType::SESSION_CREATED,
+                    'ROLE_STUDENT',
+                    $studentVariables
+                );
+            }
+
+            $this->logger->info('Notifications de nouvelle session envoyées');
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors des notifications de nouvelle session: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notify about session updates
+     */
+    public function notifyAboutSessionUpdated($session, $changesDescription): void
+    {
+        try {
+            $participants = $this->getSessionParticipants($session);
+
+            $variables = [
+                'formationTitle' => $session->getFormation()->getTitle(),
+                'newSessionDate' => $session->getStartDate()->format('d/m/Y H:i'),
+                'newLocation' => $session->getLocation() ?? 'À confirmer',
+                'changesDescription' => $changesDescription
+            ];
+
+            foreach ($participants as $participant) {
+                $studentVariables = array_merge($variables, [
+                    'studentName' => $participant->getFirstName()
+                ]);
+                $this->emailService->sendTemplatedEmailByEventAndRole(
+                    $participant->getEmail(),
+                    NotificationEventType::SESSION_UPDATED,
+                    'ROLE_STUDENT',
+                    $studentVariables
+                );
+            }
+
+            $this->logger->info('Notifications de modification de session envoyées');
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors des notifications de modification de session: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notify about session cancellation
+     */
+    public function notifyAboutSessionCancelled($session, $reason, $rescheduleInfo): void
+    {
+        try {
+            $participants = $this->getSessionParticipants($session);
+
+            $variables = [
+                'formationTitle' => $session->getFormation()->getTitle(),
+                'originalSessionDate' => $session->getStartDate()->format('d/m/Y H:i'),
+                'reason' => $reason,
+                'rescheduleInfo' => $rescheduleInfo
+            ];
+
+            foreach ($participants as $participant) {
+                $studentVariables = array_merge($variables, [
+                    'studentName' => $participant->getFirstName()
+                ]);
+                $this->emailService->sendTemplatedEmailByEventAndRole(
+                    $participant->getEmail(),
+                    NotificationEventType::SESSION_CANCELLED,
+                    'ROLE_STUDENT',
+                    $studentVariables
+                );
+            }
+
+            $this->logger->info('Notifications d\'annulation de session envoyées');
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors des notifications d\'annulation de session: ' . $e->getMessage());
+        }
+    }
+
+    // === USER NOTIFICATIONS ===
+
+    /**
+     * Send welcome email to new user
+     */
+    public function notifyUserWelcome($user, $temporaryPassword): void
+    {
+        try {
+            $variables = [
+                'userName' => $user->getFirstName() . ' ' . $user->getLastName(),
+                'userEmail' => $user->getEmail(),
+                'temporaryPassword' => $temporaryPassword,
+                'userRole' => $this->getHighestRole($user)
+            ];
+
+            $this->emailService->sendTemplatedEmailByEventAndRole(
+                $user->getEmail(),
+                NotificationEventType::USER_WELCOME,
+                'ROLE_STUDENT',
+                $variables
+            );
+
+            $this->logger->info('Email de bienvenue envoyé à: ' . $user->getEmail());
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de l\'envoi de l\'email de bienvenue: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notify about user profile updates
+     */
+    public function notifyUserUpdated($user, $changesDescription, $updatedBy): void
+    {
+        try {
+            $variables = [
+                'userName' => $user->getFirstName() . ' ' . $user->getLastName(),
+                'changesDescription' => $changesDescription,
+                'updatedAt' => (new \DateTime())->format('d/m/Y H:i'),
+                'updatedBy' => $updatedBy->getFirstName() . ' ' . $updatedBy->getLastName()
+            ];
+
+            $this->emailService->sendTemplatedEmailByEventAndRole(
+                $user->getEmail(),
+                NotificationEventType::USER_UPDATED,
+                'ROLE_STUDENT',
+                $variables
+            );
+
+            $this->logger->info('Notification de modification de profil envoyée');
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de la notification de modification de profil: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notify about user deactivation
+     */
+    public function notifyUserDeactivated($user, $reason): void
+    {
+        try {
+            $variables = [
+                'userName' => $user->getFirstName() . ' ' . $user->getLastName(),
+                'deactivatedAt' => (new \DateTime())->format('d/m/Y H:i'),
+                'reason' => $reason
+            ];
+
+            $this->emailService->sendTemplatedEmailByEventAndRole(
+                $user->getEmail(),
+                NotificationEventType::USER_DEACTIVATED,
+                'ROLE_STUDENT',
+                $variables
+            );
+
+            $this->logger->info('Notification de désactivation envoyée');
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de la notification de désactivation: ' . $e->getMessage());
+        }
+    }
+
+    // === VEHICLE NOTIFICATIONS ===
+
+    /**
+     * Notify about vehicle addition
+     */
+    public function notifyVehicleAdded($vehicle, $addedBy): void
+    {
+        try {
+            $admins = $this->em->getRepository(User::class)->findByRole('ROLE_ADMIN');
+
+            $variables = [
+                'vehicleModel' => $vehicle->getModel(),
+                'vehiclePlate' => $vehicle->getPlateNumber(),
+                'vehicleType' => $vehicle->getType(),
+                'addedBy' => $addedBy->getFirstName() . ' ' . $addedBy->getLastName(),
+                'addedAt' => (new \DateTime())->format('d/m/Y H:i')
+            ];
+
+            foreach ($admins as $admin) {
+                $this->emailService->sendTemplatedEmailByEventAndRole(
+                    $admin->getEmail(),
+                    NotificationEventType::VEHICLE_ADDED,
+                    'ROLE_ADMIN',
+                    $variables
+                );
+            }
+
+            $this->logger->info('Notifications d\'ajout de véhicule envoyées');
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors des notifications d\'ajout de véhicule: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notify about vehicle maintenance
+     */
+    public function notifyVehicleMaintenance($vehicle, $maintenanceReason, $alternativeVehicles): void
+    {
+        try {
+            // Récupérer les clients avec des réservations pour ce véhicule
+            $affectedClients = $this->getClientsWithVehicleReservations($vehicle);
+
+            $variables = [
+                'vehicleModel' => $vehicle->getModel(),
+                'maintenanceReason' => $maintenanceReason,
+                'alternativeVehicles' => $alternativeVehicles
+            ];
+
+            foreach ($affectedClients as $client) {
+                $clientVariables = array_merge($variables, [
+                    'clientName' => $client['user']->getFirstName(),
+                    'reservationDate' => $client['reservationDate']
+                ]);
+                $this->emailService->sendTemplatedEmailByEventAndRole(
+                    $client['user']->getEmail(),
+                    NotificationEventType::VEHICLE_MAINTENANCE,
+                    'ROLE_STUDENT',
+                    $clientVariables
+                );
+            }
+
+            $this->logger->info('Notifications de maintenance de véhicule envoyées');
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors des notifications de maintenance: ' . $e->getMessage());
+        }
+    }
+
+    // === DOCUMENT NOTIFICATIONS ===
+
+    /**
+     * Notify about document addition
+     */
+    public function notifyDocumentAdded($document, $formation, $session = null): void
+    {
+        try {
+            $students = [];
+            
+            if ($session) {
+                // Document spécifique à une session
+                $students = $this->getSessionParticipants($session);
+            } else {
+                // Document général pour la formation
+                $students = $this->getStudentsEnrolledInFormation($formation);
+            }
+
+            $variables = [
+                'documentTitle' => $document->getTitle(),
+                'formationTitle' => $formation->getTitle(),
+                'documentType' => $document->getType(),
+                'addedAt' => (new \DateTime())->format('d/m/Y H:i')
+            ];
+
+            foreach ($students as $student) {
+                $studentVariables = array_merge($variables, [
+                    'studentName' => $student->getFirstName()
+                ]);
+                $this->emailService->sendTemplatedEmailByEventAndRole(
+                    $student->getEmail(),
+                    NotificationEventType::DOCUMENT_ADDED,
+                    'ROLE_STUDENT',
+                    $studentVariables
+                );
+            }
+
+            $this->logger->info('Notifications d\'ajout de document envoyées');
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors des notifications d\'ajout de document: ' . $e->getMessage());
+        }
+    }
+
+    // === CONTACT NOTIFICATIONS ===
+
+    /**
+     * Notify about contact request
+     */
+    public function notifyContactRequest($contactData): void
+    {
+        try {
+            // Notifier les admins
+            $admins = $this->em->getRepository(User::class)->findByRole('ROLE_ADMIN');
+            
+            $adminVariables = [
+                'contactName' => $contactData['name'],
+                'contactEmail' => $contactData['email'],
+                'contactPhone' => $contactData['phone'] ?? 'Non renseigné',
+                'contactSubject' => $contactData['subject'],
+                'contactMessage' => $contactData['message'],
+                'receivedAt' => (new \DateTime())->format('d/m/Y H:i')
+            ];
+
+            foreach ($admins as $admin) {
+                $this->emailService->sendTemplatedEmailByEventAndRole(
+                    $admin->getEmail(),
+                    NotificationEventType::CONTACT_REQUEST,
+                    'ROLE_ADMIN',
+                    $adminVariables
+                );
+            }
+
+            // Accusé de réception au client
+            $clientVariables = [
+                'contactName' => $contactData['name'],
+                'contactSubject' => $contactData['subject'],
+                'receivedAt' => (new \DateTime())->format('d/m/Y H:i')
+            ];
+
+            $this->emailService->sendTemplatedEmailByEventAndRole(
+                $contactData['email'],
+                NotificationEventType::CONTACT_REQUEST,
+                'ROLE_STUDENT',
+                $clientVariables
+            );
+
+            $this->logger->info('Notifications de demande de contact envoyées');
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors des notifications de contact: ' . $e->getMessage());
+        }
+    }
+
+    // === PAYMENT NOTIFICATIONS ===
+
+    /**
+     * Notify about payment received
+     */
+    public function notifyPaymentReceived($payment): void
+    {
+        try {
+            $variables = [
+                'clientName' => $payment->getUser()->getFirstName() . ' ' . $payment->getUser()->getLastName(),
+                'amount' => $payment->getAmount(),
+                'invoiceNumber' => $payment->getInvoice() ? $payment->getInvoice()->getNumber() : 'N/A',
+                'paymentDate' => $payment->getCreatedAt()->format('d/m/Y'),
+                'paymentMethod' => $payment->getMethod() ?? 'Non spécifié'
+            ];
+
+            $this->emailService->sendTemplatedEmailByEventAndRole(
+                $payment->getUser()->getEmail(),
+                NotificationEventType::PAYMENT_RECEIVED,
+                'ROLE_STUDENT',
+                $variables
+            );
+
+            $this->logger->info('Notification de paiement reçu envoyée');
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de la notification de paiement: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notify about payment due
+     */
+    public function notifyPaymentDue($invoice, $daysUntilDue): void
+    {
+        try {
+            $variables = [
+                'clientName' => $invoice->getUser()->getFirstName() . ' ' . $invoice->getUser()->getLastName(),
+                'amount' => $invoice->getAmount(),
+                'invoiceNumber' => $invoice->getNumber(),
+                'dueDate' => $invoice->getDueDate()->format('d/m/Y'),
+                'formationTitle' => $invoice->getFormation() ? $invoice->getFormation()->getTitle() : 'Service',
+                'daysUntilDue' => $daysUntilDue
+            ];
+
+            $this->emailService->sendTemplatedEmailByEventAndRole(
+                $invoice->getUser()->getEmail(),
+                NotificationEventType::PAYMENT_DUE,
+                'ROLE_STUDENT',
+                $variables
+            );
+
+            $this->logger->info('Rappel d\'échéance de paiement envoyé');
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors du rappel d\'échéance: ' . $e->getMessage());
+        }
+    }
+
+    // === HELPER METHODS ===
+
+    /**
+     * Get students enrolled in a formation
+     */
+    private function getStudentsEnrolledInFormation($formation): array
+    {
+        return $this->em->getRepository(User::class)
+            ->createQueryBuilder('u')
+            ->join('u.reservations', 'r')
+            ->join('r.session', 's')
+            ->where('s.formation = :formation')
+            ->andWhere('r.status = :confirmed')
+            ->setParameter('formation', $formation)
+            ->setParameter('confirmed', 'confirmed')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Get participants of a session
+     */
+    private function getSessionParticipants($session): array
+    {
+        return $this->em->getRepository(User::class)
+            ->createQueryBuilder('u')
+            ->join('u.reservations', 'r')
+            ->where('r.session = :session')
+            ->andWhere('r.status = :confirmed')
+            ->setParameter('session', $session)
+            ->setParameter('confirmed', 'confirmed')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Get clients with reservations for a specific vehicle
+     */
+    private function getClientsWithVehicleReservations($vehicle): array
+    {
+        $rentals = $this->em->getRepository(VehicleRental::class)
+            ->createQueryBuilder('vr')
+            ->where('vr.vehicle = :vehicle')
+            ->andWhere('vr.startDate > :now')
+            ->setParameter('vehicle', $vehicle)
+            ->setParameter('now', new \DateTime())
+            ->getQuery()
+            ->getResult();
+
+        $clients = [];
+        foreach ($rentals as $rental) {
+            $clients[] = [
+                'user' => $rental->getUser(),
+                'reservationDate' => $rental->getStartDate()->format('d/m/Y')
+            ];
+        }
+
+        return $clients;
+    }
+
     // Méthode de secours si le template n'existe pas
     private function sendEmailToAdmin(string $adminEmail, string $subject, string $content, array $context = []): void
     {

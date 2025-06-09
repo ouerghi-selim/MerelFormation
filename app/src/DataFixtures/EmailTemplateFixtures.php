@@ -186,6 +186,547 @@ class EmailTemplateFixtures extends Fixture
 
         $manager->persist($vehicleClientTemplate);
 
+        // === FORMATION TEMPLATES ===
+        
+        // Formation Created - Admin notification
+        $formationCreatedAdmin = new EmailTemplate();
+        $formationCreatedAdmin->setName('Nouvelle formation créée (Admin)');
+        $formationCreatedAdmin->setIdentifier('formation_created_admin');
+        $formationCreatedAdmin->setEventType('formation_created');
+        $formationCreatedAdmin->setTargetRole('ROLE_ADMIN');
+        $formationCreatedAdmin->setIsSystem(true);
+        $formationCreatedAdmin->setType('notification');
+        $formationCreatedAdmin->setSubject('Nouvelle formation créée: {{formationTitle}}');
+        $formationCreatedAdmin->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #2c5282;">Nouvelle formation créée</h2>
+                <p>Une nouvelle formation a été créée dans le système MerelFormation.</p>
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <p><strong>Détails de la formation:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Titre: {{formationTitle}}</li>
+                        <li>Créée par: {{createdBy}}</li>
+                        <li>Date de création: {{createdAt}}</li>
+                        <li>Durée: {{duration}} heures</li>
+                    </ul>
+                </div>
+                <p>Vous pouvez consulter cette formation dans votre <a href="http://merelformation.localhost/admin/formations" style="color: #3182ce;">tableau de bord administrateur</a>.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $formationCreatedAdmin->setVariables(['formationTitle', 'createdBy', 'createdAt', 'duration']);
+        $manager->persist($formationCreatedAdmin);
+
+        // Formation Created - Instructor notification
+        $formationCreatedInstructor = new EmailTemplate();
+        $formationCreatedInstructor->setName('Nouvelle formation disponible (Instructeur)');
+        $formationCreatedInstructor->setIdentifier('formation_created_instructor');
+        $formationCreatedInstructor->setEventType('formation_created');
+        $formationCreatedInstructor->setTargetRole('ROLE_INSTRUCTOR');
+        $formationCreatedInstructor->setIsSystem(true);
+        $formationCreatedInstructor->setType('notification');
+        $formationCreatedInstructor->setSubject('Nouvelle formation disponible: {{formationTitle}}');
+        $formationCreatedInstructor->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #2c5282;">Nouvelle formation disponible</h2>
+                <p>Bonjour {{instructorName}},</p>
+                <p>Une nouvelle formation est maintenant disponible sur la plateforme MerelFormation.</p>
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <p><strong>Détails de la formation:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Titre: {{formationTitle}}</li>
+                        <li>Durée: {{duration}} heures</li>
+                        <li>Catégorie: {{category}}</li>
+                    </ul>
+                </div>
+                <p>Vous pourrez bientôt animer des sessions de cette formation. Consultez votre espace instructeur pour plus de détails.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $formationCreatedInstructor->setVariables(['instructorName', 'formationTitle', 'duration', 'category']);
+        $manager->persist($formationCreatedInstructor);
+
+        // Formation Updated - Students notification
+        $formationUpdatedStudent = new EmailTemplate();
+        $formationUpdatedStudent->setName('Formation modifiée (Étudiant)');
+        $formationUpdatedStudent->setIdentifier('formation_updated_student');
+        $formationUpdatedStudent->setEventType('formation_updated');
+        $formationUpdatedStudent->setTargetRole('ROLE_STUDENT');
+        $formationUpdatedStudent->setIsSystem(true);
+        $formationUpdatedStudent->setType('notification');
+        $formationUpdatedStudent->setSubject('Modification de votre formation: {{formationTitle}}');
+        $formationUpdatedStudent->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #2c5282;">Modification de votre formation</h2>
+                <p>Bonjour {{studentName}},</p>
+                <p>Des modifications ont été apportées à la formation à laquelle vous êtes inscrit(e):</p>
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <p><strong>Formation concernée:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Titre: {{formationTitle}}</li>
+                        <li>Modifications: {{changesDescription}}</li>
+                        <li>Date de modification: {{updatedAt}}</li>
+                    </ul>
+                </div>
+                <p>Pour plus de détails, consultez votre espace étudiant.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $formationUpdatedStudent->setVariables(['studentName', 'formationTitle', 'changesDescription', 'updatedAt']);
+        $manager->persist($formationUpdatedStudent);
+
+        // Formation Deleted - Students notification
+        $formationDeletedStudent = new EmailTemplate();
+        $formationDeletedStudent->setName('Formation annulée (Étudiant)');
+        $formationDeletedStudent->setIdentifier('formation_deleted_student');
+        $formationDeletedStudent->setEventType('formation_deleted');
+        $formationDeletedStudent->setTargetRole('ROLE_STUDENT');
+        $formationDeletedStudent->setIsSystem(true);
+        $formationDeletedStudent->setType('notification');
+        $formationDeletedStudent->setSubject('IMPORTANT: Annulation de la formation {{formationTitle}}');
+        $formationDeletedStudent->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #e53e3e;">Formation annulée</h2>
+                <p>Bonjour {{studentName}},</p>
+                <p>Nous vous informons que la formation suivante a été annulée:</p>
+                <div style="background-color: #fed7d7; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #e53e3e;">
+                    <p><strong>Formation annulée:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Titre: {{formationTitle}}</li>
+                        <li>Date d\'annulation: {{deletedAt}}</li>
+                        <li>Raison: {{reason}}</li>
+                    </ul>
+                </div>
+                <div style="background-color: #e6fffa; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #38b2ac;">
+                    <p><strong>Formations alternatives:</strong></p>
+                    <p>{{alternativeFormations}}</p>
+                </div>
+                <p>Notre équipe vous contactera pour vous proposer des solutions alternatives. Si vous avez des questions, contactez-nous.</p>
+                <p>Nous nous excusons pour la gêne occasionnée.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $formationDeletedStudent->setVariables(['studentName', 'formationTitle', 'deletedAt', 'reason', 'alternativeFormations']);
+        $manager->persist($formationDeletedStudent);
+
+        // === SESSION TEMPLATES ===
+
+        // Session Created - Students notification
+        $sessionCreatedStudent = new EmailTemplate();
+        $sessionCreatedStudent->setName('Nouvelle session disponible (Étudiant)');
+        $sessionCreatedStudent->setIdentifier('session_created_student');
+        $sessionCreatedStudent->setEventType('session_created');
+        $sessionCreatedStudent->setTargetRole('ROLE_STUDENT');
+        $sessionCreatedStudent->setIsSystem(true);
+        $sessionCreatedStudent->setType('notification');
+        $sessionCreatedStudent->setSubject('Nouvelle session disponible: {{formationTitle}}');
+        $sessionCreatedStudent->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #2c5282;">Nouvelle session disponible</h2>
+                <p>Bonjour {{studentName}},</p>
+                <p>Une nouvelle session est programmée pour une formation qui pourrait vous intéresser:</p>
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <p><strong>Détails de la session:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Formation: {{formationTitle}}</li>
+                        <li>Date: {{sessionDate}}</li>
+                        <li>Lieu: {{location}}</li>
+                        <li>Places disponibles: {{availableSeats}}</li>
+                        <li>Prix: {{price}}</li>
+                    </ul>
+                </div>
+                <p>Inscrivez-vous rapidement, les places sont limitées!</p>
+                <p><a href="http://merelformation.localhost/formations" style="background-color: #3182ce; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">S\'inscrire maintenant</a></p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $sessionCreatedStudent->setVariables(['studentName', 'formationTitle', 'sessionDate', 'location', 'availableSeats', 'price']);
+        $manager->persist($sessionCreatedStudent);
+
+        // Session Updated - Participants notification
+        $sessionUpdatedStudent = new EmailTemplate();
+        $sessionUpdatedStudent->setName('Session modifiée (Participant)');
+        $sessionUpdatedStudent->setIdentifier('session_updated_participant');
+        $sessionUpdatedStudent->setEventType('session_updated');
+        $sessionUpdatedStudent->setTargetRole('ROLE_STUDENT');
+        $sessionUpdatedStudent->setIsSystem(true);
+        $sessionUpdatedStudent->setType('notification');
+        $sessionUpdatedStudent->setSubject('IMPORTANT: Modification de votre session de formation');
+        $sessionUpdatedStudent->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #d69e2e;">Modification de session</h2>
+                <p>Bonjour {{studentName}},</p>
+                <p>Des modifications ont été apportées à votre session de formation:</p>
+                <div style="background-color: #fef5e7; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #d69e2e;">
+                    <p><strong>Session concernée:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Formation: {{formationTitle}}</li>
+                        <li>Nouvelle date: {{newSessionDate}}</li>
+                        <li>Nouveau lieu: {{newLocation}}</li>
+                        <li>Modifications: {{changesDescription}}</li>
+                    </ul>
+                </div>
+                <p>Merci de prendre note de ces changements. Si vous avez des questions ou des contraintes, contactez-nous rapidement.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $sessionUpdatedStudent->setVariables(['studentName', 'formationTitle', 'newSessionDate', 'newLocation', 'changesDescription']);
+        $manager->persist($sessionUpdatedStudent);
+
+        // Session Cancelled - Participants notification
+        $sessionCancelledStudent = new EmailTemplate();
+        $sessionCancelledStudent->setName('Session annulée (Participant)');
+        $sessionCancelledStudent->setIdentifier('session_cancelled_participant');
+        $sessionCancelledStudent->setEventType('session_cancelled');
+        $sessionCancelledStudent->setTargetRole('ROLE_STUDENT');
+        $sessionCancelledStudent->setIsSystem(true);
+        $sessionCancelledStudent->setType('notification');
+        $sessionCancelledStudent->setSubject('URGENT: Annulation de votre session de formation');
+        $sessionCancelledStudent->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #e53e3e;">Session annulée</h2>
+                <p>Bonjour {{studentName}},</p>
+                <p>Nous vous informons avec regret que votre session de formation a été annulée:</p>
+                <div style="background-color: #fed7d7; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #e53e3e;">
+                    <p><strong>Session annulée:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Formation: {{formationTitle}}</li>
+                        <li>Date prévue: {{originalSessionDate}}</li>
+                        <li>Raison: {{reason}}</li>
+                    </ul>
+                </div>
+                <div style="background-color: #e6fffa; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #38b2ac;">
+                    <p><strong>Reprogrammation:</strong></p>
+                    <p>{{rescheduleInfo}}</p>
+                </div>
+                <p>Notre équipe vous contactera dans les plus brefs délais pour vous proposer une nouvelle date.</p>
+                <p>Nous nous excusons sincèrement pour ce désagrément.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $sessionCancelledStudent->setVariables(['studentName', 'formationTitle', 'originalSessionDate', 'reason', 'rescheduleInfo']);
+        $manager->persist($sessionCancelledStudent);
+
+        // === USER TEMPLATES ===
+
+        // User Welcome - New user
+        $userWelcome = new EmailTemplate();
+        $userWelcome->setName('Bienvenue sur MerelFormation');
+        $userWelcome->setIdentifier('user_welcome');
+        $userWelcome->setEventType('user_welcome');
+        $userWelcome->setTargetRole('ROLE_STUDENT');
+        $userWelcome->setIsSystem(true);
+        $userWelcome->setType('notification');
+        $userWelcome->setSubject('Bienvenue sur MerelFormation - Votre compte a été créé');
+        $userWelcome->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #2c5282;">Bienvenue sur MerelFormation!</h2>
+                <p>Bonjour {{userName}},</p>
+                <p>Votre compte a été créé avec succès. Voici vos informations de connexion:</p>
+                <div style="background-color: #e6fffa; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #38b2ac;">
+                    <p><strong>Vos identifiants:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Email: {{userEmail}}</li>
+                        <li>Mot de passe temporaire: {{temporaryPassword}}</li>
+                        <li>Rôle: {{userRole}}</li>
+                    </ul>
+                </div>
+                <div style="background-color: #fef5e7; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #d69e2e;">
+                    <p><strong>Important:</strong></p>
+                    <p>Pour des raisons de sécurité, vous devez changer votre mot de passe lors de votre première connexion.</p>
+                </div>
+                <p><a href="http://merelformation.localhost/login" style="background-color: #3182ce; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Se connecter maintenant</a></p>
+                <p>Si vous avez des questions, notre équipe est à votre disposition.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $userWelcome->setVariables(['userName', 'userEmail', 'temporaryPassword', 'userRole']);
+        $manager->persist($userWelcome);
+
+        // User Updated - User notification
+        $userUpdated = new EmailTemplate();
+        $userUpdated->setName('Modification de votre profil');
+        $userUpdated->setIdentifier('user_updated');
+        $userUpdated->setEventType('user_updated');
+        $userUpdated->setTargetRole('ROLE_STUDENT');
+        $userUpdated->setIsSystem(true);
+        $userUpdated->setType('notification');
+        $userUpdated->setSubject('Modification de votre profil MerelFormation');
+        $userUpdated->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #2c5282;">Modification de profil</h2>
+                <p>Bonjour {{userName}},</p>
+                <p>Votre profil MerelFormation a été modifié:</p>
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <p><strong>Modifications apportées:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>{{changesDescription}}</li>
+                        <li>Date de modification: {{updatedAt}}</li>
+                        <li>Modifié par: {{updatedBy}}</li>
+                    </ul>
+                </div>
+                <p>Si vous n\'êtes pas à l\'origine de ces modifications, contactez-nous immédiatement.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $userUpdated->setVariables(['userName', 'changesDescription', 'updatedAt', 'updatedBy']);
+        $manager->persist($userUpdated);
+
+        // User Deactivated - User notification
+        $userDeactivated = new EmailTemplate();
+        $userDeactivated->setName('Désactivation de votre compte');
+        $userDeactivated->setIdentifier('user_deactivated');
+        $userDeactivated->setEventType('user_deactivated');
+        $userDeactivated->setTargetRole('ROLE_STUDENT');
+        $userDeactivated->setIsSystem(true);
+        $userDeactivated->setType('notification');
+        $userDeactivated->setSubject('Désactivation de votre compte MerelFormation');
+        $userDeactivated->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #e53e3e;">Désactivation de compte</h2>
+                <p>Bonjour {{userName}},</p>
+                <p>Votre compte MerelFormation a été désactivé:</p>
+                <div style="background-color: #fed7d7; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #e53e3e;">
+                    <p><strong>Détails:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Date de désactivation: {{deactivatedAt}}</li>
+                        <li>Raison: {{reason}}</li>
+                    </ul>
+                </div>
+                <p>Si vous pensez qu\'il s\'agit d\'une erreur ou souhaitez réactiver votre compte, contactez notre support.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $userDeactivated->setVariables(['userName', 'deactivatedAt', 'reason']);
+        $manager->persist($userDeactivated);
+
+        // === VEHICLE TEMPLATES ===
+
+        // Vehicle Added - Admin notification
+        $vehicleAdded = new EmailTemplate();
+        $vehicleAdded->setName('Nouveau véhicule ajouté');
+        $vehicleAdded->setIdentifier('vehicle_added_admin');
+        $vehicleAdded->setEventType('vehicle_added');
+        $vehicleAdded->setTargetRole('ROLE_ADMIN');
+        $vehicleAdded->setIsSystem(true);
+        $vehicleAdded->setType('notification');
+        $vehicleAdded->setSubject('Nouveau véhicule ajouté au parc');
+        $vehicleAdded->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #2c5282;">Nouveau véhicule ajouté</h2>
+                <p>Un nouveau véhicule a été ajouté au parc automobile:</p>
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <p><strong>Détails du véhicule:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Modèle: {{vehicleModel}}</li>
+                        <li>Immatriculation: {{vehiclePlate}}</li>
+                        <li>Type: {{vehicleType}}</li>
+                        <li>Ajouté par: {{addedBy}}</li>
+                        <li>Date d\'ajout: {{addedAt}}</li>
+                    </ul>
+                </div>
+                <p>Le véhicule est maintenant disponible pour les réservations.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $vehicleAdded->setVariables(['vehicleModel', 'vehiclePlate', 'vehicleType', 'addedBy', 'addedAt']);
+        $manager->persist($vehicleAdded);
+
+        // Vehicle Maintenance - Clients notification
+        $vehicleMaintenance = new EmailTemplate();
+        $vehicleMaintenance->setName('Véhicule en maintenance');
+        $vehicleMaintenance->setIdentifier('vehicle_maintenance_client');
+        $vehicleMaintenance->setEventType('vehicle_maintenance');
+        $vehicleMaintenance->setTargetRole('ROLE_STUDENT');
+        $vehicleMaintenance->setIsSystem(true);
+        $vehicleMaintenance->setType('notification');
+        $vehicleMaintenance->setSubject('Véhicule indisponible - Solutions alternatives');
+        $vehicleMaintenance->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #d69e2e;">Véhicule temporairement indisponible</h2>
+                <p>Bonjour {{clientName}},</p>
+                <p>Le véhicule que vous aviez réservé est temporairement indisponible:</p>
+                <div style="background-color: #fef5e7; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #d69e2e;">
+                    <p><strong>Véhicule concerné:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Modèle: {{vehicleModel}}</li>
+                        <li>Votre réservation: {{reservationDate}}</li>
+                        <li>Raison: {{maintenanceReason}}</li>
+                    </ul>
+                </div>
+                <div style="background-color: #e6fffa; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #38b2ac;">
+                    <p><strong>Solutions alternatives:</strong></p>
+                    <p>{{alternativeVehicles}}</p>
+                </div>
+                <p>Notre équipe vous contactera pour vous proposer une solution de remplacement.</p>
+                <p>Nous nous excusons pour ce désagrément.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $vehicleMaintenance->setVariables(['clientName', 'vehicleModel', 'reservationDate', 'maintenanceReason', 'alternativeVehicles']);
+        $manager->persist($vehicleMaintenance);
+
+        // === DOCUMENT TEMPLATES ===
+
+        // Document Added - Students notification
+        $documentAdded = new EmailTemplate();
+        $documentAdded->setName('Nouveau document disponible');
+        $documentAdded->setIdentifier('document_added_student');
+        $documentAdded->setEventType('document_added');
+        $documentAdded->setTargetRole('ROLE_STUDENT');
+        $documentAdded->setIsSystem(true);
+        $documentAdded->setType('notification');
+        $documentAdded->setSubject('Nouveau document disponible: {{documentTitle}}');
+        $documentAdded->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #2c5282;">Nouveau document disponible</h2>
+                <p>Bonjour {{studentName}},</p>
+                <p>Un nouveau document a été ajouté à votre formation:</p>
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <p><strong>Détails du document:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Titre: {{documentTitle}}</li>
+                        <li>Formation: {{formationTitle}}</li>
+                        <li>Type: {{documentType}}</li>
+                        <li>Ajouté le: {{addedAt}}</li>
+                    </ul>
+                </div>
+                <p>Vous pouvez télécharger ce document dans votre espace étudiant, section "Mes Documents".</p>
+                <p><a href="http://merelformation.localhost/student/documents" style="background-color: #3182ce; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Accéder aux documents</a></p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $documentAdded->setVariables(['studentName', 'documentTitle', 'formationTitle', 'documentType', 'addedAt']);
+        $manager->persist($documentAdded);
+
+        // === PAYMENT TEMPLATES ===
+
+        // Payment Received - Client confirmation
+        $paymentReceived = new EmailTemplate();
+        $paymentReceived->setName('Confirmation de paiement');
+        $paymentReceived->setIdentifier('payment_received_client');
+        $paymentReceived->setEventType('payment_received');
+        $paymentReceived->setTargetRole('ROLE_STUDENT');
+        $paymentReceived->setIsSystem(true);
+        $paymentReceived->setType('notification');
+        $paymentReceived->setSubject('Confirmation de paiement - Facture {{invoiceNumber}}');
+        $paymentReceived->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #38a169;">Paiement confirmé</h2>
+                <p>Bonjour {{clientName}},</p>
+                <p>Nous confirmons la réception de votre paiement:</p>
+                <div style="background-color: #f0fff4; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #38a169;">
+                    <p><strong>Détails du paiement:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Montant: {{amount}} €</li>
+                        <li>Facture N°: {{invoiceNumber}}</li>
+                        <li>Date de paiement: {{paymentDate}}</li>
+                        <li>Mode de paiement: {{paymentMethod}}</li>
+                    </ul>
+                </div>
+                <p>Votre facture est jointe à cet email. Vous pouvez également la retrouver dans votre espace client.</p>
+                <p>Merci pour votre confiance.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $paymentReceived->setVariables(['clientName', 'amount', 'invoiceNumber', 'paymentDate', 'paymentMethod']);
+        $manager->persist($paymentReceived);
+
+        // Payment Due - Client reminder
+        $paymentDue = new EmailTemplate();
+        $paymentDue->setName('Rappel d\'échéance de paiement');
+        $paymentDue->setIdentifier('payment_due_client');
+        $paymentDue->setEventType('payment_due');
+        $paymentDue->setTargetRole('ROLE_STUDENT');
+        $paymentDue->setIsSystem(true);
+        $paymentDue->setType('notification');
+        $paymentDue->setSubject('Rappel: Échéance de paiement dans {{daysUntilDue}} jours');
+        $paymentDue->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #d69e2e;">Rappel d\'échéance</h2>
+                <p>Bonjour {{clientName}},</p>
+                <p>Nous vous rappelons qu\'un paiement arrive à échéance:</p>
+                <div style="background-color: #fef5e7; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #d69e2e;">
+                    <p><strong>Détails du paiement:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Montant: {{amount}} €</li>
+                        <li>Facture N°: {{invoiceNumber}}</li>
+                        <li>Date d\'échéance: {{dueDate}}</li>
+                        <li>Formation: {{formationTitle}}</li>
+                    </ul>
+                </div>
+                <p>Merci de procéder au règlement avant la date d\'échéance pour éviter tout désagrément.</p>
+                <p>Pour toute question sur votre facture, contactez-nous.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $paymentDue->setVariables(['clientName', 'amount', 'invoiceNumber', 'dueDate', 'formationTitle', 'daysUntilDue']);
+        $manager->persist($paymentDue);
+
+        // === CONTACT TEMPLATES ===
+
+        // Contact Request - Admin notification
+        $contactRequestAdmin = new EmailTemplate();
+        $contactRequestAdmin->setName('Nouvelle demande de contact');
+        $contactRequestAdmin->setIdentifier('contact_request_admin');
+        $contactRequestAdmin->setEventType('contact_request');
+        $contactRequestAdmin->setTargetRole('ROLE_ADMIN');
+        $contactRequestAdmin->setIsSystem(true);
+        $contactRequestAdmin->setType('notification');
+        $contactRequestAdmin->setSubject('Nouvelle demande de contact de {{contactName}}');
+        $contactRequestAdmin->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #2c5282;">Nouvelle demande de contact</h2>
+                <p>Une nouvelle demande de contact a été reçue via le site web:</p>
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <p><strong>Détails du contact:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Nom: {{contactName}}</li>
+                        <li>Email: {{contactEmail}}</li>
+                        <li>Téléphone: {{contactPhone}}</li>
+                        <li>Sujet: {{contactSubject}}</li>
+                    </ul>
+                </div>
+                <div style="background-color: #edf2f7; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <p><strong>Message:</strong></p>
+                    <p style="font-style: italic;">{{contactMessage}}</p>
+                </div>
+                <p>Date de réception: {{receivedAt}}</p>
+                <p>Merci de traiter cette demande dans les plus brefs délais.</p>
+            </div>
+        ');
+        $contactRequestAdmin->setVariables(['contactName', 'contactEmail', 'contactPhone', 'contactSubject', 'contactMessage', 'receivedAt']);
+        $manager->persist($contactRequestAdmin);
+
+        // Contact Request - Client acknowledgment
+        $contactRequestClient = new EmailTemplate();
+        $contactRequestClient->setName('Accusé de réception de votre demande');
+        $contactRequestClient->setIdentifier('contact_request_client');
+        $contactRequestClient->setEventType('contact_request');
+        $contactRequestClient->setTargetRole('ROLE_STUDENT');
+        $contactRequestClient->setIsSystem(true);
+        $contactRequestClient->setType('notification');
+        $contactRequestClient->setSubject('Accusé de réception - Votre demande de contact');
+        $contactRequestClient->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #2c5282;">Accusé de réception</h2>
+                <p>Bonjour {{contactName}},</p>
+                <p>Nous avons bien reçu votre demande de contact et vous remercions de votre intérêt pour MerelFormation.</p>
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <p><strong>Récapitulatif de votre demande:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Sujet: {{contactSubject}}</li>
+                        <li>Date: {{receivedAt}}</li>
+                    </ul>
+                </div>
+                <p>Notre équipe va examiner votre demande et vous répondra dans les meilleurs délais, généralement sous 24-48 heures ouvrées.</p>
+                <p>Si votre demande est urgente, vous pouvez nous contacter directement par téléphone au <strong>04 XX XX XX XX</strong>.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $contactRequestClient->setVariables(['contactName', 'contactSubject', 'receivedAt']);
+        $manager->persist($contactRequestClient);
+
         $manager->flush();
     }
 }

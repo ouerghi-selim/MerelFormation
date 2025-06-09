@@ -180,6 +180,7 @@
 - Système de prérequis
 - Génération de documents PDF
 - Attestations de formation
+- **🆕 Notifications emails automatiques** pour toutes les actions CRUD
 
 ### ✅ Location de Véhicules
 - Parc automobile complet
@@ -187,12 +188,15 @@
 - Calendrier de disponibilité
 - Gestion des tarifs
 - Facturation automatique
+- **🆕 Notifications de maintenance** avec alternatives automatiques
 
 ### ✅ Gestion Utilisateurs
 - Système de rôles (Admin, Student, Instructor)
 - Authentification JWT sécurisée
 - Profils utilisateurs
 - Gestion des permissions
+- **🆕 Emails de bienvenue** avec mots de passe temporaires
+- **🆕 Notifications de modifications** de profil et désactivation
 
 ### ✅ Administration
 - Dashboard avec statistiques
@@ -210,8 +214,9 @@
 ### ✅ Interface Publique
 - Site vitrine responsive
 - Catalogue formations
-- Système de contact
+- **🆕 Système de contact complet** avec notifications automatiques
 - Réservation véhicules sans compte
+- **🆕 Accusés de réception** pour toutes les demandes
 
 ### 🆕 ✅ Système CMS Complet (Nouveau)
 - **Gestion des Textes** : Modification de tous les contenus du site (titres, descriptions, boutons)
@@ -300,6 +305,7 @@ MerelFormation/
 - **UX Documents** - Interface étudiant repensée avec organisation par source
 - **Filtrage Intelligent** - Recherche et filtres avancés côté étudiant
 - **Sécurité Renforcée** - Contrôle d'accès documents basé sur inscriptions
+- **🆕 Notifications d'ajout** - Emails automatiques lors d'ajout de documents
 
 ### 🆕 CORRECTIONS CRITIQUES (Juin 2025) ✅ TERMINÉ
 - **🆕 Bug Réservations Corrigé** - ReservationsAdmin.tsx : Ajout appels API manquants dans `handleReservationStatusChange`
@@ -315,6 +321,18 @@ MerelFormation/
 - **🆕 Download Sécurisé** - Utilisation de `$this->file()` Symfony avec token
 - **🆕 Modal Session Complet** - Section Documents dans inspection SessionsAdmin.tsx
 - **🆕 Bug Fixes Documents** - Corrections DocumentStudentController accumulation
+
+### 🆕 ✅ SYSTÈME D'EMAILS AUTOMATIQUES COMPLET (Janvier 2025)
+- **24 Templates d'emails professionnels** - HTML avec CSS inline pour compatibilité maximale
+- **18 Event Types** - Couvrant formations, sessions, utilisateurs, véhicules, documents, contacts
+- **Notifications ciblées par rôle** - Admin, Étudiant, Instructeur selon le contexte
+- **Variables dynamiques** - Personnalisation complète avec `{{nom}}`, `{{formation}}`, etc.
+- **Contrôleurs mis à jour** - Tous les CRUD déclenchent les emails appropriés
+- **Service de contact** - Système complet avec accusé de réception automatique
+- **Emails de bienvenue** - Mots de passe temporaires pour nouveaux utilisateurs
+- **Notifications de maintenance** - Véhicules indisponibles avec alternatives
+- **Gestion d'erreurs robuste** - Fallbacks et logging complets
+- **Design cohérent** - Charte graphique MerelFormation respectée
 
 ### 🔧 EN COURS D'OPTIMISATION
 - Performance frontend/backend
@@ -358,6 +376,9 @@ MerelFormation/
 - GET /admin/testimonials - Gestion témoignages
 - GET /admin/faq - Gestion FAQ
 
+🆕 Contact API (NOUVEAU):
+- POST /api/contact - Soumission formulaire de contact avec emails automatiques
+
 🆕 Gestion Documents (COMPLET et CORRIGÉ):
 - POST /admin/formations/{id}/documents - Upload documents formation (FormData)
 - DELETE /admin/formations/{id}/documents/{documentId} - Suppression robuste avec try-catch
@@ -369,6 +390,14 @@ MerelFormation/
 🆕 Réservations API (CORRIGÉ):
 - PUT /admin/reservations/{id}/status - Mise à jour statut (maintenant avec appel API réel)
 - PUT /admin/session-reservations/{id}/status - Confirmation inscriptions sessions
+
+🆕 Emails Automatiques (NOUVEAU):
+Tous les endpoints CRUD déclenchent maintenant des emails automatiques:
+- Formations: Création/Modification/Suppression → Notifications ciblées
+- Sessions: Création/Modification/Annulation → Participants concernés
+- Utilisateurs: Création/Modification/Désactivation → Emails personnalisés
+- Véhicules: Ajout/Maintenance → Notifications avec alternatives
+- Documents: Ajout → Étudiants concernés par formation/session
 ```
 
 ### Comptes de Test
@@ -400,3 +429,31 @@ Grâce au **système de détails complets des réservations**, **les administrat
 Copiez-collez ce brief au début de nouvelles conversations avec Claude pour qu'il comprenne immédiatement le contexte et l'état du projet sans avoir à refaire toute l'analyse.
 
 **Dernière mise à jour :** Juin 2025 par Selim OUERGHI
+
+## 🆕 NOUVEAU : Système d'Emails Automatiques Complet
+
+**FONCTIONNALITÉ MAJEURE AJOUTÉE (Janvier 2025) :**
+
+Le projet MerelFormation dispose maintenant d'un **système d'emails automatiques complet et professionnel** qui transforme l'expérience utilisateur :
+
+### 📧 **24 Templates d'Emails Professionnels**
+- **Design HTML responsive** avec CSS inline
+- **Charte graphique cohérente** MerelFormation
+- **Variables dynamiques** personnalisées (`{{userName}}`, `{{formationTitle}}`, etc.)
+- **Notifications ciblées** par rôle (Admin, Étudiant, Instructeur)
+
+### 🚀 **Déclencheurs Automatiques**
+- **Formations** : Création → Admins + Instructeurs | Modification → Étudiants inscrits | Suppression → Étudiants avec alternatives
+- **Sessions** : Création → Tous étudiants | Modification → Participants | Annulation → Participants avec reprogrammation
+- **Utilisateurs** : Création → Email de bienvenue + mot de passe temporaire | Modification → Utilisateur | Désactivation → Utilisateur
+- **Véhicules** : Ajout → Admins | Maintenance → Clients affectés avec alternatives
+- **Documents** : Ajout → Étudiants concernés par formation/session
+- **Contacts** : Demande → Admins + accusé de réception client
+
+### 🎯 **Impact Business**
+- **Communication automatisée** pour toutes les actions importantes
+- **Réduction drastique** de la charge administrative
+- **Expérience utilisateur** considérablement améliorée
+- **Professionnalisation** des échanges avec les clients
+
+Le système est **immédiatement opérationnel** après rechargement des fixtures et fonctionne de manière transparente avec l'infrastructure existante.

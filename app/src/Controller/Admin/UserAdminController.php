@@ -13,6 +13,7 @@ use App\Repository\UserRepository;
 use App\Entity\User;
 use App\Entity\Session;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Service\NotificationService;
 
 /**
  * @Route("/api/admin/users", name="api_admin_users_")
@@ -24,13 +25,15 @@ class UserAdminController extends AbstractController
     private $entityManager;
     private $passwordHasher;
     private $sessionRepository;
+    private $notificationService;
 
     public function __construct(
         Security $security,
         UserRepository $userRepository,
         EntityManagerInterface $entityManager,
         UserPasswordHasherInterface $passwordHasher,
-        SessionRepository $sessionRepository
+        SessionRepository $sessionRepository,
+        NotificationService $notificationService
 
     ) {
         $this->security = $security;
@@ -38,6 +41,7 @@ class UserAdminController extends AbstractController
         $this->entityManager = $entityManager;
         $this->passwordHasher = $passwordHasher;
         $this->sessionRepository = $sessionRepository;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -237,8 +241,9 @@ class UserAdminController extends AbstractController
         $role = $data['role'] ?? 'ROLE_STUDENT';
         $user->setRoles([$role]);
 
-        // Hachage du mot de passe
-        $hashedPassword = $this->passwordHasher->hashPassword($user, "passtest");
+        // Générer un mot de passe temporaire
+        $temporaryPassword = "passtest"; // En production, générer un mot de passe aléatoire
+        $hashedPassword = $this->passwordHasher->hashPassword($user, $temporaryPassword);
         $user->setPassword($hashedPassword);
 
         // Définir les autres champs
@@ -250,6 +255,9 @@ class UserAdminController extends AbstractController
         // Persister l'utilisateur
         $this->entityManager->persist($user);
         $this->entityManager->flush();
+
+        // Notification email - Bienvenue utilisateur avec mot de passe temporaire
+        $this->notificationService->notifyUserWelcome($user, $temporaryPassword);
 
         return $this->json([
             'message' => 'Utilisateur créé avec succès',
@@ -271,6 +279,24 @@ class UserAdminController extends AbstractController
 
         // Récupérer les données de la requête
         $data = json_decode($request->getContent(), true);
+
+        // Construire la description des changements pour la notification
+        $changes = [];
+        if (isset($data['firstName']) && $data['firstName'] !== $user->getFirstName()) {
+            $changes[] = 'Prénom modifié: ' . $data['firstName'];
+        }
+        if (isset($data['lastName']) && $data['lastName'] !== $user->getLastName()) {
+            $changes[] = 'Nom modifié: ' . $data['lastName'];
+        }
+        if (isset($data['email']) && $data['email'] !== $user->getEmail()) {
+            $changes[] = 'Email modifié: ' . $data['email'];
+        }
+        if (isset($data['role']) && !in_array($data['role'], $user->getRoles())) {
+            $changes[] = 'Rôle modifié: ' . $data['role'];
+        }
+        if (isset($data['isActive']) && $data['isActive'] !== $user->isIsActive()) {
+            $changes[] = 'Statut modifié: ' . ($data['isActive'] ? 'Activé' : 'Désactivé');
+        }
 
         // Mettre à jour l'utilisateur
         if (isset($data['firstName'])) {
@@ -304,6 +330,12 @@ class UserAdminController extends AbstractController
         // Persister les modifications
         $this->entityManager->flush();
 
+        // Notification email - Utilisateur modifié (si des changements significatifs)
+        if (!empty($changes)) {
+            $changesDescription = implode(', ', $changes);
+            $this->notificationService->notifyUserUpdated($user, $changesDescription, $this->getUser());
+        }
+
         return $this->json([
             'message' => 'Utilisateur mis à jour avec succès'
         ]);
@@ -320,6 +352,10 @@ class UserAdminController extends AbstractController
         if (!$user) {
             return $this->json(['message' => 'Utilisateur non trouvé'], 404);
         }
+
+        // Notification email - Utilisateur désactivé (avant suppression)
+        $reason = 'Suppression du compte par l\'administrateur';
+        $this->notificationService->notifyUserDeactivated($user, $reason);
 
         // Supprimer l'utilisateur
         $this->entityManager->remove($user);
