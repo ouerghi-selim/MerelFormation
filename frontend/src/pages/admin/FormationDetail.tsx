@@ -21,7 +21,7 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Alert from '../../components/common/Alert';
 import { useNotification } from '../../contexts/NotificationContext';
-import { adminFormationsApi } from '@/services/api.ts';
+import { adminFormationsApi, documentsApi } from '@/services/api.ts';
 
 interface Formation {
   id: number;
@@ -100,6 +100,10 @@ const FormationDetail: React.FC = () => {
   // États pour les documents
   const [documents, setDocuments] = useState<DocumentInput[]>([]);
   const [uploadingDocument, setUploadingDocument] = useState(false);
+  
+  // États pour les documents temporaires (nouveau système)
+  const [tempDocuments, setTempDocuments] = useState<{tempId: string, document: any}[]>([]);
+  const [pendingTempIds, setPendingTempIds] = useState<string[]>([]);
 
   // Validation des erreurs
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
@@ -168,9 +172,37 @@ const FormationDetail: React.FC = () => {
         prerequisites
       };
 
+      // 1. Mettre à jour la formation
       await adminFormationsApi.update(formation.id, updatedFormation);
+
+      // 2. Finaliser les documents temporaires s'il y en a
+      if (pendingTempIds.length > 0) {
+        try {
+          const response = await documentsApi.finalizeDocuments({
+            tempIds: pendingTempIds,
+            entityType: 'formation',
+            entityId: formation.id
+          });
+
+          // Ajouter les nouveaux documents à la liste
+          if (response.data.documents) {
+            setDocuments(prev => [...prev, ...response.data.documents]);
+          }
+
+          // Nettoyer les documents temporaires
+          setTempDocuments([]);
+          setPendingTempIds([]);
+          
+          addToast('Formation et documents mis à jour avec succès', 'success');
+        } catch (docErr) {
+          console.error('Error finalizing documents:', docErr);
+          addToast('Formation mise à jour, mais erreur lors de la finalisation des documents', 'warning');
+        }
+      } else {
+        addToast('Formation mise à jour avec succès', 'success');
+      }
+
       setEditMode(false);
-      addToast('Formation mise à jour avec succès', 'success');
     } catch (err) {
       console.error('Error updating formation:', err);
       addToast('Erreur lors de la mise à jour', 'error');
@@ -256,10 +288,10 @@ const FormationDetail: React.FC = () => {
     setPrerequisites(prerequisites.filter(p => p.id !== prerequisiteId));
   };
 
-  // Gestion des documents
+  // Gestion des documents avec système temporaire
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || !formation) return;
+    if (!files) return;
 
     try {
       setUploadingDocument(true);
@@ -269,22 +301,36 @@ const FormationDetail: React.FC = () => {
         formData.append('file', file);
         formData.append('title', file.name);
         formData.append('category', 'support');
-        formData.append('uploadedAt',formatDate(document.uploadedAt));
 
-        const response = await adminFormationsApi.uploadDocument(formation.id, formData);
-        const newDocument = response.data.document; // Assure-toi que c'est la bonne structure
+        // Upload temporaire
+        const response = await documentsApi.tempUpload(formData);
+        const { tempId, document: tempDoc } = response.data;
 
-        setDocuments(prev => [...prev, newDocument]);
+        // Ajouter aux documents temporaires pour preview
+        setTempDocuments(prev => [...prev, { tempId, document: tempDoc }]);
+        setPendingTempIds(prev => [...prev, tempId]);
       }
 
-      addToast('Document(s) uploadé(s) avec succès', 'success');
+      addToast('Document(s) ajouté(s) temporairement. Sauvegardez pour finaliser.', 'info');
     } catch (err) {
-      console.error('Error uploading document:', err);
-      addToast('Erreur lors de l\'upload', 'error');
+      console.error('Error uploading temporary document:', err);
+      addToast('Erreur lors de l\'upload temporaire', 'error');
     } finally {
       setUploadingDocument(false);
-        event.target.value = '';
+      event.target.value = '';
+    }
+  };
 
+  // Supprimer un document temporaire
+  const deleteTempDocument = async (tempId: string) => {
+    try {
+      await documentsApi.deleteTempDocument(tempId);
+      setTempDocuments(prev => prev.filter(td => td.tempId !== tempId));
+      setPendingTempIds(prev => prev.filter(id => id !== tempId));
+      addToast('Document temporaire supprimé', 'success');
+    } catch (err) {
+      console.error('Error deleting temporary document:', err);
+      addToast('Erreur lors de la suppression temporaire', 'error');
     }
   };
 
@@ -722,10 +768,12 @@ const FormationDetail: React.FC = () => {
                         </div>
                       </div>
 
-                      {documents.length === 0 ? (
-                          <p className="text-gray-500 text-sm italic">Aucun document ajouté</p>
-                      ) : (
-                          <div className="bg-white overflow-hidden shadow rounded-lg">
+                      {/* Documents existants (sauvegardés) */}
+                      {documents.length > 0 && (
+                          <div className="bg-white overflow-hidden shadow rounded-lg mb-4">
+                            <div className="px-4 py-2 bg-green-50 border-b">
+                              <h4 className="text-sm font-medium text-green-800">Documents sauvegardés</h4>
+                            </div>
                             <table className="min-w-full divide-y divide-gray-200">
                               <thead className="bg-gray-50">
                               <tr>
@@ -748,7 +796,7 @@ const FormationDetail: React.FC = () => {
                                   <tr key={document.id}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                       <div className="flex items-center">
-                                        <FileText className="h-5 w-5 text-gray-400 mr-3" />
+                                        <FileText className="h-5 w-5 text-green-500 mr-3" />
                                         <div>
                                           <div className="text-sm font-medium text-gray-900">{document.title}</div>
                                           <div className="text-sm text-gray-500">{document.fileName}</div>
@@ -762,7 +810,6 @@ const FormationDetail: React.FC = () => {
                                       }
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-
                                       {formatDate(document.uploadedAt)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -787,6 +834,67 @@ const FormationDetail: React.FC = () => {
                               </tbody>
                             </table>
                           </div>
+                      )}
+
+                      {/* Documents temporaires (en attente de sauvegarde) */}
+                      {tempDocuments.length > 0 && (
+                          <div className="bg-white overflow-hidden shadow rounded-lg mb-4">
+                            <div className="px-4 py-2 bg-yellow-50 border-b">
+                              <h4 className="text-sm font-medium text-yellow-800">Documents temporaires (Sauvegardez pour finaliser)</h4>
+                            </div>
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Document
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Type
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Taille
+                                </th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Actions
+                                </th>
+                              </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                              {tempDocuments.map(({ tempId, document: tempDoc }) => (
+                                  <tr key={tempId} className="bg-yellow-50">
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                      <div className="flex items-center">
+                                        <FileText className="h-5 w-5 text-yellow-500 mr-3" />
+                                        <div>
+                                          <div className="text-sm font-medium text-gray-900">{tempDoc.title}</div>
+                                          <div className="text-sm text-yellow-600">Temporaire - {tempDoc.originalName}</div>
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                      {tempDoc.type?.toUpperCase() || 'N/A'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                      {tempDoc.size ? Math.round(tempDoc.size / 1024) + ' KB' : 'N/A'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                      <button
+                                          onClick={() => deleteTempDocument(tempId)}
+                                          className="text-red-600 hover:text-red-900"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    </td>
+                                  </tr>
+                              ))}
+                              </tbody>
+                            </table>
+                          </div>
+                      )}
+
+                      {/* Message si aucun document */}
+                      {documents.length === 0 && tempDocuments.length === 0 && (
+                          <p className="text-gray-500 text-sm italic">Aucun document ajouté</p>
                       )}
                     </div>
                 )}

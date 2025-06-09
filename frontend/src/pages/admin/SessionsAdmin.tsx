@@ -9,7 +9,7 @@ import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
 import { useNotification } from '../../contexts/NotificationContext';
-import { adminSessionsApi, adminFormationsApi } from '@/services/api.ts';
+import { adminSessionsApi, adminFormationsApi, documentsApi } from '@/services/api.ts';
 
 interface Session {
     id: number;
@@ -63,6 +63,10 @@ const SessionsAdmin: React.FC = () => {
     const [showInspectModal, setShowInspectModal] = useState(false);
     const [sessionToInspect, setSessionToInspect] = useState<Session | null>(null);
     const [newDocuments, setNewDocuments] = useState<File[]>([]);
+    
+    // États pour les documents temporaires (nouveau système)
+    const [tempDocuments, setTempDocuments] = useState<{tempId: string, document: any}[]>([]);
+    const [pendingTempIds, setPendingTempIds] = useState<string[]>([]);
 
 
     useEffect(() => {
@@ -138,8 +142,53 @@ const SessionsAdmin: React.FC = () => {
     const openEditModal = (session: Session) => {
         setSessionToEdit({...session});
         setFormErrors({});
-        setNewDocuments([]); // Reset nouveaux documents
+        setNewDocuments([]); // Reset nouveaux documents (ancien système)
+        setTempDocuments([]); // Reset documents temporaires
+        setPendingTempIds([]); // Reset IDs temporaires
         setShowEditModal(true);
+    };
+
+    // Gestion des documents temporaires
+    const handleTempDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (!files) return;
+
+        try {
+            for (const file of Array.from(files)) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('title', file.name);
+                formData.append('category', 'support');
+
+                // Upload temporaire
+                const response = await documentsApi.tempUpload(formData);
+                const { tempId, document: tempDoc } = response.data;
+
+                // Ajouter aux documents temporaires
+                setTempDocuments(prev => [...prev, { tempId, document: tempDoc }]);
+                setPendingTempIds(prev => [...prev, tempId]);
+            }
+
+            addToast('Document(s) ajouté(s) temporairement. Sauvegardez pour finaliser.', 'info');
+        } catch (err) {
+            console.error('Error uploading temporary document:', err);
+            addToast('Erreur lors de l\'upload temporaire', 'error');
+        }
+        
+        // Réinitialiser l'input
+        event.target.value = '';
+    };
+
+    const deleteTempDocument = async (tempId: string) => {
+        try {
+            await documentsApi.deleteTempDocument(tempId);
+            setTempDocuments(prev => prev.filter(td => td.tempId !== tempId));
+            setPendingTempIds(prev => prev.filter(id => id !== tempId));
+            addToast('Document temporaire supprimé', 'success');
+        } catch (err) {
+            console.error('Error deleting temporary document:', err);
+            addToast('Erreur lors de la suppression temporaire', 'error');
+        }
     };
 
     const validateForm = (session: Session) => {
@@ -184,7 +233,25 @@ const SessionsAdmin: React.FC = () => {
             // 1. Mettre à jour la session (JSON)
             await adminSessionsApi.update(sessionToEdit.id, sessionToEdit);
 
-            // 2. Ajouter chaque nouveau document individuellement
+            // 2. Finaliser les documents temporaires s'il y en a
+            if (pendingTempIds.length > 0) {
+                try {
+                    await documentsApi.finalizeDocuments({
+                        tempIds: pendingTempIds,
+                        entityType: 'session',
+                        entityId: sessionToEdit.id
+                    });
+                    
+                    // Nettoyer les documents temporaires
+                    setTempDocuments([]);
+                    setPendingTempIds([]);
+                } catch (docErr) {
+                    console.error('Error finalizing documents:', docErr);
+                    addToast('Session mise à jour, mais erreur lors de la finalisation des documents', 'warning');
+                }
+            }
+
+            // 3. Traiter les anciens documents (fallback pour compatibilité)
             for (const document of newDocuments) {
                 const formData = new FormData();
                 formData.append('file', document);
@@ -652,7 +719,7 @@ const SessionsAdmin: React.FC = () => {
                             </div>
 
 
-                            {/* AJOUTER CETTE SECTION après la section participants */}
+                            {/* Section Documents avec système temporaire */}
                             <div className="md:col-span-2 mt-6">
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="text-lg font-medium text-gray-900">Documents associés</h3>
@@ -660,12 +727,12 @@ const SessionsAdmin: React.FC = () => {
                                         type="file"
                                         multiple
                                         accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                                        onChange={(e) => setNewDocuments(Array.from(e.target.files || []))}
+                                        onChange={handleTempDocumentUpload}
                                         className="hidden"
-                                        id="documents-upload-edit"
+                                        id="documents-upload-edit-temp"
                                     />
                                     <label
-                                        htmlFor="documents-upload-edit"
+                                        htmlFor="documents-upload-edit-temp"
                                         className="inline-flex items-center px-3 py-1.5 border border-blue-700 text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 cursor-pointer"
                                     >
                                         <Plus className="h-4 w-4 mr-1"/>
@@ -673,10 +740,10 @@ const SessionsAdmin: React.FC = () => {
                                     </label>
                                 </div>
 
-                                {/* Documents existants */}
+                                {/* Documents existants (sauvegardés) */}
                                 {sessionToEdit.documents && sessionToEdit.documents.length > 0 && (
                                     <div className="mb-4">
-                                        <h4 className="text-sm font-medium text-gray-700 mb-2">Documents existants</h4>
+                                        <h4 className="text-sm font-medium text-green-800 mb-2 bg-green-50 px-2 py-1 rounded">Documents sauvegardés</h4>
                                         <div className="bg-white shadow overflow-hidden sm:rounded-md">
                                             <ul className="divide-y divide-gray-200">
                                                 {sessionToEdit.documents.map((document) => (
@@ -691,12 +758,10 @@ const SessionsAdmin: React.FC = () => {
                                                                 </p>
                                                             </div>
                                                             <div className="flex-shrink-0">
-
                                                                <a href={document.downloadUrl}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="text-indigo-600 hover:text-indigo-900 text-sm
-                                                                font-medium"
+                                                                className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
                                                                 >
                                                                 Télécharger
                                                             </a>
@@ -707,16 +772,39 @@ const SessionsAdmin: React.FC = () => {
                                             </ul>
                                         </div>
                                     </div>
-                                    )}
+                                )}
 
-                                {/* Nouveaux documents à ajouter */}
+                                {/* Documents temporaires (nouveau système) */}
+                                {tempDocuments.length > 0 && (
+                                    <div className="mb-4">
+                                        <h4 className="text-sm font-medium text-yellow-800 mb-2 bg-yellow-50 px-2 py-1 rounded">Documents temporaires (Sauvegardez pour finaliser)</h4>
+                                        <div className="space-y-2">
+                                            {tempDocuments.map(({ tempId, document: tempDoc }) => (
+                                                <div key={tempId} className="flex items-center justify-between p-3 bg-yellow-50 rounded border border-yellow-200">
+                                                    <div className="flex-1">
+                                                        <p className="text-sm font-medium text-gray-900">{tempDoc.title}</p>
+                                                        <p className="text-sm text-yellow-600">Temporaire - {tempDoc.originalName}</p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => deleteTempDocument(tempId)}
+                                                        className="text-red-600 hover:text-red-900"
+                                                    >
+                                                        <Trash2 className="h-4 w-4"/>
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Nouveaux documents (ancien système - fallback) */}
                                 {newDocuments.length > 0 && (
-                                    <div>
-                                        <h4 className="text-sm font-medium text-gray-700 mb-2">Nouveaux documents</h4>
+                                    <div className="mb-4">
+                                        <h4 className="text-sm font-medium text-blue-800 mb-2 bg-blue-50 px-2 py-1 rounded">Documents (ancien système)</h4>
                                         <div className="space-y-2">
                                             {newDocuments.map((file, index) => (
-                                                <div key={index}
-                                                     className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                                <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded border border-blue-200">
                                                     <span className="text-sm">{file.name}</span>
                                                     <button
                                                         type="button"
@@ -731,7 +819,8 @@ const SessionsAdmin: React.FC = () => {
                                     </div>
                                 )}
 
-                                {!sessionToEdit.documents?.length && newDocuments.length === 0 && (
+                                {/* Message si aucun document */}
+                                {!sessionToEdit.documents?.length && tempDocuments.length === 0 && newDocuments.length === 0 && (
                                     <p className="text-sm text-gray-500">Aucun document associé à cette session.</p>
                                 )}
                             </div>
