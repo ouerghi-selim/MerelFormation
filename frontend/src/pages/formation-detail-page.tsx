@@ -19,6 +19,7 @@ interface Formation {
     createdAt: string;
     sessions: Session[];
     practicalInfo?: PracticalInfo;
+    practicalInfos?: PracticalInfo[];
 }
 
 interface PracticalInfo {
@@ -44,6 +45,7 @@ const FormationInitialePage = () => {
     const [prerequisites, setPrerequisites] = useState<any[]>([]);
     const [modules, setModules] = useState<any[]>([]);
     const [practicalInfo, setPracticalInfo] = useState<PracticalInfo | null>(null);
+    const [practicalInfos, setPracticalInfos] = useState<PracticalInfo[]>([]);
 
     // États pour les modaux
     const [showSessionModal, setShowSessionModal] = useState(false);
@@ -59,7 +61,7 @@ const FormationInitialePage = () => {
                 console.log("API response:", response.data);
                 setFormation(response.data);
 
-                // Récupérer les prérequis, modules et partie pratique depuis la réponse API
+                // Récupérer les prérequis, modules et parties pratiques depuis la réponse API
                 if (response.data.prerequisites) {
                     setPrerequisites(response.data.prerequisites);
                 }
@@ -68,6 +70,9 @@ const FormationInitialePage = () => {
                 }
                 if (response.data.practicalInfo) {
                     setPracticalInfo(response.data.practicalInfo);
+                }
+                if (response.data.practicalInfos) {
+                    setPracticalInfos(response.data.practicalInfos);
                 }
 
                 setError(null);
@@ -222,28 +227,32 @@ const FormationInitialePage = () => {
                 </div>
             </section>
 
-            {/* Partie Pratique */}
-            {practicalInfo && (
-                <section className="py-16 bg-white">
-                    <div className="container mx-auto px-4">
-                        <div className="flex flex-col md:flex-row items-center gap-12">
-                            <div className="md:w-1/2">
-                                <h2 className="text-3xl font-bold mb-6">{practicalInfo.title}</h2>
-                                <div 
-                                    className="text-gray-600 prose prose-lg max-w-none"
-                                    dangerouslySetInnerHTML={{ __html: practicalInfo.description }}
-                                />
+            {/* Parties Pratiques */}
+            {practicalInfos.length > 0 && (
+                <>
+                    {practicalInfos.map((practicalInfo, index) => (
+                        <section key={practicalInfo.id} className={`py-16 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                            <div className="container mx-auto px-4">
+                                <div className={`flex flex-col md:flex-row items-center gap-12 ${index % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
+                                    <div className="md:w-1/2">
+                                        <h2 className="text-3xl font-bold mb-6">{practicalInfo.title}</h2>
+                                        <div 
+                                            className="text-gray-600 prose prose-lg max-w-none"
+                                            dangerouslySetInnerHTML={{ __html: practicalInfo.description }}
+                                        />
+                                    </div>
+                                    <div className="md:w-1/2">
+                                        <img
+                                            src={practicalInfo.image || practical}
+                                            alt={practicalInfo.title}
+                                            className="rounded-lg shadow-xl"
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                            <div className="md:w-1/2">
-                                <img
-                                    src={practicalInfo.image || practical}
-                                    alt={practicalInfo.title}
-                                    className="rounded-lg shadow-xl"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                        </section>
+                    ))}
+                </>
             )}
 
             {/* Prochaines sessions */}

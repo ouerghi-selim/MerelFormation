@@ -78,11 +78,11 @@ export const adminFormationsApi = {
         api.delete(`/admin/formations/${formationId}/documents/${documentId}`),
     // Méthodes pour la partie pratique
     createPracticalInfo: (formationId: number, data: any) => {
-        const payload = { ...data, formation: `/api/formations/${formationId}` };
-        return api.post('/practical_infos', payload);
+        const payload = { ...data, formation: formationId };
+        return api.post('/admin/practical-infos', payload);
     },
-    updatePracticalInfo: (practicalInfoId: number, data: any) => api.put(`/practical_infos/${practicalInfoId}`, data),
-    deletePracticalInfo: (practicalInfoId: number) => api.delete(`/practical_infos/${practicalInfoId}`),
+    updatePracticalInfo: (practicalInfoId: number, data: any) => api.put(`/admin/practical-infos/${practicalInfoId}`, data),
+    deletePracticalInfo: (practicalInfoId: number) => api.delete(`/admin/practical-infos/${practicalInfoId}`),
 };
 
 // Services API pour les réservations administrateur
@@ -467,6 +467,19 @@ export const documentsApi = {
     
     // Nettoyer les fichiers temporaires anciens
     cleanupTemp: () => api.post('/admin/documents/cleanup-temp')
+};
+
+// Services API pour l'upload d'images
+export const imageUploadApi = {
+    // Upload d'image
+    upload: (formData: FormData) =>
+        api.post('/admin/images/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+    
+    // Supprimer une image
+    delete: (filename: string) =>
+        api.delete(`/admin/images/${encodeURIComponent(filename)}`)
 };
 
 export default api;

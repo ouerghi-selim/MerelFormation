@@ -130,14 +130,26 @@ class FormationController extends AbstractController
         }
         $formationData['prerequisites'] = $prerequisites;
 
-        // Ajouter la partie pratique
-        $practicalInfo = $formation->getPracticalInfo();
-        if ($practicalInfo) {
-            $formationData['practicalInfo'] = [
+        // Ajouter toutes les parties pratiques
+        $practicalInfos = [];
+        foreach ($formation->getPracticalInfos() as $practicalInfo) {
+            $practicalInfos[] = [
                 'id' => $practicalInfo->getId(),
                 'title' => $practicalInfo->getTitle(),
                 'description' => $practicalInfo->getDescription(),
                 'image' => $practicalInfo->getImage()
+            ];
+        }
+        $formationData['practicalInfos'] = $practicalInfos;
+        
+        // Garder la compatibilité avec practicalInfo (première partie pratique)
+        $firstPracticalInfo = $formation->getPracticalInfo();
+        if ($firstPracticalInfo) {
+            $formationData['practicalInfo'] = [
+                'id' => $firstPracticalInfo->getId(),
+                'title' => $firstPracticalInfo->getTitle(),
+                'description' => $firstPracticalInfo->getDescription(),
+                'image' => $firstPracticalInfo->getImage()
             ];
         } else {
             $formationData['practicalInfo'] = null;

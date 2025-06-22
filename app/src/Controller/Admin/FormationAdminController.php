@@ -179,7 +179,18 @@ class FormationAdminController extends AbstractController
             ];
         }
 
-        // Formater la partie pratique
+        // Formater toutes les parties pratiques
+        $practicalInfos = [];
+        foreach ($formation->getPracticalInfos() as $practicalInfo) {
+            $practicalInfos[] = [
+                'id' => $practicalInfo->getId(),
+                'title' => $practicalInfo->getTitle(),
+                'description' => $practicalInfo->getDescription(),
+                'image' => $practicalInfo->getImage()
+            ];
+        }
+        
+        // Formater la première partie pratique pour compatibilité
         $practicalInfo = null;
         if ($formation->getPracticalInfo()) {
             $practicalInfo = [
@@ -203,7 +214,8 @@ class FormationAdminController extends AbstractController
             'prerequisites' => $prerequisites,
             'sessions' => $sessions,
             'documents' => $documents,
-            'practicalInfo' => $practicalInfo
+            'practicalInfo' => $practicalInfo,
+            'practicalInfos' => $practicalInfos
         ];
 
         return $this->json($formattedFormation);

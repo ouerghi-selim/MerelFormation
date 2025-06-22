@@ -19,6 +19,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: FormationRepository::class)]
 #[ApiResource(
     operations: [
+        new Get(normalizationContext: ['groups' => ['formation:read']]),
         new GetCollection(normalizationContext: ['groups' => ['formation:read']]),
         new Post(denormalizationContext: ['groups' => ['formation:write']]),
         new Put(denormalizationContext: ['groups' => ['formation:write']])

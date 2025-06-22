@@ -24,7 +24,7 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Alert from '../../components/common/Alert';
 import { useNotification } from '../../contexts/NotificationContext';
-import { adminFormationsApi, documentsApi } from '@/services/api.ts';
+import { adminFormationsApi, documentsApi, imageUploadApi } from '@/services/api.ts';
 import WysiwygEditor from '../../components/common/WysiwygEditor';
 
 interface Formation {
@@ -110,7 +110,8 @@ const FormationDetail: React.FC = () => {
   const [editingPrerequisite, setEditingPrerequisite] = useState<PrerequisiteInput | null>(null);
 
   // États pour la partie pratique
-  const [practicalInfo, setPracticalInfo] = useState<PracticalInfoInput | null>(null);
+  const [practicalInfos, setPracticalInfos] = useState<PracticalInfoInput[]>([]);
+  const [editingPracticalInfo, setEditingPracticalInfo] = useState<PracticalInfoInput | null>(null);
   const [showPracticalModal, setShowPracticalModal] = useState(false);
 
   // États pour les documents
@@ -137,7 +138,8 @@ const FormationDetail: React.FC = () => {
         setFormation(formationData);
         setModules(formationData.modules || []);
         setPrerequisites(formationData.prerequisites || []);
-        setPracticalInfo(formationData.practicalInfo || null);
+        // Utiliser practicalInfos si disponible, sinon convertir practicalInfo
+        setPracticalInfos(formationData.practicalInfos || (formationData.practicalInfo ? [formationData.practicalInfo] : []));
         setDocuments(formationData.documents || []);
         setError(null);
       } catch (err) {
@@ -187,7 +189,7 @@ const FormationDetail: React.FC = () => {
           position: index + 1
         })),
         prerequisites,
-        practicalInfo
+        practicalInfos
       };
 
       // 1. Mettre à jour la formation
@@ -307,39 +309,43 @@ const FormationDetail: React.FC = () => {
   };
 
   // Gestion de la partie pratique
-  const createPracticalInfo = () => {
+  const addPracticalInfo = () => {
     const newPracticalInfo: PracticalInfoInput = {
       title: 'Formation Pratique',
       description: '<p>Décrivez ici la formation pratique...</p>',
       image: ''
     };
-    setPracticalInfo(newPracticalInfo);
+    setEditingPracticalInfo(newPracticalInfo);
     setShowPracticalModal(true);
   };
 
-  const editPracticalInfo = () => {
-    if (practicalInfo) {
-      setShowPracticalModal(true);
-    }
+  const editPracticalInfo = (practicalInfo: PracticalInfoInput) => {
+    setEditingPracticalInfo(practicalInfo);
+    setShowPracticalModal(true);
   };
 
   const savePracticalInfo = async () => {
-    if (!practicalInfo || !formation) return;
+    if (!editingPracticalInfo || !formation) return;
 
     try {
       setUpdating(true);
       
       // Si la partie pratique a un ID, on la met à jour, sinon on la crée
-      if (practicalInfo.id) {
-        await adminFormationsApi.updatePracticalInfo(practicalInfo.id, practicalInfo);
+      if (editingPracticalInfo.id) {
+        await adminFormationsApi.updatePracticalInfo(editingPracticalInfo.id, editingPracticalInfo);
+        setPracticalInfos(practicalInfos.map(p => 
+          p.id === editingPracticalInfo.id ? editingPracticalInfo : p
+        ));
         addToast('Partie pratique mise à jour avec succès', 'success');
       } else {
-        const response = await adminFormationsApi.createPracticalInfo(formation.id, practicalInfo);
-        setPracticalInfo({...practicalInfo, id: response.data.id});
+        const response = await adminFormationsApi.createPracticalInfo(formation.id, editingPracticalInfo);
+        const newPracticalInfo = {...editingPracticalInfo, id: response.data.id};
+        setPracticalInfos([...practicalInfos, newPracticalInfo]);
         addToast('Partie pratique créée avec succès', 'success');
       }
       
       setShowPracticalModal(false);
+      setEditingPracticalInfo(null);
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
       addToast('Erreur lors de la sauvegarde de la partie pratique', 'error');
@@ -348,23 +354,55 @@ const FormationDetail: React.FC = () => {
     }
   };
 
-  const deletePracticalInfo = async () => {
-    if (!practicalInfo?.id) return;
-
+  const deletePracticalInfo = async (practicalInfoId: number) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette partie pratique ?')) {
       return;
     }
 
     try {
       setUpdating(true);
-      await adminFormationsApi.deletePracticalInfo(practicalInfo.id);
-      setPracticalInfo(null);
+      await adminFormationsApi.deletePracticalInfo(practicalInfoId);
+      setPracticalInfos(practicalInfos.filter(p => p.id !== practicalInfoId));
       addToast('Partie pratique supprimée avec succès', 'success');
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       addToast('Erreur lors de la suppression de la partie pratique', 'error');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  // Gestion de l'upload d'images pour les parties pratiques
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !editingPracticalInfo) return;
+
+    // Validation du fichier
+    if (file.size > 5 * 1024 * 1024) { // 5MB max
+      addToast('L\'image est trop volumineux (max 5MB)', 'error');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      addToast('Veuillez sélectionner un fichier image', 'error');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await imageUploadApi.upload(formData);
+      
+      setEditingPracticalInfo({
+        ...editingPracticalInfo, 
+        image: response.data.url
+      });
+      
+      addToast('Image uploadée avec succès', 'success');
+    } catch (error) {
+      console.error('Erreur lors de l\'upload:', error);
+      addToast('Erreur lors de l\'upload de l\'image', 'error');
     }
   };
 
@@ -834,65 +872,76 @@ const FormationDetail: React.FC = () => {
                 {activeTab === 'practical' && (
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
-                        <h3 className="text-lg font-medium text-gray-900">Partie Pratique</h3>
-                        {editMode && !practicalInfo && (
-                            <Button onClick={createPracticalInfo}>
+                        <h3 className="text-lg font-medium text-gray-900">Parties Pratiques</h3>
+                        {editMode && (
+                            <Button onClick={addPracticalInfo}>
                               <Plus className="h-4 w-4 mr-2" />
-                              Créer la partie pratique
+                              Ajouter une partie pratique
                             </Button>
                         )}
                       </div>
 
-                      {!practicalInfo ? (
+                      {practicalInfos.length === 0 ? (
                           <p className="text-gray-500 text-sm italic">Aucune partie pratique définie</p>
                       ) : (
                           <div className="space-y-6">
-                            {/* Informations générales */}
-                            <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                              <div className="flex justify-between items-start mb-4">
-                                <div className="flex-1">
-                                  <h4 className="text-lg font-semibold text-gray-900 mb-2">{practicalInfo.title}</h4>
-                                  {practicalInfo.image && (
-                                      <div className="mb-3">
-                                        <p className="text-sm text-gray-500 mb-1">Image:</p>
-                                        <div className="flex items-center text-sm text-blue-600">
-                                          <Image className="h-4 w-4 mr-1" />
-                                          {practicalInfo.image}
-                                        </div>
-                                      </div>
-                                  )}
-                                </div>
-                                {editMode && (
-                                    <div className="flex space-x-2">
-                                      <button
-                                          onClick={editPracticalInfo}
-                                          className="text-blue-600 hover:text-blue-900"
-                                          title="Modifier les informations"
-                                      >
-                                        <Edit className="h-4 w-4" />
-                                      </button>
-                                      <button
-                                          onClick={deletePracticalInfo}
-                                          className="text-red-600 hover:text-red-900"
-                                          title="Supprimer la partie pratique"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </button>
+                            {practicalInfos.map((practicalInfo, index) => (
+                                <div key={practicalInfo.id || index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                  <div className="flex justify-between items-start mb-4">
+                                    <div className="flex-1">
+                                      <h4 className="text-lg font-semibold text-gray-900 mb-2">{practicalInfo.title}</h4>
+                                      {practicalInfo.image && (
+                                          <div className="mb-3">
+                                            <p className="text-sm text-gray-500 mb-1">Image:</p>
+                                            <div className="flex items-center space-x-2">
+                                              <img 
+                                                  src={practicalInfo.image} 
+                                                  alt="Aperçu" 
+                                                  className="h-12 w-12 object-cover rounded border"
+                                                  onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                  }}
+                                              />
+                                              <div className="text-sm text-blue-600">
+                                                <Image className="h-4 w-4 mr-1 inline" />
+                                                {practicalInfo.image}
+                                              </div>
+                                            </div>
+                                          </div>
+                                      )}
                                     </div>
-                                )}
-                              </div>
+                                    {editMode && (
+                                        <div className="flex space-x-2">
+                                          <button
+                                              onClick={() => editPracticalInfo(practicalInfo)}
+                                              className="text-blue-600 hover:text-blue-900"
+                                              title="Modifier les informations"
+                                          >
+                                            <Edit className="h-4 w-4" />
+                                          </button>
+                                          <button
+                                              onClick={() => deletePracticalInfo(practicalInfo.id!)}
+                                              className="text-red-600 hover:text-red-900"
+                                              title="Supprimer la partie pratique"
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </button>
+                                        </div>
+                                    )}
+                                  </div>
 
-                              {/* Contenu WYSIWYG */}
-                              <div className="space-y-3">
-                                <h5 className="text-md font-medium text-gray-800">Contenu de la formation pratique</h5>
-                                <div className="bg-white rounded border p-4">
-                                  <div 
-                                    className="prose prose-sm max-w-none"
-                                    dangerouslySetInnerHTML={{ __html: practicalInfo.description }}
-                                  />
+                                  {/* Contenu WYSIWYG */}
+                                  <div className="space-y-3">
+                                    <h5 className="text-md font-medium text-gray-800">Contenu de la formation pratique</h5>
+                                    <div className="bg-white rounded border p-4">
+                                      <div 
+                                        className="prose prose-sm max-w-none"
+                                        dangerouslySetInnerHTML={{ __html: practicalInfo.description }}
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
+                            ))}
                           </div>
                       )}
                     </div>
@@ -1251,7 +1300,7 @@ const FormationDetail: React.FC = () => {
               </div>
             }
         >
-          {practicalInfo && (
+          {editingPracticalInfo && (
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1260,8 +1309,8 @@ const FormationDetail: React.FC = () => {
                   <input
                       type="text"
                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      value={practicalInfo.title}
-                      onChange={(e) => setPracticalInfo({...practicalInfo, title: e.target.value})}
+                      value={editingPracticalInfo.title}
+                      onChange={(e) => setEditingPracticalInfo({...editingPracticalInfo, title: e.target.value})}
                       placeholder="Formation Pratique"
                   />
                 </div>
@@ -1271,8 +1320,8 @@ const FormationDetail: React.FC = () => {
                     Description* (Contenu HTML)
                   </label>
                   <WysiwygEditor
-                      value={practicalInfo.description}
-                      onChange={(content) => setPracticalInfo({...practicalInfo, description: content})}
+                      value={editingPracticalInfo.description}
+                      onChange={(content) => setEditingPracticalInfo({...editingPracticalInfo, description: content})}
                       height={400}
                       placeholder="Décrivez la formation pratique avec des listes, images, mise en forme..."
                   />
@@ -1282,15 +1331,40 @@ const FormationDetail: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Image (optionnel)
                   </label>
-                  <input
-                      type="text"
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      value={practicalInfo.image || ''}
-                      onChange={(e) => setPracticalInfo({...practicalInfo, image: e.target.value})}
-                      placeholder="/images/practical.jpg"
-                  />
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                    </div>
+                    {editingPracticalInfo.image && (
+                        <div className="flex items-center space-x-2">
+                          <img 
+                              src={editingPracticalInfo.image} 
+                              alt="Aperçu" 
+                              className="h-20 w-20 object-cover rounded border"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                          />
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-600">{editingPracticalInfo.image}</p>
+                            <button
+                                type="button"
+                                onClick={() => setEditingPracticalInfo({...editingPracticalInfo, image: ''})}
+                                className="text-sm text-red-600 hover:text-red-800"
+                            >
+                              Supprimer l'image
+                            </button>
+                          </div>
+                        </div>
+                    )}
+                  </div>
                   <p className="mt-1 text-xs text-gray-500">
-                    Chemin vers l'image (ex: /images/practical.jpg)
+                    Formats acceptés: JPG, PNG, GIF (max 5MB)
                   </p>
                 </div>
               </div>

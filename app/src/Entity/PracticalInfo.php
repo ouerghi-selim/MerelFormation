@@ -2,28 +2,12 @@
 
 namespace App\Entity;
 
-use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
-use ApiPlatform\Metadata\Delete;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity]
-#[ApiResource(
-    operations: [
-        new Get(normalizationContext: ['groups' => ['practical_info:read']]),
-        new GetCollection(normalizationContext: ['groups' => ['practical_info:read']]),
-        new Post(denormalizationContext: ['groups' => ['practical_info:write']]),
-        new Put(denormalizationContext: ['groups' => ['practical_info:write']]),
-        new Delete()
-    ],
-    order: ['createdAt' => 'DESC']
-)]
 #[ORM\Table]
 class PracticalInfo
 {
