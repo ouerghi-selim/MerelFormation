@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
-  Home, 
+  Home,
+  Calendar,
   BookOpen, 
   Users, 
-  Car, 
+  Car,
+  PhoneIcon,
   FileText, 
   Settings, 
   CreditCard,
@@ -37,22 +39,28 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       path: '/admin/dashboard',
       exact: true
     },
+
+    { title: 'Planning',
+        icon: <Calendar size={20} />
+    , path: '/admin/planning' },
+
+    { title: 'Réservations',
+       icon: <PhoneIcon size={20} />,
+      path: '/admin/reservations' },
+
     {
       title: 'Formations',
       icon: <BookOpen size={20} />,
       path: '/admin/formations',
       submenu: [
-        { title: 'Planing des formations', path: '/admin/planning' },
         { title: 'Liste des formations', path: '/admin/formations' },
         { title: 'Sessions', path: '/admin/sessions' }
       ]
     },
     {
-      title: 'Réservations',
+      title: 'Examens',
       icon: <Car size={20} />,
-      path: '/admin/reservations',
       submenu: [
-        { title: 'Liste des réservations', path: '/admin/reservations' },
         { title: 'Véhicules', path: '/admin/vehicles' },
         { title: 'Centers', path: '/admin/reservations/examencenter' },
         { title: 'Formules', path: '/admin/reservations/formules' }

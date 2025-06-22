@@ -4,6 +4,8 @@ import { Save, ArrowLeft } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
 import { adminEmailTemplatesApi } from '../../services/api';
+import WysiwygEditor from '../../components/common/WysiwygEditor';
+import EmailTemplatePreview from '../../components/admin/EmailTemplatePreview';
 
 const EmailTemplateNew: React.FC = () => {
     const navigate = useNavigate();
@@ -16,16 +18,32 @@ const EmailTemplateNew: React.FC = () => {
     const [subject, setSubject] = useState('');
     const [content, setContent] = useState('');
     const [type, setType] = useState('notification');
-    const [variables, setVariables] = useState('');
     const [targetRole, setTargetRole] = useState<string | null>(null);
     const [eventType, setEventType] = useState('');
 
     // Liste des types d'événements disponibles
     const eventTypes = [
         { value: 'registration_confirmation', label: 'Confirmation d\'inscription' },
-        { value: 'vehicle_rental_confirmation', label: 'Confirmation de location de véhicule' },
-        { value: 'password_reset', label: 'Réinitialisation de mot de passe' },
-        // Autres types d'événements...
+        { value: 'reservation_updated', label: 'Modification de réservation' },
+        { value: 'reservation_cancelled', label: 'Annulation de réservation' },
+        { value: 'vehicle_rental', label: 'Location de véhicule' },
+        { value: 'vehicle_added', label: 'Ajout de véhicule' },
+        { value: 'vehicle_maintenance', label: 'Maintenance de véhicule' },
+        { value: 'user_welcome', label: 'Bienvenue utilisateur' },
+        { value: 'user_updated', label: 'Modification utilisateur' },
+        { value: 'user_deactivated', label: 'Désactivation utilisateur' },
+        { value: 'user_reactivated', label: 'Réactivation utilisateur' },
+        { value: 'document_added', label: 'Document ajouté' },
+        { value: 'documents_added', label: 'Documents ajoutés' },
+        { value: 'contact_request', label: 'Demande de contact' },
+        { value: 'contact_response', label: 'Réponse à un contact' },
+        { value: 'payment_received', label: 'Paiement reçu' },
+        { value: 'payment_due', label: 'Paiement dû' },
+        { value: 'payment_refunded', label: 'Remboursement' },
+        { value: 'notification', label: 'Notification générique' },
+        { value: 'reminder', label: 'Rappel' },
+        { value: 'welcome', label: 'Bienvenue' },
+        { value: 'invoice', label: 'Facturation' }
     ];
 
     // Liste des rôles disponibles
@@ -64,20 +82,13 @@ const EmailTemplateNew: React.FC = () => {
             setLoading(true);
             setError(null);
 
-            // Préparer les variables (conversion de la chaîne en tableau)
-            const variablesArray = variables
-                .split(',')
-                .map(v => v.trim())
-                .filter(v => v);
-
             const templateData = {
                 name,
                 subject,
                 content,
                 type,
                 eventType,
-                targetRole,
-                variables: variablesArray
+                targetRole
             };
 
             await adminEmailTemplatesApi.create(templateData);
@@ -206,21 +217,6 @@ const EmailTemplateNew: React.FC = () => {
                                 )}
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Variables (séparées par des virgules)
-                                </label>
-                                <input
-                                    type="text"
-                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    value={variables}
-                                    onChange={(e) => setVariables(e.target.value)}
-                                    placeholder="nom, email, date, session, etc."
-                                />
-                                <p className="mt-1 text-xs text-gray-500">
-                                    Utilisez ces variables dans votre template sous la forme {'{{'}variable{'}}'}
-                                </p>
-                            </div>
 
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -243,17 +239,13 @@ const EmailTemplateNew: React.FC = () => {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Contenu*
                                 </label>
-                                <div className="mb-2 text-sm text-gray-500">
-                                    Utilisez le HTML pour formater le contenu. Les variables sont entourées par des
-                                    accolades doubles: {'{{'}variable{'}}'}
-                                </div>
-                                <textarea
-                                    rows={15}
-                                    className={`block w-full font-mono rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                        formErrors.content ? 'border-red-500' : ''
-                                    }`}
+                                <WysiwygEditor
                                     value={content}
-                                    onChange={(e) => setContent(e.target.value)}
+                                    onChange={setContent}
+                                    height={500}
+                                    className={formErrors.content ? 'border-red-500' : ''}
+                                    placeholder="Rédigez le contenu de votre email..."
+                                    eventType={eventType}
                                 />
                                 {formErrors.content && (
                                     <p className="mt-1 text-sm text-red-500">{formErrors.content}</p>
@@ -261,27 +253,34 @@ const EmailTemplateNew: React.FC = () => {
                             </div>
                     </div>
 
-                    <div className="mt-8 border-t border-gray-200 pt-6 flex justify-end">
-                        <button
-                            type="button"
-                            onClick={() => navigate('/admin/email-templates')}
-                            className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mr-3"
-                        >
-                            Annuler
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                            {loading ? (
-                                <div
-                                    className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                            ) : (
-                                <Save className="h-5 w-5 mr-2" />
-                                    )}
-                                    Enregistrer
-                                </button>
+                    <div className="mt-8 border-t border-gray-200 pt-6 flex justify-between">
+                        <EmailTemplatePreview
+                            content={content}
+                            subject={subject}
+                        />
+                        
+                        <div className="flex space-x-3">
+                            <button
+                                type="button"
+                                onClick={() => navigate('/admin/email-templates')}
+                                className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                                {loading ? (
+                                    <div
+                                        className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                ) : (
+                                    <Save className="h-5 w-5 mr-2" />
+                                        )}
+                                        Enregistrer
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>

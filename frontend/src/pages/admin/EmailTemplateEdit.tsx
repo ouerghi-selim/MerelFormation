@@ -5,6 +5,8 @@ import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
 import { adminEmailTemplatesApi } from '../../services/api';
 import Alert from '../../components/common/Alert';
+import WysiwygEditor from '../../components/common/WysiwygEditor';
+import EmailTemplatePreview from '../../components/admin/EmailTemplatePreview';
 
 interface EmailTemplate {
     id: number;
@@ -30,9 +32,9 @@ const EmailTemplateEdit: React.FC = () => {
     const [subject, setSubject] = useState('');
     const [content, setContent] = useState('');
     const [type, setType] = useState('notification');
-    const [variables, setVariables] = useState('');
     const [isSystem, setIsSystem] = useState(false);
     const [identifier, setIdentifier] = useState('');
+    const [variables, setVariables] = useState<string[]>([]);
 
     // Erreurs de validation
     const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
@@ -49,9 +51,9 @@ const EmailTemplateEdit: React.FC = () => {
                 setSubject(template.subject);
                 setContent(template.content);
                 setType(template.type);
-                setVariables(template.variables.join(', '));
                 setIsSystem(template.isSystem);
                 setIdentifier(template.identifier);
+                setVariables(template.variables || []);
             } catch (err) {
                 console.error('Error fetching template:', err);
                 setError('Erreur lors du chargement du template');
@@ -91,18 +93,11 @@ const EmailTemplateEdit: React.FC = () => {
             setSaving(true);
             setError(null);
 
-            // Préparer les variables (conversion de la chaîne en tableau)
-            const variablesArray = variables
-                .split(',')
-                .map(v => v.trim())
-                .filter(v => v);
-
             const templateData = {
                 name,
                 subject,
                 content,
-                type,
-                variables: variablesArray
+                type
             };
 
             await adminEmailTemplatesApi.update(parseInt(id || '0'), templateData);
@@ -206,22 +201,6 @@ const EmailTemplateEdit: React.FC = () => {
                                         )}
                                     </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Variables (séparées par des virgules)
-                                        </label>
-                                        <input
-                                            type="text"
-                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                            value={variables}
-                                            onChange={(e) => setVariables(e.target.value)}
-                                            placeholder="nom, email, date, session, etc."
-                                        />
-                                        <p className="mt-1 text-xs text-gray-500">
-                                            Utilisez ces variables dans votre template sous la
-                                            forme {'{{'}variable{'}}'}
-                                        </p>
-                                    </div>
                                     <div className="md:col-span-2 bg-gray-50 p-4 rounded-lg mt-4">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Identifiant technique
@@ -258,17 +237,14 @@ const EmailTemplateEdit: React.FC = () => {
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Contenu*
                                         </label>
-                                        <div className="mb-2 text-sm text-gray-500">
-                                            Utilisez le HTML pour formater le contenu. Les variables sont entourées par
-                                            des accolades doubles: {'{{'}variable{'}}'}
-                                        </div>
-                                        <textarea
-                                            rows={15}
-                                            className={`block w-full font-mono rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                                formErrors.content ? 'border-red-500' : ''
-                                            }`}
+                                        <WysiwygEditor
                                             value={content}
-                                            onChange={(e) => setContent(e.target.value)}
+                                            onChange={setContent}
+                                            height={500}
+                                            className={formErrors.content ? 'border-red-500' : ''}
+                                            placeholder="Rédigez le contenu de votre email..."
+                                            availableVariables={variables}
+                                            eventType={identifier}
                                         />
                                         {formErrors.content && (
                                             <p className="mt-1 text-sm text-red-500">{formErrors.content}</p>
@@ -276,26 +252,34 @@ const EmailTemplateEdit: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="mt-8 border-t border-gray-200 pt-6 flex justify-end">
-                                    <button
-                                        type="button"
-                                        onClick={() => navigate('/admin/email-templates')}
-                                        className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mr-3"
-                                    >
-                                        Annuler
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={saving}
-                                        className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                    >
-                                        {saving ? (
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                        ) : (
-                                            <Save className="h-5 w-5 mr-2" />
-                                        )}
-                                        Enregistrer
-                                    </button>
+                                <div className="mt-8 border-t border-gray-200 pt-6 flex justify-between">
+                                    <EmailTemplatePreview
+                                        content={content}
+                                        subject={subject}
+                                        availableVariables={variables}
+                                    />
+                                    
+                                    <div className="flex space-x-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate('/admin/email-templates')}
+                                            className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                        >
+                                            Annuler
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={saving}
+                                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                        >
+                                            {saving ? (
+                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                            ) : (
+                                                <Save className="h-5 w-5 mr-2" />
+                                            )}
+                                            Enregistrer
+                                        </button>
+                                    </div>
                                 </div>
                             </form>
                         </div>

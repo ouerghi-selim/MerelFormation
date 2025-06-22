@@ -20,6 +20,7 @@
 - PDF : KnpSnappyBundle 
 - Cache : Symfony HTTP Cache
 - Mail : Symfony Mailer
+- WYSIWYG : 🆕 TinyMCE React (Self-hosted Community Edition)
 - Calendrier : Tattali Calendar Bundle
 - CORS : NelmioCorsBundle
 - Tests : PHPUnit
@@ -36,7 +37,7 @@
 - Charts : Recharts 2.15
 - Calendar : React Big Calendar
 - Maps : Google Maps API
-- Editor : TinyMCE React
+- WYSIWYG : 🆕 TinyMCE React (Self-hosted Community Edition)
 - State : Context API + React Hooks
 ```
 
@@ -137,8 +138,8 @@
 - **VehiclesAdmin.tsx** - Gestion véhicules
 - **ReservationsAdmin.tsx** - Gestion réservations
 - **EmailTemplatesAdmin.tsx** - Templates emails
-- **EmailTemplateEdit.tsx** - Édition template
-- **EmailTemplateNew.tsx** - Nouveau template
+- **EmailTemplateEdit.tsx** 🆕 WYSIWYG PRO - Éditeur avancé avec variables intelligentes
+- **EmailTemplateNew.tsx** 🆕 WYSIWYG PRO - Création avec système de variables
 - **UsersAdmin.tsx** - Vue utilisateurs
 
 ### Planning Admin (/frontend/src/pages/planning/)
@@ -304,6 +305,12 @@ MerelFormation/
 - **🆕 Gestion documentaire formations/sessions complète et debuggée** ✅ FINALISÉ
 
 ### 🆕 DERNIÈRES AMÉLIORATIONS CRITIQUES (Juin 2025) ✅ TERMINÉ
+- **🆕 Éditeur Email WYSIWYG Professionnel** - Remplacement textarea HTML par TinyMCE React
+- **🆕 Système Variables Intelligent** - Variables contextuelles par type d'événement
+- **🆕 Interface Admin Avancée** - Bouton Variables, surbrillance, prévisualisation
+- **🆕 TinyMCE Auto-hébergé** - Évite les frais d'abonnement, self-hosted gratuit
+- **🆕 Prévisualisation Intelligente** - Affiche uniquement les variables réellement utilisées
+- **🆕 Mapping Hybride** - Entité EmailTemplate + fallback mapping statique
 - **Planning Admin** - Calendrier intégré avec React Big Calendar
 - **Gestion Examens** - Différentiation sessions/examens dans le planning
 - **Bug Fixes** - Corrections SessionAdminController pour mise à jour
@@ -348,7 +355,7 @@ MerelFormation/
   - **Routes API conflictuelles** - `/api/admin/users/deleted` corrigé (plus de 404)
   - **Service notifications** - Méthode `notifyUserReactivated` ajoutée avec constante
 
-### 🆕 ✅ SYSTÈME D'EMAILS AUTOMATIQUES COMPLET (Janvier 2025)
+### 🆕 ✅ SYSTÈME D'EMAILS AUTOMATIQUES & WYSIWYG COMPLET (Janvier 2025)
 - **24 Templates d'emails professionnels** - HTML avec CSS inline pour compatibilité maximale
 - **18 Event Types** - Couvrant formations, sessions, utilisateurs, véhicules, documents, contacts
 - **Notifications ciblées par rôle** - Admin, Étudiant, Instructeur selon le contexte
@@ -359,6 +366,13 @@ MerelFormation/
 - **Notifications de maintenance** - Véhicules indisponibles avec alternatives
 - **Gestion d'erreurs robuste** - Fallbacks et logging complets
 - **Design cohérent** - Charte graphique MerelFormation respectée
+- **🆕 Éditeur WYSIWYG Professionnel** - TinyMCE React auto-hébergé (gratuit)
+- **🆕 Système de variables intelligent** - Bouton Variables avec menu déroulant
+- **🆕 Variables contextuelles** - Variables adaptées au type d'événement automatiquement
+- **🆕 Prévisualisation intelligente** - Affichage uniquement des variables utilisées
+- **🆕 Surbrillance automatique** - Variables {{}} mises en évidence dans l'éditeur
+- **🆕 Mapping développeur** - Variables contrôlées par le code, pas par les admins
+- **🆕 Système hybride** - Utilise les variables de l'entité en priorité + fallback mapping
 
 ### 🔧 EN COURS D'OPTIMISATION
 - Performance frontend/backend
@@ -476,11 +490,11 @@ Copiez-collez ce brief au début de nouvelles conversations avec Claude pour qu'
 
 **Dernière mise à jour :** Juin 2025 par Selim OUERGHI
 
-## 🆕 NOUVEAU : Système d'Emails Automatiques Complet
+## 🆕 NOUVEAU : Système d'Emails Automatiques & WYSIWYG Complet
 
-**FONCTIONNALITÉ MAJEURE AJOUTÉE (Janvier 2025) :**
+**FONCTIONNALITÉS MAJEURES AJOUTÉES (Janvier 2025) :**
 
-Le projet MerelFormation dispose maintenant d'un **système d'emails automatiques complet et professionnel** qui transforme l'expérience utilisateur :
+Le projet MerelFormation dispose maintenant d'un **système d'emails automatiques complet et professionnel** + **éditeur WYSIWYG avancé** qui transforment l'expérience utilisateur :
 
 ### 📧 **24 Templates d'Emails Professionnels**
 - **Design HTML responsive** avec CSS inline
@@ -501,5 +515,20 @@ Le projet MerelFormation dispose maintenant d'un **système d'emails automatique
 - **Réduction drastique** de la charge administrative
 - **Expérience utilisateur** considérablement améliorée
 - **Professionnalisation** des échanges avec les clients
+
+### 🆕 **Éditeur WYSIWYG Professionnel**
+- **TinyMCE React auto-hébergé** - Self-hosted Community Edition (gratuit)
+- **Système de variables intelligent** - Bouton "Variables" avec menu déroulant contextuel
+- **Variables par eventType** - 21 types d'événements avec variables spécifiques
+- **Surbrillance automatique** - Variables {{}} mises en évidence en bleu
+- **Prévisualisation intelligente** - Affiche uniquement les variables réellement utilisées
+- **Système hybride** - Variables de l'entité + fallback mapping statique
+- **Interface admin moderne** - Remplacement du textarea basique par un éditeur professionnel
+
+### 🆕 **Impact UX/UI**
+- **Facilité d'utilisation** drastiquement améliorée pour les admins
+- **Prévention d'erreurs** - Variables contrôlées par le développeur
+- **Interface moderne** - Passage de HTML brut à WYSIWYG professionnel
+- **Gain de temps** - Insertion variables en 1 clic
 
 Le système est **immédiatement opérationnel** après rechargement des fixtures et fonctionne de manière transparente avec l'infrastructure existante.
