@@ -1,5 +1,5 @@
 import { useState, useEffect, JSXElementConstructor, ReactElement, ReactNode, ReactPortal} from 'react';
-import {Clock, Calendar, Award, CheckCircle, Users, BookOpen, Car, CreditCard} from 'lucide-react';
+import {Clock, Calendar, Award, CheckCircle, Users, BookOpen, Car, CreditCard, FileText} from 'lucide-react';
 import {useParams} from 'react-router-dom';
 import axios from 'axios';
 import classroom from '@assets/images/pages/classroom.png';
@@ -18,6 +18,14 @@ interface Formation {
     isActive: boolean;
     createdAt: string;
     sessions: Session[];
+    practicalInfo?: PracticalInfo;
+}
+
+interface PracticalInfo {
+    id: number;
+    title: string;
+    description: string;
+    image?: string;
 }
 
 interface Session {
@@ -35,6 +43,7 @@ const FormationInitialePage = () => {
     const [error, setError] = useState<string | null>(null);
     const [prerequisites, setPrerequisites] = useState<any[]>([]);
     const [modules, setModules] = useState<any[]>([]);
+    const [practicalInfo, setPracticalInfo] = useState<PracticalInfo | null>(null);
 
     // États pour les modaux
     const [showSessionModal, setShowSessionModal] = useState(false);
@@ -50,12 +59,15 @@ const FormationInitialePage = () => {
                 console.log("API response:", response.data);
                 setFormation(response.data);
 
-                // Récupérer les prérequis et les modules depuis la réponse API
+                // Récupérer les prérequis, modules et partie pratique depuis la réponse API
                 if (response.data.prerequisites) {
                     setPrerequisites(response.data.prerequisites);
                 }
                 if (response.data.modules) {
                     setModules(response.data.modules);
+                }
+                if (response.data.practicalInfo) {
+                    setPracticalInfo(response.data.practicalInfo);
                 }
 
                 setError(null);
@@ -211,39 +223,28 @@ const FormationInitialePage = () => {
             </section>
 
             {/* Partie Pratique */}
-            <section className="py-16 bg-white">
-                <div className="container mx-auto px-4">
-                    <div className="flex flex-col md:flex-row items-center gap-12">
-                        <div className="md:w-1/2">
-                            <h2 className="text-3xl font-bold mb-6">Formation Pratique</h2>
-                            <p className="text-gray-600 mb-6">
-                                21 heures de formation pratique en conditions réelles avec :
-                            </p>
-                            <ul className="space-y-4">
-                                <li className="flex items-start">
-                                    <Car className="h-5 w-5 text-blue-900 mr-2 mt-1"/>
-                                    <span>Véhicule école équipé taxi avec doubles commandes</span>
-                                </li>
-                                <li className="flex items-start">
-                                    <CreditCard className="h-5 w-5 text-blue-900 mr-2 mt-1"/>
-                                    <span>Équipements professionnels complets (taximètre, terminal de paiement)</span>
-                                </li>
-                                <li className="flex items-start">
-                                    <Calendar className="h-5 w-5 text-blue-900 mr-2 mt-1"/>
-                                    <span>Sessions pratiques en conditions réelles</span>
-                                </li>
-                            </ul>
-                        </div>
-                        <div className="md:w-1/2">
-                            <img
-                                src={practical}
-                                alt="Formation pratique taxi"
-                                className="rounded-lg shadow-xl"
-                            />
+            {practicalInfo && (
+                <section className="py-16 bg-white">
+                    <div className="container mx-auto px-4">
+                        <div className="flex flex-col md:flex-row items-center gap-12">
+                            <div className="md:w-1/2">
+                                <h2 className="text-3xl font-bold mb-6">{practicalInfo.title}</h2>
+                                <div 
+                                    className="text-gray-600 prose prose-lg max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: practicalInfo.description }}
+                                />
+                            </div>
+                            <div className="md:w-1/2">
+                                <img
+                                    src={practicalInfo.image || practical}
+                                    alt={practicalInfo.title}
+                                    className="rounded-lg shadow-xl"
+                                />
+                            </div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            )}
 
             {/* Prochaines sessions */}
             {formation.sessions && formation.sessions.length > 0 && (

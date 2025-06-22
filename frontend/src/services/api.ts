@@ -76,6 +76,13 @@ export const adminFormationsApi = {
         }),
     deleteDocument: (formationId: number, documentId: number) =>
         api.delete(`/admin/formations/${formationId}/documents/${documentId}`),
+    // Méthodes pour la partie pratique
+    createPracticalInfo: (formationId: number, data: any) => {
+        const payload = { ...data, formation: `/api/formations/${formationId}` };
+        return api.post('/practical_infos', payload);
+    },
+    updatePracticalInfo: (practicalInfoId: number, data: any) => api.put(`/practical_infos/${practicalInfoId}`, data),
+    deletePracticalInfo: (practicalInfoId: number) => api.delete(`/practical_infos/${practicalInfoId}`),
 };
 
 // Services API pour les réservations administrateur

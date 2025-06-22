@@ -13,6 +13,7 @@ use App\Entity\Module;
 use App\Entity\ModulePoint;
 use App\Entity\Prerequisite;
 use App\Entity\Document;
+use App\Entity\PracticalInfo;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use App\Service\NotificationService;
@@ -178,6 +179,17 @@ class FormationAdminController extends AbstractController
             ];
         }
 
+        // Formater la partie pratique
+        $practicalInfo = null;
+        if ($formation->getPracticalInfo()) {
+            $practicalInfo = [
+                'id' => $formation->getPracticalInfo()->getId(),
+                'title' => $formation->getPracticalInfo()->getTitle(),
+                'description' => $formation->getPracticalInfo()->getDescription(),
+                'image' => $formation->getPracticalInfo()->getImage()
+            ];
+        }
+
         // Formater les données pour le frontend
         $formattedFormation = [
             'id' => $formation->getId(),
@@ -190,7 +202,8 @@ class FormationAdminController extends AbstractController
             'modules' => $modules,
             'prerequisites' => $prerequisites,
             'sessions' => $sessions,
-            'documents' => $documents
+            'documents' => $documents,
+            'practicalInfo' => $practicalInfo
         ];
 
         return $this->json($formattedFormation);

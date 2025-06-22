@@ -13,7 +13,10 @@ import {
   Users,
   MapPin,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Car,
+  CreditCard,
+  Image
 } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
@@ -22,6 +25,7 @@ import Modal from '../../components/common/Modal';
 import Alert from '../../components/common/Alert';
 import { useNotification } from '../../contexts/NotificationContext';
 import { adminFormationsApi, documentsApi } from '@/services/api.ts';
+import WysiwygEditor from '../../components/common/WysiwygEditor';
 
 interface Formation {
   id: number;
@@ -33,6 +37,7 @@ interface Formation {
   isActive: boolean;
   modules?: ModuleInput[];
   prerequisites?: PrerequisiteInput[];
+  practicalInfo?: PracticalInfoInput;
   documents?: DocumentInput[];
   sessions?: SessionInput[];
 }
@@ -74,6 +79,13 @@ interface SessionInput {
   participantsCount: number;
 }
 
+interface PracticalInfoInput {
+  id?: number;
+  title: string;
+  description: string;
+  image?: string;
+}
+
 const FormationDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -96,6 +108,10 @@ const FormationDetail: React.FC = () => {
   const [prerequisites, setPrerequisites] = useState<PrerequisiteInput[]>([]);
   const [showPrerequisiteModal, setShowPrerequisiteModal] = useState(false);
   const [editingPrerequisite, setEditingPrerequisite] = useState<PrerequisiteInput | null>(null);
+
+  // États pour la partie pratique
+  const [practicalInfo, setPracticalInfo] = useState<PracticalInfoInput | null>(null);
+  const [showPracticalModal, setShowPracticalModal] = useState(false);
 
   // États pour les documents
   const [documents, setDocuments] = useState<DocumentInput[]>([]);
@@ -121,6 +137,7 @@ const FormationDetail: React.FC = () => {
         setFormation(formationData);
         setModules(formationData.modules || []);
         setPrerequisites(formationData.prerequisites || []);
+        setPracticalInfo(formationData.practicalInfo || null);
         setDocuments(formationData.documents || []);
         setError(null);
       } catch (err) {
@@ -169,7 +186,8 @@ const FormationDetail: React.FC = () => {
           ...module,
           position: index + 1
         })),
-        prerequisites
+        prerequisites,
+        practicalInfo
       };
 
       // 1. Mettre à jour la formation
@@ -286,6 +304,68 @@ const FormationDetail: React.FC = () => {
 
   const deletePrerequisite = (prerequisiteId: number) => {
     setPrerequisites(prerequisites.filter(p => p.id !== prerequisiteId));
+  };
+
+  // Gestion de la partie pratique
+  const createPracticalInfo = () => {
+    const newPracticalInfo: PracticalInfoInput = {
+      title: 'Formation Pratique',
+      description: '<p>Décrivez ici la formation pratique...</p>',
+      image: ''
+    };
+    setPracticalInfo(newPracticalInfo);
+    setShowPracticalModal(true);
+  };
+
+  const editPracticalInfo = () => {
+    if (practicalInfo) {
+      setShowPracticalModal(true);
+    }
+  };
+
+  const savePracticalInfo = async () => {
+    if (!practicalInfo || !formation) return;
+
+    try {
+      setUpdating(true);
+      
+      // Si la partie pratique a un ID, on la met à jour, sinon on la crée
+      if (practicalInfo.id) {
+        await adminFormationsApi.updatePracticalInfo(practicalInfo.id, practicalInfo);
+        addToast('Partie pratique mise à jour avec succès', 'success');
+      } else {
+        const response = await adminFormationsApi.createPracticalInfo(formation.id, practicalInfo);
+        setPracticalInfo({...practicalInfo, id: response.data.id});
+        addToast('Partie pratique créée avec succès', 'success');
+      }
+      
+      setShowPracticalModal(false);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      addToast('Erreur lors de la sauvegarde de la partie pratique', 'error');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const deletePracticalInfo = async () => {
+    if (!practicalInfo?.id) return;
+
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette partie pratique ?')) {
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      await adminFormationsApi.deletePracticalInfo(practicalInfo.id);
+      setPracticalInfo(null);
+      addToast('Partie pratique supprimée avec succès', 'success');
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      addToast('Erreur lors de la suppression de la partie pratique', 'error');
+    } finally {
+      setUpdating(false);
+    }
   };
 
   // Gestion des documents avec système temporaire
@@ -444,6 +524,7 @@ const FormationDetail: React.FC = () => {
     { id: 'info', label: 'Informations', icon: FileText },
     { id: 'modules', label: 'Modules', icon: Users },
     { id: 'prerequisites', label: 'Prérequis', icon: FileText },
+    { id: 'practical', label: 'Partie Pratique', icon: Car },
     { id: 'documents', label: 'Documents', icon: Upload },
     { id: 'sessions', label: 'Sessions', icon: Calendar }
   ];
@@ -744,6 +825,74 @@ const FormationDetail: React.FC = () => {
                                   )}
                                 </div>
                             ))}
+                          </div>
+                      )}
+                    </div>
+                )}
+
+                {/* Onglet Partie Pratique */}
+                {activeTab === 'practical' && (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-medium text-gray-900">Partie Pratique</h3>
+                        {editMode && !practicalInfo && (
+                            <Button onClick={createPracticalInfo}>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Créer la partie pratique
+                            </Button>
+                        )}
+                      </div>
+
+                      {!practicalInfo ? (
+                          <p className="text-gray-500 text-sm italic">Aucune partie pratique définie</p>
+                      ) : (
+                          <div className="space-y-6">
+                            {/* Informations générales */}
+                            <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                              <div className="flex justify-between items-start mb-4">
+                                <div className="flex-1">
+                                  <h4 className="text-lg font-semibold text-gray-900 mb-2">{practicalInfo.title}</h4>
+                                  {practicalInfo.image && (
+                                      <div className="mb-3">
+                                        <p className="text-sm text-gray-500 mb-1">Image:</p>
+                                        <div className="flex items-center text-sm text-blue-600">
+                                          <Image className="h-4 w-4 mr-1" />
+                                          {practicalInfo.image}
+                                        </div>
+                                      </div>
+                                  )}
+                                </div>
+                                {editMode && (
+                                    <div className="flex space-x-2">
+                                      <button
+                                          onClick={editPracticalInfo}
+                                          className="text-blue-600 hover:text-blue-900"
+                                          title="Modifier les informations"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                          onClick={deletePracticalInfo}
+                                          className="text-red-600 hover:text-red-900"
+                                          title="Supprimer la partie pratique"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                )}
+                              </div>
+
+                              {/* Contenu WYSIWYG */}
+                              <div className="space-y-3">
+                                <h5 className="text-md font-medium text-gray-800">Contenu de la formation pratique</h5>
+                                <div className="bg-white rounded border p-4">
+                                  <div 
+                                    className="prose prose-sm max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: practicalInfo.description }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
                           </div>
                       )}
                     </div>
@@ -1081,6 +1230,73 @@ const FormationDetail: React.FC = () => {
               </div>
           )}
         </Modal>
+
+        {/* Modal Partie Pratique */}
+        <Modal
+            isOpen={showPracticalModal}
+            onClose={() => setShowPracticalModal(false)}
+            title="Informations Partie Pratique"
+            maxWidth="max-w-2xl"
+            footer={
+              <div className="flex justify-end space-x-3">
+                <Button
+                    variant="outline"
+                    onClick={() => setShowPracticalModal(false)}
+                >
+                  Annuler
+                </Button>
+                <Button onClick={savePracticalInfo} disabled={updating}>
+                  {updating ? 'Sauvegarde...' : 'Sauvegarder'}
+                </Button>
+              </div>
+            }
+        >
+          {practicalInfo && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Titre*
+                  </label>
+                  <input
+                      type="text"
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      value={practicalInfo.title}
+                      onChange={(e) => setPracticalInfo({...practicalInfo, title: e.target.value})}
+                      placeholder="Formation Pratique"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description* (Contenu HTML)
+                  </label>
+                  <WysiwygEditor
+                      value={practicalInfo.description}
+                      onChange={(content) => setPracticalInfo({...practicalInfo, description: content})}
+                      height={400}
+                      placeholder="Décrivez la formation pratique avec des listes, images, mise en forme..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Image (optionnel)
+                  </label>
+                  <input
+                      type="text"
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      value={practicalInfo.image || ''}
+                      onChange={(e) => setPracticalInfo({...practicalInfo, image: e.target.value})}
+                      placeholder="/images/practical.jpg"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Chemin vers l'image (ex: /images/practical.jpg)
+                  </p>
+                </div>
+              </div>
+          )}
+        </Modal>
+
       </div>
   );
 };

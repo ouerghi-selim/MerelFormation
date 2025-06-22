@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[Route('/api/formations')]
+#[Route('/api/formations', priority: 10)]
 class FormationController extends AbstractController
 {
     public function __construct(
@@ -74,7 +74,76 @@ class FormationController extends AbstractController
     #[Route('/{id}', name: 'app_formations_show', methods: ['GET'])]
     public function show(Formation $formation): JsonResponse
     {
-        return $this->json($formation, Response::HTTP_OK, [], ['groups' => ['formation:read', 'formation:item:read']]);
+        // Formater manuellement pour éviter les problèmes de sérialisation
+        $formationData = [
+            'id' => $formation->getId(),
+            'title' => $formation->getTitle(),
+            'description' => $formation->getDescription(),
+            'price' => $formation->getPrice(),
+            'duration' => $formation->getDuration(),
+            'type' => $formation->getType(),
+            'createdAt' => $formation->getCreatedAt()->format('c'),
+            'updatedAt' => $formation->getUpdatedAt()->format('c'),
+            'isActive' => $formation->isIsActive(),
+        ];
+
+        // Ajouter les sessions
+        $sessions = [];
+        foreach ($formation->getSessions() as $session) {
+            $sessions[] = [
+                'id' => $session->getId(),
+                'startDate' => $session->getStartDate()->format('c'),
+                'endDate' => $session->getEndDate()->format('c'),
+                'maxParticipants' => $session->getMaxParticipants(),
+                'status' => $session->getStatus()
+            ];
+        }
+        $formationData['sessions'] = $sessions;
+
+        // Ajouter les modules avec leurs points
+        $modules = [];
+        foreach ($formation->getModules() as $module) {
+            $points = [];
+            foreach ($module->getPoints() as $point) {
+                $points[] = [
+                    'id' => $point->getId(),
+                    'content' => $point->getContent()
+                ];
+            }
+            $modules[] = [
+                'id' => $module->getId(),
+                'title' => $module->getTitle(),
+                'duration' => $module->getDuration(),
+                'position' => $module->getPosition(),
+                'points' => $points
+            ];
+        }
+        $formationData['modules'] = $modules;
+
+        // Ajouter les prérequis
+        $prerequisites = [];
+        foreach ($formation->getPrerequisites() as $prerequisite) {
+            $prerequisites[] = [
+                'id' => $prerequisite->getId(),
+                'content' => $prerequisite->getContent()
+            ];
+        }
+        $formationData['prerequisites'] = $prerequisites;
+
+        // Ajouter la partie pratique
+        $practicalInfo = $formation->getPracticalInfo();
+        if ($practicalInfo) {
+            $formationData['practicalInfo'] = [
+                'id' => $practicalInfo->getId(),
+                'title' => $practicalInfo->getTitle(),
+                'description' => $practicalInfo->getDescription(),
+                'image' => $practicalInfo->getImage()
+            ];
+        } else {
+            $formationData['practicalInfo'] = null;
+        }
+
+        return $this->json($formationData);
     }
 
     #[Route('', name: 'app_formations_create', methods: ['POST'])]

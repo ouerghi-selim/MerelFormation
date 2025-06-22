@@ -19,7 +19,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: FormationRepository::class)]
 #[ApiResource(
     operations: [
-        new Get(normalizationContext: ['groups' => ['formation:read', 'formation:item:read']]),
         new GetCollection(normalizationContext: ['groups' => ['formation:read']]),
         new Post(denormalizationContext: ['groups' => ['formation:write']]),
         new Put(denormalizationContext: ['groups' => ['formation:write']])
@@ -99,6 +98,9 @@ class Formation
     #[ORM\OneToMany(mappedBy: 'formation', targetEntity: Prerequisite::class, cascade: ['persist', 'remove'])]
     #[Groups(['formation:item:read'])]
     private Collection $prerequisites;
+
+    #[ORM\OneToMany(mappedBy: 'formation', targetEntity: PracticalInfo::class, cascade: ['persist', 'remove'])]
+    private Collection $practicalInfos;
     public function __construct()
     {
         $this->sessions = new ArrayCollection();
@@ -108,6 +110,7 @@ class Formation
         $this->prerequisites = new ArrayCollection();
         $this->documents = new ArrayCollection();
         $this->media = new ArrayCollection();
+        $this->practicalInfos = new ArrayCollection();
     }
 
     #[ORM\PreUpdate]
@@ -305,6 +308,103 @@ class Formation
         if ($this->prerequisites->removeElement($prerequisite)) {
             if ($prerequisite->getFormation() === $this) {
                 $prerequisite->setFormation(null);
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, PracticalInfo>
+     */
+    public function getPracticalInfos(): Collection
+    {
+        return $this->practicalInfos;
+    }
+
+    /**
+     * Get the first (and usually only) practical info for this formation
+     */
+    #[Groups(['formation:item:read'])]
+    public function getPracticalInfo(): ?PracticalInfo
+    {
+        try {
+            if ($this->practicalInfos === null) {
+                return null;
+            }
+            if (!$this->practicalInfos instanceof \Doctrine\Common\Collections\Collection) {
+                return null;
+            }
+            if ($this->practicalInfos->isEmpty()) {
+                return null;
+            }
+            return $this->practicalInfos->first() ?: null;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Get sessions as array for serialization
+     */
+    #[Groups(['formation:item:read'])]
+    public function getSessionsArray(): array
+    {
+        try {
+            if ($this->sessions === null || !$this->sessions instanceof \Doctrine\Common\Collections\Collection) {
+                return [];
+            }
+            return $this->sessions->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Get modules as array for serialization
+     */
+    #[Groups(['formation:item:read'])]
+    public function getModulesArray(): array
+    {
+        try {
+            if ($this->modules === null || !$this->modules instanceof \Doctrine\Common\Collections\Collection) {
+                return [];
+            }
+            return $this->modules->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Get prerequisites as array for serialization
+     */
+    #[Groups(['formation:item:read'])]
+    public function getPrerequisitesArray(): array
+    {
+        try {
+            if ($this->prerequisites === null || !$this->prerequisites instanceof \Doctrine\Common\Collections\Collection) {
+                return [];
+            }
+            return $this->prerequisites->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    public function addPracticalInfo(PracticalInfo $practicalInfo): self
+    {
+        if (!$this->practicalInfos->contains($practicalInfo)) {
+            $this->practicalInfos->add($practicalInfo);
+            $practicalInfo->setFormation($this);
+        }
+        return $this;
+    }
+
+    public function removePracticalInfo(PracticalInfo $practicalInfo): self
+    {
+        if ($this->practicalInfos->removeElement($practicalInfo)) {
+            if ($practicalInfo->getFormation() === $this) {
+                $practicalInfo->setFormation(null);
             }
         }
         return $this;
