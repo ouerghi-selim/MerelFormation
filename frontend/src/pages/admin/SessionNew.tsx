@@ -114,25 +114,38 @@ const SessionNew: React.FC = () => {
             setLoading(true);
             setError(null);
 
-            // Utiliser FormData pour envoyer les fichiers
-            const formData = new FormData();
+            // Préparer les données au format JSON attendu par le contrôleur
+            const sessionData = {
+                formation: { id: parseInt(formationId) },
+                startDate: new Date(startDate).toISOString(),
+                endDate: new Date(endDate).toISOString(),
+                maxParticipants: parseInt(maxParticipants),
+                location: location,
+                status: status,
+                notes: notes.trim() || null,
+                instructor: instructorId ? { id: parseInt(instructorId) } : null
+            };
 
-            // Ajouter les champs de base
-            formData.append('formationId', formationId);
-            formData.append('startDate', new Date(startDate).toISOString());
-            formData.append('endDate', new Date(endDate).toISOString());
-            formData.append('maxParticipants', maxParticipants);
-            formData.append('location', location);
-            formData.append('status', status);
-            if (notes.trim()) formData.append('notes', notes.trim());
-            if (instructorId) formData.append('instructorId', instructorId);
-
-            // Ajouter les documents
-            documents.forEach((document, index) => {
-                formData.append(`documents[${index}]`, document);
-            });
-
-            await adminSessionsApi.create(formData);
+            // Créer la session d'abord
+            const response = await adminSessionsApi.create(sessionData);
+            
+            // Si des documents sont attachés, les uploader séparément
+            if (documents.length > 0) {
+                const sessionId = response.data.id;
+                for (const document of documents) {
+                    const formData = new FormData();
+                    formData.append('file', document);
+                    formData.append('title', document.name.split('.')[0]); // Utiliser le nom du fichier sans extension
+                    formData.append('category', 'support');
+                    
+                    try {
+                        await adminSessionsApi.uploadDocument(sessionId, formData);
+                    } catch (docError) {
+                        console.error('Erreur lors de l\'upload du document:', document.name, docError);
+                        // Continue avec les autres documents même si un échoue
+                    }
+                }
+            }
             addToast('Session créée avec succès', 'success');
 
             setTimeout(() => {

@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { UserPlus, Edit, Trash2, Eye, GraduationCap, Check, X } from 'lucide-react';
+import { UserPlus, Edit, Trash2, Eye, GraduationCap, Check, X, Users, Archive } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
 import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
+import DeletedUsersTable from '../../components/admin/DeletedUsersTable';
 import { useNotification } from '../../contexts/NotificationContext';
 import useDataFetching from '../../hooks/useDataFetching';
 import { adminUsersApi } from '../../services/api';
@@ -34,6 +35,7 @@ interface Formation {
 
 const StudentsAdmin: React.FC = () => {
     const { addToast } = useNotification();
+    const [activeTab, setActiveTab] = useState<'active' | 'deleted'>('active');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -383,24 +385,61 @@ const StudentsAdmin: React.FC = () => {
                         />
                     )}
 
-                    <div className="flex justify-between items-center mb-6">
-                        <Button
-                            onClick={() => setShowAddModal(true)}
-                            icon={<UserPlus className="h-5 w-5" />}
-                        >
-                            Nouvel élève
-                        </Button>
+                    {/* Onglets */}
+                    <div className="border-b border-gray-200 mb-6">
+                        <nav className="-mb-px flex space-x-8">
+                            <button
+                                onClick={() => setActiveTab('active')}
+                                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                                    activeTab === 'active'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                }`}
+                            >
+                                <Users className="w-5 h-5 inline mr-2" />
+                                Élèves actifs
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('deleted')}
+                                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                                    activeTab === 'deleted'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                }`}
+                            >
+                                <Archive className="w-5 h-5 inline mr-2" />
+                                Élèves supprimés
+                            </button>
+                        </nav>
                     </div>
 
-                    <DataTable<User>
-                        data={students || []}
-                        columns={columns}
-                        keyField="id"
-                        loading={loading}
-                        actions={renderActions}
-                        searchFields={['firstName', 'lastName', 'email']}
-                        emptyMessage="Aucun élève trouvé"
-                    />
+                    {/* Contenu selon l'onglet actif */}
+                    {activeTab === 'active' && (
+                        <>
+                            <div className="flex justify-between items-center mb-6">
+                                <Button
+                                    onClick={() => setShowAddModal(true)}
+                                    icon={<UserPlus className="h-5 w-5" />}
+                                >
+                                    Nouvel élève
+                                </Button>
+                            </div>
+                        </>
+                    )}
+
+                    {activeTab === 'active' && (
+                        <DataTable<User>
+                            data={students || []}
+                            columns={columns}
+                            keyField="id"
+                            loading={loading}
+                            actions={renderActions}
+                            searchFields={['firstName', 'lastName', 'email']}
+                            emptyMessage="Aucun élève trouvé"
+                        />
+                    )}
+
+                    {activeTab === 'deleted' && <DeletedUsersTable />}
 
                     {/* Statistiques des élèves */}
                     <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">

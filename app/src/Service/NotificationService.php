@@ -626,6 +626,31 @@ class NotificationService
         }
     }
 
+    /**
+     * Notify about user reactivation/restoration
+     */
+    public function notifyUserReactivated($user): void
+    {
+        try {
+            $variables = [
+                'userName' => $user->getFirstName() . ' ' . $user->getLastName(),
+                'reactivatedAt' => (new \DateTime())->format('d/m/Y H:i'),
+                'userEmail' => $user->getEmail()
+            ];
+
+            $this->emailService->sendTemplatedEmailByEventAndRole(
+                $user->getEmail(),
+                NotificationEventType::USER_REACTIVATED,
+                'ROLE_STUDENT',
+                $variables
+            );
+
+            $this->logger->info('Notification de réactivation envoyée à: ' . $user->getEmail());
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de la notification de réactivation: ' . $e->getMessage());
+        }
+    }
+
     // === VEHICLE NOTIFICATIONS ===
 
     /**

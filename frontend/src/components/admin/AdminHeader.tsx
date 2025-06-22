@@ -5,9 +5,10 @@ import Breadcrumbs from './Breadcrumbs';
 interface AdminHeaderProps {
   title: string;
   breadcrumbItems?: Array<{ label: string; path?: string }>;
+  onToggleMobileMenu?: () => void;
 }
 
-const AdminHeader: React.FC<AdminHeaderProps> = ({ title, breadcrumbItems }) => {
+const AdminHeader: React.FC<AdminHeaderProps> = ({ title, breadcrumbItems, onToggleMobileMenu }) => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -23,11 +24,12 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title, breadcrumbItems }) => 
       <header className="bg-white shadow-sm z-10">
         <div className="flex justify-between items-center px-4 py-3 lg:px-6">
           <div className="flex items-center">
+            {/* ✅ BOUTON MENU MOBILE pour contrôler la sidebar */}
             <button
                 className="md:hidden mr-2 text-gray-600 hover:text-gray-900"
-                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                onClick={onToggleMobileMenu}
             >
-              {showMobileMenu ? <X size={24} /> : <Menu size={24} />}
+              <Menu size={24} />
             </button>
             <h1 className="text-xl font-bold text-gray-800">{title}</h1>
           </div>

@@ -47,6 +47,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     {
         return $this->createQueryBuilder('u')
             ->andWhere('u.isActive = :active')
+            ->andWhere('u.deletedAt IS NULL')  // ✅ Exclure les utilisateurs supprimés
             ->setParameter('active', true)
             ->getQuery()
             ->getResult();
@@ -111,6 +112,9 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     {
         $qb = $this->createQueryBuilder('u');
 
+        // ✅ SOFT DELETE : Exclure automatiquement les utilisateurs supprimés
+        $qb->andWhere('u.deletedAt IS NULL');
+
         // Recherche par email
         if (isset($criteria['email'])) {
             $qb->andWhere('u.email LIKE :email')
@@ -153,6 +157,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return $this->createQueryBuilder('u')
             ->select('COUNT(u.id)')
             ->andWhere('u.isActive = :active')
+            ->andWhere('u.deletedAt IS NULL')  // ✅ Exclure les utilisateurs supprimés
             ->andWhere('u.roles LIKE :role')
             ->setParameter('active', true)
             ->setParameter('role', '%"ROLE_STUDENT"%')
@@ -181,6 +186,20 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->setParameter('role', '%"ROLE_STUDENT"%')
             ->orderBy('r.createdAt', 'DESC')
             ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find archived (soft deleted) users for audit purposes
+     *
+     * @return User[]
+     */
+    public function findArchivedUsers(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.deletedAt IS NOT NULL')
+            ->orderBy('u.deletedAt', 'DESC')
             ->getQuery()
             ->getResult();
     }

@@ -89,9 +89,9 @@ class DocumentController extends AbstractController
             return $this->json(['message' => 'Type de fichier non autorisé'], 400);
         }
 
-        $maxSize = 4 * 1024 * 1024; // 4MB
+        $maxSize = 100 * 1024 * 1024; // 100MB
         if ($fileSize > $maxSize) {
-            return $this->json(['message' => 'Fichier trop volumineux (max 4MB)'], 400);
+            return $this->json(['message' => 'Fichier trop volumineux (max 100MB)'], 400);
         }
 
         // Générer un ID unique et un nom de fichier

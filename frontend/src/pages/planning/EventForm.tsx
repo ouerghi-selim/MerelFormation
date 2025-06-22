@@ -104,8 +104,10 @@ const EventForm: React.FC<EventFormProps> = ({
         const eventData: Partial<CalendarEvent> = {
             title,
             formation: { id: formationId },
-            start: startDateTime,
-            end: endDateTime,
+            startDate: startDateTime.toISOString(), // ✅ Harmonisé avec SessionNew
+            endDate: endDateTime.toISOString(),     // ✅ Harmonisé avec SessionNew
+            start: startDateTime,  // Garder pour le calendrier
+            end: endDateTime,      // Garder pour le calendrier
             type,
             location,
             instructor: instructorId ? { id: instructorId } : undefined,

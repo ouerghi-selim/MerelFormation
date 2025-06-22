@@ -134,6 +134,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?bool $isActive = true;
 
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    #[Groups(['user:read'])]
+    private ?\DateTimeInterface $deletedAt = null;
+
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    #[Groups(['user:read'])]
+    private ?\DateTimeInterface $anonymizedAt = null;
+
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
+    #[Groups(['user:read'])]
+    private ?string $deletionLevel = null; // 'deactivated', 'anonymized', 'permanent'
+
+    // Champs de sauvegarde pour restauration (niveau 1 -> restauration)
+    #[ORM\Column(type: 'string', length: 180, nullable: true)]
+    private ?string $originalEmail = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $originalFirstName = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $originalLastName = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -177,6 +199,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getRoles(): array
     {
+        // ✅ SOFT DELETE : Si l'utilisateur est supprimé, retirer tous les rôles
+        if ($this->deletedAt !== null) {
+            return []; // Aucun rôle = pas d'accès
+        }
+        
         $roles = $this->roles;
         // guarantee every user at least has ROLE_STUDENT
         $roles[] = 'ROLE_STUDENT';
@@ -336,6 +363,72 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->isActive = $isActive;
 
+        return $this;
+    }
+
+    public function getDeletedAt(): ?\DateTimeInterface
+    {
+        return $this->deletedAt;
+    }
+
+    public function setDeletedAt(?\DateTimeInterface $deletedAt): static
+    {
+        $this->deletedAt = $deletedAt;
+        return $this;
+    }
+
+    public function getAnonymizedAt(): ?\DateTimeInterface
+    {
+        return $this->anonymizedAt;
+    }
+
+    public function setAnonymizedAt(?\DateTimeInterface $anonymizedAt): static
+    {
+        $this->anonymizedAt = $anonymizedAt;
+        return $this;
+    }
+
+    public function getDeletionLevel(): ?string
+    {
+        return $this->deletionLevel;
+    }
+
+    public function setDeletionLevel(?string $deletionLevel): static
+    {
+        $this->deletionLevel = $deletionLevel;
+        return $this;
+    }
+
+    public function getOriginalEmail(): ?string
+    {
+        return $this->originalEmail;
+    }
+
+    public function setOriginalEmail(?string $originalEmail): static
+    {
+        $this->originalEmail = $originalEmail;
+        return $this;
+    }
+
+    public function getOriginalFirstName(): ?string
+    {
+        return $this->originalFirstName;
+    }
+
+    public function setOriginalFirstName(?string $originalFirstName): static
+    {
+        $this->originalFirstName = $originalFirstName;
+        return $this;
+    }
+
+    public function getOriginalLastName(): ?string
+    {
+        return $this->originalLastName;
+    }
+
+    public function setOriginalLastName(?string $originalLastName): static
+    {
+        $this->originalLastName = $originalLastName;
         return $this;
     }
 

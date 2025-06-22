@@ -122,11 +122,24 @@ export const authApi = {
 export const adminSessionsApi = {
     getAll: (queryParams = '') => api.get(`/admin/sessions${queryParams ? '?' + queryParams : ''}`),
     get: (id:number) => api.get(`/admin/sessions/${id}`),
-    create: (sessionData:any) => api.post('/admin/sessions', sessionData),
+    create: (sessionData:any) => {
+        // S'assurer que les données sont au bon format
+        const formattedData = {
+            formation: { id: sessionData.formation?.id || sessionData.formationId },
+            startDate: sessionData.startDate,
+            endDate: sessionData.endDate,
+            maxParticipants: parseInt(sessionData.maxParticipants?.toString() || '0'),
+            location: sessionData.location,
+            status: sessionData.status || 'scheduled',
+            notes: sessionData.notes || null,
+            instructor: sessionData.instructor || null
+        };
+        return api.post('/admin/sessions', formattedData);
+    },
     update: (id:number, sessionData:any) => api.put(`/admin/sessions/${id}`, sessionData),
     delete: (id:number) => api.delete(`/admin/sessions/${id}`),
     getInstructors: () => api.get('/admin/users?role=ROLE_INSTRUCTOR'),
-    // Méthodes documents (ancienne API - à remplacer par le système temporaire)
+    // Méthodes documents
     uploadDocument: (sessionId: number, formData: FormData) =>
         api.post(`/admin/sessions/${sessionId}/documents`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
@@ -149,8 +162,10 @@ export const adminUsersApi = {
     create: (userData: any) => api.post('/admin/users', userData),
     update: (id: number, userData: any) => api.put(`/admin/users/${id}`, userData),
     delete: (id: number) => api.delete(`/admin/users/${id}`),
+    restore: (id: number) => api.post(`/admin/users/${id}/restore`),
     getFormations: (userId: number) => api.get(`/admin/users/${userId}/formations`),
     getStudents: (queryParams = '') => api.get(`/admin/users/students${queryParams ? '?' + queryParams : ''}`),
+    getDeleted: () => api.get('/admin/users/deleted'),
     getSessions: (userId: number) => api.get(`/admin/users/${userId}/sessions`),
 };
 

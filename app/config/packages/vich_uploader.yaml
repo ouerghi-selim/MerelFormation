@@ -10,20 +10,20 @@ vich_uploader:
         # cache: array
         
     mappings:
-        # Documents de sessions
+        # Documents génériques (utilisé par l'entité Document)
         session_documents:
-            uri_prefix: /uploads/sessions
-            upload_destination: '%kernel.project_dir%/public/uploads/sessions'
+            uri_prefix: /uploads/documents
+            upload_destination: '%kernel.project_dir%/public/uploads/documents'
             namer: Vich\UploaderBundle\Naming\UniqidNamer
             inject_on_load: false
             delete_on_update: true
             delete_on_remove: true
             
-        # Documents de formations
-        formation_documents:
-            uri_prefix: /uploads/formations
-            upload_destination: '%kernel.project_dir%/public/uploads/formations'
+        # Documents temporaires (système TempDocument)
+        temp_documents:
+            uri_prefix: /uploads/temp
+            upload_destination: '%kernel.project_dir%/public/uploads/temp'
             namer: Vich\UploaderBundle\Naming\UniqidNamer
             inject_on_load: false
-            delete_on_update: true
+            delete_on_update: false
             delete_on_remove: true

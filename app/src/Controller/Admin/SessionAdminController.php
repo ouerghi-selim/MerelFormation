@@ -458,29 +458,51 @@ class SessionAdminController extends AbstractController
             return $this->json(['message' => 'Session non trouvée'], 404);
         }
 
-        // Notification email - Session annulée (avant suppression)
-        $reason = 'Suppression par l\'administrateur';
-        $rescheduleInfo = 'Nous vous contacterons pour vous proposer une nouvelle date de session.';
-        $this->notificationService->notifyAboutSessionCancelled($session, $reason, $rescheduleInfo);
+        try {
+            // Commencer une transaction pour s'assurer de la cohérence
+            $this->entityManager->beginTransaction();
 
-        // Vérifier s'il existe des réservations pour cette session
-        if (count($session->getReservations()) > 0) {
-            // Option 1: Empêcher la suppression
-            // return $this->json(['message' => 'Cette session a des réservations associées et ne peut pas être supprimée'], 400);
+            // Notification email - Session annulée (avant suppression)
+            $reason = 'Suppression par l\'administrateur';
+            $rescheduleInfo = 'Nous vous contacterons pour vous proposer une nouvelle date de session.';
+            $this->notificationService->notifyAboutSessionCancelled($session, $reason, $rescheduleInfo);
 
-            // Option 2: Annuler toutes les réservations associées
-            foreach ($session->getReservations() as $reservation) {
-                $reservation->setStatus('cancelled');
+            // Vérifier s'il existe des réservations pour cette session
+            if (count($session->getReservations()) > 0) {
+                // Annuler toutes les réservations associées AVANT de supprimer
+                foreach ($session->getReservations() as $reservation) {
+                    $reservation->setStatus('cancelled');
+                }
+                // Flush les changements de statut des réservations
+                $this->entityManager->flush();
             }
+
+            // Supprimer tous les documents associés pour éviter les contraintes de clés étrangères
+            foreach ($session->getDocuments() as $document) {
+                $this->entityManager->remove($document);
+            }
+            
+            // Flush la suppression des documents
+            $this->entityManager->flush();
+
+            // Maintenant on peut supprimer la session en toute sécurité
+            $this->entityManager->remove($session);
+            $this->entityManager->flush();
+
+            // Confirmer la transaction
+            $this->entityManager->commit();
+
+            return $this->json([
+                'message' => 'Session supprimée avec succès'
+            ]);
+        } catch (\Exception $e) {
+            // Annuler la transaction en cas d'erreur
+            $this->entityManager->rollback();
+            
+            return $this->json([
+                'message' => 'Erreur lors de la suppression de la session: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Supprimer la session (ou la marquer comme annulée)
-        $this->entityManager->remove($session);
-        $this->entityManager->flush();
-
-        return $this->json([
-            'message' => 'Session supprimée avec succès'
-        ]);
     }
 
     /**

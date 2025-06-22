@@ -58,7 +58,7 @@ class Document
      *         "application/msword",
      *         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
      *     },
-     *     maxSize="4M"
+     *     maxSize="100M"
      * )
      */
     #[Assert\NotNull]

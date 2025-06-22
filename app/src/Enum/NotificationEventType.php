@@ -22,6 +22,7 @@ class NotificationEventType
     public const USER_WELCOME = 'user_welcome';
     public const USER_UPDATED = 'user_updated';
     public const USER_DEACTIVATED = 'user_deactivated';
+    public const USER_REACTIVATED = 'user_reactivated';
     
     // Vehicle events
     public const VEHICLE_ADDED = 'vehicle_added';

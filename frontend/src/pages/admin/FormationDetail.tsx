@@ -312,9 +312,17 @@ const FormationDetail: React.FC = () => {
       }
 
       addToast('Document(s) ajouté(s) temporairement. Sauvegardez pour finaliser.', 'info');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error uploading temporary document:', err);
-      addToast('Erreur lors de l\'upload temporaire', 'error');
+      
+      // ✅ CORRECTION : Gestion spécifique de l'erreur 413 (fichier trop volumineux)
+      if (err.response?.status === 413) {
+        addToast('Fichier trop volumineux. La taille maximale autorisée est de 100 Mo.', 'error');
+      } else if (err.response?.status >= 400 && err.response?.status < 500) {
+        addToast('Erreur lors de l\'upload: ' + (err.response?.data?.message || 'Format de fichier non autorisé'), 'error');
+      } else {
+        addToast('Erreur lors de l\'upload temporaire', 'error');
+      }
     } finally {
       setUploadingDocument(false);
       event.target.value = '';

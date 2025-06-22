@@ -84,7 +84,7 @@ class UserAdminController extends AbstractController
                 'firstName' => $user->getFirstName(),
                 'lastName' => $user->getLastName(),
                 'email' => $user->getEmail(),
-                'role' => $user->getRoles()[0] ?? 'ROLE_STUDENT', // Prendre le premier rôle
+                'role' => $this->getMainRole($user->getRoles()), // ✅ Méthode corrigée
                 'isActive' => $user->isIsActive(),  // Utiliser isIsActive() au lieu de isActive()
                 'phone' => $user->getPhone(),
                 // Ajouter la date de création au format français
@@ -346,6 +346,11 @@ class UserAdminController extends AbstractController
      */
     public function delete(int $id): JsonResponse
     {
+        // Vérifier que l'utilisateur est un admin
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
+
         // Récupérer l'utilisateur
         $user = $this->userRepository->find($id);
 
@@ -353,17 +358,174 @@ class UserAdminController extends AbstractController
             return $this->json(['message' => 'Utilisateur non trouvé'], 404);
         }
 
-        // Notification email - Utilisateur désactivé (avant suppression)
-        $reason = 'Suppression du compte par l\'administrateur';
-        $this->notificationService->notifyUserDeactivated($user, $reason);
+        try {
+            // ✅ NIVEAU 1 : DÉSACTIVATION (récupérable pendant 30 jours)
+            
+            // Notification email - Utilisateur désactivé
+            $reason = 'Désactivation du compte par l\'administrateur (récupérable pendant 30 jours)';
+            $this->notificationService->notifyUserDeactivated($user, $reason);
 
-        // Supprimer l'utilisateur
-        $this->entityManager->remove($user);
-        $this->entityManager->flush();
+            // Sauvegarder les données originales pour restauration
+            $user->setOriginalEmail($user->getEmail());
+            $user->setOriginalFirstName($user->getFirstName());
+            $user->setOriginalLastName($user->getLastName());
 
-        return $this->json([
-            'message' => 'Utilisateur supprimé avec succès'
-        ]);
+            // Désactiver l'utilisateur et marquer comme supprimé (niveau 1)
+            $user->setIsActive(false);
+            $user->setDeletedAt(new \DateTime());
+            $user->setDeletionLevel('deactivated');
+
+            // ✅ GARDER TOUTES LES DONNÉES INTACTES (niveau 1)
+            // Pas d'anonymisation - données restaurables
+
+            // ✅ GARDER TOUTES LES RELATIONS POUR L'AUDIT ET L'HISTORIQUE
+            // Les réservations, documents, factures, locations restent intacts
+
+            // Sauvegarder les modifications
+            $this->entityManager->flush();
+
+            return $this->json([
+                'message' => 'Utilisateur désactivé avec succès (niveau 1 - récupérable pendant 30 jours)'
+            ]);
+
+        } catch (\Exception $e) {
+            // En cas d'erreur, retourner le message d'erreur
+            
+            return $this->json([
+                'message' => 'Erreur lors de la suppression de l\'utilisateur: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Restaurer un utilisateur désactivé (niveau 1 uniquement)
+     * @Route("/{id}/restore", name="restore", methods={"POST"})
+     */
+    public function restore(int $id): JsonResponse
+    {
+        // Vérifier que l'utilisateur est un admin
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
+
+        // Récupérer l'utilisateur (même supprimé)
+        $user = $this->userRepository->find($id);
+
+        if (!$user) {
+            return $this->json(['message' => 'Utilisateur non trouvé'], 404);
+        }
+
+        // Vérifier que l'utilisateur est au niveau 1 (récupérable)
+        if ($user->getDeletionLevel() !== 'deactivated') {
+            return $this->json(['message' => 'Cet utilisateur ne peut pas être restauré (niveau de suppression trop avancé)'], 400);
+        }
+
+        try {
+            // Restaurer l'utilisateur
+            $user->setIsActive(true);
+            $user->setDeletedAt(null);
+            $user->setDeletionLevel(null);
+            
+            // Restaurer les données originales si disponibles
+            if ($user->getOriginalEmail()) {
+                $user->setEmail($user->getOriginalEmail());
+                $user->setOriginalEmail(null);
+            }
+            if ($user->getOriginalFirstName()) {
+                $user->setFirstName($user->getOriginalFirstName());
+                $user->setOriginalFirstName(null);
+            }
+            if ($user->getOriginalLastName()) {
+                $user->setLastName($user->getOriginalLastName());
+                $user->setOriginalLastName(null);
+            }
+
+            $this->entityManager->flush();
+
+            // Notification de restauration
+            $this->notificationService->notifyUserReactivated($user);
+
+            return $this->json([
+                'message' => 'Utilisateur restauré avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'message' => 'Erreur lors de la restauration de l\'utilisateur: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Récupérer les utilisateurs supprimés avec informations de deadline
+     * @Route("/deleted", name="get_deleted", methods={"GET"})
+     */
+    public function getDeletedUsers(Request $request): JsonResponse
+    {
+        // Vérifier que l'utilisateur est un admin
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
+
+        // Récupérer tous les utilisateurs supprimés (tous niveaux)
+        $deletedUsers = $this->userRepository->createQueryBuilder('u')
+            ->andWhere('u.deletedAt IS NOT NULL')
+            ->orderBy('u.deletedAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+
+        $formattedUsers = [];
+        $now = new \DateTime();
+
+        foreach ($deletedUsers as $user) {
+            $deletedAt = $user->getDeletedAt();
+            $anonymizedAt = $user->getAnonymizedAt();
+            $level = $user->getDeletionLevel();
+
+            // Calculer les deadlines
+            $anonymizationDeadline = null;
+            $deletionDeadline = null;
+            $daysUntilAnonymization = null;
+            $daysUntilDeletion = null;
+
+            if ($level === 'deactivated') {
+                // Niveau 1 : 30 jours jusqu'à anonymisation
+                $anonymizationDeadline = (clone $deletedAt)->add(new \DateInterval('P30D'));
+                $daysUntilAnonymization = $now->diff($anonymizationDeadline)->days;
+                if ($anonymizationDeadline < $now) {
+                    $daysUntilAnonymization = -$daysUntilAnonymization; // Négatif = en retard
+                }
+            } elseif ($level === 'anonymized' && $anonymizedAt) {
+                // Niveau 2 : 1 an après anonymisation jusqu'à suppression
+                $deletionDeadline = (clone $anonymizedAt)->add(new \DateInterval('P1Y'));
+                $daysUntilDeletion = $now->diff($deletionDeadline)->days;
+                if ($deletionDeadline < $now) {
+                    $daysUntilDeletion = -$daysUntilDeletion; // Négatif = en retard
+                }
+            }
+
+            $formattedUsers[] = [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'firstName' => $user->getFirstName(),
+                'lastName' => $user->getLastName(),
+                'originalEmail' => $user->getOriginalEmail(),
+                'originalFirstName' => $user->getOriginalFirstName(),
+                'originalLastName' => $user->getOriginalLastName(),
+                'deletedAt' => $deletedAt->format('d/m/Y H:i'),
+                'anonymizedAt' => $anonymizedAt ? $anonymizedAt->format('d/m/Y H:i') : null,
+                'deletionLevel' => $level,
+                'anonymizationDeadline' => $anonymizationDeadline ? $anonymizationDeadline->format('d/m/Y') : null,
+                'deletionDeadline' => $deletionDeadline ? $deletionDeadline->format('d/m/Y') : null,
+                'daysUntilAnonymization' => $daysUntilAnonymization,
+                'daysUntilDeletion' => $daysUntilDeletion,
+                'canRestore' => $level === 'deactivated' && $daysUntilAnonymization > 0,
+                'isOverdue' => ($daysUntilAnonymization !== null && $daysUntilAnonymization < 0) || 
+                              ($daysUntilDeletion !== null && $daysUntilDeletion < 0)
+            ];
+        }
+
+        return $this->json($formattedUsers);
     }
 
     /**
@@ -403,5 +565,23 @@ class UserAdminController extends AbstractController
         }
 
         return $this->json($formattedFormations);
+    }
+
+    /**
+     * ✅ CORRECTION BUG FORMATEURS : Méthode utilitaire pour obtenir le rôle principal
+     */
+    private function getMainRole(array $roles): string
+    {
+        // Hiérarchie des rôles : Admin > Instructor > Student
+        if (in_array('ROLE_ADMIN', $roles)) {
+            return 'ROLE_ADMIN';
+        }
+        
+        if (in_array('ROLE_INSTRUCTOR', $roles)) {
+            return 'ROLE_INSTRUCTOR';
+        }
+        
+        // Par défaut, retourner ROLE_STUDENT
+        return 'ROLE_STUDENT';
     }
 }

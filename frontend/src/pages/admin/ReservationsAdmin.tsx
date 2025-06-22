@@ -73,8 +73,14 @@ const ReservationsAdmin: React.FC = () => {
       try {
         setLoading(true);
 
-        // Utilisation des appels API réels
-        const response = await adminReservationsApi.getAll();
+        // ✅ CORRECTION : Ajouter les paramètres de filtrage
+        const params = new URLSearchParams();
+        if (searchTerm) params.append('search', searchTerm);
+        if (statusFilter) params.append('status', statusFilter);
+        if (dateFilter) params.append('date', dateFilter);
+
+        // Utilisation des appels API réels avec filtres
+        const response = await adminReservationsApi.getAll(params.toString());
         setVehicleReservations(response.data);
         setLoading(false);
       } catch (err) {

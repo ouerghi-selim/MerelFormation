@@ -12,11 +12,21 @@ import {
   Edit,
   ChevronDown,
   ChevronRight,
-  LogOut
+  LogOut,
+  Menu,
+  X
 } from 'lucide-react';
 import logo from '../../assets/images/logo/merel-logo.png';
 
-const AdminSidebar: React.FC = () => {
+interface AdminSidebarProps {
+  isMobileMenuOpen?: boolean;
+  onCloseMobileMenu?: () => void;
+}
+
+const AdminSidebar: React.FC<AdminSidebarProps> = ({ 
+  isMobileMenuOpen = false, 
+  onCloseMobileMenu 
+}) => {
   const location = useLocation();
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
   
@@ -115,11 +125,36 @@ const AdminSidebar: React.FC = () => {
   };
   
   return (
-    <div className="bg-gray-900 text-white w-64 min-h-screen flex-shrink-0 hidden md:block">
-      <div className="p-4 flex items-center border-b border-gray-800">
-        <img src={logo} alt="Merel Formation" className="h-8 mr-2" />
-        <span className="font-bold text-xl">Merel Admin</span>
-      </div>
+    <>
+      {/* ✅ MOBILE: Overlay pour fermer le menu */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={onCloseMobileMenu}
+        />
+      )}
+      
+      {/* ✅ SIDEBAR RESPONSIVE */}
+      <div className={`
+        bg-gray-900 text-white w-64 min-h-screen flex-shrink-0 
+        fixed md:static top-0 left-0 z-50 transform transition-transform duration-300 ease-in-out
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} 
+        md:translate-x-0 md:block
+      `}>
+        <div className="p-4 flex items-center justify-between border-b border-gray-800">
+          <div className="flex items-center">
+            <img src={logo} alt="Merel Formation" className="h-8 mr-2" />
+            <span className="font-bold text-xl">Merel Admin</span>
+          </div>
+          
+          {/* ✅ MOBILE: Bouton fermer */}
+          <button 
+            onClick={onCloseMobileMenu}
+            className="md:hidden text-white hover:text-gray-300"
+          >
+            <X size={24} />
+          </button>
+        </div>
       
       <nav className="mt-4">
         <ul className="space-y-1">
@@ -185,6 +220,8 @@ const AdminSidebar: React.FC = () => {
         <button
           className="flex items-center text-gray-300 hover:text-white w-full py-2"
           onClick={() => {
+            // Fermer le menu mobile après déconnexion
+            if (onCloseMobileMenu) onCloseMobileMenu();
             // Logique de déconnexion
             localStorage.removeItem('token');
             window.location.href = '/login';
@@ -194,7 +231,8 @@ const AdminSidebar: React.FC = () => {
           <span>Déconnexion</span>
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

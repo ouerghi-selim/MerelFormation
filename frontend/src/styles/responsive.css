@@ -1,0 +1,172 @@
+/* ✅ CORRECTIONS RESPONSIVE POUR MERELFORMATION */
+
+/* =================================================
+   1. CORRECTIONS GÉNÉRALES MOBILE
+   ================================================= */
+
+/* Empêcher le débordement horizontal sur mobile */
+body {
+    overflow-x: hidden;
+}
+
+/* Assurer que les conteneurs s'adaptent */
+.container {
+    @apply px-4 md:px-6 lg:px-8;
+    max-width: 100vw;
+}
+
+/* =================================================
+   2. CORRECTIONS TABLEAUX MOBILE
+   ================================================= */
+
+/* Améliorer l'affichage des tableaux sur mobile */
+@media (max-width: 768px) {
+    /* Réduire la taille des cellules sur mobile */
+    .table-mobile td {
+        @apply px-2 py-2 text-sm;
+    }
+    
+    .table-mobile th {
+        @apply px-2 py-2 text-xs;
+    }
+    
+    /* Masquer certaines colonnes moins importantes sur mobile */
+    .hide-mobile {
+        display: none;
+    }
+    
+    /* Forcer le texte à se wraper dans les cellules */
+    .table-mobile td,
+    .table-mobile th {
+        white-space: normal !important;
+        word-break: break-word;
+    }
+}
+
+/* =================================================
+   3. CORRECTIONS FORMULAIRES MOBILE
+   ================================================= */
+
+@media (max-width: 768px) {
+    /* Stack les éléments de formulaire verticalement */
+    .form-row {
+        @apply flex-col space-y-4 space-x-0;
+    }
+    
+    /* Boutons pleine largeur sur mobile */
+    .btn-mobile-full {
+        @apply w-full;
+    }
+    
+    /* Réduire les margins sur mobile */
+    .form-container {
+        @apply p-4 space-y-4;
+    }
+}
+
+/* =================================================
+   4. CORRECTIONS MODALS MOBILE
+   ================================================= */
+
+@media (max-width: 768px) {
+    /* Modals plein écran sur mobile */
+    .modal-mobile {
+        @apply mx-2 my-4 max-h-screen overflow-y-auto;
+        width: calc(100vw - 1rem);
+        max-width: none;
+    }
+    
+    /* Header de modal sticky sur mobile */
+    .modal-header-mobile {
+        @apply sticky top-0 bg-white z-10 border-b;
+    }
+}
+
+/* =================================================
+   5. CORRECTIONS CARTES ET GRILLES
+   ================================================= */
+
+@media (max-width: 768px) {
+    /* Grilles adaptatives */
+    .grid-mobile {
+        @apply grid-cols-1;
+    }
+    
+    .grid-tablet {
+        @apply grid-cols-1 md:grid-cols-2;
+    }
+    
+    /* Cartes avec moins de padding sur mobile */
+    .card-mobile {
+        @apply p-4;
+    }
+}
+
+/* =================================================
+   6. CORRECTIONS NAVIGATION MOBILE
+   ================================================= */
+
+/* Améliorer les liens de navigation sur mobile */
+@media (max-width: 768px) {
+    .nav-mobile a {
+        @apply py-3 px-4 text-base;
+        min-height: 44px; /* Zone de tap recommandée */
+        display: flex;
+        align-items: center;
+    }
+}
+
+/* =================================================
+   7. CORRECTIONS STATISTIQUES ET CARTES
+   ================================================= */
+
+@media (max-width: 768px) {
+    /* Cartes statistiques en pile sur mobile */
+    .stats-grid {
+        @apply grid-cols-1 gap-4;
+    }
+    
+    .stats-card {
+        @apply text-center p-4;
+    }
+    
+    /* Graphiques responsive */
+    .chart-container {
+        @apply overflow-x-auto;
+        min-height: 300px;
+    }
+}
+
+/* =================================================
+   8. UTILITAIRES RESPONSIVE
+   ================================================= */
+
+/* Classes utilitaires pour masquer/afficher selon la taille d'écran */
+@media (max-width: 640px) {
+    .hidden-mobile {
+        display: none !important;
+    }
+}
+
+@media (min-width: 641px) {
+    .show-mobile {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .hidden-tablet {
+        display: none !important;
+    }
+}
+
+/* Texte plus petit sur mobile pour les éléments secondaires */
+@media (max-width: 768px) {
+    .text-mobile-sm {
+        @apply text-sm;
+    }
+    
+    .text-mobile-xs {
+        @apply text-xs;
+    }
+}

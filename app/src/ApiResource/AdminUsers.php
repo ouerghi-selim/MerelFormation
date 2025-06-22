@@ -18,12 +18,17 @@ use App\Controller\Admin\UserAdminController;
             controller: UserAdminController::class . '::list',
         ),
         new GetCollection(
+            uriTemplate: '/admin/users/deleted',
+            controller: UserAdminController::class . '::getDeletedUsers',
+        ),
+        new GetCollection(
             uriTemplate: '/admin/users/{id}/sessions',
             controller: UserAdminController::class . '::getUserSessions',
         ),
         new Get(
             uriTemplate: '/admin/users/{id}',
             controller: UserAdminController::class . '::get',
+            requirements: ['id' => '\d+']
         ),
         new Post(
             uriTemplate: '/admin/users',
@@ -44,6 +49,10 @@ use App\Controller\Admin\UserAdminController;
         new GetCollection(
             uriTemplate: '/admin/users/{id}/formations',
             controller: UserAdminController::class . '::getUserFormations',
+        ),
+        new Post(
+            uriTemplate: '/admin/users/{id}/restore',
+            controller: UserAdminController::class . '::restore',
         ),
     ]
 )]
