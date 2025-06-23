@@ -47,10 +47,12 @@ const EventForm: React.FC<EventFormProps> = ({
             : '17:00'
     );
 
-    const [type, setType] = useState<'formation' | 'exam'>(event?.type || 'formation');
-    const [location, setLocation] = useState(event?.location || '');
+    const [type] = useState<'formation' | 'exam'>('formation'); // Toujours formation
+    const [location, setLocation] = useState(event?.location || '7 RUE Georges Maillols, 35000 RENNES');
     const [instructorId, setInstructorId] = useState<number | undefined>(event?.instructor?.id);
     const [maxParticipants, setMaxParticipants] = useState(event?.maxParticipants || 12);
+    const [status, setStatus] = useState(event?.status || 'scheduled');
+    const [notes, setNotes] = useState(event?.notes || '');
     const [errors, setErrors] = useState<FormErrors>({});
 
     // Mettre à jour le titre quand la formation change
@@ -92,7 +94,7 @@ const EventForm: React.FC<EventFormProps> = ({
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
-    }, [formationId, startDate, startTime, endDate, endTime, location, maxParticipants, isExamEvent]);
+    }, [formationId, startDate, startTime, endDate, endTime, location, maxParticipants, status, notes, isExamEvent]);
 
     // Fonction pour soumettre le formulaire
     const handleSubmit = useCallback(() => {
@@ -112,6 +114,8 @@ const EventForm: React.FC<EventFormProps> = ({
             location,
             instructor: instructorId ? { id: instructorId } : undefined,
             maxParticipants,
+            status,
+            notes: notes.trim() || null,
             currentParticipants: event?.currentParticipants || 0
         };
 
@@ -119,7 +123,7 @@ const EventForm: React.FC<EventFormProps> = ({
         return true;
     }, [
         title, formationId, startDate, startTime, endDate, endTime,
-        type, location, instructorId, maxParticipants, event,
+        type, location, instructorId, maxParticipants, status, notes, event,
         validateForm, onSave
     ]);
 
@@ -323,21 +327,6 @@ const EventForm: React.FC<EventFormProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Type d'événement*
-                    </label>
-                    <select
-                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500`}
-                        value={type}
-                        onChange={(e) => setType(e.target.value as 'formation' | 'exam')}
-                        disabled={type === 'exam'} // Empêcher la modification pour les examens
-                    >
-                        <option value="formation">Formation</option>
-                        <option value="exam">Examen</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
                         Lieu*
                     </label>
                     <select
@@ -357,30 +346,28 @@ const EventForm: React.FC<EventFormProps> = ({
                     )}
                 </div>
 
-                {type === 'formation' && (
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Formateur*
-                        </label>
-                        <select
-                            className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                errors.instructor ? 'border-red-500' : ''
-                            }`}
-                            value={instructorId || ''}
-                            onChange={(e) => {
-                                setInstructorId(e.target.value ? parseInt(e.target.value, 10) : undefined);
-                            }}
-                        >
-                            <option value="">Sélectionner un formateur</option>
-                            {availableInstructors.map((instr) => (
-                                <option key={instr.id} value={instr.id}>{instr.name}</option>
-                            ))}
-                        </select>
-                        {errors.instructor && (
-                            <p className="mt-1 text-sm text-red-500">{errors.instructor}</p>
-                        )}
-                    </div>
-                )}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Formateur
+                    </label>
+                    <select
+                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                            errors.instructor ? 'border-red-500' : ''
+                        }`}
+                        value={instructorId || ''}
+                        onChange={(e) => {
+                            setInstructorId(e.target.value ? parseInt(e.target.value, 10) : undefined);
+                        }}
+                    >
+                        <option value="">Sélectionner un formateur</option>
+                        {availableInstructors.map((instr) => (
+                            <option key={instr.id} value={instr.id}>{instr.name}</option>
+                        ))}
+                    </select>
+                    {errors.instructor && (
+                        <p className="mt-1 text-sm text-red-500">{errors.instructor}</p>
+                    )}
+                </div>
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -399,6 +386,40 @@ const EventForm: React.FC<EventFormProps> = ({
                         <p className="mt-1 text-sm text-red-500">{errors.maxParticipants}</p>
                     )}
                 </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Statut*
+                    </label>
+                    <select
+                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                            errors.status ? 'border-red-500' : ''
+                        }`}
+                        value={status}
+                        onChange={(e) => setStatus(e.target.value)}
+                    >
+                        <option value="scheduled">Programmée</option>
+                        <option value="ongoing">En cours</option>
+                        <option value="completed">Terminée</option>
+                        <option value="cancelled">Annulée</option>
+                    </select>
+                    {errors.status && (
+                        <p className="mt-1 text-sm text-red-500">{errors.status}</p>
+                    )}
+                </div>
+            </div>
+
+            <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes (facultatif)
+                </label>
+                <textarea
+                    rows={3}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Informations complémentaires sur la session..."
+                />
             </div>
         </div>
     );

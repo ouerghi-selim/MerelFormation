@@ -16,6 +16,8 @@ export interface CalendarEvent {
     };
     start: Date;
     end: Date;
+    startDate?: string; // Format ISO pour l'API
+    endDate?: string;   // Format ISO pour l'API
     type: 'formation' | 'exam';
     location: string;
     instructor?: {
@@ -24,6 +26,8 @@ export interface CalendarEvent {
     };
     maxParticipants: number;
     currentParticipants: number;
+    status?: string;
+    notes?: string | null;
     vehicleAssigned?: string; // Pour les examens
     clientName?: string; // Pour les examens
 }
@@ -43,4 +47,6 @@ export interface FormErrors {
     location?: string;
     instructor?: string;
     maxParticipants?: string;
+    status?: string;
+    notes?: string;
 }

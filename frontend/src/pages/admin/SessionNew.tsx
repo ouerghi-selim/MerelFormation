@@ -25,7 +25,9 @@ const SessionNew: React.FC = () => {
     // Form state
     const [formationId, setFormationId] = useState('');
     const [startDate, setStartDate] = useState('');
+    const [startTime, setStartTime] = useState('09:00');
     const [endDate, setEndDate] = useState('');
+    const [endTime, setEndTime] = useState('17:00');
     const [maxParticipants, setMaxParticipants] = useState('12');
     const [location, setLocation] = useState('7 RUE Georges Maillols, 35000 RENNES');
     const [status, setStatus] = useState('scheduled');
@@ -85,8 +87,14 @@ const SessionNew: React.FC = () => {
 
         if (!endDate) errors.endDate = 'La date de fin est requise';
 
-        if (startDate && endDate && new Date(startDate) >= new Date(endDate))
-            errors.endDate = 'La date de fin doit être après la date de début';
+        // Vérifier que la date/heure de fin est après la date/heure de début
+        if (startDate && endDate && startTime && endTime) {
+            const startDateTime = new Date(`${startDate}T${startTime}`);
+            const endDateTime = new Date(`${endDate}T${endTime}`);
+            if (startDateTime >= endDateTime) {
+                errors.endDate = 'La date et heure de fin doivent être après le début';
+            }
+        }
 
         if (!maxParticipants) errors.maxParticipants = 'Le nombre maximum de participants est requis';
         else if (parseInt(maxParticipants) <= 0)
@@ -115,10 +123,13 @@ const SessionNew: React.FC = () => {
             setError(null);
 
             // Préparer les données au format JSON attendu par le contrôleur
+            const startDateTime = new Date(`${startDate}T${startTime}`);
+            const endDateTime = new Date(`${endDate}T${endTime}`);
+            
             const sessionData = {
                 formation: { id: parseInt(formationId) },
-                startDate: new Date(startDate).toISOString(),
-                endDate: new Date(endDate).toISOString(),
+                startDate: startDateTime.toISOString(),
+                endDate: endDateTime.toISOString(),
                 maxParticipants: parseInt(maxParticipants),
                 location: location,
                 status: status,
@@ -246,7 +257,7 @@ const SessionNew: React.FC = () => {
 
                     <div className="bg-white shadow rounded-lg p-6">
                         <form onSubmit={handleSubmit}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                                 <div className="md:col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Formation*
@@ -290,6 +301,18 @@ const SessionNew: React.FC = () => {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Heure de début*
+                                    </label>
+                                    <input
+                                        type="time"
+                                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500`}
+                                        value={startTime}
+                                        onChange={(e) => setStartTime(e.target.value)}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Date de fin*
                                     </label>
                                     <input
@@ -307,16 +330,33 @@ const SessionNew: React.FC = () => {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Lieu*
+                                        Heure de fin*
                                     </label>
                                     <input
-                                        type="text"
+                                        type="time"
+                                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500`}
+                                        value={endTime}
+                                        onChange={(e) => setEndTime(e.target.value)}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Lieu*
+                                    </label>
+                                    <select
                                         className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
                                             formErrors.location ? 'border-red-500' : ''
                                         }`}
                                         value={location}
                                         onChange={(e) => setLocation(e.target.value)}
-                                    />
+                                    >
+                                        <option value="">Sélectionner un lieu</option>
+                                        <option value="7 RUE Georges Maillols, 35000 RENNES">7 RUE Georges Maillols, 35000 RENNES</option>
+                                        <option value="Centre de formation - Salle A">Centre de formation - Salle A</option>
+                                        <option value="Centre de formation - Salle B">Centre de formation - Salle B</option>
+                                        <option value="Parking d'examen - Rennes">Parking d'examen - Rennes</option>
+                                    </select>
                                     {formErrors.location && (
                                         <p className="mt-1 text-sm text-red-500">{formErrors.location}</p>
                                     )}

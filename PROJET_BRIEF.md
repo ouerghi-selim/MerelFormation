@@ -96,6 +96,8 @@
 ### Admin Controllers (/app/src/Controller/Admin/)
 - **DashboardAdminController**  COMPLET
 - **FormationAdminController** - Gestion formations
+- **PracticalInfoController** - 🆕 Gestion parties pratiques multiples formations
+- **ImageUploadController** - 🆕 Upload et gestion d'images formations
 - **SessionAdminController** - Gestion sessions
 - **UserAdminController** - Gestion utilisateurs
 - **VehicleAdminController** - Gestion véhicules
@@ -373,6 +375,13 @@ MerelFormation/
 - **🆕 Surbrillance automatique** - Variables {{}} mises en évidence dans l'éditeur
 - **🆕 Mapping développeur** - Variables contrôlées par le code, pas par les admins
 - **🆕 Système hybride** - Utilise les variables de l'entité en priorité + fallback mapping
+
+### 🆕 Dernières Améliorations (Juin 2025)
+- **🆕 Système Parties Pratiques Dynamiques**: Parties pratiques multiples par formation avec contenu riche
+- **🆕 Système Upload d'Images**: Upload professionnel avec validation et stockage
+- **🆕 Correction Affichage Images**: Configuration Docker nginx pour servir les images correctement  
+- **🆕 Affichage Parties Pratiques Multiples**: Interface publique avec design alterné
+- **🆕 Unification Formulaires Sessions**: Formulaires calendrier et création unifiés
 
 ### 🔧 EN COURS D'OPTIMISATION
 - Performance frontend/backend
