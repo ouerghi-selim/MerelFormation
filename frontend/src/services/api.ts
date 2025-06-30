@@ -193,6 +193,23 @@ export const adminPlanningApi = {
         api.get('/admin/locations')
 };
 
+// Services API pour les centres
+export const centersApi = {
+    getAll: () => api.get('/api/centers'),
+    getById: (id: number) => api.get(`/api/centers/${id}`),
+    getForFormations: () => api.get('/api/centers?type=formation'),
+    getForExams: () => api.get('/api/centers?type=exam'),
+    getByCity: (city: string) => api.get(`/api/centers/by-city/${city}`),
+};
+
+// Services API admin pour les centres  
+export const adminCentersApi = {
+    getAll: () => api.get('/admin/centers'),
+    getById: (id: number) => api.get(`/admin/centers/${id}`),
+    getForFormations: () => api.get('/admin/centers/formation'),
+    getForExams: () => api.get('/admin/centers/exam'),
+};
+
 export const vehicleRentalsApi = {
     create: (formData: FormData) =>
         api.post('/vehicle-rentals', formData, {
@@ -322,11 +339,11 @@ export const adminExamCentersApi = {
             }
         });
         const queryString = queryParams.toString();
-        return api.get(`/admin/exam-centers${queryString ? '?' + queryString : ''}`);
+        return api.get(`/admin/centers${queryString ? '?' + queryString : ''}`);
     },
 
     // Récupérer un centre d'examen par ID
-    getById: (id: number) => api.get(`/admin/exam-centers/${id}`),
+    getById: (id: number) => api.get(`/admin/centers/${id}`),
 
     // Créer un nouveau centre d'examen
     create: (data: {
@@ -336,7 +353,7 @@ export const adminExamCentersApi = {
         departmentCode: string;
         address?: string;
         isActive: boolean;
-    }) => api.post('/admin/exam-centers', data),
+    }) => api.post('/admin/centers', data),
 
     // Modifier un centre d'examen
     update: (id: number, data: {
@@ -346,20 +363,23 @@ export const adminExamCentersApi = {
         departmentCode?: string;
         address?: string;
         isActive?: boolean;
-    }) => api.put(`/admin/exam-centers/${id}`, data),
+    }) => api.put(`/admin/centers/${id}`, data),
 
     // Supprimer un centre d'examen
-    delete: (id: number) => api.delete(`/admin/exam-centers/${id}`),
+    delete: (id: number) => api.delete(`/admin/centers/${id}`),
 
     // Récupérer les centres d'examen actifs
-    getActive: () => api.get('/admin/exam-centers/active'),
+    getActive: () => api.get('/admin/centers/active'),
 
     // Récupérer les centres avec leurs formules
-    getWithFormulas: () => api.get('/admin/exam-centers/with-formulas'),
+    getWithFormulas: () => api.get('/admin/centers/with-formulas'),
 
     // Récupérer les statistiques
-    getStats: () => api.get('/admin/exam-centers/stats')
+    getStats: () => api.get('/admin/centers/stats')
 };
+
+// Alias pour la nouvelle API des centres (compatibilité)
+//export const adminCentersApi = adminExamCentersApi;
 
 // Services API pour la gestion des formules (Admin)
 export const adminFormulasApi = {

@@ -16,7 +16,7 @@ import {
 import { Link } from 'react-router-dom';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { useNotification } from '../../contexts/NotificationContext';
-import { adminFormulasApi, adminExamCentersApi } from '@/services/api';
+import { adminFormulasApi, adminCentersApi } from '@/services/api';
 
 
 interface ExamCenter {
@@ -82,7 +82,7 @@ const FormulasAdmin: React.FC = () => {
             // Récupérer les formules et centres d'examen en parallèle
             const [formulasResponse, centersResponse] = await Promise.all([
                 adminFormulasApi.getAll(),
-                adminExamCentersApi.getAll()
+                adminCentersApi.getAll()
             ]);
 
             setFormulas(formulasResponse.data.data || []);

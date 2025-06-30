@@ -9,11 +9,19 @@ import Alert from '../../components/common/Alert';
 import { useNotification } from '../../contexts/NotificationContext';
 import useDataFetching from '../../hooks/useDataFetching';
 
-import { adminSessionsApi, adminFormationsApi } from '../../services/api';
+import { adminSessionsApi, adminFormationsApi, adminCentersApi } from '../../services/api';
 
 interface Formation {
     id: number;
     title: string;
+}
+
+interface Center {
+    id: number;
+    name: string;
+    address: string;
+    city: string;
+    type: string;
 }
 
 const SessionNew: React.FC = () => {
@@ -30,6 +38,7 @@ const SessionNew: React.FC = () => {
     const [endTime, setEndTime] = useState('17:00');
     const [maxParticipants, setMaxParticipants] = useState('12');
     const [location, setLocation] = useState('7 RUE Georges Maillols, 35000 RENNES');
+    const [centerId, setCenterId] = useState('');
     const [status, setStatus] = useState('scheduled');
     const [notes, setNotes] = useState('');
     const [documents, setDocuments] = useState<File[]>([]);
@@ -45,6 +54,8 @@ const SessionNew: React.FC = () => {
 
     const [formationsData, setFormationsData] = useState<Formation[]>([]);
     const [loadingFormations, setLoadingFormations] = useState(true);
+    const [centersData, setCentersData] = useState<Center[]>([]);
+    const [loadingCenters, setLoadingCenters] = useState(true);
 
     useEffect(() => {
         const fetchFormations = async () => {
@@ -76,6 +87,22 @@ const SessionNew: React.FC = () => {
         };
 
         fetchInstructors();
+    }, []);
+
+    useEffect(() => {
+        const fetchCenters = async () => {
+            try {
+                setLoadingCenters(true);
+                const response = await adminCentersApi.getForFormations();
+                setCentersData(response.data);
+            } catch (err) {
+                console.error('Error fetching centers:', err);
+            } finally {
+                setLoadingCenters(false);
+            }
+        };
+
+        fetchCenters();
     }, []);
 
     const validateForm = () => {
@@ -132,6 +159,7 @@ const SessionNew: React.FC = () => {
                 endDate: endDateTime.toISOString(),
                 maxParticipants: parseInt(maxParticipants),
                 location: location,
+                center: centerId ? { id: parseInt(centerId) } : null,
                 status: status,
                 notes: notes.trim() || null,
                 instructor: instructorId ? { id: parseInt(instructorId) } : null
@@ -219,6 +247,22 @@ const SessionNew: React.FC = () => {
                 end.setDate(start.getDate() + durationDays);
 
                 setEndDate(end.toISOString().split('T')[0]);
+            }
+        }
+    };
+
+    const handleCenterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedCenterId = e.target.value;
+        setCenterId(selectedCenterId);
+
+        if (selectedCenterId) {
+            const selectedCenter = centersData.find(c => c.id.toString() === selectedCenterId);
+            if (selectedCenter) {
+                // Mettre à jour automatiquement le champ location avec l'adresse du centre
+                const fullAddress = selectedCenter.address ? 
+                    `${selectedCenter.address}, ${selectedCenter.city}` : 
+                    selectedCenter.city;
+                setLocation(fullAddress);
             }
         }
     };
@@ -342,21 +386,39 @@ const SessionNew: React.FC = () => {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Lieu*
+                                        Centre de formation
                                     </label>
                                     <select
+                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                        value={centerId}
+                                        onChange={handleCenterChange}
+                                        disabled={loadingCenters}
+                                    >
+                                        <option value="">Sélectionner un centre</option>
+                                        {centersData.map(center => (
+                                            <option key={center.id} value={center.id}>
+                                                {center.name} - {center.city}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Lieu (automatique ou manuel)*
+                                    </label>
+                                    <input
+                                        type="text"
                                         className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
                                             formErrors.location ? 'border-red-500' : ''
                                         }`}
                                         value={location}
                                         onChange={(e) => setLocation(e.target.value)}
-                                    >
-                                        <option value="">Sélectionner un lieu</option>
-                                        <option value="7 RUE Georges Maillols, 35000 RENNES">7 RUE Georges Maillols, 35000 RENNES</option>
-                                        <option value="Centre de formation - Salle A">Centre de formation - Salle A</option>
-                                        <option value="Centre de formation - Salle B">Centre de formation - Salle B</option>
-                                        <option value="Parking d'examen - Rennes">Parking d'examen - Rennes</option>
-                                    </select>
+                                        placeholder="Adresse du lieu de formation..."
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Se remplit automatiquement si un centre est sélectionné, ou peut être saisi manuellement
+                                    </p>
                                     {formErrors.location && (
                                         <p className="mt-1 text-sm text-red-500">{formErrors.location}</p>
                                     )}

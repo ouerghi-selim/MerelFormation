@@ -55,6 +55,11 @@ class Session
     #[Groups(['session:read', 'session:write', 'formation:item:read'])]
     private ?string $location = null;
 
+    #[ORM\ManyToOne(targetEntity: Center::class, inversedBy: 'sessions')]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['session:read', 'session:write'])]
+    private ?Center $center = null;
+
     #[ORM\Column(length: 50)]
     #[Groups(['session:read', 'session:write', 'formation:item:read'])]
     private ?string $status = 'scheduled'; // scheduled, ongoing, completed, cancelled
@@ -293,6 +298,29 @@ class Session
     public function setInstructor(?User $instructor): void
     {
         $this->instructor = $instructor;
+    }
+
+    public function getCenter(): ?Center
+    {
+        return $this->center;
+    }
+
+    public function setCenter(?Center $center): static
+    {
+        $this->center = $center;
+        return $this;
+    }
+
+    /**
+     * Get effective location (from center or manual location)
+     */
+    public function getEffectiveLocation(): ?string
+    {
+        if ($this->center) {
+            return $this->center->getFullAddress();
+        }
+        
+        return $this->location;
     }
 
 }

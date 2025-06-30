@@ -11,21 +11,26 @@ import {
     Users,
     Eye,
     CheckCircle,
-    XCircle
+    XCircle,
+    Filter
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { useNotification } from '../../contexts/NotificationContext';
-import { adminExamCentersApi } from '@/services/api';
+import { adminCentersApi } from '../../services/api';
+import { Center, CenterType, CENTER_TYPES } from '../../types/center';
 
 
-interface ExamCenter {
+interface CenterInterface {
     id: number;
     name: string;
     code: string;
+    type: CenterType;
     city: string;
     departmentCode: string;
     address?: string;
+    phone?: string;
+    email?: string;
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
@@ -43,44 +48,51 @@ interface Formula {
 interface FormData {
     name: string;
     code: string;
+    type: CenterType;
     city: string;
     departmentCode: string;
     address: string;
+    phone: string;
+    email: string;
     isActive: boolean;
 }
 
-const ExamCentersAdmin: React.FC = () => {
-    const [examCenters, setExamCenters] = useState<ExamCenter[]>([]);
+const CentersAdmin: React.FC = () => {
+    const [centers, setCenters] = useState<CenterInterface[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [typeFilter, setTypeFilter] = useState<CenterType | 'all'>('all');
     const [showModal, setShowModal] = useState(false);
     const [showDetailModal, setShowDetailModal] = useState(false);
-    const [selectedCenter, setSelectedCenter] = useState<ExamCenter | null>(null);
-    const [editingCenter, setEditingCenter] = useState<ExamCenter | null>(null);
+    const [selectedCenter, setSelectedCenter] = useState<CenterInterface | null>(null);
+    const [editingCenter, setEditingCenter] = useState<CenterInterface | null>(null);
     const [submitting, setSubmitting] = useState(false);
-    const { addNotification } = useNotification();
+    const { addToast } = useNotification();
 
     const [formData, setFormData] = useState<FormData>({
         name: '',
         code: '',
+        type: 'formation',
         city: '',
         departmentCode: '',
         address: '',
+        phone: '',
+        email: '',
         isActive: true
     });
 
     useEffect(() => {
-        fetchExamCenters();
+        fetchCenters();
     }, []);
 
-    const fetchExamCenters = async () => {
+    const fetchCenters = async () => {
         try {
             setLoading(true);
-            const response = await adminExamCentersApi.getAll();
-            setExamCenters(response.data.data || []);
+            const response = await adminCentersApi.getAll();
+            setCenters(response.data || []);
         } catch (error: any) {
             console.error('Erreur:', error);
-            addNotification('Erreur lors du chargement des centres d\'examen', 'error');
+            addToast('Erreur lors du chargement des centres', 'error');
         } finally {
             setLoading(false);
         }
@@ -93,50 +105,78 @@ const ExamCentersAdmin: React.FC = () => {
         try {
             setSubmitting(true);
 
-            if (editingCenter) {
-                await adminExamCentersApi.update(editingCenter.id, formData);
-            } else {
-                await adminExamCentersApi.create(formData);
+            const url = editingCenter 
+                ? `http://merelformation.localhost/api/admin/centers/${editingCenter.id}`
+                : 'http://merelformation.localhost/api/admin/centers';
+            
+            const method = editingCenter ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erreur lors de la sauvegarde');
             }
 
-            addNotification(
-                editingCenter ? 'Centre d\'examen modifié avec succès' : 'Centre d\'examen créé avec succès',
+            addToast(
+                editingCenter ? 'Centre modifié avec succès' : 'Centre créé avec succès',
                 'success'
             );
 
-            await fetchExamCenters();
+            await fetchCenters();
             handleCloseModal();
         } catch (error: any) {
             console.error('Erreur:', error);
-            addNotification(error.response?.data?.message || error.message || 'Erreur lors de la sauvegarde', 'error');
+            addToast(error.message || 'Erreur lors de la sauvegarde', 'error');
         } finally {
             setSubmitting(false);
         }
     };
 
-    const handleDelete = async (center: ExamCenter) => {
+    const handleDelete = async (center: CenterInterface) => {
         if (!confirm(`Êtes-vous sûr de vouloir supprimer le centre "${center.name}" ?`)) {
             return;
         }
 
         try {
-            await adminExamCentersApi.delete(center.id);
-            addNotification('Centre d\'examen supprimé avec succès', 'success');
-            await fetchExamCenters();
+            const response = await fetch(`http://merelformation.localhost/api/admin/centers/${center.id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erreur lors de la suppression');
+            }
+
+            addToast('Centre supprimé avec succès', 'success');
+            await fetchCenters();
         } catch (error: any) {
             console.error('Erreur:', error);
-            addNotification(error.response?.data?.error || error.message || 'Erreur lors de la suppression', 'error');
+            addToast(error.message || 'Erreur lors de la suppression', 'error');
         }
     };
 
-    const handleEdit = (center: ExamCenter) => {
+    const handleEdit = (center: CenterInterface) => {
         setEditingCenter(center);
         setFormData({
             name: center.name,
             code: center.code,
+            type: center.type,
             city: center.city,
             departmentCode: center.departmentCode,
             address: center.address || '',
+            phone: center.phone || '',
+            email: center.email || '',
             isActive: center.isActive
         });
         setShowModal(true);
@@ -148,23 +188,43 @@ const ExamCentersAdmin: React.FC = () => {
         setFormData({
             name: '',
             code: '',
+            type: 'formation',
             city: '',
             departmentCode: '',
             address: '',
+            phone: '',
+            email: '',
             isActive: true
         });
     };
 
-    const handleViewDetails = (center: ExamCenter) => {
+    const handleViewDetails = (center: CenterInterface) => {
         setSelectedCenter(center);
         setShowDetailModal(true);
     };
 
-    const filteredCenters = examCenters.filter(center =>
-        center.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        center.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        center.code.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredCenters = centers.filter(center => {
+        const matchesSearch = center.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            center.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            center.code.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const matchesType = typeFilter === 'all' || center.type === typeFilter;
+        
+        return matchesSearch && matchesType;
+    });
+
+    const getTypeStats = () => {
+        const stats = {
+            total: centers.length,
+            active: centers.filter(c => c.isActive).length,
+            formation: centers.filter(c => c.type === 'formation').length,
+            exam: centers.filter(c => c.type === 'exam').length,
+            both: centers.filter(c => c.type === 'both').length
+        };
+        return stats;
+    };
+
+    const stats = getTypeStats();
 
     if (loading) {
         return (
@@ -177,10 +237,9 @@ const ExamCentersAdmin: React.FC = () => {
     }
 
     return (
-        <AdminLayout title="Centres d'examen" breadcrumbItems={[
+        <AdminLayout title="Gestion des centres" breadcrumbItems={[
             { label: 'Admin', path: '/admin' },
-            { label: 'Réservations', path: '/admin/reservations' },
-            { label: 'Centres d\'examen' }
+            { label: 'Centres' }
         ]}>
             <div className="space-y-6">
                 {/* Header */}
@@ -200,10 +259,10 @@ const ExamCentersAdmin: React.FC = () => {
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 flex items-center">
                             <Building className="h-8 w-8 mr-3 text-blue-600" />
-                            Centres d'examen
+                            Gestion des centres
                         </h1>
                         <p className="text-gray-600 mt-1">
-                            Gérez les centres d'examen et leurs formules
+                            Gérez les centres de formation, d'examen et leurs informations
                         </p>
                     </div>
                     <button
@@ -215,22 +274,35 @@ const ExamCentersAdmin: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Search */}
+                {/* Search and Filters */}
                 <div className="flex flex-col sm:flex-row gap-4">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                         <input
                             type="text"
-                            placeholder="Rechercher un centre d'examen..."
+                            placeholder="Rechercher un centre..."
                             className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    <div className="relative">
+                        <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                        <select
+                            className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                            value={typeFilter}
+                            onChange={(e) => setTypeFilter(e.target.value as CenterType | 'all')}
+                        >
+                            <option value="all">Tous les types</option>
+                            <option value="formation">Formation</option>
+                            <option value="exam">Examen</option>
+                            <option value="both">Formation & Examen</option>
+                        </select>
+                    </div>
                 </div>
 
                 {/* Statistics */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="bg-white p-6 rounded-lg shadow">
                         <div className="flex items-center">
                             <div className="p-2 bg-blue-100 rounded-lg">
@@ -238,7 +310,7 @@ const ExamCentersAdmin: React.FC = () => {
                             </div>
                             <div className="ml-4">
                                 <p className="text-sm font-medium text-gray-600">Total centres</p>
-                                <p className="text-2xl font-bold text-gray-900">{examCenters.length}</p>
+                                <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
                             </div>
                         </div>
                     </div>
@@ -249,9 +321,44 @@ const ExamCentersAdmin: React.FC = () => {
                             </div>
                             <div className="ml-4">
                                 <p className="text-sm font-medium text-gray-600">Centres actifs</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {examCenters.filter(c => c.isActive).length}
-                                </p>
+                                <p className="text-2xl font-bold text-gray-900">{stats.active}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-white p-6 rounded-lg shadow">
+                        <div className="flex items-center">
+                            <div className="p-2 bg-blue-100 rounded-lg">
+                                <Building className="h-6 w-6 text-blue-600" />
+                            </div>
+                            <div className="ml-4">
+                                <p className="text-sm font-medium text-gray-600">Formation</p>
+                                <p className="text-2xl font-bold text-blue-600">{stats.formation}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-white p-6 rounded-lg shadow">
+                        <div className="flex items-center">
+                            <div className="p-2 bg-purple-100 rounded-lg">
+                                <Building className="h-6 w-6 text-purple-600" />
+                            </div>
+                            <div className="ml-4">
+                                <p className="text-sm font-medium text-gray-600">Examen</p>
+                                <p className="text-2xl font-bold text-purple-600">{stats.exam}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Additional stats */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white p-6 rounded-lg shadow">
+                        <div className="flex items-center">
+                            <div className="p-2 bg-green-100 rounded-lg">
+                                <Building className="h-6 w-6 text-green-600" />
+                            </div>
+                            <div className="ml-4">
+                                <p className="text-sm font-medium text-gray-600">Formation & Examen</p>
+                                <p className="text-2xl font-bold text-green-600">{stats.both}</p>
                             </div>
                         </div>
                     </div>
@@ -263,7 +370,7 @@ const ExamCentersAdmin: React.FC = () => {
                             <div className="ml-4">
                                 <p className="text-sm font-medium text-gray-600">Total formules</p>
                                 <p className="text-2xl font-bold text-gray-900">
-                                    {examCenters.reduce((total, center) => total + center.formulas.length, 0)}
+                                    {centers.reduce((total, center) => total + center.formulas.length, 0)}
                                 </p>
                             </div>
                         </div>
@@ -283,6 +390,9 @@ const ExamCentersAdmin: React.FC = () => {
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Centre
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Type
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Localisation
@@ -311,6 +421,19 @@ const ExamCentersAdmin: React.FC = () => {
                                                 {center.code}
                                             </div>
                                         </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                            center.type === 'formation' 
+                                                ? 'bg-blue-100 text-blue-800'
+                                                : center.type === 'exam'
+                                                ? 'bg-purple-100 text-purple-800'
+                                                : 'bg-green-100 text-green-800'
+                                        }`}>
+                                            {center.type === 'formation' ? 'Formation' : 
+                                             center.type === 'exam' ? 'Examen' : 
+                                             'Formation & Examen'}
+                                        </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm text-gray-900 flex items-center">
@@ -389,7 +512,7 @@ const ExamCentersAdmin: React.FC = () => {
                         <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
                             <div className="px-6 py-4 border-b border-gray-200">
                                 <h3 className="text-lg font-medium text-gray-900">
-                                    {editingCenter ? 'Modifier le centre d\'examen' : 'Nouveau centre d\'examen'}
+                                    {editingCenter ? 'Modifier le centre' : 'Nouveau centre'}
                                 </h3>
                             </div>
                             <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -417,6 +540,21 @@ const ExamCentersAdmin: React.FC = () => {
                                         value={formData.code}
                                         onChange={(e) => setFormData({...formData, code: e.target.value})}
                                     />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Type de centre *
+                                    </label>
+                                    <select
+                                        required
+                                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                        value={formData.type}
+                                        onChange={(e) => setFormData({...formData, type: e.target.value as CenterType})}
+                                    >
+                                        <option value="formation">Formation</option>
+                                        <option value="exam">Examen</option>
+                                        <option value="both">Formation & Examen</option>
+                                    </select>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
@@ -455,6 +593,32 @@ const ExamCentersAdmin: React.FC = () => {
                                         value={formData.address}
                                         onChange={(e) => setFormData({...formData, address: e.target.value})}
                                     />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Téléphone
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            placeholder="ex: 02 99 XX XX XX"
+                                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                            value={formData.phone}
+                                            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Email
+                                        </label>
+                                        <input
+                                            type="email"
+                                            placeholder="ex: centre@example.com"
+                                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                            value={formData.email}
+                                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                        />
+                                    </div>
                                 </div>
                                 <div className="flex items-center">
                                     <input
@@ -515,6 +679,18 @@ const ExamCentersAdmin: React.FC = () => {
                                         <p className="text-sm text-gray-900">{selectedCenter.code}</p>
                                     </div>
                                     <div>
+                                        <label className="block text-sm font-medium text-gray-500">Type</label>
+                                        <p className="text-sm text-gray-900">
+                                            {selectedCenter.type === 'formation' ? 'Formation' : 
+                                             selectedCenter.type === 'exam' ? 'Examen' : 
+                                             'Formation & Examen'}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-500">Statut</label>
+                                        <p className="text-sm text-gray-900">{selectedCenter.isActive ? 'Actif' : 'Inactif'}</p>
+                                    </div>
+                                    <div>
                                         <label className="block text-sm font-medium text-gray-500">Ville</label>
                                         <p className="text-sm text-gray-900">{selectedCenter.city}</p>
                                     </div>
@@ -522,6 +698,18 @@ const ExamCentersAdmin: React.FC = () => {
                                         <label className="block text-sm font-medium text-gray-500">Département</label>
                                         <p className="text-sm text-gray-900">{selectedCenter.departmentCode}</p>
                                     </div>
+                                    {selectedCenter.phone && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-500">Téléphone</label>
+                                            <p className="text-sm text-gray-900">{selectedCenter.phone}</p>
+                                        </div>
+                                    )}
+                                    {selectedCenter.email && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-500">Email</label>
+                                            <p className="text-sm text-gray-900">{selectedCenter.email}</p>
+                                        </div>
+                                    )}
                                 </div>
                                 {selectedCenter.address && (
                                     <div>
@@ -569,4 +757,4 @@ const ExamCentersAdmin: React.FC = () => {
     );
 };
 
-export default ExamCentersAdmin;
+export default CentersAdmin;

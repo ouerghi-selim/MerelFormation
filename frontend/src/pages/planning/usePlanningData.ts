@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNotification } from '../../contexts/NotificationContext';
-import { adminPlanningApi, adminReservationsApi, adminFormationsApi, adminSessionsApi } from '@/services/api';
+import { adminPlanningApi, adminReservationsApi, adminFormationsApi, adminSessionsApi, adminCentersApi } from '../../services/api';
 import {BigCalendarEvent, CalendarEvent, Formation, Instructor} from './types';
 import { DEFAULT_LOCATIONS } from './calendarConfig';
 
@@ -36,6 +36,18 @@ export const usePlanningData = () => {
                     name: `${instructor.firstName} ${instructor.lastName}`
                 }));
                 setAvailableInstructors(instructorsData);
+
+                // Chargement des centres de formation
+                try {
+                    const centersResponse = await adminCentersApi.getForFormations();
+                    const centersData = centersResponse.data.map((center: any) => 
+                        center.address ? `${center.address}, ${center.city}` : center.city
+                    );
+                    setAvailableLocations([...DEFAULT_LOCATIONS, ...centersData]);
+                } catch (centerError) {
+                    console.warn('Error fetching centers, using default locations:', centerError);
+                    setAvailableLocations(DEFAULT_LOCATIONS);
+                }
             } catch (err) {
                 console.error('Error fetching initial data:', err);
                 addToast('Erreur lors du chargement des données initiales', 'error');

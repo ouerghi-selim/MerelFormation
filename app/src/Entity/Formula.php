@@ -50,7 +50,7 @@ class Formula
     #[ORM\ManyToOne(inversedBy: 'formulas')]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['formula:read', 'formula:write'])]
-    private ?ExamCenter $examCenter = null;
+    private ?Center $examCenter = null;
 
     public function __construct()
     {
@@ -151,12 +151,12 @@ class Formula
         return $this;
     }
 
-    public function getExamCenter(): ?ExamCenter
+    public function getExamCenter(): ?Center
     {
         return $this->examCenter;
     }
 
-    public function setExamCenter(?ExamCenter $examCenter): static
+    public function setExamCenter(?Center $examCenter): static
     {
         $this->examCenter = $examCenter;
         return $this;
