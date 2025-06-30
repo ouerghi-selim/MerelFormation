@@ -83,6 +83,7 @@ export const adminFormationsApi = {
     },
     updatePracticalInfo: (practicalInfoId: number, data: any) => api.put(`/admin/practical-infos/${practicalInfoId}`, data),
     deletePracticalInfo: (practicalInfoId: number) => api.delete(`/admin/practical-infos/${practicalInfoId}`),
+    getInstructors: () => api.get('/admin/users?role=ROLE_INSTRUCTOR&status=active'),
 };
 
 // Services API pour les réservations administrateur
@@ -145,7 +146,7 @@ export const adminSessionsApi = {
     },
     update: (id:number, sessionData:any) => api.put(`/admin/sessions/${id}`, sessionData),
     delete: (id:number) => api.delete(`/admin/sessions/${id}`),
-    getInstructors: () => api.get('/admin/users?role=ROLE_INSTRUCTOR'),
+    getInstructors: () => api.get('/admin/users?role=ROLE_INSTRUCTOR&status=active'),
     // Méthodes documents
     uploadDocument: (sessionId: number, formData: FormData) =>
         api.post(`/admin/sessions/${sessionId}/documents`, formData, {
@@ -188,7 +189,7 @@ export const adminPlanningApi = {
     deleteEvent: (id: number) =>
         api.delete(`/admin/sessions/${id}`),
     getInstructors: () =>
-        api.get('/admin/users?role=ROLE_INSTRUCTOR'),
+        api.get('/admin/users?role=ROLE_INSTRUCTOR&status=active'),
     getLocations: () =>
         api.get('/admin/locations')
 };
