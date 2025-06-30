@@ -87,6 +87,7 @@ class UserAdminController extends AbstractController
                 'role' => $this->getMainRole($user->getRoles()), // ✅ Méthode corrigée
                 'isActive' => $user->isIsActive(),  // Utiliser isIsActive() au lieu de isActive()
                 'phone' => $user->getPhone(),
+                'specialization' => $user->getSpecialization(),
                 // Ajouter la date de création au format français
                 'createdAt' => $user->getCreatedAt() ? $user->getCreatedAt()->format('d/m/Y') : null
             ];
@@ -173,6 +174,7 @@ class UserAdminController extends AbstractController
                 'role' => 'ROLE_STUDENT',
                 'isActive' => $student->isIsActive(),  // Utiliser isIsActive() au lieu de isActive()
                 'phone' => $student->getPhone(),
+                'specialization' => $student->getSpecialization(),
                 'createdAt' => $student->getCreatedAt() ? $student->getCreatedAt()->format('d/m/Y') : null,
                 // Utiliser une date de dernière connexion fictive pour le moment
                 'lastLogin' => null
@@ -205,6 +207,7 @@ class UserAdminController extends AbstractController
             'role' => $user->getRoles()[0] ?? 'ROLE_STUDENT',
             'isActive' => $user->isIsActive(),  // Utiliser isIsActive() au lieu de isActive()
             'phone' => $user->getPhone(),
+            'specialization' => $user->getSpecialization(),
             'createdAt' => $user->getCreatedAt() ? $user->getCreatedAt()->format('d/m/Y') : null,
             'lastLogin' => null  // À implémenter si vous ajoutez ce champ à l'entité
         ];
@@ -251,6 +254,9 @@ class UserAdminController extends AbstractController
         if (isset($data['phone'])) {
             $user->setPhone($data['phone']);
         }
+        if (isset($data['specialization'])) {
+            $user->setSpecialization($data['specialization']);
+        }
 
         // Persister l'utilisateur
         $this->entityManager->persist($user);
@@ -260,8 +266,16 @@ class UserAdminController extends AbstractController
         $this->notificationService->notifyUserWelcome($user, $temporaryPassword);
 
         return $this->json([
-            'message' => 'Utilisateur créé avec succès',
-            'id' => $user->getId()
+            'id' => $user->getId(),
+            'firstName' => $user->getFirstName(),
+            'lastName' => $user->getLastName(),
+            'email' => $user->getEmail(),
+            'role' => $this->getMainRole($user->getRoles()),
+            'isActive' => $user->isIsActive(),
+            'phone' => $user->getPhone(),
+            'specialization' => $user->getSpecialization(),
+            'lastLogin' => null,
+            'createdAt' => $user->getCreatedAt() ? $user->getCreatedAt()->format('d/m/Y') : null
         ], 201);
     }
 
@@ -325,6 +339,9 @@ class UserAdminController extends AbstractController
         }
         if (isset($data['phone'])) {
             $user->setPhone($data['phone']);
+        }
+        if (isset($data['specialization'])) {
+            $user->setSpecialization($data['specialization']);
         }
 
         // Persister les modifications

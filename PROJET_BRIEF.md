@@ -5,8 +5,8 @@
 **Développeur Principal :** Selim OUERGHI (ouerghi-selim)  
 **Repository :** https://github.com/ouerghi-selim/MerelFormation  
 **Type :** Application de gestion de formations taxi + location de véhicules  
-**Status :** ✅ 100% FONCTIONNEL - Projet complet avec tous les bugs critiques corrigés  
-**Dernière mise à jour :** Juin 2025
+**Status :** ✅ 100% FONCTIONNEL - Projet complet avec tous les bugs critiques corrigés + Sessions & Instructeurs fixes  
+**Dernière mise à jour :** 30 Juin 2025 - Corrections finales Sessions/Instructeurs
 
 ## 🖗️ Architecture Technique
 
@@ -366,6 +366,18 @@ MerelFormation/
   - **🆕 Bug Notifications Formules** - Correction `addNotification` → `addToast` dans FormulasAdmin.tsx
   - **🆕 Bug Modal Fermeture** - Fermeture automatique modal formules après sauvegarde réussie
 
+### 🆕 ✅ CORRECTIONS MAJEURES SYSTÈME SESSIONS & INSTRUCTEURS (Juin 2025 - DERNIÈRE MAJ)
+- **🆕 Bug Suppression Sessions** - SessionAdminController.php : Suppression correcte des réservations et documents avant suppression session
+- **🆕 Contraintes FK Résolues** - Gestion des contraintes de clés étrangères dans suppression sessions avec transaction
+- **🆕 Champ Spécialisation Instructeurs** - Entity/User.php : Ajout champ `specialization` avec migration base de données
+- **🆕 Retour API Instructeurs Complet** - UserAdminController.php : Retour des données complètes après création (plus de ligne vide)
+- **🆕 Gestion Spécialisation Backend** - UserAdminController.php : Méthodes create/update/list incluent maintenant la spécialisation
+- **🆕 Migration Base Données** - Version20250630210929.php : `ALTER TABLE user ADD specialization VARCHAR(255)`
+- **🆕 Messages d'Erreur Précis** - InstructorsAdmin.tsx : Extraction des vrais messages API ("Cet email est déjà utilisé")
+- **🆕 Utilitaire Gestion Erreurs** - errorUtils.ts : Fonction `getErrorMessage()` réutilisable pour extraction messages API
+- **🆕 Interface Admin Améliorée** - Plus de rechargement de page requis après ajout instructeur
+- **🆕 Spécialisations Fonctionnelles** - Sauvegarde et affichage des spécialisations instructeurs enfin opérationnels
+
 ### 🆕 ✅ SYSTÈME D'EMAILS AUTOMATIQUES & WYSIWYG COMPLET (Janvier 2025)
 - **24 Templates d'emails professionnels** - HTML avec CSS inline pour compatibilité maximale
 - **18 Event Types** - Couvrant formations, sessions, utilisateurs, véhicules, documents, contacts
@@ -400,6 +412,25 @@ MerelFormation/
 - **🆕 Formules dans Modal Centres**: Affichage correct des formules liées avec groupes de sérialisation
 - **🆕 CRUD Formules Fonctionnel**: Correction des controllers et repositories pour Center
 - **🆕 UX Modal Formules**: Fermeture automatique après sauvegarde avec notifications
+
+### 🆕 Corrections Techniques Détaillées (Juin 2025 - Session Finale)
+
+#### **Fichiers Backend Modifiés :**
+- **app/src/Entity/User.php** : Ajout champ `specialization VARCHAR(255)` avec Groups de sérialisation
+- **app/src/Controller/Admin/UserAdminController.php** : Gestion spécialisation dans create/update/list + retour API complet
+- **app/src/Controller/Admin/SessionAdminController.php** : Suppression séquentielle réservations/documents avec transaction
+- **app/migrations/Version20250630210929.php** : Migration `ALTER TABLE user ADD specialization`
+
+#### **Fichiers Frontend Modifiés :**
+- **frontend/src/pages/admin/InstructorsAdmin.tsx** : Messages d'erreur précis + gestion spécialisation
+- **frontend/src/utils/errorUtils.ts** : 🆕 Utilitaire extraction messages API avec priorités
+- **frontend/src/pages/admin/FormulasAdmin.tsx** : Correction messages erreur (déjà implémenté)
+
+#### **Architecture Améliorée :**
+- **Gestion Erreurs** : Fonction `getErrorMessage()` centralise l'extraction des messages API
+- **Base Données** : Champ spécialisation ajouté avec migration automatique
+- **API Cohérence** : Retour complet des données après création utilisateur
+- **UX Sessions** : Suppression robuste avec gestion contraintes FK
 
 ### 🔧 EN COURS D'OPTIMISATION
 - Performance frontend/backend
@@ -511,6 +542,10 @@ Grâce au **système de détails complets des réservations**, **les administrat
 11. **🆕 INTERFACE ADMIN SUPPRESSION** - Page dédiée avec deadlines et fonction restauration
 12. **🆕 ROUTES API CORRIGÉES** - Plus d'erreurs 404 sur endpoints critiques
 13. **🆕 NOTIFICATIONS COMPLÈTES** - Tous les services d'email implémentés
+14. **🆕 SUPPRESSION SESSIONS FK** - Résolution contraintes clés étrangères avec suppression séquentielle
+15. **🆕 SPÉCIALISATIONS INSTRUCTEURS** - Champ specialization ajouté + migration + frontend fonctionnel
+16. **🆕 LIGNES VIDES INSTRUCTEURS** - Retour API complet après création (plus de rechargement requis)
+17. **🆕 MESSAGES ERREUR PRÉCIS** - Extraction vrais messages API avec utilitaire errorUtils.ts
 
 **💡 CONSEIL POUR FUTURES CONVERSATIONS :**
 Copiez-collez ce brief au début de nouvelles conversations avec Claude pour qu'il comprenne immédiatement le contexte et l'état du projet sans avoir à refaire toute l'analyse.

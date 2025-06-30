@@ -134,6 +134,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?bool $isActive = true;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
+    private ?string $specialization = null;
+
     #[ORM\Column(type: 'datetime', nullable: true)]
     #[Groups(['user:read'])]
     private ?\DateTimeInterface $deletedAt = null;
@@ -480,6 +484,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setNotifications(Collection $notifications): void
     {
         $this->notifications = $notifications;
+    }
+
+    public function getSpecialization(): ?string
+    {
+        return $this->specialization;
+    }
+
+    public function setSpecialization(?string $specialization): static
+    {
+        $this->specialization = $specialization;
+        return $this;
     }
 
 

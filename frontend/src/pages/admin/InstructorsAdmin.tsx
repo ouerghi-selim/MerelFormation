@@ -11,6 +11,7 @@ import { useNotification } from '../../contexts/NotificationContext';
 import useDataFetching from '../../hooks/useDataFetching';
 import { adminUsersApi } from '../../services/api';
 import { useLocation } from 'react-router-dom';
+import { getErrorMessage } from '../../utils/errorUtils';
 
 
 interface User {
@@ -168,9 +169,9 @@ const InstructorsAdmin: React.FC = () => {
             });
 
             setShowAddModal(false);
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error adding instructor:', err);
-            addToast('Erreur lors de l\'ajout du formateur', 'error');
+            addToast(getErrorMessage(err, 'Erreur lors de l\'ajout du formateur'), 'error');
         } finally {
             setProcessing(false);
         }
@@ -194,9 +195,9 @@ const InstructorsAdmin: React.FC = () => {
             addToast('Formateur mis à jour avec succès', 'success');
 
             setShowEditModal(false);
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error updating instructor:', err);
-            addToast('Erreur lors de la mise à jour du formateur', 'error');
+            addToast(getErrorMessage(err, 'Erreur lors de la mise à jour du formateur'), 'error');
         } finally {
             setProcessing(false);
         }
@@ -215,9 +216,9 @@ const InstructorsAdmin: React.FC = () => {
 
             setShowDeleteModal(false);
             setUserToDelete(null);
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error deleting instructor:', err);
-            addToast('Erreur lors de la suppression du formateur', 'error');
+            addToast(getErrorMessage(err, 'Erreur lors de la suppression du formateur'), 'error');
         } finally {
             setProcessing(false);
         }
