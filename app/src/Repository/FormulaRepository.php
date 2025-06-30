@@ -3,7 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Formula;
-use App\Entity\ExamCenter;
+use App\Entity\Center;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -37,14 +37,14 @@ class FormulaRepository extends ServiceEntityRepository
     }
 
     /**
-     * @return Formula[] Returns formulas for a specific exam center
+     * @return Formula[] Returns formulas for a specific center
      */
-    public function findByExamCenter(ExamCenter $examCenter): array
+    public function findByExamCenter(Center $center): array
     {
         return $this->createQueryBuilder('f')
-            ->andWhere('f.examCenter = :examCenter')
+            ->andWhere('f.examCenter = :center')
             ->andWhere('f.isActive = :active')
-            ->setParameter('examCenter', $examCenter)
+            ->setParameter('center', $center)
             ->setParameter('active', true)
             ->orderBy('f.type', 'ASC')
             ->addOrderBy('f.name', 'ASC')
@@ -55,7 +55,7 @@ class FormulaRepository extends ServiceEntityRepository
     /**
      * @return Formula[] Returns formulas for admin listing
      */
-    public function findForAdmin(?string $search = null, ?ExamCenter $examCenter = null): array
+    public function findForAdmin(?string $search = null, ?Center $center = null): array
     {
         $qb = $this->createQueryBuilder('f')
             ->leftJoin('f.examCenter', 'e')
@@ -67,9 +67,9 @@ class FormulaRepository extends ServiceEntityRepository
                ->setParameter('search', '%' . $search . '%');
         }
 
-        if ($examCenter) {
-            $qb->andWhere('f.examCenter = :examCenter')
-               ->setParameter('examCenter', $examCenter);
+        if ($center) {
+            $qb->andWhere('f.examCenter = :center')
+               ->setParameter('center', $center);
         }
 
         return $qb->getQuery()->getResult();

@@ -50,12 +50,13 @@
 - Monitoring : Logs configurés
 ```
 
-## 🗄️ Structure de la Base de Données (26 Entités)
+## 🗄️ Structure de la Base de Données (27 Entités)
 
 ### Entités Principales
 - **User** - Utilisateurs (admins, étudiants, instructeurs)
 - **Formation** - Formations taxi (140h, 14h, recyclage)
 - **Session** - Sessions de formation avec planning
+- **🆕 Center** - Centres de formation et d'examen avec gestion géographique
 - **Vehicle** - Véhicules du parc automobile
 - **VehicleRental** - Réservations de véhicules
 - **Payment** - Gestion des paiements
@@ -96,6 +97,7 @@
 ### Admin Controllers (/app/src/Controller/Admin/)
 - **DashboardAdminController**  COMPLET
 - **FormationAdminController** - Gestion formations
+- **🆕 CenterAdminController** - Gestion centres de formation et d'examen
 - **PracticalInfoController** - 🆕 Gestion parties pratiques multiples formations
 - **ImageUploadController** - 🆕 Upload et gestion d'images formations
 - **SessionAdminController** - Gestion sessions
@@ -131,7 +133,8 @@
 - **FormationsAdmin.tsx** ✅ OPTIMISÉ - Gestion formations avec navigation simplifiée
 - **FormationDetail.tsx** ✅ NOUVEAU - Page détails complète avec onglets (Infos, Modules, Prérequis, Documents, Sessions)
 - **FormationNew.tsx** ✅ AMÉLIORÉ - Création avec upload de documents intégré
-- **FormationNew.tsx** - Nouvelle formation
+- **🆕 CentersAdmin.tsx** ✅ NOUVEAU - Gestion centres de formation et d'examen avec CRUD complet
+- **🆕 FormulasAdmin.tsx** ✅ NOUVEAU - Gestion formules par centre avec tarification
 - **SessionsAdmin.tsx** ✅ AMÉLIORÉ - Gestion sessions avec documents et inspection complète
 - **SessionNew.tsx** ✅ COMPLET - Création sessions avec upload de documents
 - **StudentsAdmin.tsx** - Gestion étudiants
@@ -356,6 +359,12 @@ MerelFormation/
   - **Interface utilisateurs supprimés** - Page admin avec deadlines, niveaux et fonction restauration
   - **Routes API conflictuelles** - `/api/admin/users/deleted` corrigé (plus de 404)
   - **Service notifications** - Méthode `notifyUserReactivated` ajoutée avec constante
+  - **🆕 Bug Centres Inactifs** - CenterAdminController retourne maintenant tous les centres (actifs + inactifs)
+  - **🆕 Bug Format Response** - Harmonisation format API pour éviter erreur `centers.filter is not a function`
+  - **🆕 Bug Formules Modal** - Ajout groupes sérialisation `center:read` dans entité Formula
+  - **🆕 Bug Controllers Formules** - Migration ExamCenter → Center dans FormulaAdminController et Repository
+  - **🆕 Bug Notifications Formules** - Correction `addNotification` → `addToast` dans FormulasAdmin.tsx
+  - **🆕 Bug Modal Fermeture** - Fermeture automatique modal formules après sauvegarde réussie
 
 ### 🆕 ✅ SYSTÈME D'EMAILS AUTOMATIQUES & WYSIWYG COMPLET (Janvier 2025)
 - **24 Templates d'emails professionnels** - HTML avec CSS inline pour compatibilité maximale
@@ -382,6 +391,15 @@ MerelFormation/
 - **🆕 Correction Affichage Images**: Configuration Docker nginx pour servir les images correctement  
 - **🆕 Affichage Parties Pratiques Multiples**: Interface publique avec design alterné
 - **🆕 Unification Formulaires Sessions**: Formulaires calendrier et création unifiés
+- **🆕 Système de Gestion des Centres**: Centres de formation et d'examen unifiés avec CRUD complet
+- **🆕 Gestion Géographique**: Centres organisés par ville, département et type (formation/examen/mixte)
+- **🆕 Système de Formules**: Gestion des formules d'examen par centre avec tarification
+- **🆕 Integration Planning**: Centres intégrés dans le système de planning et sessions
+- **🆕 Remplacement ExamCenter → Center**: Migration complète vers entité Center unifiée
+- **🆕 Affichage Centres Inactifs**: Interface admin montre tous les centres (actifs et inactifs)
+- **🆕 Formules dans Modal Centres**: Affichage correct des formules liées avec groupes de sérialisation
+- **🆕 CRUD Formules Fonctionnel**: Correction des controllers et repositories pour Center
+- **🆕 UX Modal Formules**: Fermeture automatique après sauvegarde avec notifications
 
 ### 🔧 EN COURS D'OPTIMISATION
 - Performance frontend/backend

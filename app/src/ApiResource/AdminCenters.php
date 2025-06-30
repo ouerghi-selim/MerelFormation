@@ -12,24 +12,24 @@ use Symfony\Component\HttpFoundation\Response;
     operations: [
         new GetCollection(
             uriTemplate: '/admin/centers',
-            controller: 'App\Controller\Api\CenterController::list',
+            controller: 'App\Controller\Admin\CenterAdminController::index',
             name: 'get_centers_collection'
         ),
         new GetCollection(
             uriTemplate: '/admin/centers/formation',
-            controller: 'App\Controller\Api\CenterController::byType',
+            controller: 'App\Controller\Admin\CenterAdminController::index',
             defaults: ['type' => 'formation'],
             name: 'get_formation_centers'
         ),
         new GetCollection(
             uriTemplate: '/admin/centers/exam',
-            controller: 'App\Controller\Api\CenterController::byType', 
+            controller: 'App\Controller\Admin\CenterAdminController::index',
             defaults: ['type' => 'exam'],
             name: 'get_exam_centers'
         ),
         new Get(
             uriTemplate: '/admin/centers/{id}',
-            controller: 'App\Controller\Api\CenterController::show',
+            controller: 'App\Controller\Admin\CenterAdminController::show',
             name: 'get_center'
         )
     ],

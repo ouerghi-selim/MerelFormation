@@ -104,4 +104,36 @@ class CenterRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Find ALL centers that can be used for formations (active and inactive)
+     * For admin interface
+     *
+     * @return Center[]
+     */
+    public function findAllForFormations(): array
+    {
+        return $this->createQueryBuilder('c')
+            ->where('c.type IN (:types)')
+            ->setParameter('types', [Center::TYPE_FORMATION, Center::TYPE_BOTH])
+            ->orderBy('c.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find ALL centers that can be used for exams (active and inactive)
+     * For admin interface
+     *
+     * @return Center[]
+     */
+    public function findAllForExams(): array
+    {
+        return $this->createQueryBuilder('c')
+            ->where('c.type IN (:types)')
+            ->setParameter('types', [Center::TYPE_EXAM, Center::TYPE_BOTH])
+            ->orderBy('c.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

@@ -33,12 +33,13 @@ class CenterAdminController extends AbstractController
             $limit = max(1, min(100, (int) $request->query->get('limit', 20)));
 
             // Récupérer les centres selon le type demandé
+            // Pour l'interface admin, on veut voir TOUS les centres (actifs et inactifs)
             if ($type === 'formation') {
-                $centers = $this->centerRepository->findForFormations();
+                $centers = $this->centerRepository->findAllForFormations();
             } elseif ($type === 'exam') {
-                $centers = $this->centerRepository->findForExams();
+                $centers = $this->centerRepository->findAllForExams();
             } else {
-                $centers = $this->centerRepository->findActive();
+                $centers = $this->centerRepository->findAll();
             }
 
             // Filtrage par recherche si fourni
@@ -56,18 +57,10 @@ class CenterAdminController extends AbstractController
             $offset = ($page - 1) * $limit;
             $paginatedCenters = array_slice($centers, $offset, $limit);
 
-            $data = [
-                'data' => $paginatedCenters,
-                'pagination' => [
-                    'page' => $page,
-                    'limit' => $limit,
-                    'total' => $total,
-                    'pages' => ceil($total / $limit)
-                ]
-            ];
-
+            // Pour compatibilité avec le frontend, on retourne directement le tableau
+            // comme le fait le CenterController API
             return new JsonResponse(
-                $this->serializer->serialize($data, 'json', ['groups' => ['center:read']]),
+                $this->serializer->serialize($paginatedCenters, 'json', ['groups' => ['center:read']]),
                 Response::HTTP_OK,
                 [],
                 true

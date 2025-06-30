@@ -59,7 +59,7 @@ const FormulasAdmin: React.FC = () => {
     const [showModal, setShowModal] = useState(false);
     const [editingFormula, setEditingFormula] = useState<Formula | null>(null);
     const [submitting, setSubmitting] = useState(false);
-    const { addNotification } = useNotification();
+    const { addToast } = useNotification();
 
     const [formData, setFormData] = useState<FormData>({
         name: '',
@@ -89,7 +89,7 @@ const FormulasAdmin: React.FC = () => {
             setExamCenters(centersResponse.data || []);
         } catch (error) {
             console.error('Erreur:', error);
-            addNotification('Erreur lors du chargement des données', 'error');
+            addToast('Erreur lors du chargement des données', 'error');
         } finally {
             setLoading(false);
         }
@@ -114,7 +114,7 @@ const FormulasAdmin: React.FC = () => {
                 await adminFormulasApi.create(payload);
             }
 
-            addNotification(
+            addToast(
                 editingFormula ? 'Formule modifiée avec succès' : 'Formule créée avec succès',
                 'success'
             );
@@ -123,7 +123,7 @@ const FormulasAdmin: React.FC = () => {
             handleCloseModal();
         } catch (error: any) {
             console.error('Erreur:', error);
-            addNotification(error.response?.data?.message || error.message || 'Erreur lors de la sauvegarde', 'error');
+            addToast(error.response?.data?.message || error.message || 'Erreur lors de la sauvegarde', 'error');
         } finally {
             setSubmitting(false);
         }
@@ -136,11 +136,11 @@ const FormulasAdmin: React.FC = () => {
 
         try {
             await adminFormulasApi.delete(formula.id);
-            addNotification('Formule supprimée avec succès', 'success');
+            addToast('Formule supprimée avec succès', 'success');
             await fetchData();
         } catch (error: any) {
             console.error('Erreur:', error);
-            addNotification(error.response?.data?.error || error.message || 'Erreur lors de la suppression', 'error');
+            addToast(error.response?.data?.error || error.message || 'Erreur lors de la suppression', 'error');
         }
     };
 
@@ -252,7 +252,7 @@ const FormulasAdmin: React.FC = () => {
                             onChange={(e) => setSelectedCenterFilter(e.target.value ? parseInt(e.target.value) : '')}
                         >
                             <option value="">Tous les centres</option>
-                            {examCenters.data.map(center => (
+                            {examCenters.map(center => (
                                 <option key={center.id} value={center.id}>
                                     {center.name}
                                 </option>
@@ -453,7 +453,7 @@ const FormulasAdmin: React.FC = () => {
                                         onChange={(e) => setFormData({...formData, examCenterId: e.target.value ? parseInt(e.target.value) : ''})}
                                     >
                                         <option value="">Sélectionnez un centre</option>
-                                        {examCenters.data.map(center => (
+                                        {examCenters.map(center => (
                                             <option key={center.id} value={center.id}>
                                                 {center.name} - {center.city}
                                             </option>

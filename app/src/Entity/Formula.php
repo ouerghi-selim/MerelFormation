@@ -12,27 +12,27 @@ class Formula
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['formula:read', 'exam_center:read'])]
+    #[Groups(['formula:read', 'center:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['formula:read', 'formula:write', 'exam_center:read'])]
+    #[Groups(['formula:read', 'formula:write', 'center:read'])]
     private ?string $name = null;
 
     #[ORM\Column(type: 'text')]
-    #[Groups(['formula:read', 'formula:write', 'exam_center:read'])]
+    #[Groups(['formula:read', 'formula:write', 'center:read'])]
     private ?string $description = null;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
-    #[Groups(['formula:read', 'formula:write', 'exam_center:read'])]
+    #[Groups(['formula:read', 'formula:write', 'center:read'])]
     private ?string $price = null;
 
     #[ORM\Column(length: 20)]
-    #[Groups(['formula:read', 'formula:write', 'exam_center:read'])]
+    #[Groups(['formula:read', 'formula:write', 'center:read'])]
     private ?string $type = null; // 'simple', 'integral'
 
     #[ORM\Column]
-    #[Groups(['formula:read', 'formula:write', 'exam_center:read'])]
+    #[Groups(['formula:read', 'formula:write', 'center:read'])]
     private ?bool $isActive = true;
 
     #[ORM\Column(type: 'text', nullable: true)]
@@ -112,6 +112,12 @@ class Formula
         return $this->isActive;
     }
 
+    #[Groups(['formula:read','center:read'])]
+    public function getIsActive(): ?bool
+    {
+        return $this->isActive;
+    }
+
     public function setIsActive(bool $isActive): static
     {
         $this->isActive = $isActive;
@@ -170,7 +176,7 @@ class Formula
     /**
      * Génère le texte complet de la formule pour l'affichage
      */
-    #[Groups(['formula:read', 'exam_center:read'])]
+    #[Groups(['formula:read', 'exam_center:read', 'center:read'])]
     public function getFullText(): string
     {
         $text = $this->examCenter?->getName() . ': ' . $this->name;
@@ -189,7 +195,7 @@ class Formula
     /**
      * Obtient le prix formaté
      */
-    #[Groups(['formula:read', 'exam_center:read'])]
+    #[Groups(['formula:read', 'exam_center:read', 'center:read'])]
     public function getFormattedPrice(): string
     {
         if ($this->price) {

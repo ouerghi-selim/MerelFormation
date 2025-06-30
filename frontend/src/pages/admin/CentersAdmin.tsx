@@ -89,7 +89,8 @@ const CentersAdmin: React.FC = () => {
         try {
             setLoading(true);
             const response = await adminCentersApi.getAll();
-            setCenters(response.data || []);
+            // La réponse est maintenant directement un tableau, pas un objet avec .data
+            setCenters(response.data || response || []);
         } catch (error: any) {
             console.error('Erreur:', error);
             addToast('Erreur lors du chargement des centres', 'error');

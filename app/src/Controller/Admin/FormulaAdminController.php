@@ -3,9 +3,9 @@
 namespace App\Controller\Admin;
 
 use App\Entity\Formula;
-use App\Entity\ExamCenter;
+use App\Entity\Center;
 use App\Repository\FormulaRepository;
-use App\Repository\ExamCenterRepository;
+use App\Repository\CenterRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -21,7 +21,7 @@ class FormulaAdminController extends AbstractController
     public function __construct(
         private EntityManagerInterface $entityManager,
         private FormulaRepository $formulaRepository,
-        private ExamCenterRepository $examCenterRepository,
+        private CenterRepository $centerRepository,
         private SerializerInterface $serializer,
         private ValidatorInterface $validator
     ) {}
@@ -35,12 +35,12 @@ class FormulaAdminController extends AbstractController
             $page = max(1, (int) $request->query->get('page', 1));
             $limit = max(1, min(100, (int) $request->query->get('limit', 20)));
 
-            $examCenter = null;
+            $center = null;
             if ($examCenterId) {
-                $examCenter = $this->examCenterRepository->find($examCenterId);
+                $center = $this->centerRepository->find($examCenterId);
             }
 
-            $formulas = $this->formulaRepository->findForAdmin($search, $examCenter);
+            $formulas = $this->formulaRepository->findForAdmin($search, $center);
 
             // Pagination simple
             $total = count($formulas);
@@ -101,13 +101,13 @@ class FormulaAdminController extends AbstractController
                 ], Response::HTTP_BAD_REQUEST);
             }
 
-            // Récupérer le centre d'examen
-            $examCenter = null;
+            // Récupérer le centre
+            $center = null;
             if (isset($data['examCenterId'])) {
-                $examCenter = $this->examCenterRepository->find($data['examCenterId']);
-                if (!$examCenter) {
+                $center = $this->centerRepository->find($data['examCenterId']);
+                if (!$center) {
                     return new JsonResponse([
-                        'error' => 'Centre d\'examen non trouvé'
+                        'error' => 'Centre non trouvé'
                     ], Response::HTTP_BAD_REQUEST);
                 }
             }
@@ -119,7 +119,7 @@ class FormulaAdminController extends AbstractController
                    ->setType($data['type'] ?? 'simple')
                    ->setAdditionalInfo($data['additionalInfo'] ?? null)
                    ->setIsActive($data['isActive'] ?? true)
-                   ->setExamCenter($examCenter);
+                   ->setExamCenter($center);
 
             $errors = $this->validator->validate($formula);
             if (count($errors) > 0) {
@@ -168,13 +168,13 @@ class FormulaAdminController extends AbstractController
 
             // Mise à jour du centre d'examen si fourni
             if (isset($data['examCenterId'])) {
-                $examCenter = $this->examCenterRepository->find($data['examCenterId']);
-                if (!$examCenter) {
+                $center = $this->centerRepository->find($data['examCenterId']);
+                if (!$center) {
                     return new JsonResponse([
-                        'error' => 'Centre d\'examen non trouvé'
+                        'error' => 'Centre non trouvé'
                     ], Response::HTTP_BAD_REQUEST);
                 }
-                $formula->setExamCenter($examCenter);
+                $formula->setExamCenter($center);
             }
 
             $errors = $this->validator->validate($formula);
@@ -239,10 +239,10 @@ class FormulaAdminController extends AbstractController
     }
 
     #[Route('/by-center/{id}', name: 'by_center', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function getByCenter(ExamCenter $examCenter): JsonResponse
+    public function getByCenter(Center $center): JsonResponse
     {
         try {
-            $formulas = $this->formulaRepository->findByExamCenter($examCenter);
+            $formulas = $this->formulaRepository->findByExamCenter($center);
 
             return new JsonResponse(
                 $this->serializer->serialize($formulas, 'json', ['groups' => ['formula:read']]),
