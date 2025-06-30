@@ -469,11 +469,18 @@ class SessionAdminController extends AbstractController
 
             // Vérifier s'il existe des réservations pour cette session
             if (count($session->getReservations()) > 0) {
-                // Annuler toutes les réservations associées AVANT de supprimer
+                // Pour éviter la contrainte FK, on doit supprimer les réservations
+                // Mais d'abord on sauvegarde les infos pour les notifications
+                $reservationsToNotify = [];
                 foreach ($session->getReservations() as $reservation) {
-                    $reservation->setStatus('cancelled');
+                    $reservationsToNotify[] = [
+                        'user' => $reservation->getUser(),
+                        'status' => $reservation->getStatus()
+                    ];
+                    // Supprimer la réservation pour éviter la contrainte FK
+                    $this->entityManager->remove($reservation);
                 }
-                // Flush les changements de statut des réservations
+                // Flush la suppression des réservations
                 $this->entityManager->flush();
             }
 
