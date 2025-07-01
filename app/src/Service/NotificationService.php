@@ -1029,4 +1029,44 @@ class NotificationService
         }
     }
 
+    // === DOCUMENT NOTIFICATIONS ===
+
+    /**
+     * Notify student about direct document sent
+     */
+    public function notifyAboutDirectDocumentSent($document, $message = ''): void
+    {
+        try {
+            $student = $document->getUser();
+            $sender = $document->getUploadedBy();
+            
+            if (!$student || !$sender) {
+                $this->logger->warning('Document direct sans étudiant ou expéditeur défini');
+                return;
+            }
+
+            $variables = [
+                'studentName' => $student->getFirstName() . ' ' . $student->getLastName(),
+                'documentTitle' => $document->getTitle(),
+                'documentType' => strtoupper($document->getType()),
+                'senderName' => $sender->getFirstName() . ' ' . $sender->getLastName(),
+                'senderRole' => $this->getHighestRole($sender),
+                'sentAt' => (new \DateTime())->format('d/m/Y H:i'),
+                'message' => $message ?: 'Aucun message spécifique fourni.',
+                'downloadUrl' => '/student/documents' // Lien vers la section documents
+            ];
+
+            $this->emailService->sendTemplatedEmailByEventAndRole(
+                $student->getEmail(),
+                NotificationEventType::DIRECT_DOCUMENT_SENT,
+                'ROLE_STUDENT',
+                $variables
+            );
+
+            $this->logger->info('Notification document direct envoyée à: ' . $student->getEmail());
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de la notification document direct: ' . $e->getMessage());
+        }
+    }
+
 }

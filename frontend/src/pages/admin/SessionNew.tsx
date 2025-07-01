@@ -44,7 +44,7 @@ const SessionNew: React.FC = () => {
     const [documents, setDocuments] = useState<File[]>([]);
 
 
-    const [instructorId, setInstructorId] = useState('');
+    const [selectedInstructors, setSelectedInstructors] = useState<number[]>([]);
     const [instructors, setInstructors] = useState<Array<{id: number, firstName: string, lastName: string}>>([]);
     const [loadingInstructors, setLoadingInstructors] = useState(true);
 
@@ -77,7 +77,7 @@ const SessionNew: React.FC = () => {
         const fetchInstructors = async () => {
             try {
                 setLoadingInstructors(true);
-                const response = await adminFormationsApi.getInstructors();
+                const response = await adminSessionsApi.getInstructors();
                 setInstructors(response.data);
             } catch (err) {
                 console.error('Error fetching instructors:', err);
@@ -130,7 +130,7 @@ const SessionNew: React.FC = () => {
         if (!location.trim()) errors.location = 'Le lieu est requis';
 
         if (!status) errors.status = 'Le statut est requis';
-        // if (!instructorId) errors.instructor = 'Le formateur est requis';
+        // Les instructeurs ne sont plus obligatoires
 
 
         setFormErrors(errors);
@@ -162,7 +162,7 @@ const SessionNew: React.FC = () => {
                 center: centerId ? { id: parseInt(centerId) } : null,
                 status: status,
                 notes: notes.trim() || null,
-                instructor: instructorId ? { id: parseInt(instructorId) } : null
+                instructors: selectedInstructors
             };
 
             // Créer la session d'abord
@@ -425,23 +425,32 @@ const SessionNew: React.FC = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Formateur
+                                        Formateur(s)
                                     </label>
-                                    <select
-                                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                            formErrors.instructor ? 'border-red-500' : ''
-                                        }`}
-                                        value={instructorId}
-                                        onChange={(e) => setInstructorId(e.target.value)}
-                                        disabled={loadingInstructors}
-                                    >
-                                        <option value="">Sélectionner un formateur</option>
+                                    <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
                                         {instructors.map(instructor => (
-                                            <option key={instructor.id} value={instructor.id}>
-                                                {instructor.firstName} {instructor.lastName}
-                                            </option>
+                                            <label key={instructor.id} className="flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                    checked={selectedInstructors.includes(instructor.id)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setSelectedInstructors([...selectedInstructors, instructor.id]);
+                                                        } else {
+                                                            setSelectedInstructors(selectedInstructors.filter(id => id !== instructor.id));
+                                                        }
+                                                    }}
+                                                />
+                                                <span className="ml-2 text-sm text-gray-900">
+                                                    {instructor.firstName} {instructor.lastName}
+                                                </span>
+                                            </label>
                                         ))}
-                                    </select>
+                                    </div>
+                                    {selectedInstructors.length === 0 && (
+                                        <p className="mt-1 text-sm text-gray-500">Aucun formateur sélectionné</p>
+                                    )}
                                     {formErrors.instructor && (
                                         <p className="mt-1 text-sm text-red-500">{formErrors.instructor}</p>
                                     )}

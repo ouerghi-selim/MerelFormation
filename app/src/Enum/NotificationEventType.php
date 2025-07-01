@@ -38,6 +38,7 @@ class NotificationEventType
     public const DOCUMENT_REMOVED = 'document_removed';
     public const DOCUMENTS_ADDED = 'documents_added';
     public const DOCUMENTS_ADDED_BY_INSTRUCTOR = 'documents_added_by_instructor';
+    public const DIRECT_DOCUMENT_SENT = 'direct_document_sent';
     
     // Payment events
     public const PAYMENT_RECEIVED = 'payment_received';

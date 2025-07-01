@@ -68,7 +68,7 @@ class Document
 
     #[ORM\Column(length: 50)]
     #[Groups(['document:read', 'document:write'])]
-    #[Assert\Choice(choices: ['support', 'contract', 'attestation', 'facture'])]
+    #[Assert\Choice(choices: ['support', 'contract', 'attestation', 'facture', 'direct'])]
     private ?string $category = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]

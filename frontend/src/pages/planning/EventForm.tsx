@@ -49,7 +49,10 @@ const EventForm: React.FC<EventFormProps> = ({
 
     const [type] = useState<'formation' | 'exam'>('formation'); // Toujours formation
     const [location, setLocation] = useState(event?.location || '7 RUE Georges Maillols, 35000 RENNES');
-    const [instructorId, setInstructorId] = useState<number | undefined>(event?.instructor?.id);
+    const [selectedInstructors, setSelectedInstructors] = useState<number[]>(
+        event?.instructors ? event.instructors.map(inst => inst.id) :
+        event?.instructor?.id ? [event.instructor.id] : []
+    );
     const [maxParticipants, setMaxParticipants] = useState(event?.maxParticipants || 12);
     const [status, setStatus] = useState(event?.status || 'scheduled');
     const [notes, setNotes] = useState(event?.notes || '');
@@ -112,7 +115,7 @@ const EventForm: React.FC<EventFormProps> = ({
             end: endDateTime,      // Garder pour le calendrier
             type,
             location,
-            instructor: instructorId ? { id: instructorId } : undefined,
+            instructors: selectedInstructors,
             maxParticipants,
             status,
             notes: notes.trim() || null,
@@ -123,7 +126,7 @@ const EventForm: React.FC<EventFormProps> = ({
         return true;
     }, [
         title, formationId, startDate, startTime, endDate, endTime,
-        type, location, instructorId, maxParticipants, status, notes, event,
+        type, location, selectedInstructors, maxParticipants, status, notes, event,
         validateForm, onSave
     ]);
 
@@ -348,22 +351,37 @@ const EventForm: React.FC<EventFormProps> = ({
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Formateur
+                        Formateur(s)
                     </label>
-                    <select
-                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                            errors.instructor ? 'border-red-500' : ''
-                        }`}
-                        value={instructorId || ''}
-                        onChange={(e) => {
-                            setInstructorId(e.target.value ? parseInt(e.target.value, 10) : undefined);
-                        }}
-                    >
-                        <option value="">Sélectionner un formateur</option>
-                        {availableInstructors.map((instr) => (
-                            <option key={instr.id} value={instr.id}>{instr.name}</option>
+                    <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
+                        {availableInstructors.map(instructor => (
+                            <label key={instructor.id} className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    checked={selectedInstructors.includes(instructor.id)}
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            setSelectedInstructors([...selectedInstructors, instructor.id]);
+                                        } else {
+                                            setSelectedInstructors(selectedInstructors.filter(id => id !== instructor.id));
+                                        }
+                                    }}
+                                />
+                                <span className="ml-2 text-sm text-gray-900">
+                                    {instructor.firstName && instructor.lastName ? 
+                                        `${instructor.firstName} ${instructor.lastName}` : 
+                                        instructor.name}
+                                    {instructor.specialization && (
+                                        <span className="text-gray-500 ml-1">({instructor.specialization})</span>
+                                    )}
+                                </span>
+                            </label>
                         ))}
-                    </select>
+                    </div>
+                    {selectedInstructors.length === 0 && (
+                        <p className="mt-1 text-sm text-gray-500">Aucun formateur sélectionné</p>
+                    )}
                     {errors.instructor && (
                         <p className="mt-1 text-sm text-red-500">{errors.instructor}</p>
                     )}

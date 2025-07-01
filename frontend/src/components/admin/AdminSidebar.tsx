@@ -100,11 +100,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     //     { title: 'Rapports', path: '/admin/finances/reports' }
     //   ]
     // },
-    // {
-    //   title: 'Documents',
-    //   icon: <FileText size={20} />,
-    //   path: '/admin/documents'
-    // },
+    {
+      title: 'Documents directs',
+      icon: <FileText size={20} />,
+      path: '/admin/direct-documents'
+    },
     // {
     //   title: 'Notifications',
     //   icon: <Bell size={20} />,

@@ -29,7 +29,14 @@ interface Session {
         firstName: string;
         lastName: string;
     };
-    documents?: Array<{  // AJOUTER CETTE LIGNE
+    instructors?: Array<{
+        id: number;
+        firstName: string;
+        lastName: string;
+        email: string;
+        specialization?: string;
+    }>;
+    documents?: Array<{
         id: number;
         title: string;
         type: string;
@@ -60,6 +67,7 @@ const SessionsAdmin: React.FC = () => {
     const [selectedStatus, setSelectedStatus] = useState('');
     const [instructors, setInstructors] = useState<Array<{id: number, firstName: string, lastName: string}>>([]);
     const [loadingInstructors, setLoadingInstructors] = useState(false);
+    const [selectedInstructors, setSelectedInstructors] = useState<number[]>([]);
     const [showInspectModal, setShowInspectModal] = useState(false);
     const [sessionToInspect, setSessionToInspect] = useState<Session | null>(null);
     const [newDocuments, setNewDocuments] = useState<File[]>([]);
@@ -145,6 +153,16 @@ const SessionsAdmin: React.FC = () => {
         setNewDocuments([]); // Reset nouveaux documents (ancien système)
         setTempDocuments([]); // Reset documents temporaires
         setPendingTempIds([]); // Reset IDs temporaires
+        
+        // Initialiser les instructeurs sélectionnés
+        if (session.instructors && session.instructors.length > 0) {
+            setSelectedInstructors(session.instructors.map(inst => inst.id));
+        } else if (session.instructor) {
+            setSelectedInstructors([session.instructor.id]);
+        } else {
+            setSelectedInstructors([]);
+        }
+        
         setShowEditModal(true);
     };
 
@@ -238,8 +256,14 @@ const SessionsAdmin: React.FC = () => {
         try {
             setUpdating(true);
 
-            // 1. Mettre à jour la session (JSON)
-            await adminSessionsApi.update(sessionToEdit.id, sessionToEdit);
+            // 1. Préparer les données avec les instructeurs multiples
+            const sessionData = {
+                ...sessionToEdit,
+                instructors: selectedInstructors
+            };
+            
+            // 2. Mettre à jour la session (JSON)
+            await adminSessionsApi.update(sessionToEdit.id, sessionData);
 
             // 2. Finaliser les documents temporaires s'il y en a
             if (pendingTempIds.length > 0) {
@@ -340,10 +364,24 @@ const SessionsAdmin: React.FC = () => {
             sortable: true
         },
         {
-            title: 'Formateur',
-            field: (row: Session) => row.instructor ?
-                `${row.instructor.firstName} ${row.instructor.lastName}` :
-                'Non assigné',
+            title: 'Formateur(s)',
+            field: (row: Session) => {
+                // Priorité aux nouveaux instructeurs multiples
+                if (row.instructors && row.instructors.length > 0) {
+                    return (
+                        <div className="text-sm text-gray-900">
+                            {row.instructors.map(inst => `${inst.firstName} ${inst.lastName}`).join(', ')}
+                            {row.instructors.length > 1 && (
+                                <span className="text-xs text-blue-600 ml-1">({row.instructors.length})</span>
+                            )}
+                        </div>
+                    );
+                }
+                // Fallback sur l'ancien système
+                return row.instructor ? 
+                    `${row.instructor.firstName} ${row.instructor.lastName}` : 
+                    'Non assigné';
+            },
             sortable: true
         },
         {
@@ -638,36 +676,32 @@ const SessionsAdmin: React.FC = () => {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Formateur
+                                    Formateur(s)
                                 </label>
-                                <select
-                                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                        formErrors.instructor ? 'border-red-500' : ''
-                                    }`}
-                                    value={sessionToEdit.instructor?.id || ''}
-                                    onChange={(e) => {
-                                        const instructorId = e.target.value;
-                                        if (instructorId) {
-                                            const selectedInstructor = instructors.find(i => i.id === parseInt(instructorId));
-                                            setSessionToEdit({
-                                                ...sessionToEdit,
-                                                instructor: selectedInstructor || null
-                                            });
-                                        } else {
-                                            setSessionToEdit({
-                                                ...sessionToEdit,
-                                                instructor: null
-                                            });
-                                        }
-                                    }}
-                                >
-                                    <option value="">Sélectionner un formateur</option>
+                                <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
                                     {instructors.map(instructor => (
-                                        <option key={instructor.id} value={instructor.id}>
-                                            {instructor.firstName} {instructor.lastName}
-                                        </option>
+                                        <label key={instructor.id} className="flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                checked={selectedInstructors.includes(instructor.id)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setSelectedInstructors([...selectedInstructors, instructor.id]);
+                                                    } else {
+                                                        setSelectedInstructors(selectedInstructors.filter(id => id !== instructor.id));
+                                                    }
+                                                }}
+                                            />
+                                            <span className="ml-2 text-sm text-gray-900">
+                                                {instructor.firstName} {instructor.lastName}
+                                            </span>
+                                        </label>
                                     ))}
-                                </select>
+                                </div>
+                                {selectedInstructors.length === 0 && (
+                                    <p className="mt-1 text-sm text-gray-500">Aucun formateur sélectionné</p>
+                                )}
                                 {formErrors.instructor && (
                                     <p className="mt-1 text-sm text-red-500">{formErrors.instructor}</p>
                                 )}
@@ -873,12 +907,25 @@ const SessionsAdmin: React.FC = () => {
                                 <p>{formatDate(sessionToInspect.endDate)}</p>
                             </div>
                             <div>
-                                <h4 className="font-medium text-gray-700">Formateur</h4>
-                                <p>
-                                    {sessionToInspect.instructor
-                                        ? `${sessionToInspect.instructor.firstName} ${sessionToInspect.instructor.lastName}`
-                                        : 'Non assigné'}
-                                </p>
+                                <h4 className="font-medium text-gray-700">Formateur(s)</h4>
+                                <div>
+                                    {sessionToInspect.instructors && sessionToInspect.instructors.length > 0 ? (
+                                        <div className="space-y-1">
+                                            {sessionToInspect.instructors.map(instructor => (
+                                                <p key={instructor.id} className="text-sm">
+                                                    {instructor.firstName} {instructor.lastName}
+                                                    {instructor.specialization && (
+                                                        <span className="text-gray-500 ml-1">({instructor.specialization})</span>
+                                                    )}
+                                                </p>
+                                            ))}
+                                        </div>
+                                    ) : sessionToInspect.instructor ? (
+                                        <p>{sessionToInspect.instructor.firstName} {sessionToInspect.instructor.lastName}</p>
+                                    ) : (
+                                        <p className="text-gray-500">Non assigné</p>
+                                    )}
+                                </div>
                             </div>
                             <div>
                                 <h4 className="font-medium text-gray-700">Nombre maximum de participants</h4>

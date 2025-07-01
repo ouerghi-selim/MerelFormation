@@ -126,6 +126,36 @@ class DocumentStudentController extends AbstractController
             }
         }
 
+        // 🆕 Documents directs envoyés spécifiquement à cet étudiant
+        if (!$source || $source === 'direct') {
+            $directDocuments = $this->documentRepository->findBy([
+                'user' => $user,
+                'category' => 'direct'
+            ]);
+
+            foreach ($directDocuments as $document) {
+                $sender = $document->getUploadedBy();
+                $documents[] = [
+                    'id' => $document->getId(),
+                    'title' => $document->getTitle(),
+                    'type' => $document->getType(),
+                    'category' => $document->getCategory(),
+                    'source' => 'direct',
+                    'sourceTitle' => $sender ? 
+                        'Envoyé par ' . $sender->getFirstName() . ' ' . $sender->getLastName() :
+                        'Expéditeur inconnu',
+                    'sourceId' => null,
+                    'date' => $document->getUploadedAt()->format('d/m/Y'),
+                    'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
+                    'fileName' => $document->getFileName(),
+                    //'fileSize' => $this->formatFileSize($document->getFileSize() ?? 0),
+                    'fileType' => $document->getType(),
+                    'downloadUrl' => '/api/student/documents/' . $document->getId() . '/download',
+                    'senderRole' => $sender ? $this->getHighestRole($sender) : 'Inconnu'
+                ];
+            }
+        }
+
         // Trier par date de téléchargement (plus récent en premier)
         usort($documents, function($a, $b) {
             return strtotime($b['uploadedAt']) - strtotime($a['uploadedAt']);
@@ -238,6 +268,11 @@ class DocumentStudentController extends AbstractController
             return in_array($document->getSession()->getId(), $userSessionIds);
         }
 
+        // 🆕 Vérifier l'accès aux documents directs
+        if ($document->getCategory() === 'direct') {
+            return $document->getUser() === $user;
+        }
+
         return false;
     }
 
@@ -255,5 +290,23 @@ class DocumentStudentController extends AbstractController
         $bytes /= pow(1024, $pow);
         
         return round($bytes, 1) . ' ' . $units[$pow];
+    }
+
+    /**
+     * Get the highest role for display purposes
+     */
+    private function getHighestRole($user): string
+    {
+        $roles = $user->getRoles();
+        
+        if (in_array('ROLE_ADMIN', $roles)) {
+            return 'Administrateur';
+        } elseif (in_array('ROLE_INSTRUCTOR', $roles)) {
+            return 'Formateur';
+        } elseif (in_array('ROLE_STUDENT', $roles)) {
+            return 'Étudiant';
+        }
+        
+        return 'Utilisateur';
     }
 }

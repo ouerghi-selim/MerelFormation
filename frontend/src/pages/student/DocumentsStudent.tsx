@@ -7,15 +7,16 @@ interface Document {
   id: number;
   title: string;
   type: string;
-  source: string; // 'formation' | 'session'
+  source: string; // 'formation' | 'session' | 'direct'
   sourceTitle: string;
-  sourceId: number;
+  sourceId: number | null;
   date: string; // Format d/m/Y
   uploadedAt: string; // Format Y-m-d H:i:s
   fileName: string;
   fileSize: string; // Formaté (ex: "1.2 MB")
   fileType: string;
   downloadUrl: string;
+  senderRole?: string; // Pour les documents directs
 }
 
 const DocumentsStudent: React.FC = () => {
@@ -129,6 +130,7 @@ const DocumentsStudent: React.FC = () => {
                 <option value="all">Toutes les sources</option>
                 <option value="formation">Formations</option>
                 <option value="session">Sessions</option>
+                <option value="direct">Documents directs</option>
               </select>
               <ChevronDown className="absolute right-3 top-3 text-gray-400"/>
             </div>
@@ -216,11 +218,20 @@ const DocumentsStudent: React.FC = () => {
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
         document.source === 'formation'
             ? 'bg-blue-100 text-blue-800'
-            : 'bg-green-100 text-green-800'
+            : document.source === 'session'
+            ? 'bg-green-100 text-green-800'
+            : document.source === 'direct'
+            ? 'bg-purple-100 text-purple-800'
+            : 'bg-gray-100 text-gray-800'
     }`}>
-      {document.source === 'formation' ? 'Formation' : 'Session'}
+      {document.source === 'formation' ? 'Formation' : 
+       document.source === 'session' ? 'Session' : 
+       document.source === 'direct' ? 'Direct' : 'Autre'}
     </span>
                           <span className="ml-2 text-sm text-gray-900">{document.sourceTitle}</span>
+                          {document.source === 'direct' && document.senderRole && (
+                            <span className="ml-1 text-xs text-gray-500">({document.senderRole})</span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

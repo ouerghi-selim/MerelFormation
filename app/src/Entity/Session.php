@@ -74,6 +74,12 @@ class Session
     #[ORM\OneToMany(mappedBy: 'session', targetEntity: Document::class)]
     private Collection $documents;
 
+    #[ORM\ManyToMany(targetEntity: User::class)]
+    #[ORM\JoinTable(name: 'session_instructors')]
+    #[Groups(['session:read', 'session:write'])]
+    private Collection $instructors;
+
+    // Gardons l'ancien champ pour compatibilité arrière (sera déprécié)
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['session:read', 'session:write'])]
@@ -88,6 +94,7 @@ class Session
         $this->createdAt = new \DateTimeImmutable();
         $this->reservations = new ArrayCollection();
         $this->documents = new ArrayCollection();
+        $this->instructors = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -321,6 +328,48 @@ class Session
         }
         
         return $this->location;
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    public function getInstructors(): Collection
+    {
+        return $this->instructors;
+    }
+
+    public function addInstructor(User $instructor): static
+    {
+        if (!$this->instructors->contains($instructor)) {
+            $this->instructors->add($instructor);
+        }
+
+        return $this;
+    }
+
+    public function removeInstructor(User $instructor): static
+    {
+        $this->instructors->removeElement($instructor);
+
+        return $this;
+    }
+
+    public function setInstructors(Collection $instructors): static
+    {
+        $this->instructors = $instructors;
+        return $this;
+    }
+
+    /**
+     * Helper method to get instructor names as string (for backward compatibility)
+     */
+    public function getInstructorNames(): string
+    {
+        $names = [];
+        foreach ($this->instructors as $instructor) {
+            $names[] = $instructor->getFirstName() . ' ' . $instructor->getLastName();
+        }
+        return implode(', ', $names);
     }
 
 }

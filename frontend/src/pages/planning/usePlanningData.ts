@@ -30,10 +30,13 @@ export const usePlanningData = () => {
                 setFormations(formationsData);
 
                 // Chargement des formateurs
-                const instructorsResponse = await adminPlanningApi.getInstructors();
+                const instructorsResponse = await adminSessionsApi.getInstructors();
                 const instructorsData = instructorsResponse.data.map((instructor: any) => ({
                     id: instructor.id,
-                    name: `${instructor.firstName} ${instructor.lastName}`
+                    name: `${instructor.firstName} ${instructor.lastName}`,
+                    firstName: instructor.firstName,
+                    lastName: instructor.lastName,
+                    specialization: instructor.specialization
                 }));
                 setAvailableInstructors(instructorsData);
 
@@ -99,6 +102,7 @@ export const usePlanningData = () => {
                         id: session.instructor.id,
                         name: `${session.instructor.firstName} ${session.instructor.lastName}`
                     } : undefined,
+                    instructors: session.instructors && session.instructors.length > 0 ? session.instructors : undefined,
                     maxParticipants: session.maxParticipants || 12,
                     currentParticipants: session.participants ? session.participants.length : 0
                 }));
@@ -202,7 +206,8 @@ export const usePlanningData = () => {
                 endDate: eventData.end?.toISOString(),
                 location: eventData.location,
                 maxParticipants: eventData.maxParticipants,
-                instructor: eventData.instructor ? { id: eventData.instructor.id } : null,
+                instructors: eventData.instructors || [],
+                instructor: eventData.instructor ? { id: eventData.instructor.id } : null, // compatibilité arrière
                 notes: eventData.type === 'exam' ? 'Examen' : '',
                 status: 'scheduled' // ✅ Statut par défaut pour les nouvelles sessions
             };
@@ -255,6 +260,7 @@ export const usePlanningData = () => {
                         id: updatedSessionData.instructor.id,
                         name: `${updatedSessionData.instructor.firstName || ''} ${updatedSessionData.instructor.lastName || ''}`.trim()
                     } : eventData.instructor,
+                    instructors: updatedSessionData.instructors && updatedSessionData.instructors.length > 0 ? updatedSessionData.instructors : eventData.instructors,
                     maxParticipants: updatedSessionData.maxParticipants || 12,
                     currentParticipants: updatedSessionData.participants ? updatedSessionData.participants.length : 0
                 };
@@ -312,6 +318,7 @@ export const usePlanningData = () => {
                         id: newSessionData.instructor.id,
                         name: `${newSessionData.instructor.firstName || ''} ${newSessionData.instructor.lastName || ''}`.trim()
                     } : eventData.instructor,
+                    instructors: newSessionData.instructors && newSessionData.instructors.length > 0 ? newSessionData.instructors : eventData.instructors,
                     maxParticipants: newSessionData.maxParticipants || 12,
                     currentParticipants: newSessionData.participants ? newSessionData.participants.length : 0
                 };

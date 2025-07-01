@@ -1,6 +1,9 @@
 export interface Instructor {
     id: number;
     name: string;
+    firstName?: string;
+    lastName?: string;
+    specialization?: string;
 }
 
 export interface Formation {
@@ -24,6 +27,12 @@ export interface CalendarEvent {
         id: number | undefined;
         name?: string;
     };
+    instructors?: Array<{
+        id: number;
+        firstName: string;
+        lastName: string;
+        specialization?: string;
+    }>;
     maxParticipants: number;
     currentParticipants: number;
     status?: string;

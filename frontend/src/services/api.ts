@@ -119,6 +119,16 @@ export const studentDocumentsApi = {
     }),
 };
 
+// 🆕 Services API pour l'envoi de documents directs aux étudiants
+export const adminDirectDocumentsApi = {
+    getStudents: () => api.get('/admin/direct-documents/students'),
+    sendDocument: (formData: FormData) => api.post('/admin/direct-documents/send', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+    getSentDocuments: () => api.get('/admin/direct-documents/sent'),
+    delete: (id: number) => api.delete(`/admin/direct-documents/${id}`)
+};
+
 // Service d'authentification
 export const authApi = {
     login: (credentials: { username: string; password: string }) =>

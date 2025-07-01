@@ -41,6 +41,9 @@ import FAQAdmin from './pages/admin/FAQAdmin';
 import CentersAdmin from './pages/admin/CentersAdmin';
 import FormulasAdmin from './pages/admin/FormulasAdmin';
 
+// Direct Documents pages
+import DirectDocuments from './pages/admin/DirectDocuments';
+
 // Student pages
 import DashboardStudent from './pages/student/DashboardStudent';
 import FormationsStudent from './pages/student/FormationsStudent';
@@ -113,6 +116,7 @@ const App = () => {
                     <Route path="/admin/email-templates" element={<EmailTemplatesAdmin />} />
                     <Route path="/admin/email-templates/new" element={<EmailTemplateNew />} />
                     <Route path="/admin/email-templates/:id/edit" element={<EmailTemplateEdit />} />
+                    <Route path="/admin/direct-documents" element={<DirectDocuments />} />
 
                     {/* CMS Content Management Routes */}
                     <Route path="/admin/content/texts" element={<ContentTextsAdmin />} />

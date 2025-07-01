@@ -330,6 +330,25 @@ class SessionAdminController extends AbstractController
             $session->setNotes($data['notes']);
         }
 
+        // Gérer les instructeurs (ancien système - compatibilité arrière)
+        if (isset($data['instructor']['id'])) {
+            $instructor = $this->userRepository->find($data['instructor']['id']);
+            if ($instructor) {
+                $session->setInstructor($instructor);
+            }
+        }
+
+        // Gérer les instructeurs multiples (nouveau système)
+        if (isset($data['instructors']) && is_array($data['instructors'])) {
+            foreach ($data['instructors'] as $instructorData) {
+                $instructorId = is_array($instructorData) ? $instructorData['id'] : $instructorData;
+                $instructor = $this->userRepository->find($instructorId);
+                if ($instructor) {
+                    $session->addInstructor($instructor);
+                }
+            }
+        }
+
         // Persister la session
         $this->entityManager->persist($session);
         $this->entityManager->flush();
@@ -393,13 +412,28 @@ class SessionAdminController extends AbstractController
             $session->setFormation($formation);
         }
 
-        // Mettre à jour l'instructeur si spécifié
+        // Mettre à jour l'instructeur si spécifié (compatibilité arrière)
         if (isset($data['instructor']['id'])) {
             $instructor = $this->userRepository->find($data['instructor']['id']);
             if (!$instructor) {
                 return $this->json(['message' => 'Formateur non trouvé'], 404);
             }
             $session->setInstructor($instructor);
+        }
+
+        // Mettre à jour les instructeurs multiples si spécifiés
+        if (isset($data['instructors']) && is_array($data['instructors'])) {
+            // Vider la collection actuelle
+            $session->getInstructors()->clear();
+            
+            // Ajouter les nouveaux instructeurs
+            foreach ($data['instructors'] as $instructorData) {
+                $instructorId = is_array($instructorData) ? $instructorData['id'] : $instructorData;
+                $instructor = $this->userRepository->find($instructorId);
+                if ($instructor) {
+                    $session->addInstructor($instructor);
+                }
+            }
         }
 
         // Mettre à jour les autres champs
@@ -677,7 +711,7 @@ class SessionAdminController extends AbstractController
                 ];
             }, $session->getParticipants()->toArray())
         ];
-        // Ajouter l'instructeur aux données formatées
+        // Ajouter l'instructeur aux données formatées (compatibilité arrière)
         if ($session->getInstructor()) {
             $formattedSession['instructor'] = [
                 'id' => $session->getInstructor()->getId(),
@@ -685,6 +719,17 @@ class SessionAdminController extends AbstractController
                 'lastName' => $session->getInstructor()->getLastName()
             ];
         }
+
+        // Ajouter les instructeurs multiples
+        $formattedSession['instructors'] = array_map(function($instructor) {
+            return [
+                'id' => $instructor->getId(),
+                'firstName' => $instructor->getFirstName(),
+                'lastName' => $instructor->getLastName(),
+                'email' => $instructor->getEmail(),
+                'specialization' => $instructor->getSpecialization()
+            ];
+        }, $session->getInstructors()->toArray());
         // Ajouter des détails supplémentaires si demandés
         if ($detailed) {
             $participants = [];
