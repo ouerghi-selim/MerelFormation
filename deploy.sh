@@ -82,6 +82,15 @@ fi
 echo "🏗️ Construction du frontend..."
 docker-compose -f docker-compose.prod.yml run --rm node
 
+# Copier les fichiers TinyMCE dans le build
+echo "📄 Copie des fichiers TinyMCE..."
+if [ -d "frontend/dist/tinymce" ]; then
+    cp -r frontend/dist/tinymce app/public/
+    echo "✅ TinyMCE copié vers app/public/tinymce"
+else
+    echo "⚠️ TinyMCE non trouvé dans le build - vérifier la configuration Vite"
+fi
+
 # Vérifier que les fichiers ont été générés
 echo "✅ Vérification des fichiers frontend..."
 if [ ! -f "app/public/build/index.html" ]; then

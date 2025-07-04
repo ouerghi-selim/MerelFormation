@@ -3,7 +3,7 @@ services:
     image: nginx:alpine
     container_name: merel_nginx
     ports:
-      - "80:80"
+      - "8082:80"
     volumes:
       - ./app:/var/www
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
@@ -33,7 +33,7 @@ services:
     image: mysql:8.0
     container_name: merel_mysql
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - ./data/mysql:/var/lib/mysql
     environment:

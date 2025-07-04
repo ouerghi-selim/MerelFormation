@@ -55,7 +55,12 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({
     'endDate': 'Date de fin',
     'invoiceNumber': 'Numéro de facture',
     'paymentDate': 'Date de paiement',
-    'paymentMethod': 'Méthode de paiement'
+    'paymentMethod': 'Méthode de paiement',
+    'senderName': 'Nom de l\'expéditeur',
+    'senderRole': 'Rôle de l\'expéditeur',
+    'sentAt': 'Date d\'envoi',
+    'message': 'Message joint',
+    'downloadUrl': 'URL de téléchargement'
   };
 
   // Mapping des variables par type d'événement (défini par le développeur)
@@ -90,6 +95,7 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({
     'document_added': ['documentTitle', 'formationTitle', 'documentType', 'addedAt', 'studentName'],
     'documents_added': ['documentCount', 'documentListHtml', 'formationTitle', 'sessionTitle', 'addedAt', 'addedByName', 'studentName'],
     'documents_added_by_instructor': ['documentCount', 'documentListHtml', 'formationTitle', 'sessionTitle', 'addedAt', 'instructorName', 'adminName'],
+    'direct_document_sent': ['studentName', 'documentTitle', 'documentType', 'senderName', 'senderRole', 'sentAt', 'message', 'downloadUrl'],
     
     // Événements de contact
     'contact_request': ['contactName', 'contactEmail', 'contactPhone', 'contactSubject', 'contactMessage', 'receivedAt', 'adminName'],
