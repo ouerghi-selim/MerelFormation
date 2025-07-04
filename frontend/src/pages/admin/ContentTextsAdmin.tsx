@@ -228,7 +228,7 @@ const ContentTextsAdmin: React.FC = () => {
             {/* Header */}
             <div className="flex justify-between items-center">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">🎨 Contenu du site</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Contenu du site</h1>
                 <p className="text-gray-600">Modifiez facilement les textes affichés sur votre site web</p>
               </div>
               <button
@@ -383,7 +383,7 @@ const ContentTextsAdmin: React.FC = () => {
             {showCreateModal && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-screen overflow-y-auto">
-                  <h2 className="text-xl font-bold mb-4">➕ Ajouter un nouveau texte</h2>
+                  <h2 className="text-xl font-bold mb-4">Ajouter un nouveau texte</h2>
                   <form onSubmit={handleCreate} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -477,7 +477,7 @@ const ContentTextsAdmin: React.FC = () => {
                         className="h-4 w-4 text-blue-600"
                       />
                       <label className="ml-2 text-sm text-gray-700">
-                        ✅ Activer ce texte (il sera visible sur le site)
+                        Activer ce texte (il sera visible sur le site)
                       </label>
                     </div>
 
@@ -496,7 +496,7 @@ const ContentTextsAdmin: React.FC = () => {
                         type="submit"
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                       >
-                        ➕ Créer le texte
+                        Créer le texte
                       </button>
                     </div>
                   </form>
@@ -508,7 +508,7 @@ const ContentTextsAdmin: React.FC = () => {
             {showEditModal && selectedContentText && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-screen overflow-y-auto">
-                  <h2 className="text-xl font-bold mb-4">✏️ Modifier le texte</h2>
+                  <h2 className="text-xl font-bold mb-4">Modifier le texte</h2>
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
                     <p className="text-sm text-blue-800">
                       <strong>Vous modifiez :</strong> {getContentDescription(selectedContentText.identifier).label}
@@ -553,12 +553,12 @@ const ContentTextsAdmin: React.FC = () => {
                         className="h-4 w-4 text-blue-600"
                       />
                       <label className="ml-2 text-sm text-gray-700">
-                        ✅ Actif (visible sur le site)
+                        Actif (visible sur le site)
                       </label>
                     </div>
 
                     <div className="bg-gray-50 p-3 rounded-lg">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">🔧 Paramètres techniques</h4>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Paramètres techniques</h4>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="text-gray-600">ID:</span>
@@ -588,13 +588,13 @@ const ContentTextsAdmin: React.FC = () => {
                         onClick={() => window.open(getPreviewUrl(selectedContentText.identifier), '_blank')}
                         className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                       >
-                        👁️ Voir sur le site
+                        Voir sur le site
                       </button>
                       <button
                         type="submit"
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                       >
-                        💾 Enregistrer
+                        Enregistrer
                       </button>
                     </div>
                   </form>
