@@ -30,4 +30,6 @@ node_modules/
 *.sln
 *.sw?
 .vercel
-/public/
+/public/build/
+# Garder TinyMCE dans le repository
+!/public/tinymce/
