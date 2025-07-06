@@ -120,7 +120,7 @@ const HomePage = () => {
     try {
       // Récupérer tous les contenus texte
       const contentResponse = await adminContentTextApi.getAll({
-        section: ['home_hero', 'home_services', 'home_cta', 'home_testimonials'].join(',')
+        section: ['home_hero', 'home_services', 'home_cta', 'home_testimonials', 'home_statistics'].join(',')
       });
       
       // Transformer en objet avec identifiants comme clés
@@ -294,21 +294,21 @@ const HomePage = () => {
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
               <AnimatedCounter
-                  value={formationStats ? formationStats.totalSessions : '500+'}
-                  label="Stagiaires Formés"
+                  value={formationStats ? formationStats.totalSessions : getContent('home_stats_students_value', '500+')}
+                  label={getContent('home_stats_students_label', 'Stagiaires Formés')}
               />
               <AnimatedCounter
-                  value={formationStats ? formationStats.averageSuccessRate || 95 : 95}
-                  label="Taux de Réussite"
+                  value={formationStats ? formationStats.averageSuccessRate || getContent('home_stats_success_value', '95') : getContent('home_stats_success_value', '95')}
+                  label={getContent('home_stats_success_label', 'Taux de Réussite')}
                   suffix="%"
               />
               <AnimatedCounter
-                  value={vehicleStats ? vehicleStats.totalVehicles : '20+'}
-                  label="Véhicules"
+                  value={vehicleStats ? vehicleStats.totalVehicles : getContent('home_stats_vehicles_value', '20+')}
+                  label={getContent('home_stats_vehicles_label', 'Véhicules')}
               />
               <AnimatedCounter
-                  value="15+"
-                  label="Années d'Expérience"
+                  value={getContent('home_stats_experience_value', '15+')}
+                  label={getContent('home_stats_experience_label', 'Années d\'Expérience')}
               />
             </div>
           </div>

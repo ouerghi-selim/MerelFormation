@@ -132,8 +132,19 @@ export const CONTENT_SECTIONS = [
   'home_services',
   'home_cta',
   'home_testimonials',
+  'home_statistics',
   'formations_hero',
-  'formations_advantages'
+  'formations_advantages',
+  'location_hero',
+  'location_info',
+  'location_booking',
+  'location_vehicles',
+  'location_cta',
+  'contact_hero',
+  'contact_info',
+  'contact_map',
+  'contact_form',
+  'contact_legal'
 ] as const;
 
 export const CONTENT_TYPES = [
@@ -176,7 +187,7 @@ export const CMS_PAGES: PageSection[] = [
     name: '🏠 Page d\'accueil',
     description: 'Contenu de la page principale du site',
     icon: '🏠',
-    sections: ['home_hero', 'home_services', 'home_cta', 'home_testimonials']
+    sections: ['home_hero', 'home_services', 'home_cta', 'home_testimonials', 'home_statistics']
   },
   {
     id: 'formations',
@@ -184,6 +195,20 @@ export const CMS_PAGES: PageSection[] = [
     description: 'Contenu de la page des formations',
     icon: '📚',
     sections: ['formations_hero', 'formations_advantages']
+  },
+  {
+    id: 'location',
+    name: '🚗 Page location',
+    description: 'Contenu de la page de location de véhicules',
+    icon: '🚗',
+    sections: ['location_hero', 'location_info', 'location_booking', 'location_vehicles', 'location_cta']
+  },
+  {
+    id: 'contact',
+    name: '📞 Page contact',
+    description: 'Contenu de la page de contact',
+    icon: '📞',
+    sections: ['contact_hero', 'contact_info', 'contact_map', 'contact_form', 'contact_legal']
   }
 ];
 
@@ -305,6 +330,56 @@ export const CONTENT_DESCRIPTIONS: { [key: string]: { label: string; description
     section: '💬 Témoignages'
   },
 
+  // Page d'accueil - Statistiques
+  'home_stats_students_label': {
+    label: 'Libellé "Stagiaires Formés"',
+    description: 'Texte affiché sous le nombre de stagiaires formés',
+    page: '🏠 Page d\'accueil',
+    section: '📊 Statistiques'
+  },
+  'home_stats_students_value': {
+    label: 'Nombre de stagiaires formés',
+    description: 'Valeur affichée pour les stagiaires formés (ex: 500+)',
+    page: '🏠 Page d\'accueil',
+    section: '📊 Statistiques'
+  },
+  'home_stats_success_label': {
+    label: 'Libellé "Taux de Réussite"',
+    description: 'Texte affiché sous le taux de réussite',
+    page: '🏠 Page d\'accueil',
+    section: '📊 Statistiques'
+  },
+  'home_stats_success_value': {
+    label: 'Pourcentage de réussite',
+    description: 'Valeur du taux de réussite (ex: 95)',
+    page: '🏠 Page d\'accueil',
+    section: '📊 Statistiques'
+  },
+  'home_stats_vehicles_label': {
+    label: 'Libellé "Véhicules"',
+    description: 'Texte affiché sous le nombre de véhicules',
+    page: '🏠 Page d\'accueil',
+    section: '📊 Statistiques'
+  },
+  'home_stats_vehicles_value': {
+    label: 'Nombre de véhicules',
+    description: 'Valeur affichée pour les véhicules (ex: 20+)',
+    page: '🏠 Page d\'accueil',
+    section: '📊 Statistiques'
+  },
+  'home_stats_experience_label': {
+    label: 'Libellé "Années d\'Expérience"',
+    description: 'Texte affiché sous les années d\'expérience',
+    page: '🏠 Page d\'accueil',
+    section: '📊 Statistiques'
+  },
+  'home_stats_experience_value': {
+    label: 'Nombre d\'années d\'expérience',
+    description: 'Valeur affichée pour l\'expérience (ex: 15+)',
+    page: '🏠 Page d\'accueil',
+    section: '📊 Statistiques'
+  },
+
   // Page formations - Hero
   'formations_hero_title': {
     label: 'Titre de la page',
@@ -361,6 +436,308 @@ export const CONTENT_DESCRIPTIONS: { [key: string]: { label: string; description
     description: 'Description de l\'avantage accompagnement personnalisé',
     page: '📚 Page formations',
     section: '✨ Nos avantages'
+  },
+
+  // Page Location - Hero
+  'location_hero_title': {
+    label: 'Titre principal',
+    description: 'Titre principal de la page location',
+    page: '🚗 Page location',
+    section: '🎯 En-tête'
+  },
+  'location_hero_subtitle': {
+    label: 'Sous-titre',
+    description: 'Description sous le titre principal',
+    page: '🚗 Page location',
+    section: '🎯 En-tête'
+  },
+  'location_hero_cta': {
+    label: 'Bouton principal',
+    description: 'Texte du bouton de réservation',
+    page: '🚗 Page location',
+    section: '🎯 En-tête'
+  },
+
+  // Page Location - Informations
+  'location_info_title': {
+    label: 'Titre "Examen TAXI-VTC"',
+    description: 'Titre de la section informations',
+    page: '🚗 Page location',
+    section: '📋 Informations'
+  },
+  'location_info_description': {
+    label: 'Description examen',
+    description: 'Texte d\'introduction sur l\'examen',
+    page: '🚗 Page location',
+    section: '📋 Informations'
+  },
+  'location_info_taxi_requirements': {
+    label: 'Exigences TAXI',
+    description: 'Texte sur les exigences pour l\'examen TAXI',
+    page: '🚗 Page location',
+    section: '📋 Informations'
+  },
+  'location_info_vtc_requirements': {
+    label: 'Exigences VTC',
+    description: 'Texte sur les exigences pour l\'examen VTC',
+    page: '🚗 Page location',
+    section: '📋 Informations'
+  },
+  'location_info_footer': {
+    label: 'Conclusion informations',
+    description: 'Texte de conclusion sur les services proposés',
+    page: '🚗 Page location',
+    section: '📋 Informations'
+  },
+
+  // Page Location - Réservation
+  'location_booking_title': {
+    label: 'Titre "Comment réserver"',
+    description: 'Titre de la section réservation',
+    page: '🚗 Page location',
+    section: '📅 Réservation'
+  },
+  'location_booking_step1_title': {
+    label: 'Étape 1 - Titre',
+    description: 'Titre de la première étape de réservation',
+    page: '🚗 Page location',
+    section: '📅 Réservation'
+  },
+  'location_booking_step1_description': {
+    label: 'Étape 1 - Description',
+    description: 'Description de la première étape',
+    page: '🚗 Page location',
+    section: '📅 Réservation'
+  },
+  'location_booking_step2_title': {
+    label: 'Étape 2 - Titre',
+    description: 'Titre de la deuxième étape de réservation',
+    page: '🚗 Page location',
+    section: '📅 Réservation'
+  },
+  'location_booking_step2_description': {
+    label: 'Étape 2 - Description',
+    description: 'Description de la deuxième étape',
+    page: '🚗 Page location',
+    section: '📅 Réservation'
+  },
+  'location_booking_step3_title': {
+    label: 'Étape 3 - Titre',
+    description: 'Titre de la troisième étape de réservation',
+    page: '🚗 Page location',
+    section: '📅 Réservation'
+  },
+  'location_booking_step3_description': {
+    label: 'Étape 3 - Description',
+    description: 'Description de la troisième étape',
+    page: '🚗 Page location',
+    section: '📅 Réservation'
+  },
+
+  // Page Location - Véhicules
+  'location_vehicles_title': {
+    label: 'Titre "Nos véhicules"',
+    description: 'Titre de la section véhicules',
+    page: '🚗 Page location',
+    section: '🚙 Véhicules'
+  },
+  'location_vehicles_model': {
+    label: 'Modèle véhicule',
+    description: 'Nom du modèle de véhicule proposé',
+    page: '🚗 Page location',
+    section: '🚙 Véhicules'
+  },
+  'location_vehicles_features': {
+    label: 'Caractéristiques',
+    description: 'Liste des caractéristiques du véhicule',
+    page: '🚗 Page location',
+    section: '🚙 Véhicules'
+  },
+  'location_vehicles_pricing': {
+    label: 'Information tarifs',
+    description: 'Texte sur les tarifs et options',
+    page: '🚗 Page location',
+    section: '🚙 Véhicules'
+  },
+
+  // Page Location - CTA Final
+  'location_cta_title': {
+    label: 'Titre appel à l\'action',
+    description: 'Titre de la section finale',
+    page: '🚗 Page location',
+    section: '🎯 Appel à l\'action'
+  },
+  'location_cta_description': {
+    label: 'Description appel à l\'action',
+    description: 'Description de l\'appel à l\'action final',
+    page: '🚗 Page location',
+    section: '🎯 Appel à l\'action'
+  },
+
+  // Page Contact - Hero
+  'contact_hero_title': {
+    label: 'Titre principal',
+    description: 'Titre principal de la page contact',
+    page: '📞 Page contact',
+    section: '🎯 En-tête'
+  },
+  'contact_hero_description': {
+    label: 'Description principale',
+    description: 'Description sous le titre principal',
+    page: '📞 Page contact',
+    section: '🎯 En-tête'
+  },
+
+  // Page Contact - Informations
+  'contact_info_phone_label': {
+    label: 'Libellé "Téléphone"',
+    description: 'Texte affiché pour la section téléphone',
+    page: '📞 Page contact',
+    section: '📋 Informations'
+  },
+  'contact_info_phone_value': {
+    label: 'Numéro de téléphone',
+    description: 'Numéro de téléphone à afficher',
+    page: '📞 Page contact',
+    section: '📋 Informations'
+  },
+  'contact_info_address_label': {
+    label: 'Libellé "Adresse"',
+    description: 'Texte affiché pour la section adresse',
+    page: '📞 Page contact',
+    section: '📋 Informations'
+  },
+  'contact_info_address_value': {
+    label: 'Adresse complète',
+    description: 'Adresse complète à afficher',
+    page: '📞 Page contact',
+    section: '📋 Informations'
+  },
+  'contact_info_hours_label': {
+    label: 'Libellé "Horaires"',
+    description: 'Texte affiché pour la section horaires',
+    page: '📞 Page contact',
+    section: '📋 Informations'
+  },
+  'contact_info_hours_value': {
+    label: 'Horaires d\'ouverture',
+    description: 'Horaires d\'ouverture à afficher',
+    page: '📞 Page contact',
+    section: '📋 Informations'
+  },
+  'contact_info_director_name': {
+    label: 'Nom du directeur',
+    description: 'Nom du directeur à afficher',
+    page: '📞 Page contact',
+    section: '📋 Informations'
+  },
+
+  // Page Contact - Carte
+  'contact_map_title': {
+    label: 'Titre "Nous situer"',
+    description: 'Titre de la section carte',
+    page: '📞 Page contact',
+    section: '🗺️ Localisation'
+  },
+  'contact_map_description': {
+    label: 'Description localisation',
+    description: 'Texte descriptif sous la carte',
+    page: '📞 Page contact',
+    section: '🗺️ Localisation'
+  },
+
+  // Page Contact - Formulaire
+  'contact_form_title': {
+    label: 'Titre du formulaire',
+    description: 'Titre de la section formulaire',
+    page: '📞 Page contact',
+    section: '📝 Formulaire'
+  },
+  'contact_form_firstname_label': {
+    label: 'Libellé "Prénom"',
+    description: 'Texte du champ prénom',
+    page: '📞 Page contact',
+    section: '📝 Formulaire'
+  },
+  'contact_form_lastname_label': {
+    label: 'Libellé "Nom"',
+    description: 'Texte du champ nom',
+    page: '📞 Page contact',
+    section: '📝 Formulaire'
+  },
+  'contact_form_email_label': {
+    label: 'Libellé "Email"',
+    description: 'Texte du champ email',
+    page: '📞 Page contact',
+    section: '📝 Formulaire'
+  },
+  'contact_form_phone_label': {
+    label: 'Libellé "Téléphone"',
+    description: 'Texte du champ téléphone',
+    page: '📞 Page contact',
+    section: '📝 Formulaire'
+  },
+  'contact_form_subject_label': {
+    label: 'Libellé "Sujet"',
+    description: 'Texte du champ sujet',
+    page: '📞 Page contact',
+    section: '📝 Formulaire'
+  },
+  'contact_form_message_label': {
+    label: 'Libellé "Message"',
+    description: 'Texte du champ message',
+    page: '📞 Page contact',
+    section: '📝 Formulaire'
+  },
+  'contact_form_submit_button': {
+    label: 'Bouton "Envoyer"',
+    description: 'Texte du bouton d\'envoi',
+    page: '📞 Page contact',
+    section: '📝 Formulaire'
+  },
+  'contact_form_gdpr_text': {
+    label: 'Texte RGPD',
+    description: 'Texte de conformité RGPD sous le formulaire',
+    page: '📞 Page contact',
+    section: '📝 Formulaire'
+  },
+  'contact_form_success_message': {
+    label: 'Message de succès',
+    description: 'Message affiché après envoi réussi',
+    page: '📞 Page contact',
+    section: '📝 Formulaire'
+  },
+  'contact_form_error_message': {
+    label: 'Message d\'erreur',
+    description: 'Message affiché en cas d\'erreur',
+    page: '📞 Page contact',
+    section: '📝 Formulaire'
+  },
+
+  // Page Contact - Informations légales
+  'contact_legal_title': {
+    label: 'Titre "Informations légales"',
+    description: 'Titre de la section informations légales',
+    page: '📞 Page contact',
+    section: '⚖️ Informations légales'
+  },
+  'contact_legal_mediation_title': {
+    label: 'Titre "Médiation"',
+    description: 'Titre de la section médiation',
+    page: '📞 Page contact',
+    section: '⚖️ Informations légales'
+  },
+  'contact_legal_company_info': {
+    label: 'Informations entreprise',
+    description: 'Informations légales de l\'entreprise',
+    page: '📞 Page contact',
+    section: '⚖️ Informations légales'
+  },
+  'contact_legal_mediation_info': {
+    label: 'Informations médiation',
+    description: 'Informations sur la médiation',
+    page: '📞 Page contact',
+    section: '⚖️ Informations légales'
   }
 };
 
