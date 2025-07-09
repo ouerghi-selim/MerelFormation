@@ -10,6 +10,7 @@ import {
   getContentDescription 
 } from '../../types/cms';
 import Alert from "@/components/common/Alert.tsx";
+import WysiwygEditor from '../../components/common/WysiwygEditor';
 
 interface GroupedContent {
   [page: string]: {
@@ -382,7 +383,7 @@ const ContentTextsAdmin: React.FC = () => {
             {/* Modal Création */}
             {showCreateModal && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-screen overflow-y-auto">
+                <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-screen overflow-y-auto">
                   <h2 className="text-xl font-bold mb-4">Ajouter un nouveau texte</h2>
                   <form onSubmit={handleCreate} className="space-y-4">
                     <div>
@@ -420,13 +421,12 @@ const ContentTextsAdmin: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Contenu du texte *
                       </label>
-                      <textarea
-                        required
-                        rows={4}
+                      <WysiwygEditor
                         value={formData.content}
-                        onChange={(e) => setFormData({...formData, content: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        onChange={(content) => setFormData({...formData, content})}
+                        height={300}
                         placeholder="Le texte qui sera affiché sur le site..."
+                        eventType="content_management"
                       />
                     </div>
 
@@ -507,7 +507,7 @@ const ContentTextsAdmin: React.FC = () => {
             {/* Modal Édition */}
             {showEditModal && selectedContentText && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-screen overflow-y-auto">
+                <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-screen overflow-y-auto">
                   <h2 className="text-xl font-bold mb-4">Modifier le texte</h2>
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
                     <p className="text-sm text-blue-800">
@@ -523,13 +523,12 @@ const ContentTextsAdmin: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Contenu du texte *
                       </label>
-                      <textarea
-                        required
-                        rows={4}
+                      <WysiwygEditor
                         value={formData.content}
-                        onChange={(e) => setFormData({...formData, content: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        onChange={(content) => setFormData({...formData, content})}
+                        height={350}
                         placeholder="Le texte qui sera affiché sur le site..."
+                        eventType="content_management"
                       />
                     </div>
 

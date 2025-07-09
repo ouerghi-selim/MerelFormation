@@ -239,12 +239,57 @@ class ContentTextAdminController extends AbstractController
             'id' => $contentText->getId(),
             'identifier' => $contentText->getIdentifier(),
             'title' => $contentText->getTitle(),
-            'content' => $contentText->getContent(),
+            'content' => $this->processCMSContent($contentText->getContent()),
             'section' => $contentText->getSection(),
             'type' => $contentText->getType(),
             'isActive' => $contentText->isActive(),
             'createdAt' => $contentText->getCreatedAt()?->format('c'),
             'updatedAt' => $contentText->getUpdatedAt()?->format('c')
         ];
+    }
+
+    /**
+     * Traite le contenu CMS : nettoie les spans et remplace les variables
+     * (Même logique que EmailService.php)
+     */
+    private function processCMSContent(string $content): string
+    {
+        if (!$content) {
+            return $content;
+        }
+
+        // 1. Nettoyer les spans variable-tag (garder seulement le contenu)
+        $processed = preg_replace('/<span[^>]*class="[^"]*variable-tag[^"]*"[^>]*>(.*?)<\/span>/', '$1', $content);
+
+        // 2. Remplacer les variables (même logique que EmailService.php)
+        $processed = $this->replaceVariables($processed);
+
+        return $processed;
+    }
+
+    /**
+     * Remplace les variables dans un texte (même logique que EmailService.php)
+     */
+    private function replaceVariables(string $text): string
+    {
+        // Variables CMS disponibles
+        $variables = [
+            'siteName' => 'MerelFormation',
+            'companyName' => 'MerelFormation',
+            'contactEmail' => 'contact@merelformation.fr',
+            'contactPhone' => '01 23 45 67 89',
+            'siteUrl' => 'https://merelformation.fr',
+            'pageTitle' => 'Formation Taxi Professionnel',
+            'sectionTitle' => 'Formation Taxi',
+            'userName' => 'Utilisateur',
+            'adminName' => 'Administration'
+        ];
+
+        // Remplacer chaque variable {{key}} par sa valeur
+        foreach ($variables as $key => $value) {
+            $text = str_replace('{{' . $key . '}}', $value, $text);
+        }
+
+        return $text;
     }
 }

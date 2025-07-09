@@ -60,7 +60,15 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({
     'senderRole': 'Rôle de l\'expéditeur',
     'sentAt': 'Date d\'envoi',
     'message': 'Message joint',
-    'downloadUrl': 'URL de téléchargement'
+    'downloadUrl': 'URL de téléchargement',
+    // Variables CMS
+    'siteName': 'Nom du site (MerelFormation)',
+    'pageTitle': 'Titre de la page',
+    'sectionTitle': 'Titre de la section',
+    'companyName': 'Nom de l\'entreprise',
+    'contactEmail': 'Email de contact',
+    'contactPhone': 'Téléphone de contact',
+    'siteUrl': 'URL du site web'
   };
 
   // Mapping des variables par type d'événement (défini par le développeur)
@@ -110,7 +118,10 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({
     'notification': ['userName', 'userEmail', 'adminName'],
     'reminder': ['userName', 'userEmail', 'adminName', 'dueDate'],
     'welcome': ['userName', 'userEmail', 'temporaryPassword'],
-    'invoice': ['clientName', 'amount', 'invoiceNumber', 'dueDate', 'formationTitle']
+    'invoice': ['clientName', 'amount', 'invoiceNumber', 'dueDate', 'formationTitle'],
+    
+    // Événements CMS
+    'content_management': ['siteName', 'pageTitle', 'sectionTitle', 'adminName', 'userName', 'companyName', 'contactEmail', 'contactPhone', 'siteUrl']
   };
 
   // Variables communes à tous les rôles
@@ -147,14 +158,11 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({
     height,
     menubar: false,
     plugins: [
-      'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+      'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
       'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-      'insertdatetime', 'media', 'table', 'help', 'wordcount'
+      'insertdatetime', 'table', 'help', 'wordcount'
     ],
-    toolbar: [
-      'undo redo | blocks | bold italic forecolor backcolor | alignleft aligncenter alignright alignjustify',
-      'bullist numlist outdent indent | removeformat | variablesButton | link image | code preview fullscreen | help'
-    ].join(' | '),
+    toolbar: 'undo redo | blocks | bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | variablesButton | link | code preview fullscreen | help',
     content_style: `
       body { 
         font-family: Helvetica, Arial, sans-serif; 
@@ -176,6 +184,9 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({
     branding: false,
     promotion: false,
     readonly: disabled,
+    resize: true,
+    statusbar: true,
+    elementpath: false,
     // Configuration pour les emails
     valid_elements: 'p,br,strong,b,i,em,u,h1,h2,h3,h4,h5,h6,ul,ol,li,a[href|title],img[src|alt|width|height],table,thead,tbody,tr,th,td,div[style],span[style|class]',
     valid_styles: 'color,background-color,text-align,font-size,font-weight,font-style,text-decoration,margin,padding,border',
@@ -204,26 +215,24 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({
         }
       });
 
-      // Ajouter un style pour les variables existantes
+      // Ajouter un style pour les variables existantes lors du chargement initial seulement
       editor.on('init', () => {
-        const addVariableStyle = () => {
+        const applyInitialVariableStyle = () => {
           const content = editor.getContent();
-          const updatedContent = content.replace(
-            /\{\{([^}]+)\}\}/g, 
-            '<span class="variable-tag">{{$1}}</span>'
-          );
-          if (content !== updatedContent) {
-            editor.setContent(updatedContent);
+          // Éviter de remplacer les variables déjà dans des spans
+          if (!content.includes('variable-tag')) {
+            const updatedContent = content.replace(
+              /\{\{([^}]+)\}\}/g, 
+              '<span class="variable-tag">{{$1}}</span>'
+            );
+            if (content !== updatedContent) {
+              editor.setContent(updatedContent);
+            }
           }
         };
 
-        // Appliquer le style lors du chargement
-        addVariableStyle();
-
-        // Appliquer le style lors de la saisie
-        editor.on('input', () => {
-          setTimeout(addVariableStyle, 100);
-        });
+        // Appliquer le style une seule fois au chargement, avec un délai
+        setTimeout(applyInitialVariableStyle, 100);
       });
     }
   };

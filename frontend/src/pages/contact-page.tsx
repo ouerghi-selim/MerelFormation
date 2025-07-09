@@ -215,12 +215,10 @@ const ContactPage = () => {
             {/* Hero Section */}
             <section className="bg-blue-900 text-white py-16 lg:py-24">
                 <div className="container mx-auto px-4">
-                    <h1 className="text-4xl md:text-5xl font-bold mb-6 text-center">
-                        {getContent('contact_hero_title', 'Contactez-nous')}
-                    </h1>
-                    <p className="text-xl text-blue-100 max-w-3xl mx-auto text-center mb-8">
-                        {getContent('contact_hero_description', 'Une question sur nos formations ? Besoin d\'informations ? Notre équipe est à votre écoute pour vous accompagner dans votre projet professionnel.')}
-                    </p>
+                    <h1 className="text-4xl md:text-5xl font-bold mb-6 text-center"
+                        dangerouslySetInnerHTML={{__html: getContent('contact_hero_title', 'Contactez-nous')}}/>
+                    <p className="text-xl text-blue-100 max-w-3xl mx-auto text-center mb-8"
+                       dangerouslySetInnerHTML={{__html: getContent('contact_hero_description', 'Une question sur nos formations ? Besoin d\'informations ? Notre équipe est à votre écoute pour vous accompagner dans votre projet professionnel.')}} />
                     <div className="flex flex-wrap justify-center gap-6 mt-10">
 
                             <a href="tel:0760861109"
@@ -248,12 +246,10 @@ const ContactPage = () => {
                     <div className="bg-blue-100 w-14 h-14 rounded-full flex items-center justify-center mb-5 mx-auto">
                         <Phone className="h-6 w-6 text-blue-900" />
                     </div>
-                    <h3 className="font-bold text-xl mb-3 text-center">
-                        {getContent('contact_info_phone_label', 'Téléphone')}
-                    </h3>
-                    <p className="text-gray-600 text-center mb-2">
-                        {getContent('contact_info_director_name', 'Jean-Louis MEREL')}
-                    </p>
+                    <h3 className="font-bold text-xl mb-3 text-center"
+                        dangerouslySetInnerHTML={{__html: getContent('contact_info_phone_label', 'Téléphone')}} />
+                    <p className="text-gray-600 text-center mb-2"
+                        dangerouslySetInnerHTML={{__html: getContent('contact_info_director_name', 'Jean-Louis MEREL')}} />
                     <p className="text-blue-900 font-bold text-center text-lg">
                         <a href="tel:0760861109" className="hover:underline">07 60 86 11 09</a>
                     </p>
@@ -263,24 +259,22 @@ const ContactPage = () => {
                     <div className="bg-blue-100 w-14 h-14 rounded-full flex items-center justify-center mb-5 mx-auto">
                         <MapPin className="h-6 w-6 text-blue-900" />
                     </div>
-                    <h3 className="font-bold text-xl mb-3 text-center">
-                        {getContent('contact_info_address_label', 'Adresse')}
-                    </h3>
-                    <address className="text-gray-600 text-center not-italic" dangerouslySetInnerHTML={{
-                        __html: getContent('contact_info_address_value', '7 RUE Georges Maillols<br>35000 RENNES')
-                    }} />
+                    <h3 className="font-bold text-xl mb-3 text-center"
+                        dangerouslySetInnerHTML={{__html: getContent('contact_info_address_label', 'Adresse')}} />
+                    <address className="text-gray-600 text-center not-italic"
+                        dangerouslySetInnerHTML={{__html: getContent('contact_info_address_value', '7 RUE Georges Maillols<br>35000 RENNES')}} 
+                    />
                 </div>
 
                 <div className="bg-white rounded-xl shadow-lg p-6 transform hover:-translate-y-1 transition-all duration-300">
                     <div className="bg-blue-100 w-14 h-14 rounded-full flex items-center justify-center mb-5 mx-auto">
                         <Clock className="h-6 w-6 text-blue-900" />
                     </div>
-                    <h3 className="font-bold text-xl mb-3 text-center">
-                        {getContent('contact_info_hours_label', 'Horaires')}
-                    </h3>
-                    <div className="text-gray-600 text-center" dangerouslySetInnerHTML={{
-                        __html: getContent('contact_info_hours_value', 'Lundi - Vendredi<br>8h30 - 12h00 | 13h00 - 16h30')
-                    }} />
+                    <h3 className="font-bold text-xl mb-3 text-center"
+                        dangerouslySetInnerHTML={{__html: getContent('contact_info_hours_label', 'Horaires')}} />
+                    <div className="text-gray-600 text-center"
+                        dangerouslySetInnerHTML={{__html: getContent('contact_info_hours_value', 'Lundi - Vendredi<br>8h30 - 12h00 | 13h00 - 16h30')}} 
+                    />
                 </div>
             </div>
         </div>
@@ -290,9 +284,8 @@ const ContactPage = () => {
     <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
             <div className="max-w-5xl mx-auto">
-                <h2 className="text-3xl font-bold mb-8 text-center">
-                    {getContent('contact_map_title', 'Nous situer')}
-                </h2>
+                <h2 className="text-3xl font-bold mb-8 text-center"
+                    dangerouslySetInnerHTML={{__html: getContent('contact_map_title', 'Nous situer')}} />
                 <div className="shadow-xl rounded-xl overflow-hidden border-4 border-white">
                     <div className="w-full h-96 bg-gray-200">
                         {isLoaded ? (
@@ -335,9 +328,8 @@ const ContactPage = () => {
                         <p className="text-gray-700 text-lg">
                             <strong>MerelFormation</strong> - 7 RUE Georges Maillols, 35000 RENNES
                         </p>
-                        <p className="text-gray-600 mt-2">
-                            {getContent('contact_map_description', 'Facilement accessible en transports en commun et parking à proximité.')}
-                        </p>
+                        <p className="text-gray-600 mt-2"
+                            dangerouslySetInnerHTML={{__html: getContent('contact_map_description', 'Facilement accessible en transports en commun et parking à proximité.')}} />
                     </div>
                 </div>
             </div>
@@ -348,9 +340,8 @@ const ContactPage = () => {
     <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
             <div className="max-w-5xl mx-auto">
-                <h2 className="text-3xl font-bold mb-8 text-center">
-                    {getContent('contact_form_title', 'Envoyez-nous un message')}
-                </h2>
+                <h2 className="text-3xl font-bold mb-8 text-center"
+                    dangerouslySetInnerHTML={{__html: getContent('contact_form_title', 'Envoyez-nous un message')}} />
 
                 <div className="bg-white p-8 rounded-xl shadow-lg">
                     {submitSuccess ? (
@@ -372,10 +363,10 @@ const ContactPage = () => {
                         <div className="grid md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-gray-700 mb-2 font-medium" htmlFor="nom">
-                                            <span className="flex items-center">
-                                                <User className="h-4 w-4 mr-2" />
-                                                {getContent('contact_form_lastname_label', 'Nom')}
-                                            </span>
+                                    <span className="flex items-center">
+                                        <User className="h-4 w-4 mr-2" />
+                                        <p dangerouslySetInnerHTML={{__html: getContent('contact_form_lastname_label', 'Nom')}} />
+                                    </span>
                                 </label>
                                 <input
                                     type="text"
@@ -393,10 +384,10 @@ const ContactPage = () => {
                             </div>
                             <div>
                                 <label className="block text-gray-700 mb-2 font-medium" htmlFor="prenom">
-                                            <span className="flex items-center">
-                                                <User className="h-4 w-4 mr-2" />
-                                                {getContent('contact_form_firstname_label', 'Prénom')}
-                                            </span>
+                                    <span className="flex items-center">
+                                        <User className="h-4 w-4 mr-2" />
+                                        <p dangerouslySetInnerHTML={{__html: getContent('contact_form_firstname_label', 'Prénom')}} />
+                                    </span>
                                 </label>
                                 <input
                                     type="text"
@@ -463,10 +454,10 @@ const ContactPage = () => {
                         <div className="grid md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-gray-700 mb-2 font-medium" htmlFor="telephone">
-                                            <span className="flex items-center">
-                                                <Smartphone className="h-4 w-4 mr-2" />
-                                                {getContent('contact_form_phone_label', 'Téléphone')}
-                                            </span>
+                                    <span className="flex items-center">
+                                        <Smartphone className="h-4 w-4 mr-2" />
+                                        <p dangerouslySetInnerHTML={{__html: getContent('contact_form_phone_label', 'Téléphone')}} />
+                                    </span>
                                 </label>
                                 <input
                                     type="tel"
@@ -485,10 +476,10 @@ const ContactPage = () => {
                             </div>
                             <div>
                                 <label className="block text-gray-700 mb-2 font-medium" htmlFor="email">
-                                            <span className="flex items-center">
-                                                <Mail className="h-4 w-4 mr-2" />
-                                                {getContent('contact_form_email_label', 'Email')}
-                                            </span>
+                                    <span className="flex items-center">
+                                        <Mail className="h-4 w-4 mr-2" />
+                                        <p dangerouslySetInnerHTML={{__html: getContent('contact_form_email_label', 'Email')}} />
+                                    </span>
                                 </label>
                                 <input
                                     type="email"
@@ -509,10 +500,10 @@ const ContactPage = () => {
 
                         <div>
                             <label className="block text-gray-700 mb-2 font-medium" htmlFor="subject">
-                                        <span className="flex items-center">
-                                            <Info className="h-4 w-4 mr-2" />
-                                            {getContent('contact_form_subject_label', 'Sujet')}
-                                        </span>
+                                <span className="flex items-center">
+                                    <Info className="h-4 w-4 mr-2" />
+                                    <p dangerouslySetInnerHTML={{__html: getContent('contact_form_subject_label', 'Sujet')}} />
+                                </span>
                             </label>
                             <input
                                 type="text"
@@ -532,10 +523,10 @@ const ContactPage = () => {
 
                         <div>
                             <label className="block text-gray-700 mb-2 font-medium" htmlFor="message">
-                                        <span className="flex items-center">
-                                            <MessageSquare className="h-4 w-4 mr-2" />
-                                            {getContent('contact_form_message_label', 'Votre message')}
-                                        </span>
+                                <span className="flex items-center">
+                                    <MessageSquare className="h-4 w-4 mr-2" />
+                                    <p dangerouslySetInnerHTML={{__html: getContent('contact_form_message_label', 'Votre message')}} />
+                                </span>
                             </label>
                             <textarea
                                 id="message"
@@ -554,7 +545,7 @@ const ContactPage = () => {
                         </div>
 
                         <div className="mt-2 text-gray-600 text-sm">
-                            <p>{getContent('contact_form_gdpr_text', 'En soumettant ce formulaire, vous acceptez que les informations saisies soient utilisées pour vous recontacter.')}</p>
+                            <p dangerouslySetInnerHTML={{__html: getContent('contact_form_gdpr_text', 'En soumettant ce formulaire, vous acceptez que les informations saisies soient utilisées pour vous recontacter.')}} />
                         </div>
 
                         <button
@@ -572,7 +563,7 @@ const ContactPage = () => {
                             ) : (
                                 <>
                                     <Send className="h-5 w-5" />
-                                    <span>{getContent('contact_form_submit_button', 'Envoyer le message')}</span>
+                                    <span dangerouslySetInnerHTML={{__html: getContent('contact_form_submit_button', 'Envoyer le message')}} />
                                 </>
                             )}
                         </button>

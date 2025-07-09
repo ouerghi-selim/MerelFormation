@@ -35,6 +35,9 @@ interface Formation {
   duration: number;
   price: number;
   isActive: boolean;
+  successRate?: number;
+  minStudents?: number;
+  maxStudents?: number;
   modules?: ModuleInput[];
   prerequisites?: PrerequisiteInput[];
   practicalInfo?: PracticalInfoInput;
@@ -747,6 +750,77 @@ const FormationDetail: React.FC = () => {
                             <span className="ml-2 text-sm text-gray-700">
                           Formation active
                         </span>
+                          </div>
+                        </div>
+
+                        {/* Section Pastilles personnalisables */}
+                        <div className="md:col-span-2">
+                          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <h4 className="text-md font-semibold text-gray-800 mb-3">
+                              Pastilles personnalisables
+                            </h4>
+                            <p className="text-sm text-gray-600 mb-4">
+                              Ces informations s'afficheront sous forme de badges sur la page publique de la formation.
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Taux de réussite (%)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                                        !editMode ? 'bg-gray-50' : ''
+                                    }`}
+                                    value={formation.successRate || ''}
+                                    onChange={(e) => setFormation({...formation, successRate: parseInt(e.target.value) || undefined})}
+                                    disabled={!editMode}
+                                    placeholder="95"
+                                />
+                                <p className="mt-1 text-xs text-gray-500">
+                                  Ex: 95 (s'affichera comme "95% de réussite")
+                                </p>
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Nombre minimum d'élèves
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                                        !editMode ? 'bg-gray-50' : ''
+                                    }`}
+                                    value={formation.minStudents || ''}
+                                    onChange={(e) => setFormation({...formation, minStudents: parseInt(e.target.value) || undefined})}
+                                    disabled={!editMode}
+                                    placeholder="8"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Nombre maximum d'élèves
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                                        !editMode ? 'bg-gray-50' : ''
+                                    }`}
+                                    value={formation.maxStudents || ''}
+                                    onChange={(e) => setFormation({...formation, maxStudents: parseInt(e.target.value) || undefined})}
+                                    disabled={!editMode}
+                                    placeholder="12"
+                                />
+                                <p className="mt-1 text-xs text-gray-500">
+                                  Ex: 8 à 12 (s'affichera comme "8 à 12 élèves")
+                                </p>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>

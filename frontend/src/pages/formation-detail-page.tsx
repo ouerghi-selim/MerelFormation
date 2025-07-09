@@ -20,6 +20,10 @@ interface Formation {
     sessions: Session[];
     practicalInfo?: PracticalInfo;
     practicalInfos?: PracticalInfo[];
+    successRate?: number;
+    minStudents?: number;
+    maxStudents?: number;
+    studentsRange?: string;
 }
 
 interface PracticalInfo {
@@ -134,14 +138,29 @@ const FormationInitialePage = () => {
                                     <Clock className="h-6 w-6 mr-2"/>
                                     <span>{formation.duration} heures</span>
                                 </div>
-                                <div className="flex items-center bg-blue-800 rounded-lg p-3">
-                                    <Award className="h-6 w-6 mr-2"/>
-                                    <span>95% de réussite</span>
-                                </div>
-                                <div className="flex items-center bg-blue-800 rounded-lg p-3">
-                                    <Users className="h-6 w-6 mr-2"/>
-                                    <span>8 à 12 élèves</span>
-                                </div>
+                                {formation.successRate && (
+                                    <div className="flex items-center bg-blue-800 rounded-lg p-3">
+                                        <Award className="h-6 w-6 mr-2"/>
+                                        <span>{formation.successRate}% de réussite</span>
+                                    </div>
+                                )}
+                                {(formation.studentsRange || (formation.minStudents && formation.maxStudents)) && (
+                                    <div className="flex items-center bg-blue-800 rounded-lg p-3">
+                                        <Users className="h-6 w-6 mr-2"/>
+                                        <span>
+                                            {formation.studentsRange || 
+                                             (formation.minStudents && formation.maxStudents 
+                                                 ? `${formation.minStudents} à ${formation.maxStudents} élèves`
+                                                 : formation.minStudents 
+                                                     ? `À partir de ${formation.minStudents} élèves`
+                                                     : formation.maxStudents 
+                                                         ? `Jusqu'à ${formation.maxStudents} élèves`
+                                                         : ''
+                                             )
+                                            }
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="md:w-1/2">

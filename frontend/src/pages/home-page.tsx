@@ -58,7 +58,7 @@ const AnimatedCounter = ({ value, label, suffix = '' }: { value: number | string
         <div className="text-4xl font-bold mb-2 animate-fadeIn">
           {value}{suffix}
         </div>
-        <div className="text-blue-200">{label}</div>
+          <div className="text-blue-200"> dangerouslySetInnerHTML={{__html: label}} </div>
       </div>
   );
 };
@@ -70,8 +70,8 @@ const ServiceCard = ({ icon, title, description, items, linkTo, linkText }: any)
         <div className="bg-blue-100 w-16 h-16 rounded-lg flex items-center justify-center mb-6">
           {icon}
         </div>
-        <h3 className="text-2xl font-bold mb-4">{title}</h3>
-        <p className="text-gray-600 mb-6">{description}</p>
+          <h3 className="text-2xl font-bold mb-4"> dangerouslySetInnerHTML={{__html: title}} </h3>
+          <p className="text-gray-600 mb-6"> dangerouslySetInnerHTML={{__html: description}} </p>
         <ul className="space-y-3 mb-6">
           {items.map((item: string, i: number) => (
               <li key={i} className="flex items-center text-gray-600">
@@ -196,20 +196,20 @@ const HomePage = () => {
             <div className="flex flex-col md:flex-row items-center">
               <div className="md:w-1/2 mb-8 md:mb-0 animate-fadeIn">
                 <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-                  {getContent('home_hero_title', 'Devenez Chauffeur de Taxi Professionnel')}
+                    dangerouslySetInnerHTML={{__html: getContent('home_hero_title', 'Devenez Chauffeur de Taxi Professionnel')}}
                 </h1>
-                <p className="text-xl mb-8 text-blue-100 leading-relaxed">
-                  {getContent('home_hero_description', 'Formation certifiante et location de véhicules pour réussir dans le métier de taxi. Plus de 500 professionnels formés avec 95% de réussite.')}
-                </p>
+                    <p className="text-xl mb-8 text-blue-100 leading-relaxed">
+                   dangerouslySetInnerHTML={{__html: getContent('home_hero_description', 'Formation certifiante et location de véhicules pour réussir dans le métier de taxi. Plus de 500 professionnels formés avec 95% de réussite.')}}
+                    </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link to="/formations"
                         className="bg-yellow-500 text-blue-900 px-6 py-3 rounded-lg font-medium text-center hover:bg-yellow-400 transition-colors transform hover:scale-105 hover:shadow-lg inline-flex justify-center items-center">
-                    {getContent('home_hero_cta_formations', 'Découvrir nos formations')}
+                     dangerouslySetInnerHTML={{__html: getContent('home_hero_cta_formations', 'Découvrir nos formations')}}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                   <Link to="/location"
                         className="bg-white text-blue-900 px-6 py-3 rounded-lg font-medium text-center hover:bg-gray-100 transition-colors transform hover:scale-105 hover:shadow-lg">
-                    {getContent('home_hero_cta_location', 'Location de véhicules')}
+                        dangerouslySetInnerHTML={{__html: getContent('home_hero_cta_location', 'Location de véhicules')}} /
                   </Link>
                 </div>
                 <div className="mt-8 flex items-center space-x-4">
@@ -220,10 +220,10 @@ const HomePage = () => {
                         />
                     ))}
                   </div>
-                  <p className="text-blue-200">{getContent('home_hero_community', 'Rejoignez plus de 500 chauffeurs formés')}</p>
+                  <p className="text-blue-200">dangerouslySetInnerHTML={{__html: getContent('home_hero_community', 'Rejoignez plus de 500 chauffeurs formés')}} </p>
                 </div>
               </div>
-              <div className="md:w-1/2 md:pl-8 animate-slideInRight">
+                <div className="md:w-1/2 md:pl-8 animate-slideInRight">
                 <img
                     src={heroImage}
                     alt="Formation taxi professionnelle"
@@ -239,11 +239,11 @@ const HomePage = () => {
           <div className="container mx-auto px-4">
             <div className="text-center mb-16 animate-fadeIn">
               <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-                {getContent('home_services_title', 'Nos Services Complets')}
+                  dangerouslySetInnerHTML={{__html: getContent('home_services_title', 'Nos Services Complets')}}
               </h2>
               <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-                {getContent('home_services_description', 'Une offre complète pour votre réussite professionnelle, de la formation à la mise en route.')}
-              </p>
+                 dangerouslySetInnerHTML={{__html: getContent('home_services_description', 'Une offre complète pour votre réussite professionnelle, de la formation à la mise en route.')}}
+                    </p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">
@@ -318,7 +318,7 @@ const HomePage = () => {
         <section className="py-16 bg-gray-50">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl font-bold text-center mb-12">
-              {getContent('home_testimonials_title', 'Ils nous font confiance')}
+                dangerouslySetInnerHTML={{__html: getContent('home_testimonials_title', 'Ils nous font confiance')}}
             </h2>
             <div className="grid md:grid-cols-3 gap-8">
               {testimonials.length > 0 ? (
@@ -360,24 +360,24 @@ const HomePage = () => {
           <div className="container mx-auto px-4">
             <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white rounded-2xl p-8 md:p-12 text-center shadow-xl transform hover:scale-[1.01] transition-transform duration-300">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                {getContent('home_cta_title', 'Prêt à démarrer votre carrière ?')}
+                  dangerouslySetInnerHTML={{__html: getContent('home_cta_title', 'Prêt à démarrer votre carrière ?')}}
               </h2>
               <p className="text-xl mb-8 text-blue-100 max-w-3xl mx-auto">
-                {getContent('home_cta_description', 'Inscrivez-vous à nos formations et lancez-vous dans l\'aventure du taxi professionnel.')}
+                 dangerouslySetInnerHTML={{__html: getContent('home_cta_description', 'Inscrivez-vous à nos formations et lancez-vous dans l\'aventure du taxi professionnel.')}}
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Link to="/contact"
                       className="bg-yellow-500 text-blue-900 px-8 py-4 rounded-lg font-bold hover:bg-yellow-400 transition-colors transform hover:scale-105 hover:shadow-lg inline-flex items-center justify-center">
-                  <span>{getContent('home_cta_contact', 'Nous contacter')}</span>
+                    <span> dangerouslySetInnerHTML={{__html: getContent('home_cta_contact', 'Nous contacter')}} </span>
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
                 <Link to="/formations"
                       className="bg-white text-blue-900 px-8 py-4 rounded-lg font-bold hover:bg-gray-100 transition-colors transform hover:scale-105 hover:shadow-lg">
-                  {getContent('home_cta_formations', 'Voir les formations')}
+                      dangerouslySetInnerHTML={{__html: getContent('home_cta_formations', 'Voir les formations')}}
                 </Link>
               </div>
             </div>
-          </div>
+                </div>
         </section>
       </div>
   );

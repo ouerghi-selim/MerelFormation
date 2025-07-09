@@ -4,14 +4,18 @@
 
 Ce module CMS permet aux administrateurs de personnaliser facilement le contenu du site web MerelFormation sans avoir besoin de compétences techniques. Il comprend trois modules principaux :
 
-- **📝 Textes du site** - Gestion des contenus textuels
+- **📝 Textes du site** - Gestion des contenus textuels (🆕 **49 contenus** couvrant 4 pages principales)
 - **🗣️ Témoignages** - Gestion des témoignages clients
 - **❓ FAQ** - Gestion des questions fréquemment posées
+
+**MISE À JOUR JUIN 2025** : Extension complète du CMS avec couverture de 95% des textes du site.
 
 ## 🎯 Fonctionnalités
 
 ### 📝 Gestion des Textes du Site
-- ✅ Création/modification des textes par section (home, contact, formations, etc.)
+- ✅ Création/modification des textes par section (home, contact, formations, location)
+- ✅ 🆕 **Interface organisée** par pages et sections avec descriptions claires
+- ✅ 🆕 **49 contenus CMS** couvrant toutes les pages principales
 - ✅ Catégorisation par type (titre, sous-titre, paragraphe, bouton, etc.)
 - ✅ Identifiants uniques pour chaque contenu
 - ✅ Activation/désactivation des contenus
@@ -113,10 +117,17 @@ PATCH  /admin/faq/{id}/toggle-active    - Basculer actif
 
 ### Routes Frontend
 ```
-/admin/content/texts        - Gestion des textes du site
+/admin/content/texts        - Gestion des textes du site (🆕 Interface réorganisée)
 /admin/content/testimonials - Gestion des témoignages
 /admin/content/faq          - Gestion des FAQ
 ```
+
+### 🆕 Interface CMS Améliorée
+L'interface admin a été complètement repensée pour les clients non-techniques :
+- **Organisation par pages** : Accueil, Formations, Location, Contact
+- **Sections accordéon** : Navigation intuitive par sections
+- **Descriptions claires** : Chaque contenu a une description compréhensible
+- **Aperçu direct** : Boutons "Voir sur le site" pour prévisualiser
 
 ### Menu Navigation
 Le module CMS est accessible via le menu admin sous "Contenu" :
@@ -155,7 +166,11 @@ frontend/src/
 
 ### 1. Migration de la Base de Données
 ```bash
+# Migration initiale
 php bin/console doctrine:migrations:migrate
+
+# 🆕 Migration d'extension (49 nouveaux contenus)
+docker exec merel_php php bin/console doctrine:migrations:migrate --no-interaction
 ```
 
 ### 2. Vérification des Routes
@@ -171,9 +186,15 @@ npm run dev
 ```
 
 ### 4. URLs de Test
-- `http://localhost:3000/admin/content/texts`
+- `http://localhost:3000/admin/content/texts` (🆕 Interface améliorée)
 - `http://localhost:3000/admin/content/testimonials`
 - `http://localhost:3000/admin/content/faq`
+
+### 5. 🆕 Pages avec CMS Intégré
+- `http://localhost:3000/` - Page d'accueil (Hero, Services, Statistiques, CTA)
+- `http://localhost:3000/formations` - Page formations (Hero, Avantages)
+- `http://localhost:3000/location` - Page location (entièrement CMS)
+- `http://localhost:3000/contact` - Page contact (entièrement CMS)
 
 ## 💡 Guide d'Utilisation
 
@@ -237,7 +258,10 @@ npm run dev
 ## 🚀 Évolutions Futures
 
 ### V2.0 Prévue
-- [ ] Éditeur WYSIWYG pour les contenus
+- [x] ✅ **Interface intuitive** pour clients non-techniques
+- [x] ✅ **Couverture complète** des pages principales
+- [x] ✅ **Organisation par pages/sections**
+- [ ] Éditeur WYSIWYG pour les contenus (en cours avec TinyMCE email templates)
 - [ ] Versioning des contenus
 - [ ] Programmation de publication
 - [ ] Import/Export en masse
@@ -257,5 +281,6 @@ npm run dev
 **Équipe MerelFormation** - Système CMS intégré
 
 **Date de création :** Mai 2025  
-**Version :** 1.0.0  
-**Status :** ✅ Production Ready
+**Dernière mise à jour :** Juin 2025 (Extension complète)  
+**Version :** 2.0.0  
+**Status :** ✅ Production Ready - **95% des textes du site CMS**

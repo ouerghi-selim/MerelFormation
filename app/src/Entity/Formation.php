@@ -102,6 +102,21 @@ class Formation
 
     #[ORM\OneToMany(mappedBy: 'formation', targetEntity: PracticalInfo::class, cascade: ['persist', 'remove'])]
     private Collection $practicalInfos;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['formation:read', 'formation:write'])]
+    #[Assert\Range(min: 0, max: 100)]
+    private ?int $successRate = null; // Taux de réussite en pourcentage
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['formation:read', 'formation:write'])]
+    #[Assert\Positive]
+    private ?int $minStudents = null; // Nombre minimum d'élèves
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['formation:read', 'formation:write'])]
+    #[Assert\Positive]
+    private ?int $maxStudents = null; // Nombre maximum d'élèves
     public function __construct()
     {
         $this->sessions = new ArrayCollection();
@@ -409,5 +424,54 @@ class Formation
             }
         }
         return $this;
+    }
+
+    public function getSuccessRate(): ?int
+    {
+        return $this->successRate;
+    }
+
+    public function setSuccessRate(?int $successRate): static
+    {
+        $this->successRate = $successRate;
+        return $this;
+    }
+
+    public function getMinStudents(): ?int
+    {
+        return $this->minStudents;
+    }
+
+    public function setMinStudents(?int $minStudents): static
+    {
+        $this->minStudents = $minStudents;
+        return $this;
+    }
+
+    public function getMaxStudents(): ?int
+    {
+        return $this->maxStudents;
+    }
+
+    public function setMaxStudents(?int $maxStudents): static
+    {
+        $this->maxStudents = $maxStudents;
+        return $this;
+    }
+
+    /**
+     * Retourne le texte formaté pour l'affichage du nombre d'élèves
+     */
+    #[Groups(['formation:read'])]
+    public function getStudentsRange(): ?string
+    {
+        if ($this->minStudents && $this->maxStudents) {
+            return $this->minStudents . ' à ' . $this->maxStudents . ' élèves';
+        } elseif ($this->minStudents) {
+            return 'À partir de ' . $this->minStudents . ' élèves';
+        } elseif ($this->maxStudents) {
+            return 'Jusqu\'à ' . $this->maxStudents . ' élèves';
+        }
+        return null;
     }
 }

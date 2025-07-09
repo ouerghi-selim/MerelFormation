@@ -252,12 +252,11 @@ const FormationsPage = () => {
         {/* Hero Section */}
         <div className="bg-blue-900 text-white py-16">
           <div className="container mx-auto px-4">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              {getContent('formations_hero_title', 'Nos Formations Taxi')}
-            </h1>
-            <p className="text-xl max-w-2xl">
-              {getContent('formations_hero_description', 'Découvrez nos programmes de formation certifiants pour devenir chauffeur de taxi professionnel. Des formations adaptées à tous les niveaux pour réussir dans le métier.')}
-            </p>
+            <h1 className="text-4xl md:text-5xl font-bold mb-6"
+                dangerouslySetInnerHTML={{__html: getContent('formations_hero_title', 'Nos Formations Taxi')}} />
+
+            <p className="text-xl max-w-2xl"
+               dangerouslySetInnerHTML={{__html: getContent('formations_hero_description', 'Découvrez nos programmes de formation certifiants pour devenir chauffeur de taxi professionnel. Des formations adaptées à tous les niveaux pour réussir dans le métier.')}} />
           </div>
         </div>
 
@@ -441,42 +440,35 @@ const FormationsPage = () => {
         {/* Section des avantages */}
         <div className="bg-white py-16">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-12">
-              {getContent('formations_advantages_title', 'Pourquoi choisir nos formations ?')}
-            </h2>
+            <h2 className="text-3xl font-bold text-center mb-12"
+                dangerouslySetInnerHTML={{__html: getContent('formations_advantages_title', 'Pourquoi choisir nos formations ?')}} />
             <div className="grid md:grid-cols-3 gap-8">
               <div className="bg-blue-50 p-8 rounded-lg">
                 <div className="bg-blue-900 text-white h-14 w-14 rounded-full flex items-center justify-center mb-6">
                   <CheckCircle className="h-7 w-7"/>
                 </div>
-                <div className="text-blue-900 font-bold text-xl mb-4">
-                  {getContent('advantage_certification_title', 'Formation Certifiante')}
-                </div>
-                <p className="text-gray-700">
-                  {getContent('advantage_certification_description', 'Nos formations sont reconnues par l\'État et vous permettent d\'obtenir votre carte professionnelle de chauffeur de taxi.')}
-                </p>
+                <div className="text-blue-900 font-bold text-xl mb-4"
+                     dangerouslySetInnerHTML={{__html: getContent('advantage_certification_title', 'Formation Certifiante')}}/>
+                <p className="text-gray-700"
+                    dangerouslySetInnerHTML={{__html: getContent('advantage_certification_description', 'Nos formations sont reconnues par l\'État et vous permettent d\'obtenir votre carte professionnelle de chauffeur de taxi.')}} />
               </div>
               <div className="bg-blue-50 p-8 rounded-lg">
                 <div className="bg-blue-900 text-white h-14 w-14 rounded-full flex items-center justify-center mb-6">
                   <Users className="h-7 w-7"/>
                 </div>
-                <div className="text-blue-900 font-bold text-xl mb-4">
-                  {getContent('advantage_trainers_title', 'Formateurs Expérimentés')}
-                </div>
-                <p className="text-gray-700">
-                  {getContent('advantage_trainers_description', 'Notre équipe de formateurs possède une solide expérience du métier de chauffeur de taxi et connaît parfaitement les exigences de l\'examen.')}
-                </p>
+                <div className="text-blue-900 font-bold text-xl mb-4"
+                     dangerouslySetInnerHTML={{__html: getContent('advantage_trainers_title', 'Formateurs Expérimentés')}} />
+                  <p className="text-gray-700"
+                    dangerouslySetInnerHTML={{__html: getContent('advantage_trainers_description', 'Notre équipe de formateurs possède une solide expérience du métier de chauffeur de taxi et connaît parfaitement les exigences de l\'examen.')}} />
               </div>
               <div className="bg-blue-50 p-8 rounded-lg">
                 <div className="bg-blue-900 text-white h-14 w-14 rounded-full flex items-center justify-center mb-6">
                   <Book className="h-7 w-7"/>
                 </div>
-                <div className="text-blue-900 font-bold text-xl mb-4">
-                  {getContent('advantage_support_title', 'Accompagnement Personnalisé')}
-                </div>
-                <p className="text-gray-700">
-                  {getContent('advantage_support_description', 'Un suivi individuel tout au long de votre formation pour garantir votre réussite et vous aider à préparer efficacement l\'examen.')}
-                </p>
+                <div className="text-blue-900 font-bold text-xl mb-4"
+                     dangerouslySetInnerHTML={{__html: getContent('advantage_support_title', 'Accompagnement Personnalisé')}} />
+                <p className="text-gray-700"
+                    dangerouslySetInnerHTML={{__html: getContent('advantage_support_description', 'Un suivi individuel tout au long de votre formation pour garantir votre réussite et vous aider à préparer efficacement l\'examen.')}} />
               </div>
             </div>
 
