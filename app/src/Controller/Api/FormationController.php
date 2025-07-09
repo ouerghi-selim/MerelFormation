@@ -4,6 +4,7 @@ namespace App\Controller\Api;
 
 use App\Entity\Formation;
 use App\Repository\FormationRepository;
+use App\Repository\DocumentRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -19,6 +20,7 @@ class FormationController extends AbstractController
     public function __construct(
         private EntityManagerInterface $entityManager,
         private FormationRepository $formationRepository,
+        private DocumentRepository $documentRepository,
         private SerializerInterface $serializer,
         private ValidatorInterface $validator
     ) {
@@ -231,5 +233,52 @@ class FormationController extends AbstractController
         $formations = $this->formationRepository->searchByCriteria(array_filter($criteria));
 
         return $this->json($formations, Response::HTTP_OK, [], ['groups' => ['formation:read']]);
+    }
+
+    #[Route('/{id}/documents', name: 'app_formations_documents', methods: ['GET'])]
+    public function getDocuments(Formation $formation): JsonResponse
+    {
+        // Récupérer tous les documents publics de la formation
+        $documents = $this->documentRepository->findBy([
+            'formation' => $formation,
+            'private' => false
+        ]);
+
+        $documentsData = [];
+        foreach ($documents as $document) {
+            $documentsData[] = [
+                'id' => $document->getId(),
+                'title' => $document->getTitle(),
+                'fileName' => $document->getFileName(),
+                'type' => $document->getType(),
+                'category' => $document->getCategory(),
+                'uploadedAt' => $document->getUploadedAt()->format('c'),
+                'downloadUrl' => '/api/formations/' . $formation->getId() . '/documents/' . $document->getId() . '/download'
+            ];
+        }
+
+        return $this->json($documentsData);
+    }
+
+    #[Route('/{id}/documents/{documentId}/download', name: 'app_formations_documents_download', methods: ['GET'])]
+    public function downloadDocument(Formation $formation, int $documentId): Response
+    {
+        $document = $this->documentRepository->findOneBy([
+            'id' => $documentId,
+            'formation' => $formation,
+            'private' => false
+        ]);
+
+        if (!$document) {
+            return $this->json(['error' => 'Document not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $filePath = $this->getParameter('kernel.project_dir') . '/public/uploads/documents/' . $document->getFileName();
+        
+        if (!file_exists($filePath)) {
+            return $this->json(['error' => 'File not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->file($filePath, $document->getTitle() ?: $document->getFileName());
     }
 }

@@ -50,6 +50,7 @@ const FormationInitialePage = () => {
     const [modules, setModules] = useState<any[]>([]);
     const [practicalInfo, setPracticalInfo] = useState<PracticalInfo | null>(null);
     const [practicalInfos, setPracticalInfos] = useState<PracticalInfo[]>([]);
+    const [documents, setDocuments] = useState<any[]>([]);
 
     // États pour les modaux
     const [showSessionModal, setShowSessionModal] = useState(false);
@@ -77,6 +78,15 @@ const FormationInitialePage = () => {
                 }
                 if (response.data.practicalInfos) {
                     setPracticalInfos(response.data.practicalInfos);
+                }
+
+                // Récupérer les documents publics de la formation
+                try {
+                    const documentsResponse = await axios.get(`/api/formations/${id}/documents`);
+                    setDocuments(documentsResponse.data);
+                } catch (docError) {
+                    console.error('Error fetching documents:', docError);
+                    // Ne pas arrêter le chargement si les documents échouent
                 }
 
                 setError(null);
@@ -253,20 +263,23 @@ const FormationInitialePage = () => {
                         <section key={practicalInfo.id} className={`py-16 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                             <div className="container mx-auto px-4">
                                 <div className={`flex flex-col md:flex-row items-center gap-12 ${index % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
-                                    <div className="md:w-1/2">
+                                    <div className={practicalInfo.image ? "md:w-1/2" : "w-full"}>
                                         <h2 className="text-3xl font-bold mb-6">{practicalInfo.title}</h2>
                                         <div 
                                             className="text-gray-600 prose prose-lg max-w-none"
                                             dangerouslySetInnerHTML={{ __html: practicalInfo.description }}
                                         />
                                     </div>
-                                    <div className="md:w-1/2">
-                                        <img
-                                            src={practicalInfo.image || practical}
-                                            alt={practicalInfo.title}
-                                            className="rounded-lg shadow-xl"
-                                        />
-                                    </div>
+
+                                    {practicalInfo.image && (
+                                        <div className="md:w-1/2">
+                                            <img
+                                                src={practicalInfo.image}
+                                                alt={practicalInfo.title}
+                                                className="rounded-lg shadow-xl"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </section>
@@ -295,6 +308,40 @@ const FormationInitialePage = () => {
                                         className="w-full bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800">
                                         Réserver cette session
                                     </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
+
+            {/* Documents Section */}
+            {documents.length > 0 && (
+                <section className="py-16 bg-white">
+                    <div className="container mx-auto px-4">
+                        <h2 className="text-3xl font-bold mb-8">Documents de formation</h2>
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {documents.map((document) => (
+                                <div key={document.id} className="bg-gray-50 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+                                    <div className="flex items-center mb-4">
+                                        <FileText className="h-8 w-8 text-blue-900 mr-3"/>
+                                        <div>
+                                            <h3 className="font-semibold text-lg">{document.title}</h3>
+                                            <p className="text-gray-600 text-sm">{document.type?.toUpperCase()}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center text-gray-600 text-sm mb-4">
+                                        <Calendar className="h-4 w-4 mr-1"/>
+                                        <span>Ajouté le {new Date(document.uploadedAt).toLocaleDateString()}</span>
+                                    </div>
+                                    <a
+                                        href={document.downloadUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center justify-center"
+                                    >
+                                        Télécharger
+                                    </a>
                                 </div>
                             ))}
                         </div>
