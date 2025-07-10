@@ -194,7 +194,7 @@ const FormulasAdmin: React.FC = () => {
     }
 
     return (
-        <AdminLayout title="Formules d'examen" breadcrumbItems={[
+        <AdminLayout title="Formules centre" breadcrumbItems={[
             { label: 'Admin', path: '/admin' },
             { label: 'Réservations', path: '/admin/reservations' },
             { label: 'Formules' }
@@ -217,7 +217,7 @@ const FormulasAdmin: React.FC = () => {
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 flex items-center">
                             <Calculator className="h-8 w-8 mr-3 text-blue-600" />
-                            Formules d'examen
+                            Formules centre
                         </h1>
                         <p className="text-gray-600 mt-1">
                             Gérez les formules et tarifs par centre d'examen

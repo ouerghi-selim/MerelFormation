@@ -169,7 +169,11 @@ const SessionForm: React.FC<SessionFormProps> = ({
         try {
             setLoadingCenters(true);
             const response = await adminCentersApi.getForFormations();
-            setCentersData(response.data);
+            // Filtrer côté frontend pour s'assurer qu'on a que les centres de formation
+            const formationCenters = response.data.filter((center: Center) => 
+                center.type === 'formation' || center.type === 'Formation' || !center.type
+            );
+            setCentersData(formationCenters);
         } catch (err) {
             console.error('Error fetching centers:', err);
             addToast('Erreur lors du chargement des centres', 'error');

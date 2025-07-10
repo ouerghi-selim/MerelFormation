@@ -405,7 +405,7 @@ MerelFormation/
 - **🆕 Unification Formulaires Sessions**: Formulaires calendrier et création unifiés
 - **🆕 Système de Gestion des Centres**: Centres de formation et d'examen unifiés avec CRUD complet
 - **🆕 Gestion Géographique**: Centres organisés par ville, département et type (formation/examen/mixte)
-- **🆕 Système de Formules**: Gestion des formules d'examen par centre avec tarification
+- **🆕 Système de Formules**: Gestion des formules centre par centre avec tarification
 - **🆕 Integration Planning**: Centres intégrés dans le système de planning et sessions
 - **🆕 Remplacement ExamCenter → Center**: Migration complète vers entité Center unifiée
 - **🆕 Affichage Centres Inactifs**: Interface admin montre tous les centres (actifs et inactifs)
