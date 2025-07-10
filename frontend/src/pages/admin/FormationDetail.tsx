@@ -16,7 +16,8 @@ import {
   ChevronDown,
   Car,
   CreditCard,
-  Image
+  Image,
+  UserCheck
 } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
@@ -76,10 +77,29 @@ interface SessionInput {
   id: number;
   startDate: string;
   endDate: string;
-  location: string;
+  location?: string;
   status: string;
   maxParticipants: number;
-  participantsCount: number;
+  participantsCount?: number;
+  center?: {
+    id: number;
+    name: string;
+    address: string;
+    city: string;
+    type: string;
+  };
+  instructors?: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    specialization?: string;
+  }[];
+  instructor?: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    specialization?: string;
+  };
 }
 
 interface PracticalInfoInput {
@@ -1204,15 +1224,58 @@ const FormationDetail: React.FC = () => {
                                       Du {formatDate(session.startDate)} au {formatDate(session.endDate)}
                                     </div>
 
-                                    <div className="flex items-center text-sm text-gray-600">
-                                      <MapPin className="h-4 w-4 mr-2" />
-                                      {session.location}
-                                    </div>
+                                    {/* Affichage conditionnel du lieu */}
+                                    {(session.location || session.center?.address) && (
+                                      <div className="flex items-center text-sm text-gray-600">
+                                        <MapPin className="h-4 w-4 mr-2" />
+                                        {session.center?.address ? (
+                                          <>
+                                            <span className="font-medium">{session.center.name}</span>
+                                            <span className="ml-1">- {session.center.address}, {session.center.city}</span>
+                                          </>
+                                        ) : (
+                                          session.location
+                                        )}
+                                      </div>
+                                    )}
 
-                                    <div className="flex items-center text-sm text-gray-600">
-                                      <Users className="h-4 w-4 mr-2" />
-                                      {session.participantsCount} / {session.maxParticipants} participants
-                                    </div>
+                                    {/* Affichage conditionnel des participants */}
+                                    {(session.participantsCount !== undefined || session.maxParticipants) && (
+                                      <div className="flex items-center text-sm text-gray-600">
+                                        <Users className="h-4 w-4 mr-2" />
+                                        {session.participantsCount !== undefined ? (
+                                          `${session.participantsCount} / ${session.maxParticipants} participants`
+                                        ) : (
+                                          `${session.maxParticipants} participants maximum`
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {/* Affichage conditionnel des instructeurs */}
+                                    {(session.instructors?.length > 0 || session.instructor) && (
+                                      <div className="flex items-center text-sm text-gray-600">
+                                        <UserCheck className="h-4 w-4 mr-2" />
+                                        {session.instructors?.length > 0 ? (
+                                          <div className="flex flex-wrap gap-1">
+                                            {session.instructors.map((instructor, index) => (
+                                              <span key={instructor.id} className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                                {instructor.firstName} {instructor.lastName}
+                                                {instructor.specialization && (
+                                                  <span className="ml-1 text-blue-600">({instructor.specialization})</span>
+                                                )}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        ) : session.instructor ? (
+                                          <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                            {session.instructor.firstName} {session.instructor.lastName}
+                                            {session.instructor.specialization && (
+                                              <span className="ml-1 text-blue-600">({session.instructor.specialization})</span>
+                                            )}
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                             ))}

@@ -13,6 +13,9 @@ import EventForm from './EventForm';
 import { usePlanningData } from './usePlanningData';
 import { messages, eventStyleGetter } from './calendarConfig';
 import { CalendarEvent } from './types';
+import SessionForm from '../../components/admin/SessionForm';
+import { adminSessionsApi } from '../../services/api';
+
 
 // Configuration de moment en français
 moment.locale('fr');
@@ -53,11 +56,19 @@ const PlanningCalendar: React.FC = () => {
         setShowEventModal(true);
     };
 
-    const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
-        const success = await saveEvent(eventData, selectedEvent?.id);
-        if (success) {
+    const handleSaveEvent = async (sessionData: any) => {
+        try {
+            // Utiliser la même API que SessionForm
+            await adminSessionsApi.update(sessionData.id, {
+                ...sessionData,
+                instructors: sessionData.instructors
+            });
             setShowEventModal(false);
             setSelectedEvent(null);
+            // Recharger les données du planning
+            window.location.reload(); // Simple refresh pour voir les changements
+        } catch (error) {
+            console.error('Error updating session from planning:', error);
         }
     };
 
@@ -230,15 +241,13 @@ const PlanningCalendar: React.FC = () => {
                 footer={renderModalFooter()}
                 maxWidth="max-w-2xl"
             >
-                <EventForm
-                    event={selectedEvent}
+                <SessionForm
+                    mode="planning"
+                    session={selectedEvent}
                     onSave={handleSaveEvent}
-                    availableLocations={availableLocations}
-                    availableInstructors={availableInstructors}
-                    formations={formations || []}
-                    onSubmit={(submitFn) => {
-                        setSubmitForm(() => submitFn);
-                    }}
+                    onCancel={() => setShowEventModal(false)}
+                    isOpen={showEventModal}
+                    isExamEvent={isExamEvent}
                 />
             </Modal>
         </div>

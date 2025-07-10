@@ -1,23 +1,28 @@
 // src/pages/admin/PlanningCalendar/EventForm.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { CalendarEvent, Formation, Instructor, FormErrors } from './types';
+import SessionForm from "@/components/admin/SessionForm.tsx";
 
 interface EventFormProps {
     event: CalendarEvent | null;
     onSave: (eventData: Partial<CalendarEvent>) => void;
+    onCancel: () => void;
     availableLocations: string[];
     availableInstructors: Instructor[];
     formations: Formation[];
     onSubmit: (submitFn: () => void) => void;
+    isOpen?: boolean;
 }
 
 const EventForm: React.FC<EventFormProps> = ({
                                                  event,
                                                  onSave,
+                                                 onCancel,
                                                  availableLocations,
                                                  availableInstructors,
                                                  formations,
-                                                 onSubmit
+                                                 onSubmit,
+                                                 isOpen = true
                                              }) => {
     // ✅ Vérifier si c'est un événement d'examen (lecture seule)
     const isExamEvent = event && typeof event.id === 'string' && event.id.startsWith('exam-');
@@ -235,211 +240,14 @@ const EventForm: React.FC<EventFormProps> = ({
     }
 
     return (
-        <div className="space-y-4">
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Formation*
-                </label>
-                <select
-                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                        errors.formation ? 'border-red-500' : ''
-                    }`}
-                    value={formationId || ''}
-                    onChange={(e) => setFormationId(e.target.value ? parseInt(e.target.value) : undefined)}
-                >
-                    <option value="">Sélectionner une formation</option>
-                    {formations.map(formation => (
-                        <option key={formation.id} value={formation.id}>{formation.title}</option>
-                    ))}
-                </select>
-                {errors.formation && (
-                    <p className="mt-1 text-sm text-red-500">{errors.formation}</p>
-                )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Date de début*
-                    </label>
-                    <input
-                        type="date"
-                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                            errors.startDate ? 'border-red-500' : ''
-                        }`}
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                    />
-                    {errors.startDate && (
-                        <p className="mt-1 text-sm text-red-500">{errors.startDate}</p>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Heure de début*
-                    </label>
-                    <input
-                        type="time"
-                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                            errors.startTime ? 'border-red-500' : ''
-                        }`}
-                        value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
-                    />
-                    {errors.startTime && (
-                        <p className="mt-1 text-sm text-red-500">{errors.startTime}</p>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Date de fin*
-                    </label>
-                    <input
-                        type="date"
-                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                            errors.endDate ? 'border-red-500' : ''
-                        }`}
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                    />
-                    {errors.endDate && (
-                        <p className="mt-1 text-sm text-red-500">{errors.endDate}</p>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Heure de fin*
-                    </label>
-                    <input
-                        type="time"
-                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                            errors.endTime ? 'border-red-500' : ''
-                        }`}
-                        value={endTime}
-                        onChange={(e) => setEndTime(e.target.value)}
-                    />
-                    {errors.endTime && (
-                        <p className="mt-1 text-sm text-red-500">{errors.endTime}</p>
-                    )}
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Lieu*
-                    </label>
-                    <select
-                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                            errors.location ? 'border-red-500' : ''
-                        }`}
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                    >
-                        <option value="">Sélectionner un lieu</option>
-                        {availableLocations.map((loc, index) => (
-                            <option key={index} value={loc}>{loc}</option>
-                        ))}
-                    </select>
-                    {errors.location && (
-                        <p className="mt-1 text-sm text-red-500">{errors.location}</p>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Formateur(s)
-                    </label>
-                    <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
-                        {availableInstructors.map(instructor => (
-                            <label key={instructor.id} className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                    checked={selectedInstructors.includes(instructor.id)}
-                                    onChange={(e) => {
-                                        if (e.target.checked) {
-                                            setSelectedInstructors([...selectedInstructors, instructor.id]);
-                                        } else {
-                                            setSelectedInstructors(selectedInstructors.filter(id => id !== instructor.id));
-                                        }
-                                    }}
-                                />
-                                <span className="ml-2 text-sm text-gray-900">
-                                    {instructor.firstName && instructor.lastName ? 
-                                        `${instructor.firstName} ${instructor.lastName}` : 
-                                        instructor.name}
-                                    {instructor.specialization && (
-                                        <span className="text-gray-500 ml-1">({instructor.specialization})</span>
-                                    )}
-                                </span>
-                            </label>
-                        ))}
-                    </div>
-                    {selectedInstructors.length === 0 && (
-                        <p className="mt-1 text-sm text-gray-500">Aucun formateur sélectionné</p>
-                    )}
-                    {errors.instructor && (
-                        <p className="mt-1 text-sm text-red-500">{errors.instructor}</p>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Nombre maximum de participants*
-                    </label>
-                    <input
-                        type="number"
-                        min="1"
-                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                            errors.maxParticipants ? 'border-red-500' : ''
-                        }`}
-                        value={maxParticipants}
-                        onChange={(e) => setMaxParticipants(parseInt(e.target.value) || 0)}
-                    />
-                    {errors.maxParticipants && (
-                        <p className="mt-1 text-sm text-red-500">{errors.maxParticipants}</p>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Statut*
-                    </label>
-                    <select
-                        className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                            errors.status ? 'border-red-500' : ''
-                        }`}
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value)}
-                    >
-                        <option value="scheduled">Programmée</option>
-                        <option value="ongoing">En cours</option>
-                        <option value="completed">Terminée</option>
-                        <option value="cancelled">Annulée</option>
-                    </select>
-                    {errors.status && (
-                        <p className="mt-1 text-sm text-red-500">{errors.status}</p>
-                    )}
-                </div>
-            </div>
-
-            <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Notes (facultatif)
-                </label>
-                <textarea
-                    rows={3}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Informations complémentaires sur la session..."
-                />
-            </div>
-        </div>
+        <SessionForm
+            mode="planning"
+            session={event}
+            onSave={onSave}
+            onCancel={onCancel}
+            isOpen={isOpen}
+            isExamEvent={isExamEvent}
+        />
     );
 };
 

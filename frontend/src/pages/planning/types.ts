@@ -39,6 +39,14 @@ export interface CalendarEvent {
     notes?: string | null;
     vehicleAssigned?: string; // Pour les examens
     clientName?: string; // Pour les examens
+    // Documents pour les sessions
+    documents?: Array<{
+        id: number;
+        title: string;
+        type: string;
+        fileSize: string;
+        downloadUrl: string;
+    }>;
 }
 
 // Événement formaté pour react-big-calendar

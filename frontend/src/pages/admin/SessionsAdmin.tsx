@@ -10,6 +10,7 @@ import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
 import { useNotification } from '../../contexts/NotificationContext';
 import { adminSessionsApi, adminFormationsApi, documentsApi } from '@/services/api.ts';
+import SessionForm from '../../components/admin/SessionForm';
 
 interface Session {
     id: number;
@@ -76,6 +77,23 @@ const SessionsAdmin: React.FC = () => {
     const [tempDocuments, setTempDocuments] = useState<{tempId: string, document: any}[]>([]);
     const [pendingTempIds, setPendingTempIds] = useState<string[]>([]);
 
+    const handleUnifiedSave = async (sessionData: any) => {
+        try {
+            setUpdating(true);
+            await adminSessionsApi.update(sessionData.id, {
+                ...sessionData,
+                instructors: sessionData.instructors
+            });
+            setShowEditModal(false);
+            setSessionToEdit(null);
+            addToast('Session mise à jour avec succès', 'success');
+        } catch (error) {
+            console.error('Error updating session:', error);
+            addToast('Erreur lors de la mise à jour', 'error');
+        } finally {
+            setUpdating(false);
+        }
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -570,447 +588,16 @@ const SessionsAdmin: React.FC = () => {
             </Modal>
 
             {/* Modal d'édition */}
-            <Modal
+            <SessionForm
+                mode="edit"
+                session={sessionToEdit}
+                onSave={handleUnifiedSave}
+                onCancel={() => setShowEditModal(false)}
                 isOpen={showEditModal}
-                onClose={() => setShowEditModal(false)}
-                title="Modifier la session"
-                maxWidth="max-w-3xl"
-                footer={
-                    <div className="flex justify-end space-x-3">
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowEditModal(false)}
-                        >
-                            Annuler
-                        </Button>
-                        <Button
-                            onClick={handleEditFormSubmit}
-                            loading={updating}
-                        >
-                            Enregistrer
-                        </Button>
-                    </div>
-                }
-            >
-                {sessionToEdit && (
-                    <form onSubmit={handleEditFormSubmit}>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Formation*
-                                </label>
-                                <select
-                                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                        formErrors.formation ? 'border-red-500' : ''
-                                    }`}
-                                    value={sessionToEdit.formation.id}
-                                    onChange={(e) => setSessionToEdit({
-                                        ...sessionToEdit,
-                                        formation: {
-                                            ...sessionToEdit.formation,
-                                            id: parseInt(e.target.value)
-                                        }
-                                    })}
-                                >
-                                    <option value="">Sélectionner une formation</option>
-                                    {formations.map(formation => (
-                                        <option key={formation.id} value={formation.id}>
-                                            {formation.title}
-                                        </option>
-                                    ))}
-                                </select>
-                                {formErrors.formation && (
-                                    <p className="mt-1 text-sm text-red-500">{formErrors.formation}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Lieu*
-                                </label>
-                                <input
-                                    type="text"
-                                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                        formErrors.location ? 'border-red-500' : ''
-                                    }`}
-                                    value={sessionToEdit.location}
-                                    onChange={(e) => setSessionToEdit({...sessionToEdit, location: e.target.value})}
-                                />
-                                {formErrors.location && (
-                                    <p className="mt-1 text-sm text-red-500">{formErrors.location}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Date de début*
-                                </label>
-                                <input
-                                    type="date"
-                                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                        formErrors.startDate ? 'border-red-500' : ''
-                                    }`}
-                                    value={sessionToEdit.startDate.split('T')[0]}
-                                    onChange={(e) => setSessionToEdit({...sessionToEdit, startDate: e.target.value})}
-                                />
-                                {formErrors.startDate && (
-                                    <p className="mt-1 text-sm text-red-500">{formErrors.startDate}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Date de fin*
-                                </label>
-                                <input
-                                    type="date"
-                                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                        formErrors.endDate ? 'border-red-500' : ''
-                                    }`}
-                                    value={sessionToEdit.endDate.split('T')[0]}
-                                    onChange={(e) => setSessionToEdit({...sessionToEdit, endDate: e.target.value})}
-                                />
-                                {formErrors.endDate && (
-                                    <p className="mt-1 text-sm text-red-500">{formErrors.endDate}</p>
-                                )}
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Formateur(s)
-                                </label>
-                                <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
-                                    {instructors.map(instructor => (
-                                        <label key={instructor.id} className="flex items-center">
-                                            <input
-                                                type="checkbox"
-                                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                checked={selectedInstructors.includes(instructor.id)}
-                                                onChange={(e) => {
-                                                    if (e.target.checked) {
-                                                        setSelectedInstructors([...selectedInstructors, instructor.id]);
-                                                    } else {
-                                                        setSelectedInstructors(selectedInstructors.filter(id => id !== instructor.id));
-                                                    }
-                                                }}
-                                            />
-                                            <span className="ml-2 text-sm text-gray-900">
-                                                {instructor.firstName} {instructor.lastName}
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
-                                {selectedInstructors.length === 0 && (
-                                    <p className="mt-1 text-sm text-gray-500">Aucun formateur sélectionné</p>
-                                )}
-                                {formErrors.instructor && (
-                                    <p className="mt-1 text-sm text-red-500">{formErrors.instructor}</p>
-                                )}
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Nombre maximum de participants*
-                                </label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                        formErrors.maxParticipants ? 'border-red-500' : ''
-                                    }`}
-                                    value={sessionToEdit.maxParticipants}
-                                    onChange={(e) => setSessionToEdit({
-                                        ...sessionToEdit,
-                                        maxParticipants: parseInt(e.target.value) || 0
-                                    })}
-                                />
-                                {formErrors.maxParticipants && (
-                                    <p className="mt-1 text-sm text-red-500">{formErrors.maxParticipants}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Statut*
-                                </label>
-                                <select
-                                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                        formErrors.status ? 'border-red-500' : ''
-                                    }`}
-                                    value={sessionToEdit.status}
-                                    onChange={(e) => setSessionToEdit({...sessionToEdit, status: e.target.value})}
-                                >
-                                    <option value="scheduled">Programmée</option>
-                                    <option value="ongoing">En cours</option>
-                                    <option value="completed">Terminée</option>
-                                    <option value="cancelled">Annulée</option>
-                                </select>
-                                {formErrors.status && (
-                                    <p className="mt-1 text-sm text-red-500">{formErrors.status}</p>
-                                )}
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Notes
-                                </label>
-                                <textarea
-                                    rows={3}
-                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    value={sessionToEdit.notes || ''}
-                                    onChange={(e) => setSessionToEdit({...sessionToEdit, notes: e.target.value})}
-                                />
-                            </div>
+            />
 
 
-                            {/* Section Documents avec système temporaire */}
-                            <div className="md:col-span-2 mt-6">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-medium text-gray-900">Documents associés</h3>
-                                    <input
-                                        type="file"
-                                        multiple
-                                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                                        onChange={handleTempDocumentUpload}
-                                        className="hidden"
-                                        id="documents-upload-edit-temp"
-                                    />
-                                    <label
-                                        htmlFor="documents-upload-edit-temp"
-                                        className="inline-flex items-center px-3 py-1.5 border border-blue-700 text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 cursor-pointer"
-                                    >
-                                        <Plus className="h-4 w-4 mr-1"/>
-                                        Ajouter des documents
-                                    </label>
-                                </div>
 
-                                {/* Documents existants (sauvegardés) */}
-                                {sessionToEdit.documents && sessionToEdit.documents.length > 0 && (
-                                    <div className="mb-4">
-                                        <h4 className="text-sm font-medium text-green-800 mb-2 bg-green-50 px-2 py-1 rounded">Documents sauvegardés</h4>
-                                        <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                                            <ul className="divide-y divide-gray-200">
-                                                {sessionToEdit.documents.map((document) => (
-                                                    <li key={document.id} className="px-4 py-3">
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="min-w-0 flex-1">
-                                                                <p className="text-sm font-medium text-gray-900 truncate">
-                                                                    {document.title}
-                                                                </p>
-                                                                <p className="text-sm text-gray-500 truncate">
-                                                                    {document.type} • {document.fileSize}
-                                                                </p>
-                                                            </div>
-                                                            <div className="flex-shrink-0">
-                                                               <a href={document.downloadUrl}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
-                                                                >
-                                                                Télécharger
-                                                            </a>
-                                                        </div>
-                                                    </div>
-                                                    </li>
-                                                    ))}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Documents temporaires (nouveau système) */}
-                                {tempDocuments.length > 0 && (
-                                    <div className="mb-4">
-                                        <h4 className="text-sm font-medium text-yellow-800 mb-2 bg-yellow-50 px-2 py-1 rounded">Documents temporaires (Sauvegardez pour finaliser)</h4>
-                                        <div className="space-y-2">
-                                            {tempDocuments.map(({ tempId, document: tempDoc }) => (
-                                                <div key={tempId} className="flex items-center justify-between p-3 bg-yellow-50 rounded border border-yellow-200">
-                                                    <div className="flex-1">
-                                                        <p className="text-sm font-medium text-gray-900">{tempDoc.title}</p>
-                                                        <p className="text-sm text-yellow-600">Temporaire - {tempDoc.originalName}</p>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => deleteTempDocument(tempId)}
-                                                        className="text-red-600 hover:text-red-900"
-                                                    >
-                                                        <Trash2 className="h-4 w-4"/>
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Nouveaux documents (ancien système - fallback) */}
-                                {newDocuments.length > 0 && (
-                                    <div className="mb-4">
-                                        <h4 className="text-sm font-medium text-blue-800 mb-2 bg-blue-50 px-2 py-1 rounded">Documents (ancien système)</h4>
-                                        <div className="space-y-2">
-                                            {newDocuments.map((file, index) => (
-                                                <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded border border-blue-200">
-                                                    <span className="text-sm">{file.name}</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setNewDocuments(docs => docs.filter((_, i) => i !== index))}
-                                                        className="text-red-600 hover:text-red-900"
-                                                    >
-                                                        <Trash2 className="h-4 w-4"/>
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Message si aucun document */}
-                                {!sessionToEdit.documents?.length && tempDocuments.length === 0 && newDocuments.length === 0 && (
-                                    <p className="text-sm text-gray-500">Aucun document associé à cette session.</p>
-                                )}
-                            </div>
-                        </div>
-                    </form>
-                    )}
-            </Modal>
-
-            <Modal
-                isOpen={showInspectModal}
-                onClose={() => setShowInspectModal(false)}
-                title="Détails de la session"
-                maxWidth="max-w-3xl"
-                footer={
-                    <div className="flex justify-end space-x-3">
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowInspectModal(false)}
-                        >
-                            Fermer
-                        </Button>
-                    </div>
-                }
-            >
-                {sessionToInspect && (
-                    <div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <h4 className="font-medium text-gray-700">Formation</h4>
-                                <p>{sessionToInspect.formation.title}</p>
-                            </div>
-                            <div>
-                                <h4 className="font-medium text-gray-700">Lieu</h4>
-                                <p>{sessionToInspect.location}</p>
-                            </div>
-                            <div>
-                                <h4 className="font-medium text-gray-700">Date de début</h4>
-                                <p>{formatDate(sessionToInspect.startDate)}</p>
-                            </div>
-                            <div>
-                                <h4 className="font-medium text-gray-700">Date de fin</h4>
-                                <p>{formatDate(sessionToInspect.endDate)}</p>
-                            </div>
-                            <div>
-                                <h4 className="font-medium text-gray-700">Formateur(s)</h4>
-                                <div>
-                                    {sessionToInspect.instructors && sessionToInspect.instructors.length > 0 ? (
-                                        <div className="space-y-1">
-                                            {sessionToInspect.instructors.map(instructor => (
-                                                <p key={instructor.id} className="text-sm">
-                                                    {instructor.firstName} {instructor.lastName}
-                                                    {instructor.specialization && (
-                                                        <span className="text-gray-500 ml-1">({instructor.specialization})</span>
-                                                    )}
-                                                </p>
-                                            ))}
-                                        </div>
-                                    ) : sessionToInspect.instructor ? (
-                                        <p>{sessionToInspect.instructor.firstName} {sessionToInspect.instructor.lastName}</p>
-                                    ) : (
-                                        <p className="text-gray-500">Non assigné</p>
-                                    )}
-                                </div>
-                            </div>
-                            <div>
-                                <h4 className="font-medium text-gray-700">Nombre maximum de participants</h4>
-                                <p>{sessionToInspect.maxParticipants}</p>
-                            </div>
-                            <div>
-                                <h4 className="font-medium text-gray-700">Statut</h4>
-                                <span
-                                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(sessionToInspect.status)}`}>
-                        {formatStatus(sessionToInspect.status)}
-                    </span>
-                            </div>
-                        </div>
-
-                        {sessionToInspect.notes && (
-                            <div className="mb-4">
-                                <h4 className="font-medium text-gray-700">Notes</h4>
-                                <p className="whitespace-pre-wrap">{sessionToInspect.notes}</p>
-                            </div>
-                        )}
-
-                        <div className="mt-6">
-                            <h3 className="text-lg font-medium text-gray-900 mb-3">Liste des participants</h3>
-                            {sessionToInspect.participants && sessionToInspect.participants.length > 0 ? (
-                                <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                                    <ul className="divide-y divide-gray-200">
-                                        {sessionToInspect.participants.map((participant) => (
-                                            <li key={participant.id} className="px-4 py-3">
-                                                <div className="flex items-center">
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="text-sm font-medium text-gray-900 truncate">
-                                                            {participant.firstName} {participant.lastName}
-                                                        </p>
-                                                        <p className="text-sm text-gray-500 truncate">
-                                                            {participant.email}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ) : (
-                                <p className="text-sm text-gray-500">Aucun participant inscrit à cette session.</p>
-                            )}
-                        </div>
-                        {/* AJOUTER CETTE SECTION après la section participants dans le modal d'inspection */}
-                        <div className="mt-6">
-                            <h3 className="text-lg font-medium text-gray-900 mb-3">Documents associés</h3>
-                            {sessionToInspect.documents && sessionToInspect.documents.length > 0 ? (
-                                <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                                    <ul className="divide-y divide-gray-200">
-                                        {sessionToInspect.documents.map((document) => (
-                                            <li key={document.id} className="px-4 py-3">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="text-sm font-medium text-gray-900 truncate">
-                                                            {document.title}
-                                                        </p>
-                                                        <p className="text-sm text-gray-500 truncate">
-                                                            {document.type} • {document.fileSize}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex-shrink-0">
-
-                                                        <a href={document.downloadUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
-                                                        >
-                                                        Télécharger
-                                                    </a>
-                                                </div>
-                                            </div>
-                                            </li>
-                                            ))}
-                                    </ul>
-                                </div>
-                                ) : (
-                                <p className="text-sm text-gray-500">Aucun document associé à cette session.</p>
-                                )}
-                        </div>
-                    </div>
-                )}
-            </Modal>
         </div>
     );
 };

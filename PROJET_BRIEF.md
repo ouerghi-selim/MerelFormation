@@ -5,8 +5,8 @@
 **Développeur Principal :** Selim OUERGHI (ouerghi-selim)  
 **Repository :** https://github.com/ouerghi-selim/MerelFormation  
 **Type :** Application de gestion de formations taxi + location de véhicules  
-**Status :** ✅ 100% FONCTIONNEL - Projet complet avec tous les bugs critiques corrigés + Sessions & Instructeurs fixes  
-**Dernière mise à jour :** 30 Juin 2025 - Corrections finales Sessions/Instructeurs
+**Status :** ✅ 100% FONCTIONNEL - Projet complet avec améliorations UX/UI avancées  
+**Dernière mise à jour :** 9 Juillet 2025 - Documents publics + Sessions enrichies
 
 ## 🖗️ Architecture Technique
 
@@ -550,7 +550,13 @@ Grâce au **système de détails complets des réservations**, **les administrat
 **💡 CONSEIL POUR FUTURES CONVERSATIONS :**
 Copiez-collez ce brief au début de nouvelles conversations avec Claude pour qu'il comprenne immédiatement le contexte et l'état du projet sans avoir à refaire toute l'analyse.
 
-**Dernière mise à jour :** Juin 2025 par Selim OUERGHI
+**Dernière mise à jour :** Juillet 2025 par Selim OUERGHI
+
+**🎯 NOUVELLES FONCTIONNALITÉS AJOUTÉES (Juillet 2025) :**
+- **Documents publics** - Accès aux documents de formation sans authentification
+- **Sessions enrichies** - Affichage conditionnel avec toutes les informations (lieu, instructeurs, participants)
+- **UX améliorée** - Interface plus riche et informative
+- **APIs cohérentes** - Formats de données harmonisés entre public et admin
 
 ## 🆕 NOUVEAU : Système d'Emails Automatiques & WYSIWYG Complet
 
@@ -594,3 +600,33 @@ Le projet MerelFormation dispose maintenant d'un **système d'emails automatique
 - **Gain de temps** - Insertion variables en 1 clic
 
 Le système est **immédiatement opérationnel** après rechargement des fixtures et fonctionne de manière transparente avec l'infrastructure existante.
+
+## 🆕 DERNIÈRES AMÉLIORATIONS (Juillet 2025)
+
+### 📄 **Documents Publics sur Pages Formation**
+- **Accès public aux documents** - Documents de formation accessibles sans authentification
+- **API publique** - Endpoints `/api/formations/{id}/documents` et téléchargement direct
+- **Affichage automatique** - Section "Documents de formation" sur pages publiques
+- **Filtrage intelligent** - Seuls les documents non-privés sont affichés
+- **UX améliorée** - Téléchargement en un clic avec informations détaillées
+
+### 🎛️ **Section Sessions Enrichie (Admin)**
+- **Affichage conditionnel intelligent** - Icônes n'apparaissent que si données disponibles
+- **Informations complètes** - Location, participants, instructeurs avec spécialisations
+- **API backend enrichie** - FormationAdminController retourne toutes les données nécessaires
+- **Interface utilisateur améliorée** - Centres, instructeurs multiples, comptage participants
+- **Badges instructeurs** - Spécialisations colorées avec support multiple instructeurs
+- **Lieux intelligents** - Priorité centre d'examen/formation puis location manuelle
+
+### 🎯 **Améliorations Techniques**
+- **Données sessions complètes** - Location, participantsCount, center, instructors
+- **Compatibilité maintenue** - Support ancien système instructeur unique
+- **API cohérente** - Formats identiques entre API publique et admin
+- **TypeScript enrichi** - Interfaces mises à jour avec propriétés optionnelles
+- **Affichage conditionnel** - Plus d'icônes vides ou d'informations manquantes
+
+### 📊 **Impact Business**
+- **Transparence accrue** - Documents formation accessibles publiquement
+- **Gestion avancée** - Visualisation complète des sessions en administration
+- **Expérience utilisateur** - Interface plus riche et informative
+- **Efficacité administrative** - Toutes les informations sessions en un coup d'œil

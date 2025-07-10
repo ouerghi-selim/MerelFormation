@@ -104,7 +104,11 @@ export const usePlanningData = () => {
                     } : undefined,
                     instructors: session.instructors && session.instructors.length > 0 ? session.instructors : undefined,
                     maxParticipants: session.maxParticipants || 12,
-                    currentParticipants: session.participants ? session.participants.length : 0
+                    currentParticipants: session.participants ? session.participants.length : 0,
+                    notes: session.notes || '', // ✅ Ajouter les notes
+                    status: session.status || 'scheduled', // ✅ Ajouter le statut aussi
+                    center: session.center || null, // ✅ Ajouter le centre
+                    documents: session.documents || [] // ✅ Ajouter les documents
                 }));
 
                 // 2. Récupérer les réservations de véhicules CONFIRMÉES pour examen

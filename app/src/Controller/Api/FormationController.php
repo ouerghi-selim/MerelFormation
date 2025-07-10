@@ -89,16 +89,55 @@ class FormationController extends AbstractController
             'isActive' => $formation->isIsActive(),
         ];
 
-        // Ajouter les sessions
+        // Ajouter les sessions avec toutes les informations
         $sessions = [];
         foreach ($formation->getSessions() as $session) {
-            $sessions[] = [
+            $sessionData = [
                 'id' => $session->getId(),
                 'startDate' => $session->getStartDate()->format('c'),
                 'endDate' => $session->getEndDate()->format('c'),
                 'maxParticipants' => $session->getMaxParticipants(),
-                'status' => $session->getStatus()
+                'status' => $session->getStatus(),
+                'location' => $session->getLocation(),
+                'participantsCount' => count($session->getParticipants())
             ];
+
+            // Ajouter les informations du centre si disponible
+            if ($session->getCenter()) {
+                $center = $session->getCenter();
+                $sessionData['center'] = [
+                    'id' => $center->getId(),
+                    'name' => $center->getName(),
+                    'address' => $center->getAddress(),
+                    'city' => $center->getCity(),
+                    'type' => $center->getType()
+                ];
+            }
+
+            // Ajouter les informations des instructeurs multiples
+            $instructors = [];
+            foreach ($session->getInstructors() as $instructor) {
+                $instructors[] = [
+                    'id' => $instructor->getId(),
+                    'firstName' => $instructor->getFirstName(),
+                    'lastName' => $instructor->getLastName(),
+                    'specialization' => $instructor->getSpecialization()
+                ];
+            }
+            $sessionData['instructors'] = $instructors;
+
+            // Ajouter l'instructeur principal pour compatibilité
+            if ($session->getInstructor()) {
+                $instructor = $session->getInstructor();
+                $sessionData['instructor'] = [
+                    'id' => $instructor->getId(),
+                    'firstName' => $instructor->getFirstName(),
+                    'lastName' => $instructor->getLastName(),
+                    'specialization' => $instructor->getSpecialization()
+                ];
+            }
+
+            $sessions[] = $sessionData;
         }
         $formationData['sessions'] = $sessions;
 
