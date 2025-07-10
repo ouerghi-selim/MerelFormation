@@ -87,6 +87,10 @@ class FormationController extends AbstractController
             'createdAt' => $formation->getCreatedAt()->format('c'),
             'updatedAt' => $formation->getUpdatedAt()->format('c'),
             'isActive' => $formation->isIsActive(),
+            'successRate' => $formation->getSuccessRate(),
+            'minStudents' => $formation->getMinStudents(),
+            'maxStudents' => $formation->getMaxStudents(),
+            'badges' => $formation->getBadges(),
         ];
 
         // Ajouter les sessions avec toutes les informations
