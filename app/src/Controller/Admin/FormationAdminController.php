@@ -249,6 +249,10 @@ class FormationAdminController extends AbstractController
             'duration' => $formation->getDuration(),
             'price' => $formation->getPrice(),
             'isActive' => $formation->isIsActive(),
+            'successRate' => $formation->getSuccessRate(),
+            'minStudents' => $formation->getMinStudents(),
+            'maxStudents' => $formation->getMaxStudents(),
+            'badges' => $formation->getBadges(),
             'modules' => $modules,
             'prerequisites' => $prerequisites,
             'sessions' => $sessions,
@@ -526,6 +530,18 @@ class FormationAdminController extends AbstractController
         }
         if (isset($data['isActive'])) {
             $formation->setIsActive($data['isActive']);
+        }
+        if (isset($data['successRate'])) {
+            $formation->setSuccessRate($data['successRate']);
+        }
+        if (isset($data['minStudents'])) {
+            $formation->setMinStudents($data['minStudents']);
+        }
+        if (isset($data['maxStudents'])) {
+            $formation->setMaxStudents($data['maxStudents']);
+        }
+        if (isset($data['badges'])) {
+            $formation->setBadges($data['badges']);
         }
 
         // Mettre à jour les modules

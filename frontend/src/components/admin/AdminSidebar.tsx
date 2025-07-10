@@ -62,7 +62,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: <Car size={20} />,
       submenu: [
         { title: 'Véhicules', path: '/admin/vehicles' },
-        { title: 'Centers', path: '/admin/reservations/examencenter' },
+        { title: 'Centers', path: '/admin/centers' },
         { title: 'Formules', path: '/admin/reservations/formules' }
 
 

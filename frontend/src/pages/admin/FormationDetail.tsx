@@ -17,7 +17,8 @@ import {
   Car,
   CreditCard,
   Image,
-  UserCheck
+  UserCheck,
+  Clock
 } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
@@ -27,6 +28,12 @@ import Alert from '../../components/common/Alert';
 import { useNotification } from '../../contexts/NotificationContext';
 import { adminFormationsApi, documentsApi, imageUploadApi } from '@/services/api.ts';
 import WysiwygEditor from '../../components/common/WysiwygEditor';
+
+interface Badge {
+  id?: number;
+  icon?: string;
+  text?: string;
+}
 
 interface Formation {
   id: number;
@@ -39,6 +46,7 @@ interface Formation {
   successRate?: number;
   minStudents?: number;
   maxStudents?: number;
+  badges?: Badge[];
   modules?: ModuleInput[];
   prerequisites?: PrerequisiteInput[];
   practicalInfo?: PracticalInfoInput;
@@ -145,6 +153,9 @@ const FormationDetail: React.FC = () => {
   const [tempDocuments, setTempDocuments] = useState<{tempId: string, document: any}[]>([]);
   const [pendingTempIds, setPendingTempIds] = useState<string[]>([]);
 
+  // États pour les badges
+  const [badges, setBadges] = useState<Badge[]>([]);
+
   // Validation des erreurs
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
 
@@ -164,6 +175,19 @@ const FormationDetail: React.FC = () => {
         // Utiliser practicalInfos si disponible, sinon convertir practicalInfo
         setPracticalInfos(formationData.practicalInfos || (formationData.practicalInfo ? [formationData.practicalInfo] : []));
         setDocuments(formationData.documents || []);
+        
+        // Initialiser les badges avec les données existantes ou créer les badges par défaut
+        const initialBadges: Badge[] = formationData.badges || [];
+        
+        // Ajouter les badges par défaut s'ils n'existent pas déjà
+        if (formationData.successRate && !initialBadges.find(b => b.text?.includes('réussite'))) {
+          initialBadges.push({ icon: 'UserCheck', text: `${formationData.successRate}% de réussite` });
+        }
+        
+        if (formationData.minStudents && formationData.maxStudents && !initialBadges.find(b => b.text?.includes('élèves'))) {
+          initialBadges.push({ icon: 'Users', text: `${formationData.minStudents} à ${formationData.maxStudents} élèves` });
+        }
+        setBadges(initialBadges);
         setError(null);
       } catch (err) {
         console.error('Error fetching formation:', err);
@@ -205,6 +229,15 @@ const FormationDetail: React.FC = () => {
 
     try {
       setUpdating(true);
+      
+      // Nettoyer les badges : filtrer les vides et supprimer les IDs temporaires
+      const cleanedBadges = badges
+        .filter(badge => badge.icon || badge.text)  // Garder seulement les badges avec des données
+        .map(badge => ({
+          icon: badge.icon || null,
+          text: badge.text || null
+        }));  // Supprimer les IDs temporaires et ne garder que icon/text
+      
       const updatedFormation = {
         ...formation,
         modules: modules.map((module, index) => ({
@@ -212,7 +245,8 @@ const FormationDetail: React.FC = () => {
           position: index + 1
         })),
         prerequisites,
-        practicalInfos
+        practicalInfos,
+        badges: cleanedBadges
       };
 
       // 1. Mettre à jour la formation
@@ -545,6 +579,46 @@ const FormationDetail: React.FC = () => {
     return statuses[status] || status;
   };
 
+  // Gestion des badges
+  const addBadge = () => {
+    const newBadge: Badge = {
+      id: Date.now(), // ID temporaire
+      icon: '',
+      text: ''
+    };
+    setBadges([...badges, newBadge]);
+  };
+
+  const updateBadge = (index: number, field: keyof Badge, value: string) => {
+    const updatedBadges = badges.map((badge, i) => 
+      i === index ? { ...badge, [field]: value } : badge
+    );
+    setBadges(updatedBadges);
+  };
+
+  const removeBadge = (index: number) => {
+    setBadges(badges.filter((_, i) => i !== index));
+  };
+
+  // Liste des icônes disponibles avec composants React
+  const availableIcons = [
+    { name: 'UserCheck', label: 'Utilisateur vérifié', component: UserCheck },
+    { name: 'Users', label: 'Utilisateurs', component: Users },
+    { name: 'Calendar', label: 'Calendrier', component: Calendar },
+    { name: 'Clock', label: 'Horloge', component: Clock },
+    { name: 'MapPin', label: 'Localisation', component: MapPin },
+    { name: 'Car', label: 'Véhicule', component: Car },
+    { name: 'CreditCard', label: 'Paiement', component: CreditCard },
+    { name: 'FileText', label: 'Document', component: FileText },
+    { name: 'Download', label: 'Téléchargement', component: Download }
+  ];
+
+  // Fonction pour obtenir le composant d'icône
+  const getIconComponent = (iconName: string) => {
+    const iconData = availableIcons.find(icon => icon.name === iconName);
+    return iconData ? iconData.component : null;
+  };
+
   if (loading) {
     return (
         <div className="flex min-h-screen bg-gray-50">
@@ -776,71 +850,111 @@ const FormationDetail: React.FC = () => {
                         {/* Section Pastilles personnalisables */}
                         <div className="md:col-span-2">
                           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                            <h4 className="text-md font-semibold text-gray-800 mb-3">
-                              Pastilles personnalisables
-                            </h4>
+                            <div className="flex justify-between items-center mb-3">
+                              <h4 className="text-md font-semibold text-gray-800">
+                                Pastilles personnalisables
+                              </h4>
+                              {editMode && (
+                                <Button
+                                  onClick={addBadge}
+                                  size="sm"
+                                  variant="outline"
+                                >
+                                  <Plus className="h-4 w-4 mr-1" />
+                                  Ajouter une pastille
+                                </Button>
+                              )}
+                            </div>
                             <p className="text-sm text-gray-600 mb-4">
                               Ces informations s'afficheront sous forme de badges sur la page publique de la formation.
                             </p>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Taux de réussite (%)
-                                </label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                        !editMode ? 'bg-gray-50' : ''
-                                    }`}
-                                    value={formation.successRate || ''}
-                                    onChange={(e) => setFormation({...formation, successRate: parseInt(e.target.value) || undefined})}
-                                    disabled={!editMode}
-                                    placeholder="95"
-                                />
-                                <p className="mt-1 text-xs text-gray-500">
-                                  Ex: 95 (s'affichera comme "95% de réussite")
-                                </p>
+                            
+                            {badges.length === 0 ? (
+                              <p className="text-gray-500 text-sm italic">Aucune pastille configurée</p>
+                            ) : (
+                              <div className="space-y-3">
+                                {badges.map((badge, index) => (
+                                  <div key={badge.id || index} className="flex gap-3 items-start p-3 bg-white rounded border">
+                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                          Icône (optionnel)
+                                        </label>
+                                        <div className="flex flex-wrap gap-2 p-2 border border-gray-300 rounded-md bg-white">
+                                          {/* Option "Aucune icône" */}
+                                          <button
+                                            type="button"
+                                            onClick={() => updateBadge(index, 'icon', '')}
+                                            disabled={!editMode}
+                                            className={`p-2 border rounded-md transition-colors ${
+                                              !badge.icon 
+                                                ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                                : 'border-gray-200 hover:border-gray-300'
+                                            } ${!editMode ? 'opacity-50' : ''}`}
+                                            title="Aucune icône"
+                                          >
+                                            <span className="text-xs">Aucune</span>
+                                          </button>
+                                          
+                                          {/* Icônes disponibles */}
+                                          {availableIcons.map(icon => {
+                                            const IconComponent = icon.component;
+                                            return (
+                                              <button
+                                                key={icon.name}
+                                                type="button"
+                                                onClick={() => updateBadge(index, 'icon', icon.name)}
+                                                disabled={!editMode}
+                                                className={`p-2 border rounded-md transition-colors ${
+                                                  badge.icon === icon.name 
+                                                    ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                                    : 'border-gray-200 hover:border-gray-300'
+                                                } ${!editMode ? 'opacity-50' : ''}`}
+                                                title={icon.label}
+                                              >
+                                                <IconComponent className="h-4 w-4" />
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                        {badge.icon && (
+                                          <p className="mt-1 text-xs text-gray-500">
+                                            Icône sélectionnée : {availableIcons.find(i => i.name === badge.icon)?.label}
+                                          </p>
+                                        )}
+                                      </div>
+                                      
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                          Texte (optionnel)
+                                        </label>
+                                        <input
+                                          type="text"
+                                          className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm ${
+                                            !editMode ? 'bg-gray-50' : ''
+                                          }`}
+                                          value={badge.text || ''}
+                                          onChange={(e) => updateBadge(index, 'text', e.target.value)}
+                                          disabled={!editMode}
+                                          placeholder="Ex: 95% de réussite, 8 à 12 élèves..."
+                                        />
+                                      </div>
+                                    </div>
+                                    
+                                    {editMode && (
+                                      <button
+                                        type="button"
+                                        onClick={() => removeBadge(index)}
+                                        className="text-red-600 hover:text-red-900 p-1"
+                                        title="Supprimer cette pastille"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
                               </div>
-
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Nombre minimum d'élèves
-                                </label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                        !editMode ? 'bg-gray-50' : ''
-                                    }`}
-                                    value={formation.minStudents || ''}
-                                    onChange={(e) => setFormation({...formation, minStudents: parseInt(e.target.value) || undefined})}
-                                    disabled={!editMode}
-                                    placeholder="8"
-                                />
-                              </div>
-
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Nombre maximum d'élèves
-                                </label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                        !editMode ? 'bg-gray-50' : ''
-                                    }`}
-                                    value={formation.maxStudents || ''}
-                                    onChange={(e) => setFormation({...formation, maxStudents: parseInt(e.target.value) || undefined})}
-                                    disabled={!editMode}
-                                    placeholder="12"
-                                />
-                                <p className="mt-1 text-xs text-gray-500">
-                                  Ex: 8 à 12 (s'affichera comme "8 à 12 élèves")
-                                </p>
-                              </div>
-                            </div>
+                            )}
                           </div>
                         </div>
                       </div>

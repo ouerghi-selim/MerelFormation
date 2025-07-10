@@ -1,11 +1,16 @@
 import { useState, useEffect, JSXElementConstructor, ReactElement, ReactNode, ReactPortal} from 'react';
-import {Clock, Calendar, Award, CheckCircle, Users, BookOpen, Car, CreditCard, FileText} from 'lucide-react';
+import {Clock, Calendar, Award, CheckCircle, Users, BookOpen, Car, CreditCard, FileText, UserCheck, MapPin, Download} from 'lucide-react';
 import {useParams} from 'react-router-dom';
 import axios from 'axios';
 import classroom from '@assets/images/pages/classroom.png';
 import practical from '@assets/images/pages/practical.png';
 import SessionSelectionModal from '../components/front/modals/SessionSelectionModal';
 import RegistrationFormModal from '../components/front/modals/RegistrationFormModal';
+
+interface Badge {
+    icon?: string;
+    text?: string;
+}
 
 interface Formation {
     id: number;
@@ -24,6 +29,7 @@ interface Formation {
     minStudents?: number;
     maxStudents?: number;
     studentsRange?: string;
+    badges?: Badge[];
 }
 
 interface PracticalInfo {
@@ -48,6 +54,25 @@ const FormationInitialePage = () => {
     const [error, setError] = useState<string | null>(null);
     const [prerequisites, setPrerequisites] = useState<any[]>([]);
     const [modules, setModules] = useState<any[]>([]);
+
+    // Fonction pour obtenir le composant d'icône
+    const getIconComponent = (iconName: string) => {
+        const iconMap: Record<string, any> = {
+            'UserCheck': UserCheck,
+            'Users': Users,
+            'Calendar': Calendar,
+            'Clock': Clock,
+            'MapPin': MapPin,
+            'Car': Car,
+            'CreditCard': CreditCard,
+            'FileText': FileText,
+            'Download': Download,
+            'Award': Award,
+            'CheckCircle': CheckCircle,
+            'BookOpen': BookOpen
+        };
+        return iconMap[iconName] || Clock; // Clock par défaut si icône non trouvée
+    };
     const [practicalInfo, setPracticalInfo] = useState<PracticalInfo | null>(null);
     const [practicalInfos, setPracticalInfos] = useState<PracticalInfo[]>([]);
     const [documents, setDocuments] = useState<any[]>([]);
@@ -144,32 +169,32 @@ const FormationInitialePage = () => {
                             <h1 className="text-4xl md:text-5xl font-bold mb-6">{formation.title}</h1>
                             <p className="text-xl mb-8 text-blue-100">{formation.description}</p>
                             <div className="flex flex-wrap gap-4">
+                                {/* Badge durée - toujours affiché */}
                                 <div className="flex items-center bg-blue-800 rounded-lg p-3">
                                     <Clock className="h-6 w-6 mr-2"/>
                                     <span>{formation.duration} heures</span>
                                 </div>
-                                {formation.successRate && (
-                                    <div className="flex items-center bg-blue-800 rounded-lg p-3">
-                                        <Award className="h-6 w-6 mr-2"/>
-                                        <span>{formation.successRate}% de réussite</span>
-                                    </div>
-                                )}
-                                {(formation.studentsRange || (formation.minStudents && formation.maxStudents)) && (
-                                    <div className="flex items-center bg-blue-800 rounded-lg p-3">
-                                        <Users className="h-6 w-6 mr-2"/>
-                                        <span>
-                                            {formation.studentsRange || 
-                                             (formation.minStudents && formation.maxStudents 
-                                                 ? `${formation.minStudents} à ${formation.maxStudents} élèves`
-                                                 : formation.minStudents 
-                                                     ? `À partir de ${formation.minStudents} élèves`
-                                                     : formation.maxStudents 
-                                                         ? `Jusqu'à ${formation.maxStudents} élèves`
-                                                         : ''
-                                             )
-                                            }
-                                        </span>
-                                    </div>
+                                
+                                {/* Badges dynamiques */}
+                                {formation.badges && formation.badges.length > 0 ? (
+                                    formation.badges.map((badge, index) => {
+                                        const IconComponent = badge.icon ? getIconComponent(badge.icon) : null;
+                                        
+                                        // Ne pas afficher les badges vides
+                                        if (!badge.text && !badge.icon) return null;
+                                        
+                                        return (
+                                            <div key={index} className="flex items-center bg-blue-800 rounded-lg p-3">
+                                                {IconComponent && <IconComponent className="h-6 w-6 mr-2"/>}
+                                                {badge.text && <span>{badge.text}</span>}
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    // Badges de fallback si aucun badge dynamique n'est configuré
+                                    <>
+
+                                    </>
                                 )}
                             </div>
                         </div>

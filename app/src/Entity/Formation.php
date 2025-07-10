@@ -117,6 +117,10 @@ class Formation
     #[Groups(['formation:read', 'formation:write'])]
     #[Assert\Positive]
     private ?int $maxStudents = null; // Nombre maximum d'élèves
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[Groups(['formation:read', 'formation:write'])]
+    private ?array $badges = null; // Pastilles personnalisables
     public function __construct()
     {
         $this->sessions = new ArrayCollection();
@@ -473,5 +477,16 @@ class Formation
             return 'Jusqu\'à ' . $this->maxStudents . ' élèves';
         }
         return null;
+    }
+
+    public function getBadges(): ?array
+    {
+        return $this->badges;
+    }
+
+    public function setBadges(?array $badges): static
+    {
+        $this->badges = $badges;
+        return $this;
     }
 }
