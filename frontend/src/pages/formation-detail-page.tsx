@@ -1,5 +1,6 @@
 import { useState, useEffect, JSXElementConstructor, ReactElement, ReactNode, ReactPortal} from 'react';
 import {Clock, Calendar, Award, CheckCircle, Users, BookOpen, Car, CreditCard, FileText, UserCheck, MapPin, Download} from 'lucide-react';
+import DynamicIcon from '../components/common/DynamicIcon';
 import {useParams} from 'react-router-dom';
 import axios from 'axios';
 import classroom from '@assets/images/pages/classroom.png';
@@ -55,24 +56,6 @@ const FormationInitialePage = () => {
     const [prerequisites, setPrerequisites] = useState<any[]>([]);
     const [modules, setModules] = useState<any[]>([]);
 
-    // Fonction pour obtenir le composant d'icône
-    const getIconComponent = (iconName: string) => {
-        const iconMap: Record<string, any> = {
-            'UserCheck': UserCheck,
-            'Users': Users,
-            'Calendar': Calendar,
-            'Clock': Clock,
-            'MapPin': MapPin,
-            'Car': Car,
-            'CreditCard': CreditCard,
-            'FileText': FileText,
-            'Download': Download,
-            'Award': Award,
-            'CheckCircle': CheckCircle,
-            'BookOpen': BookOpen
-        };
-        return iconMap[iconName] || Clock; // Clock par défaut si icône non trouvée
-    };
     const [practicalInfo, setPracticalInfo] = useState<PracticalInfo | null>(null);
     const [practicalInfos, setPracticalInfos] = useState<PracticalInfo[]>([]);
     const [documents, setDocuments] = useState<any[]>([]);
@@ -178,14 +161,12 @@ const FormationInitialePage = () => {
                                 {/* Badges dynamiques */}
                                 {formation.badges && formation.badges.length > 0 ? (
                                     formation.badges.map((badge, index) => {
-                                        const IconComponent = badge.icon ? getIconComponent(badge.icon) : null;
-                                        
                                         // Ne pas afficher les badges vides
                                         if (!badge.text && !badge.icon) return null;
                                         
                                         return (
                                             <div key={index} className="flex items-center bg-blue-800 rounded-lg p-3">
-                                                {IconComponent && <IconComponent className="h-6 w-6 mr-2"/>}
+                                                {badge.icon && <DynamicIcon iconName={badge.icon} className="h-6 w-6 mr-2"/>}
                                                 {badge.text && <span>{badge.text}</span>}
                                             </div>
                                         );

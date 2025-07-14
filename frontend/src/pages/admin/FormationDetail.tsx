@@ -18,13 +18,19 @@ import {
   CreditCard,
   Image,
   UserCheck,
-  Clock
+  Clock,
+  Award,
+  CheckCircle,
+  BookOpen,
+  X
 } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Alert from '../../components/common/Alert';
+import IconPicker from '../../components/common/IconPicker';
+import DynamicIcon from '../../components/common/DynamicIcon';
 import { useNotification } from '../../contexts/NotificationContext';
 import { adminFormationsApi, documentsApi, imageUploadApi } from '@/services/api.ts';
 import WysiwygEditor from '../../components/common/WysiwygEditor';
@@ -600,23 +606,22 @@ const FormationDetail: React.FC = () => {
     setBadges(badges.filter((_, i) => i !== index));
   };
 
-  // Liste des icônes disponibles avec composants React
-  const availableIcons = [
-    { name: 'UserCheck', label: 'Utilisateur vérifié', component: UserCheck },
-    { name: 'Users', label: 'Utilisateurs', component: Users },
-    { name: 'Calendar', label: 'Calendrier', component: Calendar },
-    { name: 'Clock', label: 'Horloge', component: Clock },
-    { name: 'MapPin', label: 'Localisation', component: MapPin },
-    { name: 'Car', label: 'Véhicule', component: Car },
-    { name: 'CreditCard', label: 'Paiement', component: CreditCard },
-    { name: 'FileText', label: 'Document', component: FileText },
-    { name: 'Download', label: 'Téléchargement', component: Download }
-  ];
+  // États pour le sélecteur d'icônes
+  const [showIconPicker, setShowIconPicker] = useState(false);
+  const [currentBadgeIndex, setCurrentBadgeIndex] = useState<number | null>(null);
 
-  // Fonction pour obtenir le composant d'icône
-  const getIconComponent = (iconName: string) => {
-    const iconData = availableIcons.find(icon => icon.name === iconName);
-    return iconData ? iconData.component : null;
+  // Gestion du sélecteur d'icônes
+  const openIconPicker = (badgeIndex: number) => {
+    setCurrentBadgeIndex(badgeIndex);
+    setShowIconPicker(true);
+  };
+
+  const handleIconSelect = (iconName: string) => {
+    if (currentBadgeIndex !== null) {
+      updateBadge(currentBadgeIndex, 'icon', iconName);
+    }
+    setShowIconPicker(false);
+    setCurrentBadgeIndex(null);
   };
 
   if (loading) {
@@ -880,48 +885,39 @@ const FormationDetail: React.FC = () => {
                                         <label className="block text-xs font-medium text-gray-700 mb-1">
                                           Icône (optionnel)
                                         </label>
-                                        <div className="flex flex-wrap gap-2 p-2 border border-gray-300 rounded-md bg-white">
-                                          {/* Option "Aucune icône" */}
+                                        
+                                        <div className="flex gap-2">
                                           <button
                                             type="button"
-                                            onClick={() => updateBadge(index, 'icon', '')}
+                                            onClick={() => openIconPicker(index)}
                                             disabled={!editMode}
-                                            className={`p-2 border rounded-md transition-colors ${
-                                              !badge.icon 
-                                                ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                                                : 'border-gray-200 hover:border-gray-300'
-                                            } ${!editMode ? 'opacity-50' : ''}`}
-                                            title="Aucune icône"
+                                            className={`flex-1 p-3 border rounded-md transition-colors ${
+                                              !editMode ? 'opacity-50 bg-gray-50' : 'hover:bg-blue-50 hover:border-blue-300'
+                                            } ${badge.icon ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
                                           >
-                                            <span className="text-xs">Aucune</span>
+                                            <div className="flex items-center gap-2">
+                                              {badge.icon ? (
+                                                <DynamicIcon iconName={badge.icon} className="h-5 w-5 text-blue-600" />
+                                              ) : (
+                                                <div className="h-5 w-5 border-2 border-dashed border-gray-400 rounded"></div>
+                                              )}
+                                              <span className="text-sm">
+                                                {badge.icon ? badge.icon : 'Choisir une icône'}
+                                              </span>
+                                            </div>
                                           </button>
                                           
-                                          {/* Icônes disponibles */}
-                                          {availableIcons.map(icon => {
-                                            const IconComponent = icon.component;
-                                            return (
-                                              <button
-                                                key={icon.name}
-                                                type="button"
-                                                onClick={() => updateBadge(index, 'icon', icon.name)}
-                                                disabled={!editMode}
-                                                className={`p-2 border rounded-md transition-colors ${
-                                                  badge.icon === icon.name 
-                                                    ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                                                    : 'border-gray-200 hover:border-gray-300'
-                                                } ${!editMode ? 'opacity-50' : ''}`}
-                                                title={icon.label}
-                                              >
-                                                <IconComponent className="h-4 w-4" />
-                                              </button>
-                                            );
-                                          })}
+                                          {badge.icon && editMode && (
+                                            <button
+                                              type="button"
+                                              onClick={() => updateBadge(index, 'icon', '')}
+                                              className="px-3 py-2 text-red-600 hover:bg-red-50 border border-red-300 rounded-md transition-colors"
+                                              title="Supprimer l'icône"
+                                            >
+                                              <X className="h-4 w-4" />
+                                            </button>
+                                          )}
                                         </div>
-                                        {badge.icon && (
-                                          <p className="mt-1 text-xs text-gray-500">
-                                            Icône sélectionnée : {availableIcons.find(i => i.name === badge.icon)?.label}
-                                          </p>
-                                        )}
                                       </div>
                                       
                                       <div>
@@ -1621,6 +1617,15 @@ const FormationDetail: React.FC = () => {
               </div>
           )}
         </Modal>
+
+        {/* Sélecteur d'icônes dynamique */}
+        {showIconPicker && (
+          <IconPicker
+            value={currentBadgeIndex !== null ? badges[currentBadgeIndex]?.icon : ''}
+            onChange={handleIconSelect}
+            onClose={() => setShowIconPicker(false)}
+          />
+        )}
 
       </div>
   );
