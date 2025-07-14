@@ -4,6 +4,7 @@ namespace App\Controller\Admin;
 
 use App\Entity\Reservation;
 use App\Repository\ReservationRepository;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,15 +17,18 @@ class SessionReservationController extends AbstractController
     private $entityManager;
     private $reservationRepository;
     private $serializer;
+    private $notificationService;
 
     public function __construct(
         EntityManagerInterface $entityManager,
         ReservationRepository $reservationRepository,
-        SerializerInterface $serializer
+        SerializerInterface $serializer,
+        NotificationService $notificationService
     ) {
         $this->entityManager = $entityManager;
         $this->reservationRepository = $reservationRepository;
         $this->serializer = $serializer;
+        $this->notificationService = $notificationService;
     }
 
     public function index(Request $request): JsonResponse
@@ -113,6 +117,7 @@ class SessionReservationController extends AbstractController
         }
 
         // Mettre à jour le statut
+        $oldStatus = $reservation->getStatus();
         $reservation->setStatus($status);
 
         // Si la réservation est confirmée, on peut ajouter l'utilisateur comme participant à la session
@@ -122,6 +127,12 @@ class SessionReservationController extends AbstractController
 
             if ($session && $user && !$session->getParticipants()->contains($user)) {
                 $session->addParticipant($user);
+            }
+
+            // Envoyer l'email de confirmation avec URL de définition du mot de passe
+            // uniquement si le statut passe de 'pending' à 'confirmed'
+            if ($oldStatus === 'pending') {
+                $this->notificationService->notifyAboutRegistration($reservation);
             }
         }
 

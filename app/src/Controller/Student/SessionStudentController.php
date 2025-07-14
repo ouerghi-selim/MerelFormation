@@ -237,12 +237,12 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
         $this->entityManager->flush();
 
 
-        // Envoi d'email de confirmation et/ou notification (à implémenter)
-        $this->notificationService->notifyAdminAboutRegistration($reservation);
+        // Envoi d'email de demande d'inscription (pas encore confirmée)
+        $this->notificationService->notifyAboutRegistrationRequest($reservation);
 
 
         return $this->json([
-            'message' => 'Inscription réussie! Vous recevrez un email de confirmation.',
+            'message' => 'Demande d\'inscription envoyée! Vous recevrez un email de confirmation une fois validée par notre équipe.',
             'reservationId' => $reservation->getId()
         ], Response::HTTP_CREATED);
     }

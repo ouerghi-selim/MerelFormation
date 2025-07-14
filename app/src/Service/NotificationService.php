@@ -86,7 +86,89 @@ class NotificationService
         return 'ROLE_USER'; // Rôle par défaut
     }
     /**
-     * Notify about new session registration to all relevant parties
+     * Notify about new session registration request (when user first registers)
+     */
+    public function notifyAboutRegistrationRequest(Reservation $reservation): void
+    {
+        // Obtenir les données communes
+        $student = $reservation->getUser();
+        $session = $reservation->getSession();
+        $formation = $session->getFormation();
+        $formationTitle = $formation->getTitle();
+        $sessionDate = $session->getStartDate()->format('d/m/Y');
+        $reservationId = $reservation->getId();
+
+        // 1. Notifier l'étudiant de la réception de sa demande
+        $studentVariables = [
+            'studentName' => $student->getFirstName(),
+            'formationTitle' => $formationTitle,
+            'sessionDate' => $sessionDate,
+            'location' => $session->getLocation() ?? 'À confirmer',
+            'reservationId' => $reservationId,
+        ];
+
+        try {
+            $this->emailService->sendTemplatedEmailByEventAndRole(
+                $student->getEmail(),
+                'registration_request', // Nouveau type d'événement
+                'ROLE_STUDENT', // Rôle cible
+                $studentVariables
+            );
+            $this->logger->info('Email de demande d\'inscription envoyé à l\'étudiant: ' . $student->getEmail());
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de l\'envoi du mail de demande à l\'étudiant: ' . $e->getMessage());
+        }
+
+        // 2. Notifier les admins de la nouvelle demande
+        $admins = $this->em->getRepository(User::class)->findByRole('ROLE_ADMIN');
+
+        foreach ($admins as $admin) {
+            // Créer une notification dans la base de données
+            $notification = new Notification();
+            $notification->setTitle('Nouvelle demande d\'inscription');
+            $notification->setContent(
+                sprintf(
+                    "L'utilisateur %s %s a fait une demande d'inscription à la formation \"%s\" (session du %s). Action requise: confirmer ou refuser l'inscription.",
+                    $student->getFirstName(),
+                    $student->getLastName(),
+                    $formationTitle,
+                    $sessionDate
+                )
+            );
+            $notification->setUser($admin);
+            $notification->setType('registration_request');
+            $notification->setCreatedAt(new \DateTimeImmutable());
+            $notification->setIsRead(false);
+
+            $this->em->persist($notification);
+
+            // Envoyer l'email de notification admin
+            $adminVariables = [
+                'adminName' => $admin->getFirstName(),
+                'studentName' => $student->getFirstName() . ' ' . $student->getLastName(),
+                'formationTitle' => $formationTitle,
+                'sessionDate' => $sessionDate,
+                'reservationId' => $reservationId,
+            ];
+
+            try {
+                $this->emailService->sendTemplatedEmailByEventAndRole(
+                    $admin->getEmail(),
+                    'registration_confirmation', // Utilise le template admin existant
+                    'ROLE_ADMIN',
+                    $adminVariables
+                );
+                $this->logger->info('Email de notification envoyé à l\'admin: ' . $admin->getEmail());
+            } catch (\Exception $e) {
+                $this->logger->error('Erreur lors de l\'envoi du mail à l\'admin: ' . $e->getMessage());
+            }
+        }
+
+        $this->em->flush();
+    }
+
+    /**
+     * Notify about confirmed session registration (when admin confirms)
      */
     public function notifyAboutRegistration(Reservation $reservation): void
     {
@@ -98,14 +180,18 @@ class NotificationService
         $sessionDate = $session->getStartDate()->format('d/m/Y');
         $reservationId = $reservation->getId();
 
-        // 1. Notifier l'étudiant
+        // 1. Notifier l'étudiant avec URL de définition du mot de passe
+        // Générer un token sécurisé pour l'URL
+        $passwordToken = bin2hex(random_bytes(32));
+        // TODO: Sauvegarder le token en base avec expiration (7 jours)
+        
         $studentVariables = [
             'studentName' => $student->getFirstName(),
             'formationTitle' => $formationTitle,
             'sessionDate' => $sessionDate,
             'location' => $session->getLocation() ?? 'À confirmer',
             'price' => $formation->getPrice() . ' €',
-            // Variables spécifiques à l'étudiant...
+            'passwordSetupUrl' => 'https://merelformation.com/setup-password?token=' . $passwordToken . '&email=' . urlencode($student->getEmail()),
         ];
 
         try {
@@ -121,49 +207,49 @@ class NotificationService
         }
 
         // 2. Notifier les admins
-        $admins = $this->em->getRepository(User::class)->findByRole('ROLE_ADMIN');
-
-        foreach ($admins as $admin) {
-            // Créer une notification dans la base de données
-            $notification = new Notification();
-            $notification->setTitle('Nouvelle inscription à une formation');
-            $notification->setContent(
-                sprintf(
-                    "L'utilisateur %s %s s'est inscrit à la formation \"%s\" (session du %s).",
-                    $student->getFirstName(),
-                    $student->getLastName(),
-                    $formationTitle,
-                    $sessionDate
-                )
-            );
-            $notification->setType('info');
-            $notification->setUser($admin);
-
-            $this->em->persist($notification);
-
-            // Variables pour l'admin
-            $adminVariables = [
-                'adminName' => $admin->getFirstName(),
-                'studentName' => $student->getFirstName() . ' ' . $student->getLastName(),
-                'studentEmail' => $student->getEmail(),
-                'formationTitle' => $formationTitle,
-                'sessionDate' => $sessionDate,
-                'reservationId' => $reservationId,
-                // Variables spécifiques à l'admin...
-            ];
-
-            try {
-                $this->emailService->sendTemplatedEmailByEventAndRole(
-                    $admin->getEmail(),
-                    'registration_confirmation', // Type d'événement
-                    'ROLE_ADMIN', // Rôle cible
-                    $adminVariables
-                );
-                $this->logger->info('Email de notification envoyé à l\'admin: ' . $admin->getEmail());
-            } catch (\Exception $e) {
-                $this->logger->error('Erreur lors de l\'envoi du mail à l\'admin: ' . $e->getMessage());
-            }
-        }
+//        $admins = $this->em->getRepository(User::class)->findByRole('ROLE_ADMIN');
+//
+//        foreach ($admins as $admin) {
+//            // Créer une notification dans la base de données
+//            $notification = new Notification();
+//            $notification->setTitle('Nouvelle inscription à une formation');
+//            $notification->setContent(
+//                sprintf(
+//                    "L'utilisateur %s %s s'est inscrit à la formation \"%s\" (session du %s).",
+//                    $student->getFirstName(),
+//                    $student->getLastName(),
+//                    $formationTitle,
+//                    $sessionDate
+//                )
+//            );
+//            $notification->setType('info');
+//            $notification->setUser($admin);
+//
+//            $this->em->persist($notification);
+//
+//            // Variables pour l'admin
+//            $adminVariables = [
+//                'adminName' => $admin->getFirstName(),
+//                'studentName' => $student->getFirstName() . ' ' . $student->getLastName(),
+//                'studentEmail' => $student->getEmail(),
+//                'formationTitle' => $formationTitle,
+//                'sessionDate' => $sessionDate,
+//                'reservationId' => $reservationId,
+//                // Variables spécifiques à l'admin...
+//            ];
+//
+//            try {
+//                $this->emailService->sendTemplatedEmailByEventAndRole(
+//                    $admin->getEmail(),
+//                    'registration_confirmation', // Type d'événement
+//                    'ROLE_ADMIN', // Rôle cible
+//                    $adminVariables
+//                );
+//                $this->logger->info('Email de notification envoyé à l\'admin: ' . $admin->getEmail());
+//            } catch (\Exception $e) {
+//                $this->logger->error('Erreur lors de l\'envoi du mail à l\'admin: ' . $e->getMessage());
+//            }
+//        }
 
         // 3. Notifier le formateur si la session a un formateur assigné
         $instructor = $session->getInstructor();

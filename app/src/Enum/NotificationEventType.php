@@ -4,6 +4,7 @@ namespace App\Enum;
 
 class NotificationEventType
 {
+    public const REGISTRATION_REQUEST = 'registration_request';
     public const REGISTRATION_CONFIRMATION = 'registration_confirmation';
     public const VEHICLE_RENTAL = 'vehicle_rental';
     public const PASSWORD_RESET = 'password_reset';

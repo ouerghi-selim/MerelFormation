@@ -323,6 +323,8 @@ MerelFormation/
 - Facturation et paiements
 - **🆕 Système CMS complet et opérationnel**
 - **🆕 Gestion documentaire formations/sessions complète et debuggée** ✅ FINALISÉ
+- **🆕 Système d'inscription en deux étapes** ✅ NOUVEAU (Juillet 2025)
+- **🆕 25 templates email avec demande d'inscription** ✅ NOUVEAU (Juillet 2025)
 
 ### 🆕 DERNIÈRES AMÉLIORATIONS CRITIQUES (Juin 2025) ✅ TERMINÉ
 - **🆕 Éditeur Email WYSIWYG Professionnel** - Remplacement textarea HTML par TinyMCE React
@@ -523,9 +525,14 @@ MerelFormation/
 - PUT /admin/reservations/{id}/status - Mise à jour statut (maintenant avec appel API réel)
 - PUT /admin/session-reservations/{id}/status - Confirmation inscriptions sessions
 
+🆕 Inscription en Deux Étapes API (NOUVEAU - Juillet 2025):
+- POST /api/registration - Demande d'inscription (status: pending, email: demande reçue)
+- PUT /admin/session-reservations/{id}/status - Confirmation admin (pending→confirmed, email: inscription confirmée + URL)
+
 🆕 Emails Automatiques (NOUVEAU):
 Tous les endpoints CRUD déclenchent maintenant des emails automatiques:
-- Formations: Création/Modification/Suppression → Notifications ciblées
+- 🆕 Inscriptions: Demande → Email "demande reçue" | Confirmation → Email "inscription confirmée" + URL
+- Formations: Création/Modification/Suppression → Notifications ciblées  
 - Sessions: Création/Modification/Annulation → Participants concernés
 - Utilisateurs: Création/Modification/Désactivation → Emails personnalisés
 - Véhicules: Ajout/Maintenance → Notifications avec alternatives
@@ -580,6 +587,9 @@ Copiez-collez ce brief au début de nouvelles conversations avec Claude pour qu'
 - **Sessions enrichies** - Affichage conditionnel avec toutes les informations (lieu, instructeurs, participants)
 - **UX améliorée** - Interface plus riche et informative avec sélecteur d'icônes intuitif
 - **APIs cohérentes** - Formats de données harmonisés entre public et admin
+- **🆕 Système d'Inscription en Deux Étapes** - Workflow professionnel demande → validation → confirmation
+- **🆕 Templates Email Avancés** - 25 templates avec nouveau template de demande d'inscription
+- **🆕 URL de Finalisation** - Lien sécurisé pour définir mot de passe après confirmation
 
 ## 🆕 NOUVEAU : Système d'Emails Automatiques & WYSIWYG Complet
 
@@ -587,13 +597,14 @@ Copiez-collez ce brief au début de nouvelles conversations avec Claude pour qu'
 
 Le projet MerelFormation dispose maintenant d'un **système d'emails automatiques complet et professionnel** + **éditeur WYSIWYG avancé** qui transforment l'expérience utilisateur :
 
-### 📧 **24 Templates d'Emails Professionnels**
+### 📧 **25 Templates d'Emails Professionnels** (Mis à jour Juillet 2025)
 - **Design HTML responsive** avec CSS inline
 - **Charte graphique cohérente** MerelFormation
 - **Variables dynamiques** personnalisées (`{{userName}}`, `{{formationTitle}}`, etc.)
 - **Notifications ciblées** par rôle (Admin, Étudiant, Instructeur)
 
-### 🚀 **Déclencheurs Automatiques**
+### 🚀 **Déclencheurs Automatiques** (Mis à jour Juillet 2025)
+- **🆕 Inscriptions** : Demande → Email "demande reçue" | Confirmation admin → Email "inscription confirmée" + URL mot de passe
 - **Formations** : Création → Admins + Instructeurs | Modification → Étudiants inscrits | Suppression → Étudiants avec alternatives
 - **Sessions** : Création → Tous étudiants | Modification → Participants | Annulation → Participants avec reprogrammation
 - **Utilisateurs** : Création → Email de bienvenue + mot de passe temporaire | Modification → Utilisateur | Désactivation → Utilisateur
@@ -701,3 +712,75 @@ const allIcons = Object.entries(FaIcons).filter(([name, component]) =>
 - **Moderne** - UX comparable aux standards professionnels (Figma, Notion)
 
 Ce système transforme la gestion d'icônes de **corvée technique** en **expérience utilisateur fluide** tout en éliminant définitivement les erreurs d'import.
+
+## 🆕 NOUVEAU : Système d'Inscription en Deux Étapes (Juillet 2025)
+
+### 🎯 **Problème Résolu**
+L'ancien système d'inscription envoyait immédiatement un email de confirmation, même si l'inscription devait être validée par un administrateur. Cela créait de la confusion pour les utilisateurs.
+
+### 🚀 **Solution Professionnelle**
+**Nouveau Workflow d'Inscription :**
+
+#### **Étape 1 : Demande d'Inscription**
+- Utilisateur remplit le formulaire d'inscription
+- **Statut** : `pending` (en attente)
+- **Email automatique** : "Demande d'inscription reçue" (`registration_request_student`)
+- **Contenu** : Confirmation de réception + prochaines étapes + délai de traitement
+
+#### **Étape 2 : Validation Administrateur**
+- Admin/Instructeur examine la demande
+- **Action** : Clic sur bouton "Confirmer l'inscription"
+- **Statut** : `pending` → `confirmed`
+- **Email automatique** : "Inscription confirmée" (`registration_confirmation_student`)
+- **Contenu** : Confirmation officielle + **URL sécurisée** pour définir mot de passe
+
+### 🛠️ **Implémentation Technique**
+
+#### **Backend Modifié :**
+- **`NotificationEventType.php`** : Nouveau type `REGISTRATION_REQUEST`
+- **`SessionStudentController.php`** : Utilise `notifyAboutRegistrationRequest()`
+- **`SessionReservationController.php`** : Envoie confirmation uniquement si statut change
+- **`NotificationService.php`** : Nouvelles méthodes séparées pour demande/confirmation
+- **`EmailTemplate` Entity** : Ajout champs `created_at` et `updated_at`
+
+#### **Templates Email :**
+- **`registration_request_student`** : Template demande d'inscription
+- **`registration_confirmation_student`** : Template amélioré avec URL `{{passwordSetupUrl}}`
+
+#### **Variables Email Enrichies :**
+```php
+// Template demande
+['studentName', 'formationTitle', 'sessionDate', 'location', 'reservationId']
+
+// Template confirmation  
+['studentName', 'formationTitle', 'sessionDate', 'location', 'price', 'passwordSetupUrl']
+```
+
+### 🎯 **Impact Business & UX**
+
+#### **Avant (Problématique) :**
+```
+Utilisateur s'inscrit → Email "Inscription confirmée" ❌
+↓
+Confusion : "Suis-je vraiment inscrit ?"
+```
+
+#### **Après (Professionnel) :**
+```
+Utilisateur s'inscrit → Email "Demande reçue" ✅
+↓ (Admin valide)
+Email "Inscription confirmée" + URL finalisation ✅
+```
+
+### 🔧 **Bénéfices**
+- **Clarté totale** : Utilisateur sait exactement où il en est
+- **Contrôle admin** : Validation manuelle des inscriptions
+- **Expérience fluide** : URL directe pour finaliser l'inscription
+- **Sécurité renforcée** : Token unique pour définition mot de passe
+- **Communication transparente** : Emails explicites à chaque étape
+
+### 📊 **Migrations Déployées**
+- **`Version20250714154152.php`** : Ajout champs `created_at/updated_at` à `EmailTemplate`
+- **`Version20250714151818.php`** : Création template demande + amélioration confirmation
+
+Cette évolution professionnalise le processus d'inscription en alignant la communication avec le workflow réel de validation.

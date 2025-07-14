@@ -41,6 +41,47 @@ class EmailTemplateFixtures extends Fixture
 
         $manager->persist($template);
 
+        // Template pour l'étudiant - Demande d'inscription reçue
+        $studentRequestTemplate = new EmailTemplate();
+        $studentRequestTemplate->setName('Demande d\'inscription reçue (Étudiant)');
+        $studentRequestTemplate->setIdentifier('registration_request_student');
+        $studentRequestTemplate->setEventType('registration_request');
+        $studentRequestTemplate->setTargetRole('ROLE_STUDENT');
+        $studentRequestTemplate->setIsSystem(true);
+        $studentRequestTemplate->setType('notification');
+        $studentRequestTemplate->setSubject('Demande d\'inscription reçue - {{formationTitle}}');
+        $studentRequestTemplate->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #2c5282;">Demande d\'inscription reçue</h2>
+                <p>Bonjour {{studentName}},</p>
+                <p>Nous avons bien reçu votre demande d\'inscription à la formation suivante :</p>
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <p><strong>Détails de votre demande:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Formation: {{formationTitle}}</li>
+                        <li>Date de session: {{sessionDate}}</li>
+                        <li>Lieu: {{location}}</li>
+                        <li>Numéro de demande: {{reservationId}}</li>
+                    </ul>
+                </div>
+                <div style="background-color: #fef5e7; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #d69e2e;">
+                    <p><strong>Prochaines étapes:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Votre demande est en cours de traitement</li>
+                        <li>Un administrateur ou formateur va examiner votre inscription</li>
+                        <li>Vous recevrez une confirmation par email une fois validée</li>
+                        <li>Délai de traitement: 24-48h ouvrées</li>
+                    </ul>
+                </div>
+                <p>Si votre demande est urgente, vous pouvez nous contacter directement par téléphone au <strong>04 XX XX XX XX</strong>.</p>
+                <p>Nous vous remercions pour votre intérêt et vous répondrons dans les plus brefs délais.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $studentRequestTemplate->setVariables(['studentName', 'formationTitle', 'sessionDate', 'location', 'reservationId']);
+
+        $manager->persist($studentRequestTemplate);
+
         // Template pour l'étudiant - Confirmation d'inscription
         $studentTemplate = new EmailTemplate();
         $studentTemplate->setName('Confirmation d\'inscription (Étudiant)');
