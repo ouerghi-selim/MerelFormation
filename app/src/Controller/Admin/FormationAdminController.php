@@ -253,6 +253,7 @@ class FormationAdminController extends AbstractController
             'minStudents' => $formation->getMinStudents(),
             'maxStudents' => $formation->getMaxStudents(),
             'badges' => $formation->getBadges(),
+            'taxInfo' => $formation->getTaxInfo(),
             'modules' => $modules,
             'prerequisites' => $prerequisites,
             'sessions' => $sessions,
@@ -427,6 +428,7 @@ class FormationAdminController extends AbstractController
         $formation->setDuration($data['duration']);
         $formation->setPrice($data['price']);
         $formation->setIsActive($data['isActive'] ?? true);
+        $formation->setTaxInfo($data['taxInfo'] ?? null);
 
         // Ajouter les modules
         if (isset($data['modules']) && is_array($data['modules'])) {
@@ -542,6 +544,9 @@ class FormationAdminController extends AbstractController
         }
         if (isset($data['badges'])) {
             $formation->setBadges($data['badges']);
+        }
+        if (isset($data['taxInfo'])) {
+            $formation->setTaxInfo($data['taxInfo']);
         }
 
         // Mettre à jour les modules

@@ -121,6 +121,11 @@ class Formation
     #[ORM\Column(type: Types::JSON, nullable: true)]
     #[Groups(['formation:read', 'formation:write'])]
     private ?array $badges = null; // Pastilles personnalisables
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['formation:read', 'formation:write'])]
+    private ?string $taxInfo = null; // Message d'information TVA
+
     public function __construct()
     {
         $this->sessions = new ArrayCollection();
@@ -487,6 +492,17 @@ class Formation
     public function setBadges(?array $badges): static
     {
         $this->badges = $badges;
+        return $this;
+    }
+
+    public function getTaxInfo(): ?string
+    {
+        return $this->taxInfo;
+    }
+
+    public function setTaxInfo(?string $taxInfo): static
+    {
+        $this->taxInfo = $taxInfo;
         return $this;
     }
 }

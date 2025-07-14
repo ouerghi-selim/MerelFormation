@@ -170,7 +170,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
         $data = json_decode($request->getContent(), true);
 
         // Validation des données
-        if (!isset($data['name']) || !isset($data['email']) || !isset($data['sessionId'])) {
+        if (!isset($data['firstName']) || !isset($data['lastName']) || !isset($data['email']) || !isset($data['sessionId'])) {
             return $this->json(['message' => 'Données incomplètes'], Response::HTTP_BAD_REQUEST);
         }
 
@@ -196,9 +196,8 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
         // Si l'utilisateur n'existe pas, le créer
         if (!$user) {
-            $nameParts = explode(' ', $data['name'], 2);
-            $firstName = $nameParts[0];
-            $lastName = isset($nameParts[1]) ? $nameParts[1] : '';
+            $firstName = $data['firstName'];
+            $lastName = $data['lastName'];
 
             $user = new User();
             $user->setEmail($data['email']);

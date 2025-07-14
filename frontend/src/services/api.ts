@@ -49,7 +49,7 @@ api.interceptors.response.use(
 );
 
 export const sessionRegistrationApi = {
-    register: (registrationData: { name: string; email: string; sessionId: number | null }) =>
+    register: (registrationData: { firstName: string; lastName: string; email: string; sessionId: number | null }) =>
         api.post('/registration', registrationData),
 };
 

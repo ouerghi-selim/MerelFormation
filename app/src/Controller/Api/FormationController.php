@@ -91,6 +91,7 @@ class FormationController extends AbstractController
             'minStudents' => $formation->getMinStudents(),
             'maxStudents' => $formation->getMaxStudents(),
             'badges' => $formation->getBadges(),
+            'taxInfo' => $formation->getTaxInfo(),
         ];
 
         // Ajouter les sessions avec toutes les informations

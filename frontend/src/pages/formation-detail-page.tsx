@@ -1,5 +1,5 @@
 import { useState, useEffect, JSXElementConstructor, ReactElement, ReactNode, ReactPortal} from 'react';
-import {Clock, Calendar, Award, CheckCircle, Users, BookOpen, Car, CreditCard, FileText, UserCheck, MapPin, Download} from 'lucide-react';
+import {Clock, Calendar, Award, CheckCircle, Users, BookOpen, Car, CreditCard, FileText, UserCheck, MapPin, Download, HelpCircle} from 'lucide-react';
 import DynamicIcon from '../components/common/DynamicIcon';
 import {useParams} from 'react-router-dom';
 import axios from 'axios';
@@ -31,6 +31,7 @@ interface Formation {
     maxStudents?: number;
     studentsRange?: string;
     badges?: Badge[];
+    taxInfo?: string;
 }
 
 interface PracticalInfo {
@@ -196,7 +197,16 @@ const FormationInitialePage = () => {
                     <div className="flex flex-col md:flex-row justify-between items-center gap-8">
                         <div className="flex items-center gap-4">
                             <span className="text-3xl font-bold text-blue-900">{formation.price}€</span>
-                            <span className="text-gray-600">(Exonéré de TVA)</span>
+                            {formation.taxInfo ? (
+                                <div 
+                                    className="tax-info-tooltip"
+                                    data-tooltip={formation.taxInfo}
+                                >
+                                    <HelpCircle/>
+                                </div>
+                            ) : (
+                                <span className="text-gray-600">(Exonéré de TVA)</span>
+                            )}
                         </div>
                         <button
                             onClick={handleShowSessions}

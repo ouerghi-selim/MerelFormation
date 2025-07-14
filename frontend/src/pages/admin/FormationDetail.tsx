@@ -48,6 +48,7 @@ interface Formation {
   type: string;
   duration: number;
   price: number;
+  taxInfo?: string;
   isActive: boolean;
   successRate?: number;
   minStudents?: number;
@@ -795,6 +796,25 @@ const FormationDetail: React.FC = () => {
                           {formErrors.price && (
                               <p className="mt-1 text-sm text-red-500">{formErrors.price}</p>
                           )}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Message d'information TVA
+                          </label>
+                          <textarea
+                              rows={2}
+                              className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                                  !editMode ? 'bg-gray-50' : ''
+                              }`}
+                              value={formation.taxInfo || ''}
+                              onChange={(e) => setFormation({...formation, taxInfo: e.target.value})}
+                              disabled={!editMode}
+                              placeholder="Ex: Exonéré de TVA selon l'article 261-4-4° du CGI"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">
+                            Ce message s'affichera dans une info-bulle à côté du prix sur la page publique
+                          </p>
                         </div>
 
                         <div>

@@ -15,7 +15,8 @@ const RegistrationFormModal: React.FC<RegistrationFormModalProps> = ({
          sessionId
      }) => {
     const [formData, setFormData] = useState({
-        name: '',
+        firstName: '',
+        lastName: '',
         email: '',
         sessionId: sessionId
     });
@@ -85,16 +86,31 @@ const RegistrationFormModal: React.FC<RegistrationFormModalProps> = ({
 
                 {!showSuccess && (
                 <form onSubmit={handleRegistrationSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-gray-700 font-medium mb-1" htmlFor="name">Nom et prénom</label>
-                        <input
-                            type="text"
-                            id="name"
-                            placeholder="Votre nom complet"
-                            className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            onChange={(e) => setFormData({...formData, name: e.target.value})}
-                            required
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-gray-700 font-medium mb-1" htmlFor="firstName">Prénom</label>
+                            <input
+                                type="text"
+                                id="firstName"
+                                placeholder="Votre prénom"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                value={formData.firstName}
+                                onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-gray-700 font-medium mb-1" htmlFor="lastName">Nom</label>
+                            <input
+                                type="text"
+                                id="lastName"
+                                placeholder="Votre nom de famille"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                value={formData.lastName}
+                                onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                                required
+                            />
+                        </div>
                     </div>
 
                     <div>
@@ -104,6 +120,7 @@ const RegistrationFormModal: React.FC<RegistrationFormModalProps> = ({
                             id="email"
                             placeholder="votre.email@exemple.com"
                             className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            value={formData.email}
                             onChange={(e) => setFormData({...formData, email: e.target.value})}
                             required
                         />
