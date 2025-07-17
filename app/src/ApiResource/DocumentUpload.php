@@ -3,6 +3,7 @@
 namespace App\ApiResource;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Delete;
 use App\Controller\Admin\DocumentController;
@@ -28,6 +29,11 @@ use App\Controller\Admin\DocumentController;
         new Post(
             uriTemplate: '/admin/documents/cleanup-temp',
             controller: DocumentController::class . '::cleanupTempFiles',
+            deserialize: false,
+        ),
+        new Get(
+            uriTemplate: '/admin/documents/{id}/download',
+            controller: DocumentController::class . '::download',
             deserialize: false,
         ),
     ]

@@ -117,6 +117,10 @@ export const studentDocumentsApi = {
     download: (id: number) => api.get(`/student/documents/${id}/download`, {
         responseType: 'blob' // Important pour les fichiers !
     }),
+    upload: (formData: FormData) => 
+        api.post('/student/documents/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        })
 };
 
 // 🆕 Services API pour l'envoi de documents directs aux étudiants
@@ -194,6 +198,7 @@ export const adminUsersApi = {
     getStudents: (queryParams = '') => api.get(`/admin/users/students${queryParams ? '?' + queryParams : ''}`),
     getDeleted: () => api.get('/admin/users/deleted'),
     getSessions: (userId: number) => api.get(`/admin/users/${userId}/sessions`),
+    getDocuments: (userId: number) => api.get(`/admin/users/${userId}/documents`),
 };
 
 export const adminPlanningApi = {

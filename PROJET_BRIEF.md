@@ -5,8 +5,8 @@
 **Développeur Principal :** Selim OUERGHI (ouerghi-selim)  
 **Repository :** https://github.com/ouerghi-selim/MerelFormation  
 **Type :** Application de gestion de formations taxi + location de véhicules  
-**Status :** ✅ 100% FONCTIONNEL - Projet complet avec système d'inscription par étapes  
-**Dernière mise à jour :** 15 Juillet 2025 - Système d'inscription par étapes + Finalisation sécurisée
+**Status :** ✅ 100% FONCTIONNEL - Projet complet avec système d'inscription par étapes + Affichage documents d'inscription  
+**Dernière mise à jour :** 17 Juillet 2025 - Système complet d'affichage et téléchargement des documents d'inscription
 
 ## 🖗️ Architecture Technique
 
@@ -116,7 +116,7 @@
 ### Student Controllers (/app/src/Controller/Student/)
 - **DashboardStudentController**
 - **FormationStudentController** - Formations étudiants
-- **DocumentStudentController** - Documents étudiants
+- **DocumentStudentController** - Documents étudiants avec support documents d'inscription
 - **SessionStudentController** - Sessions étudiants
 
 ## 🖥️ Interface Frontend Existante
@@ -137,7 +137,7 @@
 - **🆕 FormulasAdmin.tsx** ✅ NOUVEAU - Gestion formules par centre avec tarification
 - **SessionsAdmin.tsx** ✅ AMÉLIORÉ - Gestion sessions avec documents et inspection complète
 - **SessionNew.tsx** ✅ COMPLET - Création sessions avec upload de documents
-- **StudentsAdmin.tsx** - Gestion étudiants
+- **StudentsAdmin.tsx** - Gestion étudiants avec affichage documents d'inscription
 - **InstructorsAdmin.tsx** - Gestion instructeurs
 - **AdminsAdmin.tsx** - Gestion admins
 - **VehiclesAdmin.tsx** - Gestion véhicules
@@ -163,7 +163,7 @@
 - **DashboardStudent.tsx** ✅ COMPLET
 - **FormationsStudent.tsx** - Formations étudiant
 - **FormationDetailStudent.tsx** - Détail formation
-- **DocumentsStudent.tsx** ✅ OPTIMISÉ - Documents organisés par source (formation/session) avec filtrage avancé
+- **DocumentsStudent.tsx** ✅ OPTIMISÉ - Documents organisés par source (formation/session/inscription) avec filtrage avancé et téléchargement direct
 
 ### Composants Organisés
 ```
@@ -325,6 +325,7 @@ MerelFormation/
 - **🆕 Gestion documentaire formations/sessions complète et debuggée** ✅ FINALISÉ
 - **🆕 Système d'inscription en deux étapes** ✅ NOUVEAU (Juillet 2025)
 - **🆕 25 templates email avec demande d'inscription** ✅ NOUVEAU (Juillet 2025)
+- **🆕 Affichage des documents d'inscription** ✅ NOUVEAU (Juillet 2025)
 
 ### 🆕 DERNIÈRES AMÉLIORATIONS CRITIQUES (Juin 2025) ✅ TERMINÉ
 - **🆕 Éditeur Email WYSIWYG Professionnel** - Remplacement textarea HTML par TinyMCE React
@@ -415,6 +416,26 @@ MerelFormation/
 - **🆕 Système hybride** - Utilise les variables de l'entité en priorité + fallback mapping
 
 ### 🆕 Dernières Améliorations (Juillet 2025)
+
+#### **🆕 Système d'Affichage Documents d'Inscription (17 Juillet 2025) - NOUVEAU**
+- **Problème résolu**: Les documents uploadés pendant l'inscription étaient invisibles pour les utilisateurs et administrateurs
+- **Backend AuthController**: Sauvegarde des documents comme entités Document avec catégorie 'attestation'
+- **API DocumentStudentController**: Support source 'inscription' avec contrôle d'accès basé sur ownership
+- **API UserAdminController**: Endpoint `/admin/users/{id}/documents` pour accès administrateur
+- **Frontend DocumentsStudent**: Filtre "Documents d'inscription" ajouté avec affichage cohérent
+- **Frontend StudentsAdmin**: Section documents dans modal détails utilisateur avec téléchargement
+- **Téléchargement direct**: URLs `/uploads/documents/{fileName}` pour tous types d'utilisateurs
+- **Sécurité**: Vérification ownership documents d'inscription (user === document.user && document.uploadedBy === user)
+- **Architecture stateless**: Compatible avec système TempDocument et API Platform
+- **UX cohérente**: Interface identique pour documents formation/session/inscription
+
+**Fichiers clés modifiés:**
+- `app/src/Controller/Api/AuthController.php` - Sauvegarde documents inscription
+- `app/src/Controller/Student/DocumentStudentController.php` - Support source inscription + téléchargement direct
+- `app/src/Controller/Admin/UserAdminController.php` - API admin documents utilisateur  
+- `frontend/src/pages/student/DocumentsStudent.tsx` - Filtre inscription + URLs directes
+- `frontend/src/pages/admin/StudentsAdmin.tsx` - Section documents modal
+- `frontend/src/services/api.ts` - Endpoint admin documents utilisateur
 
 #### **🆕 Système d'Inscription par Étapes (15 Juillet 2025) - NOUVEAU**
 - **Page de Finalisation `/setup-password`**: Interface professionnelle en 2 étapes inspirée du formulaire de réservation
@@ -546,6 +567,11 @@ MerelFormation/
 - POST /api/auth/validate-setup-token - Validation token de finalisation (sécurité)
 - POST /api/auth/complete-registration - Finalisation inscription avec informations + documents optionnels
 
+🆕 Affichage Documents d'Inscription API (NOUVEAU - Juillet 2025):
+- GET /student/documents?source=inscription - Documents d'inscription avec filtrage
+- GET /admin/users/{id}/documents - Documents d'inscription d'un utilisateur (admin)
+- Téléchargement direct via URLs: /uploads/documents/{fileName}
+
 🆕 Emails Automatiques (NOUVEAU):
 Tous les endpoints CRUD déclenchent maintenant des emails automatiques:
 - 🆕 Inscriptions: Demande → Email "demande reçue" | Confirmation → Email "inscription confirmée" + URL finalisation
@@ -593,6 +619,7 @@ Grâce au **système de détails complets des réservations**, **les administrat
 15. **🆕 SPÉCIALISATIONS INSTRUCTEURS** - Champ specialization ajouté + migration + frontend fonctionnel
 16. **🆕 LIGNES VIDES INSTRUCTEURS** - Retour API complet après création (plus de rechargement requis)
 17. **🆕 MESSAGES ERREUR PRÉCIS** - Extraction vrais messages API avec utilitaire errorUtils.ts
+18. **🆕 AFFICHAGE DOCUMENTS INSCRIPTION** - Système complet de visualisation et téléchargement des documents uploadés pendant l'inscription
 
 **💡 CONSEIL POUR FUTURES CONVERSATIONS :**
 Copiez-collez ce brief au début de nouvelles conversations avec Claude pour qu'il comprenne immédiatement le contexte et l'état du projet sans avoir à refaire toute l'analyse.

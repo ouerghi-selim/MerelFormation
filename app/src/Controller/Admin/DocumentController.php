@@ -16,8 +16,10 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Vich\UploaderBundle\Handler\DownloadHandler;
 
 /**
  * @Route("/api/admin/documents", name="api_admin_documents_")
@@ -312,5 +314,36 @@ class DocumentController extends AbstractController
         return $this->json([
             'message' => "Nettoyage terminé. {$deletedCount} documents temporaires et {$orphanFilesCount} fichiers orphelins supprimés."
         ]);
+    }
+
+    /**
+     * Télécharger un document (accès admin)
+     */
+    public function download(int $id, DownloadHandler $downloadHandler): Response
+    {
+        // Vérifier que l'utilisateur est un admin
+        $user = $this->security->getUser();
+        if (!$user) {
+            return $this->json(['message' => 'Utilisateur non connecté'], 401);
+        }
+        
+        // Debug : vérifier les rôles
+        $userRoles = $user->getRoles();
+        if (!in_array('ROLE_ADMIN', $userRoles)) {
+            return $this->json([
+                'message' => 'Accès refusé - Rôles détectés', 
+                'roles' => $userRoles,
+                'expected' => 'ROLE_ADMIN'
+            ], 403);
+        }
+
+        // Récupérer le document
+        $document = $this->documentRepository->find($id);
+        if (!$document) {
+            return $this->json(['message' => 'Document non trouvé'], 404);
+        }
+
+        // VichUploader gère le téléchargement automatiquement
+        return $downloadHandler->downloadObject($document, 'file');
     }
 }

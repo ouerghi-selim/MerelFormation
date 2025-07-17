@@ -50,6 +50,10 @@ use App\Controller\Admin\UserAdminController;
             uriTemplate: '/admin/users/{id}/formations',
             controller: UserAdminController::class . '::getUserFormations',
         ),
+        new GetCollection(
+            uriTemplate: '/admin/users/{id}/documents',
+            controller: UserAdminController::class . '::getUserDocuments',
+        ),
         new Post(
             uriTemplate: '/admin/users/{id}/restore',
             controller: UserAdminController::class . '::restore',

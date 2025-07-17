@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Filter, Search, ChevronDown } from 'lucide-react';
+import { FileText, Download, Filter, Search, ChevronDown, Upload, Plus, X } from 'lucide-react';
 import StudentHeader from '../../components/student/StudentHeader';
 import { studentDocumentsApi } from '@/services/api.ts';
 
@@ -7,7 +7,7 @@ interface Document {
   id: number;
   title: string;
   type: string;
-  source: string; // 'formation' | 'session' | 'direct'
+  source: string; // 'formation' | 'session' | 'inscription' | 'direct'
   sourceTitle: string;
   sourceId: number | null;
   date: string; // Format d/m/Y
@@ -19,6 +19,15 @@ interface Document {
   senderRole?: string; // Pour les documents directs
 }
 
+// Documents obligatoires définis comme dans le système d'inscription
+const REQUIRED_DOCUMENTS = [
+  { key: 'driverLicense', title: 'Permis de conduire', description: 'Votre permis de conduire en cours de validité' },
+  { key: 'professionalCard', title: 'Carte professionnelle', description: 'Carte professionnelle VTC ou taxi' },
+  { key: 'registrationFile', title: 'Dossier d\'inscription', description: 'Dossier complet d\'inscription' },
+  { key: 'attestationInscription', title: 'Attestation d\'inscription', description: 'Attestation d\'inscription officielle' },
+  { key: 'convocation', title: 'Convocation', description: 'Convocation à l\'examen ou formation' }
+];
+
 const DocumentsStudent: React.FC = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
@@ -26,6 +35,10 @@ const DocumentsStudent: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showUploadModal, setShowUploadModal] = useState<boolean>(false);
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [uploadingDocumentType, setUploadingDocumentType] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -68,6 +81,82 @@ const DocumentsStudent: React.FC = () => {
 
     setFilteredDocuments(filtered);
   }, [sourceFilter, searchQuery, documents]); // Changer typeFilter en sourceFilter
+
+  // Fonction pour vérifier si un document obligatoire existe
+  const getRequiredDocumentStatus = () => {
+    const inscriptionDocuments = documents.filter(doc => doc.source === 'inscription');
+    
+    return REQUIRED_DOCUMENTS.map(requiredDoc => {
+      const existingDoc = inscriptionDocuments.find(doc => 
+        doc.title.toLowerCase().includes(requiredDoc.title.toLowerCase()) ||
+        doc.title === requiredDoc.title
+      );
+      
+      return {
+        ...requiredDoc,
+        exists: !!existingDoc,
+        document: existingDoc
+      };
+    });
+  };
+
+  const handleUpload = async (formData: FormData) => {
+    try {
+      setUploading(true);
+      setError(null);
+      
+      const response = await studentDocumentsApi.upload(formData);
+      
+      setUploadSuccess('Document uploadé avec succès !');
+      setShowUploadModal(false);
+      
+      // Recharger la liste des documents
+      const documentsResponse = await studentDocumentsApi.getAll();
+      setDocuments(documentsResponse.data);
+      setFilteredDocuments(documentsResponse.data);
+      
+      // Masquer le message de succès après 3 secondes
+      setTimeout(() => setUploadSuccess(null), 3000);
+      
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Erreur lors de l\'upload du document';
+      setError(errorMessage);
+    } finally {
+      setUploading(false);
+      setUploadingDocumentType(null);
+    }
+  };
+
+  // Upload spécifique pour documents obligatoires
+  const handleRequiredDocumentUpload = async (file: File, documentKey: string, documentTitle: string) => {
+    try {
+      setUploadingDocumentType(documentKey);
+      setError(null);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', documentTitle);
+      formData.append('documentType', documentKey);
+      
+      const response = await studentDocumentsApi.upload(formData);
+      
+      setUploadSuccess(`${documentTitle} uploadé avec succès !`);
+      
+      // Recharger la liste des documents
+      const documentsResponse = await studentDocumentsApi.getAll();
+      setDocuments(documentsResponse.data);
+      setFilteredDocuments(documentsResponse.data);
+      
+      // Masquer le message de succès après 3 secondes
+      setTimeout(() => setUploadSuccess(null), 3000);
+      
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || `Erreur lors de l'upload de ${documentTitle}`;
+      setError(errorMessage);
+    } finally {
+      setUploadingDocumentType(null);
+    }
+  };
 
   const getTypeIcon = (fileType: string) => {
     switch (fileType) {
@@ -130,10 +219,19 @@ const DocumentsStudent: React.FC = () => {
                 <option value="all">Toutes les sources</option>
                 <option value="formation">Formations</option>
                 <option value="session">Sessions</option>
+                <option value="inscription">Documents d'inscription</option>
                 <option value="direct">Documents directs</option>
               </select>
               <ChevronDown className="absolute right-3 top-3 text-gray-400"/>
             </div>
+
+            <button
+              onClick={() => setShowUploadModal(true)}
+              className="flex items-center gap-2 bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors"
+            >
+              <Upload className="h-4 w-4" />
+              Ajouter un document
+            </button>
           </div>
         </div>
 
@@ -143,10 +241,35 @@ const DocumentsStudent: React.FC = () => {
             </div>
         )}
 
-        {filteredDocuments.length === 0 ? (
-            <div className="bg-white p-8 rounded-lg shadow text-center">
-            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-gray-800 mb-2">Aucun document trouvé</h2>
+        {uploadSuccess && (
+            <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6">
+              <p>{uploadSuccess}</p>
+            </div>
+        )}
+
+        {/* Section des documents obligatoires */}
+        <RequiredDocumentsSection 
+          requiredDocuments={getRequiredDocumentStatus()}
+          onUpload={handleRequiredDocumentUpload}
+          uploadingDocumentType={uploadingDocumentType}
+        />
+
+        {/* Section de tous les documents */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <FileText className="h-5 w-5 text-blue-600" />
+              Tous mes documents
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Parcourez et gérez tous vos documents par source
+            </p>
+          </div>
+
+          {filteredDocuments.length === 0 ? (
+            <div className="p-8 text-center">
+              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Aucun document trouvé</h3>
             <p className="text-gray-600 mb-4">
               {documents.length > 0
                 ? "Aucun document ne correspond à vos critères de recherche."
@@ -164,8 +287,8 @@ const DocumentsStudent: React.FC = () => {
                 </button>
             )}
             </div>
-        ) : (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+          ) : (
+            <div className="overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -242,7 +365,7 @@ const DocumentsStudent: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <a
-                            href={`/api/student/documents/${document.id}/download`}
+                            href={document.downloadUrl}
                             download
                             className="inline-flex items-center px-3 py-1 border border-blue-700 text-blue-700 text-sm font-medium rounded-md hover:bg-blue-700 hover:text-white transition-colors"
                         >
@@ -255,9 +378,269 @@ const DocumentsStudent: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
+
+        {/* Modal d'upload */}
+        {showUploadModal && <UploadModal onClose={() => setShowUploadModal(false)} onUpload={handleUpload} uploading={uploading} />}
       </main>
+    </div>
+  );
+};
+
+// Composant Modal d'Upload
+interface UploadModalProps {
+  onClose: () => void;
+  onUpload: (formData: FormData) => void;
+  uploading: boolean;
+}
+
+const UploadModal: React.FC<UploadModalProps> = ({ onClose, onUpload, uploading }) => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [title, setTitle] = useState<string>('');
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      if (!title) {
+        // Auto-générer le titre basé sur le nom du fichier
+        const fileName = file.name.replace(/\.[^/.]+$/, ""); // Enlever l'extension
+        setTitle(fileName);
+      }
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedFile || !title.trim()) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('title', title.trim());
+    formData.append('documentType', 'libre'); // Type libre pour uploads personnalisés
+
+    onUpload(formData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div className="flex items-center justify-between p-6 border-b">
+          <h3 className="text-lg font-semibold text-gray-900">Ajouter un document libre</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+            disabled={uploading}
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="space-y-4">
+            {/* Titre du document */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Titre du document *
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Ex: Document complémentaire, Justificatif..."
+                required
+                disabled={uploading}
+              />
+            </div>
+
+            {/* Sélection du fichier */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fichier *
+              </label>
+              <input
+                type="file"
+                onChange={handleFileChange}
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+                disabled={uploading}
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Formats acceptés: PDF, DOC, DOCX, JPG, PNG, XLS, XLSX (max 10MB)
+              </p>
+              {selectedFile && (
+                <div className="mt-2 p-2 bg-gray-50 rounded border">
+                  <p className="text-sm text-gray-700">
+                    <strong>Fichier sélectionné:</strong> {selectedFile.name}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Taille: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-3 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+              disabled={uploading}
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={!selectedFile || !title.trim() || uploading}
+              className="flex-1 px-4 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            >
+              {uploading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Upload en cours...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4" />
+                  Uploader
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Composant pour la section des documents obligatoires
+interface RequiredDocumentsProps {
+  requiredDocuments: Array<{
+    key: string;
+    title: string;
+    description: string;
+    exists: boolean;
+    document?: Document;
+  }>;
+  onUpload: (file: File, documentKey: string, documentTitle: string) => void;
+  uploadingDocumentType: string | null;
+}
+
+const RequiredDocumentsSection: React.FC<RequiredDocumentsProps> = ({ 
+  requiredDocuments, 
+  onUpload, 
+  uploadingDocumentType 
+}) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, documentKey: string, documentTitle: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onUpload(file, documentKey, documentTitle);
+    }
+    // Reset the input value
+    e.target.value = '';
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow mb-8">
+      <div className="p-6 border-b border-gray-200">
+        <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+          <FileText className="h-5 w-5 text-blue-600" />
+          Documents d'inscription obligatoires
+        </h2>
+        <p className="text-sm text-gray-600 mt-1">
+          Vérifiez que vous avez fourni tous les documents requis pour votre inscription
+        </p>
+      </div>
+
+      <div className="p-6">
+        <div className="grid gap-4">
+          {requiredDocuments.map((doc) => (
+            <div 
+              key={doc.key} 
+              className={`flex items-center justify-between p-4 border rounded-lg ${
+                doc.exists ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${
+                  doc.exists ? 'bg-green-500' : 'bg-gray-400'
+                }`} />
+                <div>
+                  <h3 className="font-medium text-gray-800">{doc.title}</h3>
+                  <p className="text-sm text-gray-600">{doc.description}</p>
+                  {doc.exists && doc.document && (
+                    <p className="text-sm text-green-600 mt-1">
+                      ✓ Fourni le {doc.document.date}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {doc.exists ? (
+                  <>
+                    {doc.document && (
+                      <a
+                        href={doc.document.downloadUrl}
+                        download
+                        className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors"
+                      >
+                        <Download className="h-4 w-4" />
+                        Télécharger
+                      </a>
+                    )}
+                    <span className="text-sm text-green-600 font-medium">Complet</span>
+                  </>
+                ) : (
+                  <>
+                    <input
+                      type="file"
+                      id={`upload-${doc.key}`}
+                      onChange={(e) => handleFileUpload(e, doc.key, doc.title)}
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+                      className="hidden"
+                      disabled={uploadingDocumentType === doc.key}
+                    />
+                    <label
+                      htmlFor={`upload-${doc.key}`}
+                      className={`inline-flex items-center gap-1 px-3 py-1 text-sm border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-colors cursor-pointer ${
+                        uploadingDocumentType === doc.key ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      {uploadingDocumentType === doc.key ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                          Upload...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4" />
+                          Uploader
+                        </>
+                      )}
+                    </label>
+                    <span className="text-sm text-amber-600 font-medium">Manquant</span>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-sm text-blue-800">
+            <strong>Formats acceptés:</strong> PDF, DOC, DOCX, JPG, PNG, XLS, XLSX (max 10MB)
+          </p>
+        </div>
+      </div>
     </div>
   );
 };

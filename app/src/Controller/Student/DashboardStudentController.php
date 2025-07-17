@@ -86,7 +86,7 @@ class DashboardStudentController extends AbstractController
                     'title' => $document->getTitle(),
                     'type' => $document->getType(),
                     'date' => $document->getUploadedAt()->format('d/m/Y'),
-                    'downloadUrl' => '/api/student/documents/' . $document->getId() . '/download'
+                    'downloadUrl' => '/uploads/documents/' . $document->getFileName()
                 ];
             }
 

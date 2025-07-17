@@ -3,6 +3,7 @@
 namespace App\Controller\Api;
 
 use App\Entity\User;
+use App\Entity\Document;
 use App\Entity\Reservation;
 use App\Repository\UserRepository;
 use App\Repository\ReservationRepository;
@@ -165,32 +166,43 @@ class AuthController extends AbstractController
             $user->setSetupToken(null);
             $user->setSetupTokenExpiresAt(null);
 
-            // Gérer les fichiers uploadés (optionnels)
-            $uploadDir = $this->getParameter('kernel.project_dir') . '/public/uploads/user-documents/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
-
-            $files = [
-                'driverLicense' => 'driverLicenseFrontFile', // On utilise le champ front pour le permis unique
-                'professionalCard' => 'professionalCardFile',
-                'registrationFile' => 'registrationFile',
-                'attestationInscription' => 'attestationInscriptionFile',
-                'convocation' => 'convocationFile'
+            // Gérer les fichiers uploadés comme entités Document (optionnels)
+            $documentTitles = [
+                'driverLicense' => 'Permis de conduire',
+                'professionalCard' => 'Carte professionnelle',
+                'registrationFile' => 'Dossier d\'inscription',
+                'attestationInscription' => 'Attestation d\'inscription',
+                'convocation' => 'Convocation'
             ];
 
-            foreach ($files as $requestKey => $entityField) {
+            foreach ($documentTitles as $requestKey => $title) {
                 $file = $request->files->get($requestKey);
                 if ($file) {
-                    $filename = uniqid() . '.' . $file->guessExtension();
-                    $file->move($uploadDir, $filename);
+                    // Créer une entité Document
+                    $document = new Document();
+                    $document->setTitle($title);
+                    $document->setCategory('attestation');   // Utilisation de la catégorie existante
+                    $document->setUser($user);              // Propriétaire du document
+                    $document->setUploadedBy($user);        // Uploadé par lui-même
+                    $document->setPrivate(true);            // Document privé d'inscription
+                    $document->setFile($file);              // VichUploader gérera l'upload
                     
-                    // Pour l'instant, on stocke juste le nom du fichier
-                    // Dans un vrai système, on aurait des entités séparées pour les documents
-                    if ($requestKey === 'driverLicense') {
-                        $user->setDriverLicenseFrontFile($filename);
-                    }
-                    // TODO: Ajouter les autres champs ou créer des entités Document
+                    // Déterminer le type basé sur l'extension
+                    $extension = $file->guessExtension();
+                    $typeMapping = [
+                        'pdf' => 'pdf',
+                        'doc' => 'doc',
+                        'docx' => 'docx',
+                        'jpg' => 'pdf', // On force pdf pour les images pour cohérence
+                        'jpeg' => 'pdf',
+                        'png' => 'pdf'
+                    ];
+                    $document->setType($typeMapping[$extension] ?? 'pdf');
+                    
+                    // Persister le document
+                    $this->entityManager->persist($document);
+                    
+                    $this->logger->info("Document d'inscription créé: {$title} pour l'utilisateur: " . $user->getEmail());
                 }
             }
 

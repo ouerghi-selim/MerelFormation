@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { UserPlus, Edit, Trash2, Eye, GraduationCap, Check, X, Users, Archive } from 'lucide-react';
+import { UserPlus, Edit, Trash2, Eye, GraduationCap, Check, X, Users, Archive, FileText, Download } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
 import DataTable from '../../components/common/DataTable';
@@ -9,7 +9,7 @@ import Alert from '../../components/common/Alert';
 import DeletedUsersTable from '../../components/admin/DeletedUsersTable';
 import { useNotification } from '../../contexts/NotificationContext';
 import useDataFetching from '../../hooks/useDataFetching';
-import { adminUsersApi } from '../../services/api';
+import { adminUsersApi, studentDocumentsApi } from '../../services/api';
 import { useLocation } from 'react-router-dom';
 
 
@@ -33,6 +33,19 @@ interface Formation {
     endDate: string;
 }
 
+interface Document {
+    id: number;
+    title: string;
+    type: string;
+    category: string;
+    source: string;
+    sourceTitle: string;
+    date: string;
+    uploadedAt: string;
+    fileName: string;
+    downloadUrl: string;
+}
+
 const StudentsAdmin: React.FC = () => {
     const { addToast } = useNotification();
     const [activeTab, setActiveTab] = useState<'active' | 'deleted'>('active');
@@ -42,6 +55,8 @@ const StudentsAdmin: React.FC = () => {
     const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
     const [userFormations, setUserFormations] = useState<Formation[]>([]);
     const [loadingFormations, setLoadingFormations] = useState(false);
+    const [userDocuments, setUserDocuments] = useState<Document[]>([]);
+    const [loadingDocuments, setLoadingDocuments] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
@@ -118,6 +133,18 @@ const StudentsAdmin: React.FC = () => {
             addToast('Erreur lors du chargement des formations de l\'élève', 'error');
         } finally {
             setLoadingFormations(false);
+        }
+
+        // Charger les documents d'inscription de l'étudiant
+        try {
+            setLoadingDocuments(true);
+            const documentsResponse = await adminUsersApi.getDocuments(user.id);
+            setUserDocuments(documentsResponse.data);
+        } catch (err) {
+            console.error('Error fetching user documents:', err);
+            addToast('Erreur lors du chargement des documents d\'inscription', 'error');
+        } finally {
+            setLoadingDocuments(false);
         }
     };
 
@@ -687,6 +714,59 @@ const StudentsAdmin: React.FC = () => {
                                 </div>
                             ) : (
                                 <p className="text-gray-500 italic">Aucune formation trouvée</p>
+                            )}
+                        </div>
+
+                        {/* Section Documents d'inscription */}
+                        <div className="border-t border-gray-200 mt-6 pt-6">
+                            <h4 className="font-medium mb-4 flex items-center">
+                                <FileText className="h-5 w-5 mr-2 text-blue-600" />
+                                Documents d'inscription
+                            </h4>
+                            {loadingDocuments ? (
+                                <div className="flex justify-center">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-900"></div>
+                                    <span className="ml-2">Chargement des documents...</span>
+                                </div>
+                            ) : userDocuments && userDocuments.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {userDocuments.map((document) => (
+                                        <div key={document.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <h5 className="font-medium text-gray-900 mb-1">{document.title}</h5>
+                                                    <p className="text-sm text-gray-500 mb-2">
+                                                        Uploadé le {document.date}
+                                                    </p>
+                                                    <div className="flex items-center text-xs text-gray-400">
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                            document.type === 'pdf' ? 'bg-red-100 text-red-700' :
+                                                            document.type === 'doc' || document.type === 'docx' ? 'bg-blue-100 text-blue-700' :
+                                                            'bg-gray-100 text-gray-700'
+                                                        }`}>
+                                                            {document.type.toUpperCase()}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <a
+                                                    href={document.downloadUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="ml-3 p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                                                    title="Télécharger le document"
+                                                >
+                                                    <Download className="h-4 w-4" />
+                                                </a>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-6">
+                                    <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                                    <p className="text-gray-500 italic">Aucun document d'inscription uploadé</p>
+                                    <p className="text-sm text-gray-400 mt-1">L'élève n'a pas encore fourni de documents lors de sa finalisation d'inscription</p>
+                                </div>
                             )}
                         </div>
                     </>

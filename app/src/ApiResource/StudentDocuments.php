@@ -5,6 +5,7 @@ namespace App\ApiResource;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
 use App\Controller\Student\DocumentStudentController;
 
 #[ApiResource(
@@ -21,6 +22,11 @@ use App\Controller\Student\DocumentStudentController;
         new Get(
             uriTemplate: '/student/documents/{id}/download',
             controller: DocumentStudentController::class . '::download',
+        ),
+        new Post(
+            uriTemplate: '/student/documents/upload',
+            controller: DocumentStudentController::class . '::uploadDocument',
+            deserialize: false,
         ),
     ]
 )]

@@ -2,8 +2,10 @@
 
 namespace App\Controller\Student;
 
+use App\Entity\Document;
 use App\Repository\ReservationRepository;
 use App\Repository\SessionRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,20 +24,22 @@ class DocumentStudentController extends AbstractController
 {
     private $security;
     private $documentRepository;
-
     private $reservationRepository;
     private $sessionRepository;
+    private $entityManager;
 
     public function __construct(
         Security $security,
         DocumentRepository $documentRepository,
         ReservationRepository $reservationRepository,
-        SessionRepository $sessionRepository
+        SessionRepository $sessionRepository,
+        EntityManagerInterface $entityManager
     ) {
         $this->security = $security;
         $this->documentRepository = $documentRepository;
         $this->reservationRepository = $reservationRepository;
         $this->sessionRepository = $sessionRepository;
+        $this->entityManager = $entityManager;
     }
 
     /**
@@ -91,7 +95,7 @@ class DocumentStudentController extends AbstractController
                         'fileName' => $document->getFileName(),
                         //'fileSize' => $this->formatFileSize($document->getFileSize() ?? 0),
                         'fileType' => $document->getType(),
-                        'downloadUrl' => '/api/student/documents/' . $document->getId() . '/download'
+                        'downloadUrl' => '/uploads/documents/' . $document->getFileName()
                     ];
                 }
             }
@@ -120,9 +124,37 @@ class DocumentStudentController extends AbstractController
                         'fileName' => $document->getFileName(),
                         //'fileSize' => $this->formatFileSize($document->getFileSize() ?? 0),
                         'fileType' => $document->getType(),
-                        'downloadUrl' => '/api/student/documents/' . $document->getId() . '/download'
+                        'downloadUrl' => '/uploads/documents/' . $document->getFileName()
                     ];
                 }
+            }
+        }
+
+        // 🆕 Documents d'inscription uploadés par l'utilisateur
+        if (!$source || $source === 'inscription') {
+            $inscriptionDocuments = $this->documentRepository->findBy([
+                'user' => $user,
+                'category' => 'attestation',
+                'uploadedBy' => $user // Documents uploadés par l'utilisateur lui-même
+            ]);
+
+            foreach ($inscriptionDocuments as $document) {
+                $documents[] = [
+                    'id' => $document->getId(),
+                    'title' => $document->getTitle(),
+                    'type' => $document->getType(),
+                    'category' => $document->getCategory(),
+                    'source' => 'inscription',
+                    'sourceTitle' => 'Document d\'inscription',
+                    'sourceId' => null,
+                    'date' => $document->getUploadedAt()->format('d/m/Y'),
+                    'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
+                    'fileName' => $document->getFileName(),
+                    //'fileSize' => $this->formatFileSize($document->getFileSize() ?? 0),
+                    'fileType' => $document->getType(),
+                    'downloadUrl' => '/uploads/documents/' . $document->getFileName(),
+                    'senderRole' => 'Moi-même'
+                ];
             }
         }
 
@@ -150,7 +182,7 @@ class DocumentStudentController extends AbstractController
                     'fileName' => $document->getFileName(),
                     //'fileSize' => $this->formatFileSize($document->getFileSize() ?? 0),
                     'fileType' => $document->getType(),
-                    'downloadUrl' => '/api/student/documents/' . $document->getId() . '/download',
+                    'downloadUrl' => '/uploads/documents/' . $document->getFileName(),
                     'senderRole' => $sender ? $this->getHighestRole($sender) : 'Inconnu'
                 ];
             }
@@ -214,10 +246,93 @@ class DocumentStudentController extends AbstractController
             'sourceId' => $sourceId,
             'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
             'fileName' => $document->getFileName(),
-            'downloadUrl' => '/api/student/documents/' . $document->getId() . '/download'
+            'downloadUrl' => '/uploads/documents/' . $document->getFileName()
         ];
 
         return $this->json($formattedDocument);
+    }
+
+    /**
+     * Upload d'un document d'inscription par l'étudiant
+     * @Route("/upload", name="upload", methods={"POST"})
+     */
+    public function uploadDocument(Request $request): JsonResponse
+    {
+        // Vérifier que l'utilisateur est connecté
+        $user = $this->security->getUser();
+        if (!$user) {
+            return $this->json(['message' => 'Utilisateur non connecté'], 401);
+        }
+
+        /** @var UploadedFile $uploadedFile */
+        $uploadedFile = $request->files->get('file');
+        $title = $request->request->get('title');
+        $documentType = $request->request->get('documentType', 'other'); // Type de document
+
+        // Validation du fichier
+        if (!$uploadedFile) {
+            return $this->json(['message' => 'Aucun fichier téléchargé'], 400);
+        }
+
+        if (!$uploadedFile->isValid()) {
+            return $this->json(['message' => 'Fichier invalide ou corrompu'], 400);
+        }
+
+        // Validation du titre
+        if (empty($title)) {
+            return $this->json(['message' => 'Le titre du document est requis'], 400);
+        }
+
+        // Stocker les informations du fichier
+        $originalName = $uploadedFile->getClientOriginalName();
+        $fileSize = $uploadedFile->getSize();
+        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        
+        // Types de fichiers autorisés
+        $allowedExtensions = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'xls', 'xlsx'];
+        if (!in_array($extension, $allowedExtensions)) {
+            return $this->json(['message' => 'Type de fichier non autorisé. Formats acceptés: PDF, DOC, DOCX, JPG, PNG, XLS, XLSX'], 400);
+        }
+
+        // Taille maximale (10MB pour les étudiants)
+        $maxSize = 10 * 1024 * 1024; // 10MB
+        if ($fileSize > $maxSize) {
+            return $this->json(['message' => 'Fichier trop volumineux (maximum 10MB)'], 400);
+        }
+
+        try {
+            // Créer l'entité Document directement (sans système temporaire pour les étudiants)
+            $document = new Document();
+            $document->setTitle($title);
+            $document->setType($extension);
+            $document->setCategory('attestation'); // Catégorie pour documents d'inscription
+            $document->setUser($user);             // Propriétaire
+            $document->setUploadedBy($user);       // Uploadé par lui-même
+            $document->setPrivate(true);           // Document privé
+            $document->setFile($uploadedFile);     // VichUploader gérera l'upload
+
+            // Sauvegarder en base
+            $this->entityManager->persist($document);
+            $this->entityManager->flush();
+
+            return $this->json([
+                'message' => 'Document uploadé avec succès',
+                'document' => [
+                    'id' => $document->getId(),
+                    'title' => $document->getTitle(),
+                    'type' => $document->getType(),
+                    'fileName' => $document->getFileName(),
+                    'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
+                    'downloadUrl' => '/uploads/documents/' . $document->getFileName()
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'message' => 'Erreur lors de l\'upload du document',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -234,7 +349,11 @@ class DocumentStudentController extends AbstractController
         if (!$document) {
             return $this->json(['message' => 'Document non trouvé'], 404);
         }
-        // ... vérifications d'accès
+        
+        // Vérifier que l'utilisateur a accès à ce document
+        if (!$this->userHasAccessToDocument($user, $document)) {
+            return $this->json(['message' => 'Vous n\'avez pas accès à ce document'], 403);
+        }
 
         // VichUploader gère TOUT automatiquement !
         return $downloadHandler->downloadObject($document, 'file');
@@ -270,6 +389,11 @@ class DocumentStudentController extends AbstractController
 
         // 🆕 Vérifier l'accès aux documents directs
         if ($document->getCategory() === 'direct') {
+            return $document->getUser() === $user;
+        }
+
+        // 🆕 Vérifier l'accès aux documents d'inscription
+        if ($document->getCategory() === 'attestation' && $document->getUploadedBy() === $user) {
             return $document->getUser() === $user;
         }
 

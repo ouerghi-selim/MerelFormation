@@ -3,6 +3,7 @@
 namespace App\Controller\Admin;
 
 use App\Repository\SessionRepository;
+use App\Repository\DocumentRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -26,6 +27,7 @@ class UserAdminController extends AbstractController
     private $passwordHasher;
     private $sessionRepository;
     private $notificationService;
+    private $documentRepository;
 
     public function __construct(
         Security $security,
@@ -33,7 +35,8 @@ class UserAdminController extends AbstractController
         EntityManagerInterface $entityManager,
         UserPasswordHasherInterface $passwordHasher,
         SessionRepository $sessionRepository,
-        NotificationService $notificationService
+        NotificationService $notificationService,
+        DocumentRepository $documentRepository
 
     ) {
         $this->security = $security;
@@ -42,6 +45,7 @@ class UserAdminController extends AbstractController
         $this->passwordHasher = $passwordHasher;
         $this->sessionRepository = $sessionRepository;
         $this->notificationService = $notificationService;
+        $this->documentRepository = $documentRepository;
     }
 
     /**
@@ -582,6 +586,50 @@ class UserAdminController extends AbstractController
         }
 
         return $this->json($formattedFormations);
+    }
+
+    /**
+     * Récupérer les documents d'inscription d'un utilisateur
+     */
+    public function getUserDocuments(Request $request): JsonResponse
+    {
+        try {
+            $id = $request->attributes->get('id');
+            $user = $this->userRepository->find($id);
+            if (!$user) {
+                return new JsonResponse(['message' => 'Utilisateur non trouvé'], 404);
+            }
+
+            // Récupérer les documents d'inscription de l'utilisateur
+            // Critères : category='attestation', user=$user, uploadedBy=$user (documents uploadés par l'utilisateur lui-même)
+            $documents = $this->documentRepository->findBy([
+                'user' => $user,
+                'category' => 'attestation',
+                'uploadedBy' => $user
+            ], ['uploadedAt' => 'DESC']);
+
+            $documentsData = [];
+            foreach ($documents as $document) {
+                $documentsData[] = [
+                    'id' => $document->getId(),
+                    'title' => $document->getTitle(),
+                    'type' => $document->getType(),
+                    'category' => $document->getCategory(),
+                    'source' => 'inscription',
+                    'sourceTitle' => 'Document d\'inscription',
+                    'sourceId' => null,
+                    'date' => $document->getUploadedAt()->format('d/m/Y'),
+                    'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
+                    'fileName' => $document->getFileName(),
+                    'downloadUrl' => '/uploads/documents/' . $document->getFileName()
+                ];
+            }
+
+            return new JsonResponse($documentsData);
+            
+        } catch (\Exception $e) {
+            return new JsonResponse(['message' => 'Erreur lors de la récupération des documents'], 500);
+        }
     }
 
     /**
