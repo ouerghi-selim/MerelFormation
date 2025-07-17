@@ -14,10 +14,10 @@ data/letsencrypt/
 
 # ===== SYMFONY BACKEND =====
 # Environment files
-app/.env
 app/.env.local
 app/.env.local.php
 app/.env.*.local
+# Note: app/.env et app/.env.prod sont maintenant committés pour les templates
 
 # Cache and logs
 app/var/cache/

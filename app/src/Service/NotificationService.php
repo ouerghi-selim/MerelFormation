@@ -11,21 +11,25 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class NotificationService
 {
     private $em;
     private $logger;
     private $emailService;
+    private $baseUrl;
 
     public function __construct(
         EntityManagerInterface $em,
         LoggerInterface $logger,
-        EmailService $emailService
+        EmailService $emailService,
+        ParameterBagInterface $parameterBag
     ) {
         $this->em = $em;
         $this->logger = $logger;
         $this->emailService = $emailService;
+        $this->baseUrl = $parameterBag->get('app.base_url');
     }
 
 
@@ -198,7 +202,7 @@ class NotificationService
             'sessionDate' => $sessionDate,
             'location' => $session->getLocation() ?? 'À confirmer',
             'price' => $formation->getPrice() . ' €',
-            'passwordSetupUrl' => 'https://merelformation.com/setup-password?token=' . $passwordToken . '&email=' . urlencode($student->getEmail()),
+            'passwordSetupUrl' => $this->baseUrl . '/setup-password?token=' . $passwordToken . '&email=' . urlencode($student->getEmail()),
         ];
 
         try {
