@@ -183,7 +183,14 @@ class NotificationService
         // 1. Notifier l'étudiant avec URL de définition du mot de passe
         // Générer un token sécurisé pour l'URL
         $passwordToken = bin2hex(random_bytes(32));
-        // TODO: Sauvegarder le token en base avec expiration (7 jours)
+        
+        // Sauvegarder le token en base avec expiration (7 jours)
+        $expiresAt = new \DateTime();
+        $expiresAt->add(new \DateInterval('P7D')); // 7 jours
+        
+        $student->setSetupToken($passwordToken);
+        $student->setSetupTokenExpiresAt($expiresAt);
+        $this->em->persist($student);
         
         $studentVariables = [
             'studentName' => $student->getFirstName(),

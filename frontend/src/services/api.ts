@@ -135,6 +135,15 @@ export const authApi = {
         api.post('/api/login_check', credentials),
     refreshToken: (refreshToken: string) =>
         api.post('/api/token/refresh', { refresh_token: refreshToken }),
+    // Valider le token de setup
+    validateSetupToken: (token: string, email: string) =>
+        api.post('/auth/validate-setup-token', { token, email }),
+
+    // Compléter l'inscription
+    completeRegistration: (formData: FormData) =>
+        api.post('/auth/complete-registration', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        })
 };
 
 export const adminSessionsApi = {

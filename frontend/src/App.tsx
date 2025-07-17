@@ -13,6 +13,7 @@ import FormationDetailPage from "./pages/formation-detail-page";
 import ContactPage from "./pages/contact-page";
 import LoginPage from "./pages/login-page";
 import RentalTrackingPage from './pages/RentalTrackingPage';
+import SetupPasswordPage from './pages/SetupPasswordPage';
 
 // Admin pages
 import DashboardAdmin from './pages/admin/DashboardAdmin';
@@ -95,6 +96,7 @@ const App = () => {
                     <Route path="/location" element={<Layout><LocationPage /></Layout>} />
                     <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
                     <Route path="/login" element={<LoginPage />} />
+                    <Route path="/setup-password" element={<SetupPasswordPage />} />
                     <Route path="/track/:trackingToken" element={<RentalTrackingPage />} />
 
                     {/* Routes admin protégées */}

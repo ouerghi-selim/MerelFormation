@@ -160,6 +160,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $originalLastName = null;
 
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $setupToken = null;
+
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $setupTokenExpiresAt = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -497,5 +503,32 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getSetupToken(): ?string
+    {
+        return $this->setupToken;
+    }
 
+    public function setSetupToken(?string $setupToken): static
+    {
+        $this->setupToken = $setupToken;
+        return $this;
+    }
+
+    public function getSetupTokenExpiresAt(): ?\DateTimeInterface
+    {
+        return $this->setupTokenExpiresAt;
+    }
+
+    public function setSetupTokenExpiresAt(?\DateTimeInterface $setupTokenExpiresAt): static
+    {
+        $this->setupTokenExpiresAt = $setupTokenExpiresAt;
+        return $this;
+    }
+
+    public function isSetupTokenValid(): bool
+    {
+        return $this->setupToken && 
+               $this->setupTokenExpiresAt && 
+               $this->setupTokenExpiresAt > new \DateTime();
+    }
 }

@@ -5,8 +5,8 @@
 **Développeur Principal :** Selim OUERGHI (ouerghi-selim)  
 **Repository :** https://github.com/ouerghi-selim/MerelFormation  
 **Type :** Application de gestion de formations taxi + location de véhicules  
-**Status :** ✅ 100% FONCTIONNEL - Projet complet avec améliorations UX/UI avancées  
-**Dernière mise à jour :** 14 Juillet 2025 - Système d'icônes dynamique + UX améliorée
+**Status :** ✅ 100% FONCTIONNEL - Projet complet avec système d'inscription par étapes  
+**Dernière mise à jour :** 15 Juillet 2025 - Système d'inscription par étapes + Finalisation sécurisée
 
 ## 🖗️ Architecture Technique
 
@@ -86,7 +86,7 @@
 ## 🎛️ Contrôleurs Backend Existants
 
 ### API Controllers (/app/src/Controller/Api/)
-- **AuthController** - Authentification JWT
+- **AuthController** - Authentification JWT + 🆕 Finalisation d'inscription par étapes
 - **FormationController** - CRUD formations
 - **UserController** - Gestion utilisateurs
 - **VehicleController** - CRUD véhicules
@@ -415,13 +415,28 @@ MerelFormation/
 - **🆕 Système hybride** - Utilise les variables de l'entité en priorité + fallback mapping
 
 ### 🆕 Dernières Améliorations (Juillet 2025)
-- **🆕 Système d'Icônes Dynamique Révolutionnaire**: 
-  - Découverte automatique de 1000+ icônes (FontAwesome, Material Design, Bootstrap)
-  - Interface moderne avec recherche et filtres par famille 
-  - Zéro maintenance - plus de listes manuelles à maintenir
-  - Zéro erreur d'import - vérification automatique de l'existence
-  - Composants IconPicker et DynamicIcon pour UX optimale
-  - Remplacement de l'interface complexe par bouton simple "Choisir une icône"
+
+#### **🆕 Système d'Inscription par Étapes (15 Juillet 2025) - NOUVEAU**
+- **Page de Finalisation `/setup-password`**: Interface professionnelle en 2 étapes inspirée du formulaire de réservation
+- **Étape 1 - Informations Obligatoires**: Mot de passe (8+ chars), date/lieu naissance, adresse complète
+- **Étape 2 - Documents Optionnels**: Upload selon type formation (INITIALE→permis, MOBILITÉ→carte pro, etc.)
+- **Système de Tokens Sécurisés**: Tokens 64 chars stockés en base avec expiration 7 jours
+- **Validation Multi-niveaux**: Token + email + expiration avec suppression après usage
+- **Workflow Complet**: Demande → Confirmation admin → Email lien → Finalisation → Connexion
+- **UX Professionnel**: Stepper visuel, validation temps réel, bypass documents optionnels
+- **API AuthController**: Routes `/auth/validate-setup-token` et `/auth/complete-registration`
+- **Entité User Étendue**: Champs `setupToken` et `setupTokenExpiresAt` avec méthodes validation
+- **Intégration NotificationService**: Génération automatique tokens lors confirmation
+
+#### **🆕 Système d'Icônes Dynamique Révolutionnaire**
+- **Découverte automatique de 1000+ icônes** (FontAwesome, Material Design, Bootstrap)
+- **Interface moderne** avec recherche et filtres par famille 
+- **Zéro maintenance** - plus de listes manuelles à maintenir
+- **Zéro erreur d'import** - vérification automatique de l'existence
+- **Composants IconPicker et DynamicIcon** pour UX optimale
+- **Remplacement interface complexe** par bouton simple "Choisir une icône"
+
+#### **🆕 Autres Améliorations**
 - **🆕 Système Parties Pratiques Dynamiques**: Parties pratiques multiples par formation avec contenu riche
 - **🆕 Système Upload d'Images**: Upload professionnel avec validation et stockage
 - **🆕 Correction Affichage Images**: Configuration Docker nginx pour servir les images correctement  
@@ -525,13 +540,16 @@ MerelFormation/
 - PUT /admin/reservations/{id}/status - Mise à jour statut (maintenant avec appel API réel)
 - PUT /admin/session-reservations/{id}/status - Confirmation inscriptions sessions
 
-🆕 Inscription en Deux Étapes API (NOUVEAU - Juillet 2025):
+🆕 Inscription par Étapes API (NOUVEAU - Juillet 2025):
 - POST /api/registration - Demande d'inscription (status: pending, email: demande reçue)
 - PUT /admin/session-reservations/{id}/status - Confirmation admin (pending→confirmed, email: inscription confirmée + URL)
+- POST /api/auth/validate-setup-token - Validation token de finalisation (sécurité)
+- POST /api/auth/complete-registration - Finalisation inscription avec informations + documents optionnels
 
 🆕 Emails Automatiques (NOUVEAU):
 Tous les endpoints CRUD déclenchent maintenant des emails automatiques:
-- 🆕 Inscriptions: Demande → Email "demande reçue" | Confirmation → Email "inscription confirmée" + URL
+- 🆕 Inscriptions: Demande → Email "demande reçue" | Confirmation → Email "inscription confirmée" + URL finalisation
+- 🆕 Finalisation: Page `/setup-password` sécurisée avec tokens expirables (7 jours)
 - Formations: Création/Modification/Suppression → Notifications ciblées  
 - Sessions: Création/Modification/Annulation → Participants concernés
 - Utilisateurs: Création/Modification/Désactivation → Emails personnalisés
@@ -582,14 +600,17 @@ Copiez-collez ce brief au début de nouvelles conversations avec Claude pour qu'
 **Dernière mise à jour :** Juillet 2025 par Selim OUERGHI
 
 **🎯 NOUVELLES FONCTIONNALITÉS AJOUTÉES (Juillet 2025) :**
+- **🆕 Système d'Inscription par Étapes** - Interface professionnelle `/setup-password` en 2 étapes avec validation sécurisée
+- **🆕 Tokens de Finalisation** - Système de tokens 64 chars avec expiration 7 jours et validation multi-niveaux
+- **🆕 Documents Conditionnels** - Upload optionnel selon type formation (INITIALE→permis, MOBILITÉ→carte pro)
+- **🆕 Workflow Complet** - Demande → Confirmation admin → Email lien → Finalisation → Connexion
+- **🆕 API AuthController Étendue** - Routes validation token et completion registration avec gestion fichiers
 - **Système d'Icônes Dynamique** - Découverte automatique de 1000+ icônes avec interface moderne
 - **Documents publics** - Accès aux documents de formation sans authentification
 - **Sessions enrichies** - Affichage conditionnel avec toutes les informations (lieu, instructeurs, participants)
 - **UX améliorée** - Interface plus riche et informative avec sélecteur d'icônes intuitif
 - **APIs cohérentes** - Formats de données harmonisés entre public et admin
-- **🆕 Système d'Inscription en Deux Étapes** - Workflow professionnel demande → validation → confirmation
-- **🆕 Templates Email Avancés** - 25 templates avec nouveau template de demande d'inscription
-- **🆕 URL de Finalisation** - Lien sécurisé pour définir mot de passe après confirmation
+- **Templates Email Avancés** - 25 templates avec nouveau template de demande d'inscription
 
 ## 🆕 NOUVEAU : Système d'Emails Automatiques & WYSIWYG Complet
 
@@ -597,7 +618,7 @@ Copiez-collez ce brief au début de nouvelles conversations avec Claude pour qu'
 
 Le projet MerelFormation dispose maintenant d'un **système d'emails automatiques complet et professionnel** + **éditeur WYSIWYG avancé** qui transforment l'expérience utilisateur :
 
-### 📧 **25 Templates d'Emails Professionnels** (Mis à jour Juillet 2025)
+### 📧 **25 Templates d'Emails Professionnels** (Mis à jour Juillet 2025 - Système d'Inscription par Étapes)
 - **Design HTML responsive** avec CSS inline
 - **Charte graphique cohérente** MerelFormation
 - **Variables dynamiques** personnalisées (`{{userName}}`, `{{formationTitle}}`, etc.)
