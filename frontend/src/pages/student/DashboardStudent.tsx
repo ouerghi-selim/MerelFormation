@@ -1,8 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import {BookOpen, FileText, Bell, Calendar, CreditCard, Download} from 'lucide-react';
+import {BookOpen, FileText, Bell, Calendar, CreditCard, Download, Building2, User} from 'lucide-react';
 import StudentHeader from '../../components/student/StudentHeader';
 import { studentDashboardApi, studentDocumentsApi } from '@/services/api.ts';
+
+interface Company {
+  id: number;
+  name: string;
+  address: string;
+  postalCode: string;
+  city: string;
+  siret: string;
+  responsableName: string;
+  email: string;
+  phone: string;
+}
 
 interface DashboardData {
   activeFormations: number;
@@ -10,6 +22,12 @@ interface DashboardData {
   pendingPayments: number;
   upcomingSessions: Session[];
   recentDocuments: Document[];
+  user: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    company?: Company;
+  };
 }
 
 interface Session {
@@ -247,6 +265,55 @@ const DashboardStudent: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Section Entreprise */}
+        {dashboardData?.user?.company && (
+          <div className="bg-white p-6 rounded-lg shadow mb-8">
+            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+              <Building2 className="h-6 w-6 mr-2 text-blue-600" />
+              Mon entreprise
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="font-medium text-gray-900 mb-4">Informations générales</h3>
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Nom de l'entreprise</span>
+                    <p className="text-base font-medium text-gray-900">{dashboardData.user.company.name}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">SIRET</span>
+                    <p className="text-base font-mono text-gray-900">{dashboardData.user.company.siret}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Adresse</span>
+                    <p className="text-base text-gray-900">
+                      {dashboardData.user.company.address}<br />
+                      {dashboardData.user.company.postalCode} {dashboardData.user.company.city}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-900 mb-4">Contact responsable</h3>
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Nom du responsable</span>
+                    <p className="text-base text-gray-900">{dashboardData.user.company.responsableName}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Email</span>
+                    <p className="text-base text-gray-900">{dashboardData.user.company.email}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Téléphone</span>
+                    <p className="text-base text-gray-900">{dashboardData.user.company.phone}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-bold text-gray-800 mb-6">Progression des formations</h2>

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { UserPlus, Edit, Trash2, Eye, GraduationCap, Check, X, Users, Archive, FileText, Download } from 'lucide-react';
+import { UserPlus, Edit, Trash2, Eye, GraduationCap, Check, X, Users, Archive, FileText, Download, Building2 } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
 import DataTable from '../../components/common/DataTable';
@@ -13,6 +13,18 @@ import { adminUsersApi, studentDocumentsApi } from '../../services/api';
 import { useLocation } from 'react-router-dom';
 
 
+interface Company {
+    id: number;
+    name: string;
+    address: string;
+    postalCode: string;
+    city: string;
+    siret: string;
+    responsableName: string;
+    email: string;
+    phone: string;
+}
+
 interface User {
     id: number;
     firstName: string;
@@ -22,6 +34,7 @@ interface User {
     isActive: boolean;
     lastLogin: string | null;
     phone?: string;
+    company?: Company;
 }
 
 interface Formation {
@@ -74,7 +87,7 @@ const StudentsAdmin: React.FC = () => {
         phone: ''
     });
     const fetchStudents = useCallback(() => {
-        return adminUsersApi.getAll('role=ROLE_STUDENT')
+        return adminUsersApi.getStudents()
             .then(response => response.data);
     }, []); // tableau vide = fonction stable
     // Utiliser le hook personnalisé pour charger les données
@@ -655,6 +668,41 @@ const StudentsAdmin: React.FC = () => {
                                 <p className="text-base">{selectedStudent.lastLogin || 'Jamais'}</p>
                             </div>
                         </div>
+
+                        {/* Section Entreprise */}
+                        {selectedStudent.company && (
+                            <div className="border-t border-gray-200 mt-6 pt-6">
+                                <h4 className="font-medium mb-4 flex items-center">
+                                    <Building2 className="h-5 w-5 mr-2 text-blue-600" />
+                                    Entreprise / Employeur
+                                </h4>
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <h5 className="text-sm font-medium text-gray-500 mb-1">Nom de l'entreprise</h5>
+                                            <p className="text-base font-medium">{selectedStudent.company.name}</p>
+                                        </div>
+                                        <div>
+                                            <h5 className="text-sm font-medium text-gray-500 mb-1">SIRET</h5>
+                                            <p className="text-base font-mono">{selectedStudent.company.siret}</p>
+                                        </div>
+                                        <div>
+                                            <h5 className="text-sm font-medium text-gray-500 mb-1">Adresse</h5>
+                                            <p className="text-base">
+                                                {selectedStudent.company.address}<br />
+                                                {selectedStudent.company.postalCode} {selectedStudent.company.city}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <h5 className="text-sm font-medium text-gray-500 mb-1">Responsable</h5>
+                                            <p className="text-base">{selectedStudent.company.responsableName}</p>
+                                            <p className="text-sm text-gray-600">{selectedStudent.company.email}</p>
+                                            <p className="text-sm text-gray-600">{selectedStudent.company.phone}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="border-t border-gray-200 mt-6 pt-6">
                             <h4 className="font-medium mb-4">Formations inscrites</h4>

@@ -116,6 +116,51 @@ class AuthController extends AbstractController
     }
 
     /**
+     * Vérifie si une entreprise existe déjà avec ce SIRET
+     */
+    #[Route('/check-company-siret', name: 'api_check_company_siret', methods: ['POST'])]
+    public function checkCompanySiret(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $siret = $data['siret'] ?? null;
+
+        if (!$siret) {
+            return new JsonResponse(['error' => 'SIRET manquant'], 400);
+        }
+
+        // Vérifier que le SIRET a exactement 14 chiffres
+        if (!preg_match('/^[0-9]{14}$/', $siret)) {
+            return new JsonResponse(['error' => 'SIRET invalide'], 400);
+        }
+
+        try {
+            // Chercher l'entreprise par SIRET
+            $company = $this->companyRepository->findBySiret($siret);
+            
+            if ($company) {
+                return new JsonResponse([
+                    'exists' => true,
+                    'company' => [
+                        'name' => $company->getName(),
+                        'address' => $company->getAddress(),
+                        'postalCode' => $company->getPostalCode(),
+                        'city' => $company->getCity(),
+                        'responsableName' => $company->getResponsableName(),
+                        'email' => $company->getEmail(),
+                        'phone' => $company->getPhone(),
+                    ]
+                ]);
+            }
+            
+            return new JsonResponse(['exists' => false]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de la vérification du SIRET: ' . $e->getMessage());
+            return new JsonResponse(['error' => 'Erreur serveur'], 500);
+        }
+    }
+
+    /**
      * Finalise l'inscription d'un utilisateur
      */
     #[Route('/complete-registration', name: 'api_complete_registration', methods: ['POST'])]

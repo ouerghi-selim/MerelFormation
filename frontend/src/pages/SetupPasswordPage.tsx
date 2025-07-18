@@ -41,6 +41,8 @@ const SetupPasswordPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
     const [formationType, setFormationType] = useState<string | null>(null);
+    const [isExistingCompany, setIsExistingCompany] = useState(false);
+    const [companyCheckLoading, setCompanyCheckLoading] = useState(false);
     
     const [formData, setFormData] = useState<SetupFormData>({
         email: '',
@@ -120,6 +122,70 @@ const SetupPasswordPage: React.FC = () => {
 
     const setFieldTouched = (field: string) => {
         setTouchedFields(prev => new Set(prev).add(field));
+    };
+
+    // Vérifier si une entreprise existe avec ce SIRET
+    const checkCompanySiret = async (siret: string) => {
+        if (siret.length !== 14) {
+            setIsExistingCompany(false);
+            return;
+        }
+
+        setCompanyCheckLoading(true);
+        try {
+            const response = await authApi.checkCompanySiret(siret);
+            
+            if (response.data.exists) {
+                // Auto-remplir avec les données de l'entreprise existante
+                const company = response.data.company;
+                setFormData(prev => ({
+                    ...prev,
+                    companyName: company.name,
+                    companyAddress: company.address,
+                    companyPostalCode: company.postalCode,
+                    companyCity: company.city,
+                    companyResponsableName: company.responsableName,
+                    companyEmail: company.email,
+                    companyPhone: company.phone,
+                }));
+                setIsExistingCompany(true);
+                
+                // Effacer les erreurs des champs entreprise
+                setErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.companyName;
+                    delete newErrors.companyAddress;
+                    delete newErrors.companyPostalCode;
+                    delete newErrors.companyCity;
+                    delete newErrors.companyResponsableName;
+                    delete newErrors.companyEmail;
+                    delete newErrors.companyPhone;
+                    return newErrors;
+                });
+            } else {
+                setIsExistingCompany(false);
+            }
+        } catch (err) {
+            console.error('Erreur lors de la vérification du SIRET:', err);
+            setIsExistingCompany(false);
+        } finally {
+            setCompanyCheckLoading(false);
+        }
+    };
+
+    // Gérer le changement de SIRET
+    const handleSiretChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const siret = e.target.value.replace(/\D/g, ''); // Garder seulement les chiffres
+        if (siret.length <= 14) {
+            updateFormData({ companySiret: siret });
+            
+            // Vérifier si SIRET complet
+            if (siret.length === 14) {
+                checkCompanySiret(siret);
+            } else {
+                setIsExistingCompany(false);
+            }
+        }
     };
 
     const validateStep1 = (): boolean => {
@@ -615,7 +681,25 @@ const SetupPasswordPage: React.FC = () => {
                                                         id="hasEmployer"
                                                         type="checkbox"
                                                         checked={formData.hasEmployer}
-                                                        onChange={(e) => updateFormData({ hasEmployer: e.target.checked })}
+                                                        onChange={(e) => {
+                                                            const checked = e.target.checked;
+                                                            updateFormData({ hasEmployer: checked });
+                                                            
+                                                            // Réinitialiser les données entreprise si décoché
+                                                            if (!checked) {
+                                                                setIsExistingCompany(false);
+                                                                updateFormData({
+                                                                    companySiret: '',
+                                                                    companyName: '',
+                                                                    companyAddress: '',
+                                                                    companyPostalCode: '',
+                                                                    companyCity: '',
+                                                                    companyResponsableName: '',
+                                                                    companyEmail: '',
+                                                                    companyPhone: '',
+                                                                });
+                                                            }
+                                                        }}
                                                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                                     />
                                                     <label htmlFor="hasEmployer" className="text-sm font-medium text-gray-700 flex items-center">
@@ -635,6 +719,40 @@ const SetupPasswordPage: React.FC = () => {
                                                             Informations de l'entreprise
                                                         </h4>
 
+                                                        {/* SIRET en premier */}
+                                                        <div className="space-y-2">
+                                                            <label className="block text-sm font-medium text-gray-700">
+                                                                N° SIRET *
+                                                                {companyCheckLoading && <span className="text-blue-600 text-xs ml-2">Vérification...</span>}
+                                                                {isExistingCompany && <span className="text-green-600 text-xs ml-2">✓ Entreprise trouvée</span>}
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={formData.companySiret || ''}
+                                                                className={`w-full px-4 py-3 border ${
+                                                                    errors.companySiret && touchedFields.has('companySiret') 
+                                                                        ? 'border-red-500 bg-red-50' 
+                                                                        : isExistingCompany 
+                                                                            ? 'border-green-500 bg-green-50'
+                                                                            : 'border-gray-300'
+                                                                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                                                                onChange={handleSiretChange}
+                                                                onBlur={() => setFieldTouched('companySiret')}
+                                                                placeholder="14 chiffres"
+                                                                pattern="[0-9]{14}"
+                                                                maxLength={14}
+                                                                required
+                                                            />
+                                                            {errors.companySiret && touchedFields.has('companySiret') && (
+                                                                <p className="text-red-500 text-sm mt-1">{errors.companySiret}</p>
+                                                            )}
+                                                            {isExistingCompany && (
+                                                                <p className="text-green-600 text-sm mt-1">
+                                                                    <span className="font-medium">Entreprise trouvée !</span> Les champs ci-dessous ont été remplis automatiquement.
+                                                                </p>
+                                                            )}
+                                                        </div>
+
                                                         <div className="space-y-2">
                                                             <label className="block text-sm font-medium text-gray-700">Nom de l'entreprise / société *</label>
                                                             <input
@@ -643,11 +761,16 @@ const SetupPasswordPage: React.FC = () => {
                                                                 className={`w-full px-4 py-3 border ${
                                                                     errors.companyName && touchedFields.has('companyName') 
                                                                         ? 'border-red-500 bg-red-50' 
-                                                                        : 'border-gray-300'
-                                                                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                                                                onChange={(e) => updateFormData({ companyName: e.target.value })}
+                                                                        : isExistingCompany 
+                                                                            ? 'border-gray-300 bg-gray-100'
+                                                                            : 'border-gray-300'
+                                                                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                                                                    isExistingCompany ? 'cursor-not-allowed' : ''
+                                                                }`}
+                                                                onChange={(e) => !isExistingCompany && updateFormData({ companyName: e.target.value })}
                                                                 onBlur={() => setFieldTouched('companyName')}
                                                                 placeholder="Nom de l'entreprise"
+                                                                disabled={isExistingCompany}
                                                                 required
                                                             />
                                                             {errors.companyName && touchedFields.has('companyName') && (
@@ -663,11 +786,16 @@ const SetupPasswordPage: React.FC = () => {
                                                                 className={`w-full px-4 py-3 border ${
                                                                     errors.companyAddress && touchedFields.has('companyAddress') 
                                                                         ? 'border-red-500 bg-red-50' 
-                                                                        : 'border-gray-300'
-                                                                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                                                                onChange={(e) => updateFormData({ companyAddress: e.target.value })}
+                                                                        : isExistingCompany 
+                                                                            ? 'border-gray-300 bg-gray-100'
+                                                                            : 'border-gray-300'
+                                                                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                                                                    isExistingCompany ? 'cursor-not-allowed' : ''
+                                                                }`}
+                                                                onChange={(e) => !isExistingCompany && updateFormData({ companyAddress: e.target.value })}
                                                                 onBlur={() => setFieldTouched('companyAddress')}
                                                                 placeholder="Adresse de l'entreprise"
+                                                                disabled={isExistingCompany}
                                                                 required
                                                             />
                                                             {errors.companyAddress && touchedFields.has('companyAddress') && (
@@ -684,13 +812,18 @@ const SetupPasswordPage: React.FC = () => {
                                                                     className={`w-full px-4 py-3 border ${
                                                                         errors.companyPostalCode && touchedFields.has('companyPostalCode') 
                                                                             ? 'border-red-500 bg-red-50' 
-                                                                            : 'border-gray-300'
-                                                                    } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                                                                    onChange={(e) => updateFormData({ companyPostalCode: e.target.value })}
+                                                                            : isExistingCompany 
+                                                                                ? 'border-gray-300 bg-gray-100'
+                                                                                : 'border-gray-300'
+                                                                    } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                                                                        isExistingCompany ? 'cursor-not-allowed' : ''
+                                                                    }`}
+                                                                    onChange={(e) => !isExistingCompany && updateFormData({ companyPostalCode: e.target.value })}
                                                                     onBlur={() => setFieldTouched('companyPostalCode')}
                                                                     placeholder="Code postal"
                                                                     pattern="[0-9]{5}"
                                                                     maxLength={5}
+                                                                    disabled={isExistingCompany}
                                                                     required
                                                                 />
                                                                 {errors.companyPostalCode && touchedFields.has('companyPostalCode') && (
@@ -706,39 +839,22 @@ const SetupPasswordPage: React.FC = () => {
                                                                     className={`w-full px-4 py-3 border ${
                                                                         errors.companyCity && touchedFields.has('companyCity') 
                                                                             ? 'border-red-500 bg-red-50' 
-                                                                            : 'border-gray-300'
-                                                                    } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                                                                    onChange={(e) => updateFormData({ companyCity: e.target.value })}
+                                                                            : isExistingCompany 
+                                                                                ? 'border-gray-300 bg-gray-100'
+                                                                                : 'border-gray-300'
+                                                                    } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                                                                        isExistingCompany ? 'cursor-not-allowed' : ''
+                                                                    }`}
+                                                                    onChange={(e) => !isExistingCompany && updateFormData({ companyCity: e.target.value })}
                                                                     onBlur={() => setFieldTouched('companyCity')}
                                                                     placeholder="Ville de l'entreprise"
+                                                                    disabled={isExistingCompany}
                                                                     required
                                                                 />
                                                                 {errors.companyCity && touchedFields.has('companyCity') && (
                                                                     <p className="text-red-500 text-sm mt-1">{errors.companyCity}</p>
                                                                 )}
                                                             </div>
-                                                        </div>
-
-                                                        <div className="space-y-2">
-                                                            <label className="block text-sm font-medium text-gray-700">N° SIRET *</label>
-                                                            <input
-                                                                type="text"
-                                                                value={formData.companySiret || ''}
-                                                                className={`w-full px-4 py-3 border ${
-                                                                    errors.companySiret && touchedFields.has('companySiret') 
-                                                                        ? 'border-red-500 bg-red-50' 
-                                                                        : 'border-gray-300'
-                                                                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                                                                onChange={(e) => updateFormData({ companySiret: e.target.value })}
-                                                                onBlur={() => setFieldTouched('companySiret')}
-                                                                placeholder="14 chiffres"
-                                                                pattern="[0-9]{14}"
-                                                                maxLength={14}
-                                                                required
-                                                            />
-                                                            {errors.companySiret && touchedFields.has('companySiret') && (
-                                                                <p className="text-red-500 text-sm mt-1">{errors.companySiret}</p>
-                                                            )}
                                                         </div>
 
                                                         <div className="space-y-2">
@@ -749,11 +865,16 @@ const SetupPasswordPage: React.FC = () => {
                                                                 className={`w-full px-4 py-3 border ${
                                                                     errors.companyResponsableName && touchedFields.has('companyResponsableName') 
                                                                         ? 'border-red-500 bg-red-50' 
-                                                                        : 'border-gray-300'
-                                                                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                                                                onChange={(e) => updateFormData({ companyResponsableName: e.target.value })}
+                                                                        : isExistingCompany 
+                                                                            ? 'border-gray-300 bg-gray-100'
+                                                                            : 'border-gray-300'
+                                                                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                                                                    isExistingCompany ? 'cursor-not-allowed' : ''
+                                                                }`}
+                                                                onChange={(e) => !isExistingCompany && updateFormData({ companyResponsableName: e.target.value })}
                                                                 onBlur={() => setFieldTouched('companyResponsableName')}
                                                                 placeholder="Nom et prénom du responsable"
+                                                                disabled={isExistingCompany}
                                                                 required
                                                             />
                                                             {errors.companyResponsableName && touchedFields.has('companyResponsableName') && (
@@ -771,11 +892,16 @@ const SetupPasswordPage: React.FC = () => {
                                                                         className={`w-full pl-10 pr-4 py-3 border ${
                                                                             errors.companyEmail && touchedFields.has('companyEmail') 
                                                                                 ? 'border-red-500 bg-red-50' 
-                                                                                : 'border-gray-300'
-                                                                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                                                                        onChange={(e) => updateFormData({ companyEmail: e.target.value })}
+                                                                                : isExistingCompany 
+                                                                                    ? 'border-gray-300 bg-gray-100'
+                                                                                    : 'border-gray-300'
+                                                                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                                                                            isExistingCompany ? 'cursor-not-allowed' : ''
+                                                                        }`}
+                                                                        onChange={(e) => !isExistingCompany && updateFormData({ companyEmail: e.target.value })}
                                                                         onBlur={() => setFieldTouched('companyEmail')}
                                                                         placeholder="email@entreprise.com"
+                                                                        disabled={isExistingCompany}
                                                                         required
                                                                     />
                                                                     <Mail className="absolute left-3 top-3 text-gray-400" />
@@ -794,11 +920,16 @@ const SetupPasswordPage: React.FC = () => {
                                                                         className={`w-full pl-10 pr-4 py-3 border ${
                                                                             errors.companyPhone && touchedFields.has('companyPhone') 
                                                                                 ? 'border-red-500 bg-red-50' 
-                                                                                : 'border-gray-300'
-                                                                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                                                                        onChange={(e) => updateFormData({ companyPhone: e.target.value })}
+                                                                                : isExistingCompany 
+                                                                                    ? 'border-gray-300 bg-gray-100'
+                                                                                    : 'border-gray-300'
+                                                                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                                                                            isExistingCompany ? 'cursor-not-allowed' : ''
+                                                                        }`}
+                                                                        onChange={(e) => !isExistingCompany && updateFormData({ companyPhone: e.target.value })}
                                                                         onBlur={() => setFieldTouched('companyPhone')}
                                                                         placeholder="0X XX XX XX XX"
+                                                                        disabled={isExistingCompany}
                                                                         required
                                                                     />
                                                                     <Phone className="absolute left-3 top-3 text-gray-400" />

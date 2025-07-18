@@ -5,8 +5,8 @@
 **Développeur Principal :** Selim OUERGHI (ouerghi-selim)  
 **Repository :** https://github.com/ouerghi-selim/MerelFormation  
 **Type :** Application de gestion de formations taxi + location de véhicules  
-**Status :** ✅ 100% FONCTIONNEL - Projet complet avec système d'inscription par étapes + Affichage documents d'inscription  
-**Dernière mise à jour :** 17 Juillet 2025 - Système complet d'affichage et téléchargement des documents d'inscription
+**Status :** ✅ 100% FONCTIONNEL - Projet complet avec système d'inscription par étapes + Affichage documents d'inscription + Système d'entreprise/employeur  
+**Dernière mise à jour :** 18 Juillet 2025 - Système complet de gestion des entreprises/employeurs dans l'inscription et les interfaces
 
 ## 🖗️ Architecture Technique
 
@@ -50,10 +50,11 @@
 - Monitoring : Logs configurés
 ```
 
-## 🗄️ Structure de la Base de Données (27 Entités)
+## 🗄️ Structure de la Base de Données (28 Entités)
 
 ### Entités Principales
 - **User** - Utilisateurs (admins, étudiants, instructeurs)
+- **🆕 Company** - Entreprises/employeurs avec informations complètes (SIRET, responsable, contact)
 - **Formation** - Formations taxi (140h, 14h, recyclage)
 - **Session** - Sessions de formation avec planning
 - **🆕 Center** - Centres de formation et d'examen avec gestion géographique
@@ -86,7 +87,7 @@
 ## 🎛️ Contrôleurs Backend Existants
 
 ### API Controllers (/app/src/Controller/Api/)
-- **AuthController** - Authentification JWT + 🆕 Finalisation d'inscription par étapes
+- **AuthController** - Authentification JWT + 🆕 Finalisation d'inscription par étapes + 🆕 Gestion entreprises dans l'inscription
 - **FormationController** - CRUD formations
 - **UserController** - Gestion utilisateurs
 - **VehicleController** - CRUD véhicules
@@ -137,7 +138,7 @@
 - **🆕 FormulasAdmin.tsx** ✅ NOUVEAU - Gestion formules par centre avec tarification
 - **SessionsAdmin.tsx** ✅ AMÉLIORÉ - Gestion sessions avec documents et inspection complète
 - **SessionNew.tsx** ✅ COMPLET - Création sessions avec upload de documents
-- **StudentsAdmin.tsx** - Gestion étudiants avec affichage documents d'inscription
+- **StudentsAdmin.tsx** - Gestion étudiants avec affichage documents d'inscription + 🆕 Informations entreprise/employeur
 - **InstructorsAdmin.tsx** - Gestion instructeurs
 - **AdminsAdmin.tsx** - Gestion admins
 - **VehiclesAdmin.tsx** - Gestion véhicules
@@ -160,7 +161,7 @@
 - **FAQAdmin.tsx** ✅ COMPLET - Gestion des FAQ
 
 ### Dashboard Student (/frontend/src/pages/student/)
-- **DashboardStudent.tsx** ✅ COMPLET
+- **DashboardStudent.tsx** ✅ COMPLET + 🆕 Affichage informations entreprise/employeur
 - **FormationsStudent.tsx** - Formations étudiant
 - **FormationDetailStudent.tsx** - Détail formation
 - **DocumentsStudent.tsx** ✅ OPTIMISÉ - Documents organisés par source (formation/session/inscription) avec filtrage avancé et téléchargement direct
@@ -216,6 +217,18 @@
 - **🆕 Commande automatisée** pour progression des niveaux
 - **🆕 Emails de bienvenue** avec mots de passe temporaires
 - **🆕 Notifications complètes** : modification, désactivation, restauration
+
+### ✅ Système d'Entreprise/Employeur (NOUVEAU - Juillet 2025)
+- **Section Entreprise Optionnelle** : Checkbox lors de l'inscription pour ajouter un employeur
+- **Entité Company Complète** : Nom, adresse, code postal, ville, SIRET, responsable, email, téléphone
+- **Validation SIRET** : Contrôle format (14 chiffres) et validation Symfony
+- **Réutilisation Intelligente** : Entreprises existantes réutilisées automatiquement par SIRET
+- **Relation User-Company** : ManyToOne permettant plusieurs employés par entreprise
+- **Affichage Dashboard Étudiant** : Section entreprise avec design professionnel et icône Building2
+- **Interface Admin Complète** : Informations entreprise dans modal détails étudiant
+- **API Dédiée** : Endpoint `/admin/users/students` incluant données entreprise
+- **Intégration Inscription** : Gestion entreprise dans AuthController avec validation complète
+- **UX Cohérente** : Interface identique côté étudiant et administrateur
 
 ### ✅ Administration
 - Dashboard avec statistiques
@@ -437,16 +450,19 @@ MerelFormation/
 - `frontend/src/pages/admin/StudentsAdmin.tsx` - Section documents modal
 - `frontend/src/services/api.ts` - Endpoint admin documents utilisateur
 
-#### **🆕 Système d'Inscription par Étapes (15 Juillet 2025) - NOUVEAU**
+#### **🆕 Système d'Inscription par Étapes avec Entreprise (15 Juillet 2025) - NOUVEAU**
 - **Page de Finalisation `/setup-password`**: Interface professionnelle en 2 étapes inspirée du formulaire de réservation
 - **Étape 1 - Informations Obligatoires**: Mot de passe (8+ chars), date/lieu naissance, adresse complète
+- **🆕 Section Entreprise Optionnelle**: Checkbox "ajouter une partie employeur" avec tous les champs entreprise
 - **Étape 2 - Documents Optionnels**: Upload selon type formation (INITIALE→permis, MOBILITÉ→carte pro, etc.)
 - **Système de Tokens Sécurisés**: Tokens 64 chars stockés en base avec expiration 7 jours
 - **Validation Multi-niveaux**: Token + email + expiration avec suppression après usage
+- **🆕 Gestion Entreprise**: Création/réutilisation entreprises par SIRET avec validation complète
 - **Workflow Complet**: Demande → Confirmation admin → Email lien → Finalisation → Connexion
 - **UX Professionnel**: Stepper visuel, validation temps réel, bypass documents optionnels
-- **API AuthController**: Routes `/auth/validate-setup-token` et `/auth/complete-registration`
+- **API AuthController**: Routes `/auth/validate-setup-token` et `/auth/complete-registration` + gestion entreprise
 - **Entité User Étendue**: Champs `setupToken` et `setupTokenExpiresAt` avec méthodes validation
+- **🆕 Entité Company**: Relation ManyToOne avec User pour gestion employeurs
 - **Intégration NotificationService**: Génération automatique tokens lors confirmation
 
 #### **🆕 Système d'Icônes Dynamique Révolutionnaire**
@@ -572,6 +588,12 @@ MerelFormation/
 - GET /admin/users/{id}/documents - Documents d'inscription d'un utilisateur (admin)
 - Téléchargement direct via URLs: /uploads/documents/{fileName}
 
+🆕 Système d'Entreprise/Employeur API (NOUVEAU - Juillet 2025):
+- GET /admin/users/students - Liste étudiants avec données entreprise incluses
+- POST /api/auth/complete-registration - Finalisation inscription avec données entreprise optionnelles
+- Company Entity: Validation SIRET, réutilisation par SIRET, relation User ManyToOne
+- Endpoints intégrés: Pas de CRUD séparé, gestion via inscription et affichage
+
 🆕 Emails Automatiques (NOUVEAU):
 Tous les endpoints CRUD déclenchent maintenant des emails automatiques:
 - 🆕 Inscriptions: Demande → Email "demande reçue" | Confirmation → Email "inscription confirmée" + URL finalisation
@@ -620,11 +642,128 @@ Grâce au **système de détails complets des réservations**, **les administrat
 16. **🆕 LIGNES VIDES INSTRUCTEURS** - Retour API complet après création (plus de rechargement requis)
 17. **🆕 MESSAGES ERREUR PRÉCIS** - Extraction vrais messages API avec utilitaire errorUtils.ts
 18. **🆕 AFFICHAGE DOCUMENTS INSCRIPTION** - Système complet de visualisation et téléchargement des documents uploadés pendant l'inscription
+19. **🆕 SYSTÈME ENTREPRISE/EMPLOYEUR** - Section employeur optionnelle complète avec gestion SIRET et affichage intégré
 
 **💡 CONSEIL POUR FUTURES CONVERSATIONS :**
 Copiez-collez ce brief au début de nouvelles conversations avec Claude pour qu'il comprenne immédiatement le contexte et l'état du projet sans avoir à refaire toute l'analyse.
 
 **Dernière mise à jour :** Juillet 2025 par Selim OUERGHI
+
+## 🆕 NOUVEAU : Système d'Entreprise/Employeur Complet (Juillet 2025)
+
+### 🎯 **Fonctionnalité Demandée**
+Permettre aux étudiants d'ajouter les informations de leur entreprise/employeur lors de l'inscription, car parfois les formations sont payées par l'entreprise.
+
+### 🚀 **Solution Implémentée**
+
+#### **Backend (Symfony)**
+- **Entité Company** : Nom, adresse, code postal, ville, SIRET, responsable, email, téléphone
+- **Validation SIRET** : Contrôle format 14 chiffres + validation Symfony
+- **Relation User-Company** : ManyToOne avec Company (plusieurs employés par entreprise)
+- **Réutilisation Intelligente** : Entreprises existantes réutilisées automatiquement par SIRET
+- **Migration Base** : `Version20250718153XXX.php` - Création table company + foreign key
+- **API AuthController** : Gestion entreprise dans finalisation inscription
+- **API UserAdminController** : Endpoint `/admin/users/students` avec données entreprise
+- **Repository Company** : Méthode `findBySiret()` pour recherche et réutilisation
+
+#### **Frontend (React + TypeScript)**
+- **Page SetupPasswordPage** : Section entreprise optionnelle avec checkbox
+- **Validation Complète** : Tous les champs entreprise validés quand section activée
+- **Dashboard Étudiant** : Section entreprise professionnelle avec icône Building2
+- **Interface Admin** : Informations entreprise dans modal détails étudiant
+- **API Service** : Utilisation endpoint `/admin/users/students` pour données complètes
+- **TypeScript** : Interfaces Company et User étendues
+
+### 🎨 **Interfaces Utilisateur**
+
+#### **Inscription (SetupPasswordPage)**
+```typescript
+// Section optionnelle avec checkbox
+{formData.hasEmployer && (
+  <div className="ml-7 space-y-6 bg-gray-50 p-6 rounded-lg border">
+    <h3 className="text-lg font-semibold text-gray-900">
+      Informations de l'employeur
+    </h3>
+    // Tous les champs entreprise avec validation
+  </div>
+)}
+```
+
+#### **Dashboard Étudiant**
+```typescript
+// Section entreprise professionnelle
+{dashboardData?.user?.company && (
+  <div className="bg-white p-6 rounded-lg shadow mb-8">
+    <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+      <Building2 className="h-6 w-6 mr-2 text-blue-600" />
+      Mon entreprise
+    </h2>
+    // Affichage en colonnes avec toutes les informations
+  </div>
+)}
+```
+
+#### **Interface Admin**
+```typescript
+// Modal détails étudiant
+{selectedStudent.company && (
+  <div className="border-t border-gray-200 mt-6 pt-6">
+    <h4 className="font-medium mb-4 flex items-center">
+      <Building2 className="h-5 w-5 mr-2 text-blue-600" />
+      Entreprise / Employeur
+    </h4>
+    // Grid avec informations générales et contact responsable
+  </div>
+)}
+```
+
+### 🔧 **Architecture Technique**
+
+#### **Base de Données**
+```sql
+-- Table company
+CREATE TABLE company (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  address VARCHAR(255) NOT NULL,
+  postal_code VARCHAR(10) NOT NULL,
+  city VARCHAR(100) NOT NULL,
+  siret VARCHAR(14) NOT NULL UNIQUE,
+  responsable_name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  phone VARCHAR(20) NOT NULL
+);
+
+-- Foreign key dans user
+ALTER TABLE user ADD COLUMN company_id INT,
+ADD CONSTRAINT FK_user_company 
+FOREIGN KEY (company_id) REFERENCES company(id);
+```
+
+#### **Workflow Inscription**
+1. **Étudiant** coche "ajouter une partie employeur"
+2. **Formulaire** affiche section entreprise avec tous les champs
+3. **Validation** contrôle format SIRET et champs obligatoires
+4. **Backend** vérifie si entreprise existe déjà par SIRET
+5. **Création/Réutilisation** - Nouvelle entreprise ou liaison existante
+6. **Affichage** - Informations visibles côté étudiant et admin
+
+### 📊 **Impact Business**
+- **Gestion Employeurs** : Suivi des entreprises qui financent les formations
+- **Évite Duplications** : Réutilisation automatique des entreprises existantes
+- **Visibilité Admin** : Informations entreprise dans interface de gestion
+- **Simplicité UX** : Section optionnelle, pas de complexité supplémentaire
+- **Données Complètes** : Toutes les informations nécessaires pour facturation
+
+### 🎯 **Résultats**
+- **✅ Système Complet** : Inscription, stockage, affichage, gestion
+- **✅ Interface Intuitive** : Checkbox simple pour activer/désactiver
+- **✅ Validation Robuste** : Contrôles SIRET et données obligatoires
+- **✅ Réutilisation Intelligente** : Évite les doublons d'entreprises
+- **✅ Affichage Professionnel** : Dashboard étudiant et interface admin
+- **✅ API Cohérente** : Endpoints spécialisés avec données complètes
+
+Ce système transforme MerelFormation en une solution complète de gestion des formations avec suivi des employeurs financeurs.
 
 **🎯 NOUVELLES FONCTIONNALITÉS AJOUTÉES (Juillet 2025) :**
 - **🆕 Système d'Inscription par Étapes** - Interface professionnelle `/setup-password` en 2 étapes avec validation sécurisée

@@ -147,7 +147,11 @@ export const authApi = {
     completeRegistration: (formData: FormData) =>
         api.post('/auth/complete-registration', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
-        })
+        }),
+    
+    // Vérifier si une entreprise existe avec ce SIRET
+    checkCompanySiret: (siret: string) =>
+        api.post('/auth/check-company-siret', { siret })
 };
 
 export const adminSessionsApi = {

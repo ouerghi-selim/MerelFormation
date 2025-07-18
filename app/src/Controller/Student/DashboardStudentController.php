@@ -90,12 +90,37 @@ class DashboardStudentController extends AbstractController
                 ];
             }
 
+            // Récupérer les informations de l'utilisateur avec l'entreprise
+            $companyData = null;
+            if ($user->getCompany()) {
+                $company = $user->getCompany();
+                $companyData = [
+                    'id' => $company->getId(),
+                    'name' => $company->getName(),
+                    'address' => $company->getAddress(),
+                    'postalCode' => $company->getPostalCode(),
+                    'city' => $company->getCity(),
+                    'siret' => $company->getSiret(),
+                    'responsableName' => $company->getResponsableName(),
+                    'email' => $company->getEmail(),
+                    'phone' => $company->getPhone(),
+                ];
+            }
+
+            $userData = [
+                'firstName' => $user->getFirstName(),
+                'lastName' => $user->getLastName(),
+                'email' => $user->getEmail(),
+                'company' => $companyData
+            ];
+
             return $this->json([
                 'activeFormations' => $activeFormations,
                 'documentsCount' => $documentsCount,
                 'pendingPayments' => $pendingPayments,
                 'upcomingSessions' => $formattedSessions,
-                'recentDocuments' => $formattedDocuments
+                'recentDocuments' => $formattedDocuments,
+                'user' => $userData
             ]);
         } catch (\Exception $e) {
             // Log l'erreur pour debug

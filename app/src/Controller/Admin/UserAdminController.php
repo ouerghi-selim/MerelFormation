@@ -170,6 +170,22 @@ class UserAdminController extends AbstractController
         // Formater les données pour le frontend
         $formattedStudents = [];
         foreach ($students as $student) {
+            $companyData = null;
+            if ($student->getCompany()) {
+                $company = $student->getCompany();
+                $companyData = [
+                    'id' => $company->getId(),
+                    'name' => $company->getName(),
+                    'address' => $company->getAddress(),
+                    'postalCode' => $company->getPostalCode(),
+                    'city' => $company->getCity(),
+                    'siret' => $company->getSiret(),
+                    'responsableName' => $company->getResponsableName(),
+                    'email' => $company->getEmail(),
+                    'phone' => $company->getPhone(),
+                ];
+            }
+            
             $formattedStudents[] = [
                 'id' => $student->getId(),
                 'firstName' => $student->getFirstName(),
@@ -181,7 +197,8 @@ class UserAdminController extends AbstractController
                 'specialization' => $student->getSpecialization(),
                 'createdAt' => $student->getCreatedAt() ? $student->getCreatedAt()->format('d/m/Y') : null,
                 // Utiliser une date de dernière connexion fictive pour le moment
-                'lastLogin' => null
+                'lastLogin' => null,
+                'company' => $companyData
             ];
         }
 
