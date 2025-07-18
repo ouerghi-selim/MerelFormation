@@ -5,8 +5,10 @@ namespace App\Controller\Api;
 use App\Entity\User;
 use App\Entity\Document;
 use App\Entity\Reservation;
+use App\Entity\Company;
 use App\Repository\UserRepository;
 use App\Repository\ReservationRepository;
+use App\Repository\CompanyRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -25,6 +27,7 @@ class AuthController extends AbstractController
     private $logger;
     private $userRepository;
     private $reservationRepository;
+    private $companyRepository;
 
     public function __construct(
         EntityManagerInterface $entityManager,
@@ -32,7 +35,8 @@ class AuthController extends AbstractController
         ValidatorInterface $validator,
         LoggerInterface $logger,
         UserRepository $userRepository,
-        ReservationRepository $reservationRepository
+        ReservationRepository $reservationRepository,
+        CompanyRepository $companyRepository
     ) {
         $this->entityManager = $entityManager;
         $this->passwordHasher = $passwordHasher;
@@ -40,6 +44,7 @@ class AuthController extends AbstractController
         $this->logger = $logger;
         $this->userRepository = $userRepository;
         $this->reservationRepository = $reservationRepository;
+        $this->companyRepository = $companyRepository;
     }
 
     /**
@@ -124,9 +129,28 @@ class AuthController extends AbstractController
         $address = $request->request->get('address');
         $postalCode = $request->request->get('postalCode');
         $city = $request->request->get('city');
+        
+        // Données entreprise (optionnelles)
+        $hasEmployer = $request->request->get('hasEmployer') === 'true';
+        $companyName = $request->request->get('companyName');
+        $companyAddress = $request->request->get('companyAddress');
+        $companyPostalCode = $request->request->get('companyPostalCode');
+        $companyCity = $request->request->get('companyCity');
+        $companySiret = $request->request->get('companySiret');
+        $companyResponsableName = $request->request->get('companyResponsableName');
+        $companyEmail = $request->request->get('companyEmail');
+        $companyPhone = $request->request->get('companyPhone');
 
         if (!$token || !$email || !$password || !$birthDate || !$birthPlace || !$address || !$postalCode || !$city) {
             return new JsonResponse(['message' => 'Données manquantes'], 400);
+        }
+        
+        // Validation des données entreprise si activées
+        if ($hasEmployer) {
+            if (!$companyName || !$companyAddress || !$companyPostalCode || !$companyCity || 
+                !$companySiret || !$companyResponsableName || !$companyEmail || !$companyPhone) {
+                return new JsonResponse(['message' => 'Données entreprise manquantes'], 400);
+            }
         }
 
         try {
@@ -165,6 +189,45 @@ class AuthController extends AbstractController
             // Supprimer le token d'inscription (utilisé une seule fois)
             $user->setSetupToken(null);
             $user->setSetupTokenExpiresAt(null);
+
+            // Gérer l'entreprise si activée
+            if ($hasEmployer) {
+                // Vérifier si l'entreprise existe déjà par SIRET
+                $existingCompany = $this->companyRepository->findBySiret($companySiret);
+                
+                if ($existingCompany) {
+                    // Utiliser l'entreprise existante
+                    $user->setCompany($existingCompany);
+                    $this->logger->info("Utilisateur associé à l'entreprise existante: {$existingCompany->getName()}");
+                } else {
+                    // Créer une nouvelle entreprise
+                    $company = new Company();
+                    $company->setName($companyName);
+                    $company->setAddress($companyAddress);
+                    $company->setPostalCode($companyPostalCode);
+                    $company->setCity($companyCity);
+                    $company->setSiret($companySiret);
+                    $company->setResponsableName($companyResponsableName);
+                    $company->setEmail($companyEmail);
+                    $company->setPhone($companyPhone);
+                    
+                    // Valider l'entreprise
+                    $companyErrors = $this->validator->validate($company);
+                    if (count($companyErrors) > 0) {
+                        $errorMessages = [];
+                        foreach ($companyErrors as $error) {
+                            $errorMessages[] = $error->getMessage();
+                        }
+                        return new JsonResponse(['message' => 'Erreurs de validation entreprise', 'errors' => $errorMessages], 400);
+                    }
+                    
+                    // Persister l'entreprise
+                    $this->entityManager->persist($company);
+                    $user->setCompany($company);
+                    
+                    $this->logger->info("Nouvelle entreprise créée: {$companyName} (SIRET: {$companySiret})");
+                }
+            }
 
             // Gérer les fichiers uploadés comme entités Document (optionnels)
             $documentTitles = [

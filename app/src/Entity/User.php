@@ -166,6 +166,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetime', nullable: true)]
     private ?\DateTimeInterface $setupTokenExpiresAt = null;
 
+    #[ORM\ManyToOne(targetEntity: Company::class, inversedBy: 'users')]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
+    private ?Company $company = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -530,5 +535,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->setupToken && 
                $this->setupTokenExpiresAt && 
                $this->setupTokenExpiresAt > new \DateTime();
+    }
+
+    public function getCompany(): ?Company
+    {
+        return $this->company;
+    }
+
+    public function setCompany(?Company $company): static
+    {
+        $this->company = $company;
+        return $this;
     }
 }

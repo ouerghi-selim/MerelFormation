@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { User, Calendar, MapPin, Phone, Mail, ChevronRight, ChevronLeft, CheckCircle, Lock, Upload, FileText, X } from 'lucide-react';
+import { User, Calendar, MapPin, Phone, Mail, ChevronRight, ChevronLeft, CheckCircle, Lock, Upload, FileText, X, Building2 } from 'lucide-react';
 import Button from '../components/common/Button';
 import Alert from '../components/common/Alert';
 import { authApi } from '../services/api';
@@ -14,6 +14,16 @@ interface SetupFormData {
     address: string;
     postalCode: string;
     city: string;
+    // Entreprise/Employeur (optionnel)
+    hasEmployer: boolean;
+    companyName?: string;
+    companyAddress?: string;
+    companyPostalCode?: string;
+    companyCity?: string;
+    companySiret?: string;
+    companyResponsableName?: string;
+    companyEmail?: string;
+    companyPhone?: string;
     // Documents optionnels
     driverLicense?: File | null;
     professionalCard?: File | null;
@@ -41,6 +51,15 @@ const SetupPasswordPage: React.FC = () => {
         address: '',
         postalCode: '',
         city: '',
+        hasEmployer: false,
+        companyName: '',
+        companyAddress: '',
+        companyPostalCode: '',
+        companyCity: '',
+        companySiret: '',
+        companyResponsableName: '',
+        companyEmail: '',
+        companyPhone: '',
         driverLicense: null,
         professionalCard: null,
         registrationFile: null,
@@ -138,15 +157,64 @@ const SetupPasswordPage: React.FC = () => {
             newErrors.city = 'La ville est requise';
         }
 
+        // Validation des champs entreprise si activés
+        if (formData.hasEmployer) {
+            if (!formData.companyName) {
+                newErrors.companyName = 'Le nom de l\'entreprise est requis';
+            }
+            
+            if (!formData.companyAddress) {
+                newErrors.companyAddress = 'L\'adresse de l\'entreprise est requise';
+            }
+            
+            if (!formData.companyPostalCode) {
+                newErrors.companyPostalCode = 'Le code postal est requis';
+            }
+            
+            if (!formData.companyCity) {
+                newErrors.companyCity = 'La ville est requise';
+            }
+            
+            if (!formData.companySiret) {
+                newErrors.companySiret = 'Le numéro SIRET est requis';
+            } else if (!/^[0-9]{14}$/.test(formData.companySiret)) {
+                newErrors.companySiret = 'Le numéro SIRET doit contenir 14 chiffres';
+            }
+            
+            if (!formData.companyResponsableName) {
+                newErrors.companyResponsableName = 'Le nom du responsable est requis';
+            }
+            
+            if (!formData.companyEmail) {
+                newErrors.companyEmail = 'L\'email de l\'entreprise est requis';
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.companyEmail)) {
+                newErrors.companyEmail = 'L\'email n\'est pas valide';
+            }
+            
+            if (!formData.companyPhone) {
+                newErrors.companyPhone = 'Le téléphone de l\'entreprise est requis';
+            } else if (!/^[0-9\s\+\-\.]{10,20}$/.test(formData.companyPhone)) {
+                newErrors.companyPhone = 'Le numéro de téléphone n\'est pas valide';
+            }
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const handleNextStep = () => {
         // Marquer tous les champs comme touchés
-        ['password', 'confirmPassword', 'birthDate', 'birthPlace', 'address', 'postalCode', 'city'].forEach(
-            field => setFieldTouched(field)
-        );
+        const fieldsToValidate = ['password', 'confirmPassword', 'birthDate', 'birthPlace', 'address', 'postalCode', 'city'];
+        
+        // Ajouter les champs entreprise si activés
+        if (formData.hasEmployer) {
+            fieldsToValidate.push(
+                'companyName', 'companyAddress', 'companyPostalCode', 'companyCity', 
+                'companySiret', 'companyResponsableName', 'companyEmail', 'companyPhone'
+            );
+        }
+        
+        fieldsToValidate.forEach(field => setFieldTouched(field));
 
         if (validateStep1()) {
             setStep(2);
@@ -181,6 +249,19 @@ const SetupPasswordPage: React.FC = () => {
             formDataToSend.append('address', formData.address);
             formDataToSend.append('postalCode', formData.postalCode);
             formDataToSend.append('city', formData.city);
+            
+            // Données entreprise si activées
+            if (formData.hasEmployer) {
+                formDataToSend.append('hasEmployer', 'true');
+                formDataToSend.append('companyName', formData.companyName || '');
+                formDataToSend.append('companyAddress', formData.companyAddress || '');
+                formDataToSend.append('companyPostalCode', formData.companyPostalCode || '');
+                formDataToSend.append('companyCity', formData.companyCity || '');
+                formDataToSend.append('companySiret', formData.companySiret || '');
+                formDataToSend.append('companyResponsableName', formData.companyResponsableName || '');
+                formDataToSend.append('companyEmail', formData.companyEmail || '');
+                formDataToSend.append('companyPhone', formData.companyPhone || '');
+            }
             
             // Documents optionnels (si étape 2)
             if (step === 2) {
@@ -522,6 +603,212 @@ const SetupPasswordPage: React.FC = () => {
                                                 />
                                                 {errors.city && touchedFields.has('city') && (
                                                     <p className="text-red-500 text-sm mt-1">{errors.city}</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Section Employeur */}
+                                        <div className="border-t pt-6">
+                                            <div className="space-y-4">
+                                                <div className="flex items-center space-x-3">
+                                                    <input
+                                                        id="hasEmployer"
+                                                        type="checkbox"
+                                                        checked={formData.hasEmployer}
+                                                        onChange={(e) => updateFormData({ hasEmployer: e.target.checked })}
+                                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                                    />
+                                                    <label htmlFor="hasEmployer" className="text-sm font-medium text-gray-700 flex items-center">
+                                                        <Building2 className="mr-2 h-4 w-4 text-blue-600" />
+                                                        Ajouter une partie employeur
+                                                    </label>
+                                                </div>
+                                                
+                                                <p className="text-sm text-gray-600 ml-7">
+                                                    Cochez cette case si votre formation est prise en charge par une entreprise
+                                                </p>
+
+                                                {formData.hasEmployer && (
+                                                    <div className="ml-7 space-y-6 bg-gray-50 p-6 rounded-lg border">
+                                                        <h4 className="text-lg font-semibold text-gray-800 flex items-center">
+                                                            <Building2 className="mr-2 text-blue-600" />
+                                                            Informations de l'entreprise
+                                                        </h4>
+
+                                                        <div className="space-y-2">
+                                                            <label className="block text-sm font-medium text-gray-700">Nom de l'entreprise / société *</label>
+                                                            <input
+                                                                type="text"
+                                                                value={formData.companyName || ''}
+                                                                className={`w-full px-4 py-3 border ${
+                                                                    errors.companyName && touchedFields.has('companyName') 
+                                                                        ? 'border-red-500 bg-red-50' 
+                                                                        : 'border-gray-300'
+                                                                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                                                                onChange={(e) => updateFormData({ companyName: e.target.value })}
+                                                                onBlur={() => setFieldTouched('companyName')}
+                                                                placeholder="Nom de l'entreprise"
+                                                                required
+                                                            />
+                                                            {errors.companyName && touchedFields.has('companyName') && (
+                                                                <p className="text-red-500 text-sm mt-1">{errors.companyName}</p>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <label className="block text-sm font-medium text-gray-700">Adresse postale *</label>
+                                                            <input
+                                                                type="text"
+                                                                value={formData.companyAddress || ''}
+                                                                className={`w-full px-4 py-3 border ${
+                                                                    errors.companyAddress && touchedFields.has('companyAddress') 
+                                                                        ? 'border-red-500 bg-red-50' 
+                                                                        : 'border-gray-300'
+                                                                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                                                                onChange={(e) => updateFormData({ companyAddress: e.target.value })}
+                                                                onBlur={() => setFieldTouched('companyAddress')}
+                                                                placeholder="Adresse de l'entreprise"
+                                                                required
+                                                            />
+                                                            {errors.companyAddress && touchedFields.has('companyAddress') && (
+                                                                <p className="text-red-500 text-sm mt-1">{errors.companyAddress}</p>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                            <div className="space-y-2">
+                                                                <label className="block text-sm font-medium text-gray-700">Code postal *</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={formData.companyPostalCode || ''}
+                                                                    className={`w-full px-4 py-3 border ${
+                                                                        errors.companyPostalCode && touchedFields.has('companyPostalCode') 
+                                                                            ? 'border-red-500 bg-red-50' 
+                                                                            : 'border-gray-300'
+                                                                    } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                                                                    onChange={(e) => updateFormData({ companyPostalCode: e.target.value })}
+                                                                    onBlur={() => setFieldTouched('companyPostalCode')}
+                                                                    placeholder="Code postal"
+                                                                    pattern="[0-9]{5}"
+                                                                    maxLength={5}
+                                                                    required
+                                                                />
+                                                                {errors.companyPostalCode && touchedFields.has('companyPostalCode') && (
+                                                                    <p className="text-red-500 text-sm mt-1">{errors.companyPostalCode}</p>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="space-y-2">
+                                                                <label className="block text-sm font-medium text-gray-700">Ville *</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={formData.companyCity || ''}
+                                                                    className={`w-full px-4 py-3 border ${
+                                                                        errors.companyCity && touchedFields.has('companyCity') 
+                                                                            ? 'border-red-500 bg-red-50' 
+                                                                            : 'border-gray-300'
+                                                                    } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                                                                    onChange={(e) => updateFormData({ companyCity: e.target.value })}
+                                                                    onBlur={() => setFieldTouched('companyCity')}
+                                                                    placeholder="Ville de l'entreprise"
+                                                                    required
+                                                                />
+                                                                {errors.companyCity && touchedFields.has('companyCity') && (
+                                                                    <p className="text-red-500 text-sm mt-1">{errors.companyCity}</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <label className="block text-sm font-medium text-gray-700">N° SIRET *</label>
+                                                            <input
+                                                                type="text"
+                                                                value={formData.companySiret || ''}
+                                                                className={`w-full px-4 py-3 border ${
+                                                                    errors.companySiret && touchedFields.has('companySiret') 
+                                                                        ? 'border-red-500 bg-red-50' 
+                                                                        : 'border-gray-300'
+                                                                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                                                                onChange={(e) => updateFormData({ companySiret: e.target.value })}
+                                                                onBlur={() => setFieldTouched('companySiret')}
+                                                                placeholder="14 chiffres"
+                                                                pattern="[0-9]{14}"
+                                                                maxLength={14}
+                                                                required
+                                                            />
+                                                            {errors.companySiret && touchedFields.has('companySiret') && (
+                                                                <p className="text-red-500 text-sm mt-1">{errors.companySiret}</p>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <label className="block text-sm font-medium text-gray-700">Nom du responsable *</label>
+                                                            <input
+                                                                type="text"
+                                                                value={formData.companyResponsableName || ''}
+                                                                className={`w-full px-4 py-3 border ${
+                                                                    errors.companyResponsableName && touchedFields.has('companyResponsableName') 
+                                                                        ? 'border-red-500 bg-red-50' 
+                                                                        : 'border-gray-300'
+                                                                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                                                                onChange={(e) => updateFormData({ companyResponsableName: e.target.value })}
+                                                                onBlur={() => setFieldTouched('companyResponsableName')}
+                                                                placeholder="Nom et prénom du responsable"
+                                                                required
+                                                            />
+                                                            {errors.companyResponsableName && touchedFields.has('companyResponsableName') && (
+                                                                <p className="text-red-500 text-sm mt-1">{errors.companyResponsableName}</p>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                            <div className="space-y-2">
+                                                                <label className="block text-sm font-medium text-gray-700">Email *</label>
+                                                                <div className="relative">
+                                                                    <input
+                                                                        type="email"
+                                                                        value={formData.companyEmail || ''}
+                                                                        className={`w-full pl-10 pr-4 py-3 border ${
+                                                                            errors.companyEmail && touchedFields.has('companyEmail') 
+                                                                                ? 'border-red-500 bg-red-50' 
+                                                                                : 'border-gray-300'
+                                                                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                                                                        onChange={(e) => updateFormData({ companyEmail: e.target.value })}
+                                                                        onBlur={() => setFieldTouched('companyEmail')}
+                                                                        placeholder="email@entreprise.com"
+                                                                        required
+                                                                    />
+                                                                    <Mail className="absolute left-3 top-3 text-gray-400" />
+                                                                </div>
+                                                                {errors.companyEmail && touchedFields.has('companyEmail') && (
+                                                                    <p className="text-red-500 text-sm mt-1">{errors.companyEmail}</p>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="space-y-2">
+                                                                <label className="block text-sm font-medium text-gray-700">Téléphone *</label>
+                                                                <div className="relative">
+                                                                    <input
+                                                                        type="tel"
+                                                                        value={formData.companyPhone || ''}
+                                                                        className={`w-full pl-10 pr-4 py-3 border ${
+                                                                            errors.companyPhone && touchedFields.has('companyPhone') 
+                                                                                ? 'border-red-500 bg-red-50' 
+                                                                                : 'border-gray-300'
+                                                                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                                                                        onChange={(e) => updateFormData({ companyPhone: e.target.value })}
+                                                                        onBlur={() => setFieldTouched('companyPhone')}
+                                                                        placeholder="0X XX XX XX XX"
+                                                                        required
+                                                                    />
+                                                                    <Phone className="absolute left-3 top-3 text-gray-400" />
+                                                                </div>
+                                                                {errors.companyPhone && touchedFields.has('companyPhone') && (
+                                                                    <p className="text-red-500 text-sm mt-1">{errors.companyPhone}</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
