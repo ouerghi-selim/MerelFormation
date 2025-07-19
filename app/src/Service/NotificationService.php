@@ -1188,7 +1188,7 @@ class NotificationService
 
             $this->emailService->sendTemplatedEmailByEventAndRole(
                 $student->getEmail(),
-                'document_validated',
+                NotificationEventType::DOCUMENT_VALIDATED,
                 'ROLE_STUDENT',
                 $variables
             );
@@ -1222,7 +1222,7 @@ class NotificationService
 
             $this->emailService->sendTemplatedEmailByEventAndRole(
                 $student->getEmail(),
-                'document_rejected',
+                NotificationEventType::DOCUMENT_REJECTED,
                 'ROLE_STUDENT',
                 $variables
             );

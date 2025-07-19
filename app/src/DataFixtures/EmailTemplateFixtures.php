@@ -842,6 +842,97 @@ class EmailTemplateFixtures extends Fixture
         $documentsAddedByInstructor->setVariables(['adminName', 'instructorName', 'documentCount', 'formationTitle', 'sessionTitle', 'addedAt', 'documentListHtml']);
         $manager->persist($documentsAddedByInstructor);
 
+        // === DOCUMENT VALIDATION TEMPLATES ===
+
+        // Document Validated - Student notification
+        $documentValidated = new EmailTemplate();
+        $documentValidated->setName('Document d\'inscription validé');
+        $documentValidated->setIdentifier('document_validated_student');
+        $documentValidated->setEventType('document_validated');
+        $documentValidated->setTargetRole('ROLE_STUDENT');
+        $documentValidated->setIsSystem(true);
+        $documentValidated->setType('notification');
+        $documentValidated->setSubject('✅ Votre document d\'inscription a été validé');
+        $documentValidated->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #38a169;">✅ Document validé</h2>
+                <p>Bonjour {{studentName}},</p>
+                <p>Excellente nouvelle! Votre document d\'inscription a été <strong>validé</strong> par notre équipe.</p>
+                <div style="background-color: #f0fff4; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #38a169;">
+                    <p><strong>Document validé:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Titre: {{documentTitle}}</li>
+                        <li>Validé par: {{validatedBy}}</li>
+                        <li>Date de validation: {{validatedDate}}</li>
+                    </ul>
+                </div>
+                <div style="background-color: #e6fffa; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #38b2ac;">
+                    <p><strong>Prochaines étapes:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Votre dossier d\'inscription progresse normalement</li>
+                        <li>Vous pouvez consulter le statut de vos documents dans votre espace personnel</li>
+                        <li>Notre équipe vous tiendra informé des prochaines étapes</li>
+                    </ul>
+                </div>
+                <p style="text-align: center; margin: 20px 0;">
+                    <a href="{{loginUrl}}" style="background-color: #3182ce; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                        Accéder à mon espace
+                    </a>
+                </p>
+                <p>Merci pour votre confiance et votre patience.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $documentValidated->setVariables(['studentName', 'documentTitle', 'validatedBy', 'validatedDate', 'loginUrl']);
+        $manager->persist($documentValidated);
+
+        // Document Rejected - Student notification
+        $documentRejected = new EmailTemplate();
+        $documentRejected->setName('Document d\'inscription rejeté');
+        $documentRejected->setIdentifier('document_rejected_student');
+        $documentRejected->setEventType('document_rejected');
+        $documentRejected->setTargetRole('ROLE_STUDENT');
+        $documentRejected->setIsSystem(true);
+        $documentRejected->setType('notification');
+        $documentRejected->setSubject('❌ Action requise: Document d\'inscription à corriger');
+        $documentRejected->setContent('
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                <h2 style="color: #e53e3e;">❌ Document à corriger</h2>
+                <p>Bonjour {{studentName}},</p>
+                <p>Nous avons examiné votre document d\'inscription et nous devons vous demander de le corriger.</p>
+                <div style="background-color: #fed7d7; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #e53e3e;">
+                    <p><strong>Document concerné:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Titre: {{documentTitle}}</li>
+                        <li>Examiné par: {{rejectedBy}}</li>
+                        <li>Date d\'examen: {{rejectedDate}}</li>
+                    </ul>
+                </div>
+                <div style="background-color: #fef5e7; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #d69e2e;">
+                    <p><strong>⚠️ Raison du rejet:</strong></p>
+                    <p style="font-style: italic; color: #744210;">{{rejectionReason}}</p>
+                </div>
+                <div style="background-color: #e6fffa; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #38b2ac;">
+                    <p><strong>📋 Actions à effectuer:</strong></p>
+                    <ul style="padding-left: 20px;">
+                        <li>Corrigez votre document selon les indications ci-dessus</li>
+                        <li>Connectez-vous à votre espace personnel pour télécharger un nouveau document</li>
+                        <li>Notre équipe réexaminera votre document dans les plus brefs délais</li>
+                    </ul>
+                </div>
+                <p style="text-align: center; margin: 20px 0;">
+                    <a href="{{loginUrl}}" style="background-color: #3182ce; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                        Corriger mon document
+                    </a>
+                </p>
+                <p>Si vous avez des questions concernant les corrections à apporter, n\'hésitez pas à nous contacter.</p>
+                <p>Nous restons à votre disposition pour vous accompagner dans votre inscription.</p>
+                <p>Cordialement,<br>L\'équipe MerelFormation</p>
+            </div>
+        ');
+        $documentRejected->setVariables(['studentName', 'documentTitle', 'rejectedBy', 'rejectedDate', 'rejectionReason', 'loginUrl']);
+        $manager->persist($documentRejected);
+
         $manager->flush();
     }
 }

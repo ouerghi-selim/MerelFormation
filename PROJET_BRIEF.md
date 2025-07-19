@@ -5,8 +5,8 @@
 **Développeur Principal :** Selim OUERGHI (ouerghi-selim)  
 **Repository :** https://github.com/ouerghi-selim/MerelFormation  
 **Type :** Application de gestion de formations taxi + location de véhicules  
-**Status :** ✅ 100% FONCTIONNEL - Projet complet avec système d'inscription par étapes + Affichage documents d'inscription + Système d'entreprise/employeur  
-**Dernière mise à jour :** 18 Juillet 2025 - Système complet de gestion des entreprises/employeurs dans l'inscription et les interfaces
+**Status :** ✅ 100% FONCTIONNEL - Projet complet avec système d'inscription par étapes + Affichage documents d'inscription + Système d'entreprise/employeur + Validation documents avec emails  
+**Dernière mise à jour :** 19 Juillet 2025 - Système complet de validation des documents d'inscription avec notifications email automatiques
 
 ## 🖗️ Architecture Technique
 
@@ -339,6 +339,7 @@ MerelFormation/
 - **🆕 Système d'inscription en deux étapes** ✅ NOUVEAU (Juillet 2025)
 - **🆕 25 templates email avec demande d'inscription** ✅ NOUVEAU (Juillet 2025)
 - **🆕 Affichage des documents d'inscription** ✅ NOUVEAU (Juillet 2025)
+- **🆕 Validation documents d'inscription avec emails** ✅ NOUVEAU (19 Juillet 2025)
 
 ### 🆕 DERNIÈRES AMÉLIORATIONS CRITIQUES (Juin 2025) ✅ TERMINÉ
 - **🆕 Éditeur Email WYSIWYG Professionnel** - Remplacement textarea HTML par TinyMCE React
@@ -594,6 +595,13 @@ MerelFormation/
 - Company Entity: Validation SIRET, réutilisation par SIRET, relation User ManyToOne
 - Endpoints intégrés: Pas de CRUD séparé, gestion via inscription et affichage
 
+🆕 Validation Documents d'Inscription API (NOUVEAU - 19 Juillet 2025):
+- PUT /api/admin/documents/{id}/validate - Validation document avec email automatique
+- PUT /api/admin/documents/{id}/reject - Rejet document avec raison obligatoire + email
+- GET /api/admin/users/{id}/documents - Documents utilisateur avec statuts validation
+- Email Templates: document_validated et document_rejected avec variables dynamiques
+- Statuts: en_attente (défaut), valide (approuvé), rejete (refusé avec raison)
+
 🆕 Emails Automatiques (NOUVEAU):
 Tous les endpoints CRUD déclenchent maintenant des emails automatiques:
 - 🆕 Inscriptions: Demande → Email "demande reçue" | Confirmation → Email "inscription confirmée" + URL finalisation
@@ -643,11 +651,12 @@ Grâce au **système de détails complets des réservations**, **les administrat
 17. **🆕 MESSAGES ERREUR PRÉCIS** - Extraction vrais messages API avec utilitaire errorUtils.ts
 18. **🆕 AFFICHAGE DOCUMENTS INSCRIPTION** - Système complet de visualisation et téléchargement des documents uploadés pendant l'inscription
 19. **🆕 SYSTÈME ENTREPRISE/EMPLOYEUR** - Section employeur optionnelle complète avec gestion SIRET et affichage intégré
+20. **🆕 VALIDATION DOCUMENTS INSCRIPTION** - Système complet de validation/rejet des documents d'inscription avec emails automatiques
 
 **💡 CONSEIL POUR FUTURES CONVERSATIONS :**
 Copiez-collez ce brief au début de nouvelles conversations avec Claude pour qu'il comprenne immédiatement le contexte et l'état du projet sans avoir à refaire toute l'analyse.
 
-**Dernière mise à jour :** Juillet 2025 par Selim OUERGHI
+**Dernière mise à jour :** 19 Juillet 2025 par Selim OUERGHI
 
 ## 🆕 NOUVEAU : Système d'Entreprise/Employeur Complet (Juillet 2025)
 
@@ -765,6 +774,138 @@ FOREIGN KEY (company_id) REFERENCES company(id);
 
 Ce système transforme MerelFormation en une solution complète de gestion des formations avec suivi des employeurs financeurs.
 
+## 🆕 NOUVEAU : Système de Validation des Documents d'Inscription (Juillet 2025)
+
+### 🎯 **Fonctionnalité Demandée**
+Permettre aux administrateurs de valider ou rejeter les documents d'inscription uploadés par les étudiants, avec blocage de modification une fois validés et notifications email automatiques.
+
+### 🚀 **Solution Implémentée**
+
+#### **Backend (Symfony)**
+- **Entity Document étendue** : Ajout champs `validationStatus`, `validatedAt`, `validatedBy`, `rejectionReason`
+- **Migration Base** : `Version20250719104605.php` - Nouveaux champs de validation
+- **DocumentController** : Endpoints `/api/admin/documents/{id}/validate` et `/api/admin/documents/{id}/reject`
+- **NotificationService** : Méthodes `notifyDocumentValidated()` et `notifyDocumentRejected()`
+- **Templates Email** : Migration `Version20250719203158.php` avec templates HTML professionnels
+- **API UserAdminController** : Endpoint `/api/admin/users/{id}/documents` retourne statuts validation
+
+#### **Frontend (React + TypeScript)**
+- **Interface Admin** : Boutons validation/rejet dans StudentsAdmin.tsx avec modales
+- **Statuts Visuels** : Badges colorés (orange: en attente, vert: validé, rouge: rejeté)
+- **Blocage Étudiant** : Documents validés non modifiables côté étudiant
+- **API Integration** : `documentsApi.validateDocument()` et `documentsApi.rejectDocument()`
+- **UX Complète** : Modales de confirmation avec raison de rejet obligatoire
+
+### 🎨 **Workflow de Validation**
+
+#### **Statuts Disponibles**
+```typescript
+// Statuts possibles
+'en_attente'  // Document uploadé, en attente de validation
+'valide'      // Document approuvé par admin/instructeur  
+'rejete'      // Document refusé avec raison détaillée
+```
+
+#### **Interface Admin (StudentsAdmin.tsx)**
+```typescript
+// Boutons conditionnels selon statut
+{document.validationStatus === 'en_attente' && (
+  <>
+    <button onClick={() => validateDocument(document.id)} 
+            className="bg-green-600 hover:bg-green-700">
+      ✅ Valider
+    </button>
+    <button onClick={() => openRejectModal(document)}
+            className="bg-red-600 hover:bg-red-700">
+      ❌ Rejeter
+    </button>
+  </>
+)}
+```
+
+#### **Restrictions Étudiants**
+```typescript
+// Blocage modification documents validés
+const canUploadRegistrationDocument = () => {
+  return !existingDocument || existingDocument.validationStatus !== 'valide';
+};
+```
+
+### 📧 **Templates Email Automatiques**
+
+#### **Template Validation (`document_validated`)**
+- **Design** : Vert avec félicitations et confirmation officielle
+- **Variables** : `{{studentName}}`, `{{documentTitle}}`, `{{validatedBy}}`, `{{validatedDate}}`, `{{loginUrl}}`
+- **Contenu** : Message positif avec lien vers espace étudiant
+
+#### **Template Rejet (`document_rejected`)**
+- **Design** : Rouge avec explications et encouragements
+- **Variables** : `{{studentName}}`, `{{documentTitle}}`, `{{rejectedBy}}`, `{{rejectedDate}}`, `{{rejectionReason}}`, `{{loginUrl}}`
+- **Contenu** : Raison détaillée du rejet avec lien pour correction
+
+### 🔧 **Architecture Technique**
+
+#### **Base de Données (Entity Document)**
+```sql
+-- Nouveaux champs ajoutés
+ALTER TABLE document ADD COLUMN validation_status VARCHAR(20) DEFAULT 'en_attente';
+ALTER TABLE document ADD COLUMN validated_at DATETIME DEFAULT NULL;
+ALTER TABLE document ADD COLUMN validated_by INT DEFAULT NULL;
+ALTER TABLE document ADD COLUMN rejection_reason TEXT DEFAULT NULL;
+```
+
+#### **API Endpoints**
+```php
+// Validation d'un document
+PUT /api/admin/documents/{id}/validate
+// Headers: Authorization: Bearer {token}
+// Response: Document avec statut mis à jour + email envoyé
+
+// Rejet d'un document  
+PUT /api/admin/documents/{id}/reject
+// Body: {"reason": "Raison du rejet"}
+// Response: Document avec statut rejeté + email envoyé
+```
+
+#### **Integration EmailService**
+```php
+// Utilisation du système existant
+$this->emailService->sendTemplatedEmailByEventAndRole(
+    $student->getEmail(),
+    NotificationEventType::DOCUMENT_VALIDATED,
+    'ROLE_STUDENT',
+    $variables
+);
+```
+
+### 🎯 **Impact Business & UX**
+
+#### **Contrôle Qualité**
+- **Validation manuelle** des documents par équipe pédagogique
+- **Traçabilité complète** : qui a validé/rejeté et quand
+- **Raisons détaillées** pour les rejets avec aide à la correction
+
+#### **Expérience Utilisateur**
+- **Statuts visuels clairs** pour étudiants et admins
+- **Notifications automatiques** à chaque étape
+- **Blocage intelligent** évite modifications accidentelles
+- **Interface intuitive** avec actions contextuelles
+
+#### **Efficacité Administrative**
+- **Workflow structuré** pour validation en masse
+- **Emails automatiques** réduisent charge administrative  
+- **Historique complet** pour audits et suivi qualité
+
+### 📊 **Résultats**
+- **✅ Système Complet** : Validation, rejet, blocage, notifications
+- **✅ Templates Professionnels** : Emails HTML avec charte graphique cohérente
+- **✅ UX Optimale** : Interface admin intuitive avec actions rapides
+- **✅ Intégration Parfaite** : Compatible avec système email existant
+- **✅ Sécurité** : Validation côté backend avec contrôles d'accès
+- **✅ Extensible** : Architecture prête pour d'autres types de documents
+
+Ce système professionnalise la gestion des documents d'inscription en ajoutant un contrôle qualité rigoureux avec communication automatisée.
+
 **🎯 NOUVELLES FONCTIONNALITÉS AJOUTÉES (Juillet 2025) :**
 - **🆕 Système d'Inscription par Étapes** - Interface professionnelle `/setup-password` en 2 étapes avec validation sécurisée
 - **🆕 Tokens de Finalisation** - Système de tokens 64 chars avec expiration 7 jours et validation multi-niveaux
@@ -784,7 +925,7 @@ Ce système transforme MerelFormation en une solution complète de gestion des f
 
 Le projet MerelFormation dispose maintenant d'un **système d'emails automatiques complet et professionnel** + **éditeur WYSIWYG avancé** qui transforment l'expérience utilisateur :
 
-### 📧 **25 Templates d'Emails Professionnels** (Mis à jour Juillet 2025 - Système d'Inscription par Étapes)
+### 📧 **27 Templates d'Emails Professionnels** (Mis à jour 19 Juillet 2025 - Validation Documents)
 - **Design HTML responsive** avec CSS inline
 - **Charte graphique cohérente** MerelFormation
 - **Variables dynamiques** personnalisées (`{{userName}}`, `{{formationTitle}}`, etc.)
