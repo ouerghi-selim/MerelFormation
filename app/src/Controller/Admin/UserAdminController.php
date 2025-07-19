@@ -607,6 +607,7 @@ class UserAdminController extends AbstractController
 
     /**
      * Récupérer les documents d'inscription d'un utilisateur
+     * @Route("/{id}/documents", name="get_user_documents", methods={"GET"})
      */
     public function getUserDocuments(Request $request): JsonResponse
     {
@@ -638,7 +639,16 @@ class UserAdminController extends AbstractController
                     'date' => $document->getUploadedAt()->format('d/m/Y'),
                     'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
                     'fileName' => $document->getFileName(),
-                    'downloadUrl' => '/uploads/documents/' . $document->getFileName()
+                    'downloadUrl' => '/uploads/documents/' . $document->getFileName(),
+                    // Ajouter les champs de validation
+                    'validationStatus' => $document->getValidationStatus(),
+                    'validatedAt' => $document->getValidatedAt() ? $document->getValidatedAt()->format('Y-m-d H:i:s') : null,
+                    'validatedBy' => $document->getValidatedBy() ? [
+                        'id' => $document->getValidatedBy()->getId(),
+                        'firstName' => $document->getValidatedBy()->getFirstName(),
+                        'lastName' => $document->getValidatedBy()->getLastName()
+                    ] : null,
+                    'rejectionReason' => $document->getRejectionReason()
                 ];
             }
 

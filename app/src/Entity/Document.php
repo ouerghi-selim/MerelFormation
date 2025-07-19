@@ -114,6 +114,24 @@ class Document
     #[Groups(['document:read'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\Column(length: 20)]
+    #[Groups(['document:read', 'document:write'])]
+    #[Assert\Choice(choices: ['en_attente', 'valide', 'rejete'])]
+    private ?string $validationStatus = 'en_attente';
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['document:read'])]
+    private ?\DateTimeImmutable $validatedAt = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'validated_by', referencedColumnName: 'id', nullable: true)]
+    #[Groups(['document:read'])]
+    private ?User $validatedBy = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(['document:read', 'document:write'])]
+    private ?string $rejectionReason = null;
+
     public function __construct()
     {
         $this->uploadedAt = new \DateTimeImmutable();
@@ -272,6 +290,50 @@ class Document
     public function setUser(?User $user): static
     {
         $this->user = $user;
+        return $this;
+    }
+
+    public function getValidationStatus(): ?string
+    {
+        return $this->validationStatus;
+    }
+
+    public function setValidationStatus(?string $validationStatus): static
+    {
+        $this->validationStatus = $validationStatus;
+        return $this;
+    }
+
+    public function getValidatedAt(): ?\DateTimeImmutable
+    {
+        return $this->validatedAt;
+    }
+
+    public function setValidatedAt(?\DateTimeImmutable $validatedAt): static
+    {
+        $this->validatedAt = $validatedAt;
+        return $this;
+    }
+
+    public function getValidatedBy(): ?User
+    {
+        return $this->validatedBy;
+    }
+
+    public function setValidatedBy(?User $validatedBy): static
+    {
+        $this->validatedBy = $validatedBy;
+        return $this;
+    }
+
+    public function getRejectionReason(): ?string
+    {
+        return $this->rejectionReason;
+    }
+
+    public function setRejectionReason(?string $rejectionReason): static
+    {
+        $this->rejectionReason = $rejectionReason;
         return $this;
     }
 }

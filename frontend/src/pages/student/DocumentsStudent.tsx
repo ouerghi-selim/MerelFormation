@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Filter, Search, ChevronDown, Upload, Plus, X } from 'lucide-react';
+import { FileText, Download, Filter, Search, ChevronDown, Upload, Plus, X, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
 import StudentHeader from '../../components/student/StudentHeader';
 import { studentDocumentsApi } from '@/services/api.ts';
 
@@ -17,6 +17,13 @@ interface Document {
   fileType: string;
   downloadUrl: string;
   senderRole?: string; // Pour les documents directs
+  validationStatus?: string;
+  validatedAt?: string;
+  validatedBy?: {
+    firstName: string;
+    lastName: string;
+  };
+  rejectionReason?: string;
 }
 
 // Documents obligatoires définis comme dans le système d'inscription
@@ -39,6 +46,47 @@ const DocumentsStudent: React.FC = () => {
   const [uploading, setUploading] = useState<boolean>(false);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [uploadingDocumentType, setUploadingDocumentType] = useState<string | null>(null);
+
+  // Fonction pour afficher le badge de statut de validation
+  const getValidationStatusBadge = (document: Document) => {
+    const status = document.validationStatus || 'en_attente';
+    
+    switch (status) {
+      case 'valide':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            Validé
+          </span>
+        );
+      case 'rejete':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            <XCircle className="w-3 h-3 mr-1" />
+            Rejeté
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+            <Clock className="w-3 h-3 mr-1" />
+            En attente
+          </span>
+        );
+    }
+  };
+
+  // Fonction pour vérifier si un document peut être modifié/supprimé
+  const canModifyDocument = (document: Document) => {
+    return document.source === 'inscription' && document.validationStatus !== 'valide';
+  };
+
+  // Fonction pour vérifier si l'utilisateur peut uploader des documents d'inscription
+  const canUploadRegistrationDocument = () => {
+    const registrationDocs = documents.filter(doc => doc.source === 'inscription');
+    // Autoriser l'upload s'il n'y a pas de documents d'inscription ou s'ils sont tous rejetés
+    return registrationDocs.length === 0 || registrationDocs.every(doc => doc.validationStatus === 'rejete');
+  };
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -225,13 +273,30 @@ const DocumentsStudent: React.FC = () => {
               <ChevronDown className="absolute right-3 top-3 text-gray-400"/>
             </div>
 
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="flex items-center gap-2 bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors"
-            >
-              <Upload className="h-4 w-4" />
-              Ajouter un document
-            </button>
+            {canUploadRegistrationDocument() ? (
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="flex items-center gap-2 bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors"
+              >
+                <Upload className="h-4 w-4" />
+                Ajouter un document
+              </button>
+            ) : (
+              <div className="relative group">
+                <button
+                  disabled
+                  className="flex items-center gap-2 bg-gray-400 text-white px-4 py-2 rounded-lg cursor-not-allowed"
+                >
+                  <Upload className="h-4 w-4" />
+                  Ajouter un document
+                </button>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block">
+                  <div className="bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                    Documents d'inscription en cours de validation
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -252,6 +317,8 @@ const DocumentsStudent: React.FC = () => {
           requiredDocuments={getRequiredDocumentStatus()}
           onUpload={handleRequiredDocumentUpload}
           uploadingDocumentType={uploadingDocumentType}
+          getValidationStatusBadge={getValidationStatusBadge}
+          canUploadRegistrationDocument={canUploadRegistrationDocument}
         />
 
         {/* Section de tous les documents */}
@@ -314,6 +381,10 @@ const DocumentsStudent: React.FC = () => {
                     Taille
                   </th>
                   <th scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Statut
+                  </th>
+                  <th scope="col"
                       className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
@@ -362,6 +433,28 @@ const DocumentsStudent: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{document.fileSize}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col space-y-1">
+                          {document.source === 'inscription' ? getValidationStatusBadge(document) : (
+                            <span className="text-xs text-gray-500">-</span>
+                          )}
+                          {/* Informations de validation pour les documents d'inscription */}
+                          {document.source === 'inscription' && document.validatedAt && document.validatedBy && (
+                            <p className="text-xs text-gray-500">
+                              Par {document.validatedBy.firstName} {document.validatedBy.lastName}
+                            </p>
+                          )}
+                          {/* Raison du rejet */}
+                          {document.source === 'inscription' && document.validationStatus === 'rejete' && document.rejectionReason && (
+                            <div className="max-w-xs">
+                              <p className="text-xs text-red-600 bg-red-50 p-1 rounded border">
+                                <AlertTriangle className="h-3 w-3 inline mr-1" />
+                                {document.rejectionReason}
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <a
@@ -532,12 +625,16 @@ interface RequiredDocumentsProps {
   }>;
   onUpload: (file: File, documentKey: string, documentTitle: string) => void;
   uploadingDocumentType: string | null;
+  getValidationStatusBadge: (document: Document) => React.ReactElement;
+  canUploadRegistrationDocument: () => boolean;
 }
 
 const RequiredDocumentsSection: React.FC<RequiredDocumentsProps> = ({ 
   requiredDocuments, 
   onUpload, 
-  uploadingDocumentType 
+  uploadingDocumentType,
+  getValidationStatusBadge,
+  canUploadRegistrationDocument
 }) => {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, documentKey: string, documentTitle: string) => {
     const file = e.target.files?.[0];
@@ -588,16 +685,60 @@ const RequiredDocumentsSection: React.FC<RequiredDocumentsProps> = ({
                 {doc.exists ? (
                   <>
                     {doc.document && (
-                      <a
-                        href={doc.document.downloadUrl}
-                        download
-                        className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors"
-                      >
-                        <Download className="h-4 w-4" />
-                        Télécharger
-                      </a>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={doc.document.downloadUrl}
+                          download
+                          className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors"
+                        >
+                          <Download className="h-4 w-4" />
+                          Télécharger
+                        </a>
+                        {doc.document.validationStatus && getValidationStatusBadge(doc.document)}
+                      </div>
                     )}
-                    <span className="text-sm text-green-600 font-medium">Complet</span>
+                    {!doc.document?.validationStatus && (
+                      <span className="text-sm text-green-600 font-medium">Complet</span>
+                    )}
+                    {/* Message informatif si document validé */}
+                    {doc.document?.validationStatus === 'valide' && (
+                      <p className="text-xs text-green-600 mt-1">
+                        Document validé - Modification non autorisée
+                      </p>
+                    )}
+                    {/* Possibilité de re-upload si document rejeté */}
+                    {doc.document?.validationStatus === 'rejete' && (
+                      <>
+                        <input
+                          type="file"
+                          id={`reupload-${doc.key}`}
+                          onChange={(e) => handleFileUpload(e, doc.key, doc.title)}
+                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+                          className="hidden"
+                          disabled={uploadingDocumentType === doc.key}
+                        />
+                        <label
+                          htmlFor={`reupload-${doc.key}`}
+                          className={`cursor-pointer inline-flex items-center gap-1 px-3 py-1 text-sm rounded-md transition-colors ${
+                            uploadingDocumentType === doc.key 
+                              ? 'bg-gray-100 text-gray-400' 
+                              : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                          }`}
+                        >
+                          {uploadingDocumentType === doc.key ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600"></div>
+                              Upload...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4" />
+                              Remplacer
+                            </>
+                          )}
+                        </label>
+                      </>
+                    )}
                   </>
                 ) : (
                   <>

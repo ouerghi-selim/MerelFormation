@@ -21,9 +21,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Vich\UploaderBundle\Handler\DownloadHandler;
 
-/**
- * @Route("/api/admin/documents", name="api_admin_documents_")
- */
+#[Route('/api/admin/documents', name: 'api_admin_documents_')]
 class DocumentController extends AbstractController
 {
     private $security;
@@ -313,6 +311,120 @@ class DocumentController extends AbstractController
 
         return $this->json([
             'message' => "Nettoyage terminé. {$deletedCount} documents temporaires et {$orphanFilesCount} fichiers orphelins supprimés."
+        ]);
+    }
+
+    /**
+     * Valider un document d'inscription
+     */
+    #[Route('/{id}/validate', name: 'validate', methods: ['PUT'])]
+    public function validateDocument(int $id, Request $request): JsonResponse
+    {
+        // Vérifier que l'utilisateur est un admin ou instructeur
+        if (!$this->security->isGranted('ROLE_ADMIN') && !$this->security->isGranted('ROLE_INSTRUCTOR')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
+
+        $document = $this->documentRepository->find($id);
+        if (!$document) {
+            return $this->json(['message' => 'Document non trouvé'], 404);
+        }
+
+        // Vérifier que c'est un document d'inscription
+        if ($document->getCategory() !== 'attestation') {
+            return $this->json(['message' => 'Seuls les documents d\'inscription peuvent être validés'], 400);
+        }
+
+        // Mettre à jour le statut de validation
+        $document->setValidationStatus('valide');
+        $document->setValidatedAt(new \DateTimeImmutable());
+        $document->setValidatedBy($this->security->getUser());
+        $document->setRejectionReason(null); // Réinitialiser la raison de rejet
+
+        $this->entityManager->flush();
+
+        // Envoyer notification email à l'étudiant
+        try {
+            $this->notificationService->notifyDocumentValidated($document, $this->security->getUser());
+        } catch (\Exception $e) {
+            // Log l'erreur mais ne pas faire échouer la validation
+            error_log('Erreur envoi email validation document: ' . $e->getMessage());
+        }
+
+        return $this->json([
+            'message' => 'Document validé avec succès',
+            'document' => [
+                'id' => $document->getId(),
+                'title' => $document->getTitle(),
+                'validationStatus' => $document->getValidationStatus(),
+                'validatedAt' => $document->getValidatedAt()?->format('Y-m-d H:i:s'),
+                'validatedBy' => [
+                    'id' => $document->getValidatedBy()?->getId(),
+                    'firstName' => $document->getValidatedBy()?->getFirstName(),
+                    'lastName' => $document->getValidatedBy()?->getLastName()
+                ]
+            ]
+        ]);
+    }
+
+    /**
+     * Rejeter un document d'inscription
+     */
+    #[Route('/{id}/reject', name: 'reject', methods: ['PUT'])]
+    public function rejectDocument(int $id, Request $request): JsonResponse
+    {
+        // Vérifier que l'utilisateur est un admin ou instructeur
+        if (!$this->security->isGranted('ROLE_ADMIN') && !$this->security->isGranted('ROLE_INSTRUCTOR')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
+
+        $document = $this->documentRepository->find($id);
+        if (!$document) {
+            return $this->json(['message' => 'Document non trouvé'], 404);
+        }
+
+        // Vérifier que c'est un document d'inscription
+        if ($document->getCategory() !== 'attestation') {
+            return $this->json(['message' => 'Seuls les documents d\'inscription peuvent être rejetés'], 400);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $rejectionReason = $data['reason'] ?? '';
+
+        if (empty($rejectionReason)) {
+            return $this->json(['message' => 'La raison du rejet est obligatoire'], 400);
+        }
+
+        // Mettre à jour le statut de validation
+        $document->setValidationStatus('rejete');
+        $document->setValidatedAt(new \DateTimeImmutable());
+        $document->setValidatedBy($this->security->getUser());
+        $document->setRejectionReason($rejectionReason);
+
+        $this->entityManager->flush();
+
+        // Envoyer notification email à l'étudiant
+        try {
+            $this->notificationService->notifyDocumentRejected($document, $this->security->getUser());
+        } catch (\Exception $e) {
+            // Log l'erreur mais ne pas faire échouer le rejet
+            error_log('Erreur envoi email rejet document: ' . $e->getMessage());
+        }
+
+        return $this->json([
+            'message' => 'Document rejeté avec succès',
+            'document' => [
+                'id' => $document->getId(),
+                'title' => $document->getTitle(),
+                'validationStatus' => $document->getValidationStatus(),
+                'validatedAt' => $document->getValidatedAt()?->format('Y-m-d H:i:s'),
+                'validatedBy' => [
+                    'id' => $document->getValidatedBy()?->getId(),
+                    'firstName' => $document->getValidatedBy()?->getFirstName(),
+                    'lastName' => $document->getValidatedBy()?->getLastName()
+                ],
+                'rejectionReason' => $document->getRejectionReason()
+            ]
         ]);
     }
 

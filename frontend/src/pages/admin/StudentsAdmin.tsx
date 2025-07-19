@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { UserPlus, Edit, Trash2, Eye, GraduationCap, Check, X, Users, Archive, FileText, Download, Building2 } from 'lucide-react';
+import { UserPlus, Edit, Trash2, Eye, GraduationCap, Check, X, Users, Archive, FileText, Download, Building2, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
 import DataTable from '../../components/common/DataTable';
@@ -9,7 +9,7 @@ import Alert from '../../components/common/Alert';
 import DeletedUsersTable from '../../components/admin/DeletedUsersTable';
 import { useNotification } from '../../contexts/NotificationContext';
 import useDataFetching from '../../hooks/useDataFetching';
-import { adminUsersApi, studentDocumentsApi } from '../../services/api';
+import { adminUsersApi, studentDocumentsApi, documentsApi } from '../../services/api';
 import { useLocation } from 'react-router-dom';
 
 
@@ -57,6 +57,13 @@ interface Document {
     uploadedAt: string;
     fileName: string;
     downloadUrl: string;
+    validationStatus?: string;
+    validatedAt?: string;
+    validatedBy?: {
+        firstName: string;
+        lastName: string;
+    };
+    rejectionReason?: string;
 }
 
 const StudentsAdmin: React.FC = () => {
@@ -75,6 +82,13 @@ const StudentsAdmin: React.FC = () => {
     const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
     const [processing, setProcessing] = useState(false);
     const [studentToEdit, setStudentToEdit] = useState<User | null>(null);
+    
+    // States pour la validation des documents
+    const [showValidationModal, setShowValidationModal] = useState(false);
+    const [documentToValidate, setDocumentToValidate] = useState<Document | null>(null);
+    const [validationAction, setValidationAction] = useState<'validate' | 'reject' | null>(null);
+    const [rejectionReason, setRejectionReason] = useState('');
+    const [validationProcessing, setValidationProcessing] = useState(false);
 
     // Nouvel étudiant form state
     const [newStudent, setNewStudent] = useState<Omit<User, 'id'>>({
@@ -246,6 +260,98 @@ const StudentsAdmin: React.FC = () => {
             addToast('Erreur lors de la suppression de l\'élève', 'error');
         } finally {
             setProcessing(false);
+        }
+    };
+
+    // Fonctions de validation des documents
+    const handleValidateDocument = (document: Document) => {
+        setDocumentToValidate(document);
+        setValidationAction('validate');
+        setShowValidationModal(true);
+    };
+
+    const handleRejectDocument = (document: Document) => {
+        setDocumentToValidate(document);
+        setValidationAction('reject');
+        setRejectionReason('');
+        setShowValidationModal(true);
+    };
+
+    const handleValidationSubmit = async () => {
+        if (!documentToValidate || !validationAction) return;
+
+        try {
+            setValidationProcessing(true);
+
+            if (validationAction === 'validate') {
+                await documentsApi.validateDocument(documentToValidate.id);
+                addToast('Document validé avec succès', 'success');
+            } else {
+                if (!rejectionReason.trim()) {
+                    addToast('La raison du rejet est obligatoire', 'error');
+                    return;
+                }
+                await documentsApi.rejectDocument(documentToValidate.id, rejectionReason);
+                addToast('Document rejeté avec succès', 'success');
+            }
+
+            // Rafraîchir les documents de l'étudiant
+            if (selectedStudent) {
+                await fetchUserDocuments(selectedStudent.id);
+            }
+
+            setShowValidationModal(false);
+            setDocumentToValidate(null);
+            setValidationAction(null);
+            setRejectionReason('');
+
+        } catch (err) {
+            console.error('Error processing document validation:', err);
+            addToast('Erreur lors du traitement du document', 'error');
+        } finally {
+            setValidationProcessing(false);
+        }
+    };
+
+    const getValidationStatusBadge = (document: Document) => {
+        const status = document.validationStatus || 'en_attente';
+        
+        switch (status) {
+            case 'valide':
+                return (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Validé
+                    </span>
+                );
+            case 'rejete':
+                return (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        <XCircle className="w-3 h-3 mr-1" />
+                        Rejeté
+                    </span>
+                );
+            default:
+                return (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        <Clock className="w-3 h-3 mr-1" />
+                        En attente
+                    </span>
+                );
+        }
+    };
+
+    // Fonction pour rafraîchir les documents d'un utilisateur
+    const fetchUserDocuments = async (userId: number) => {
+        try {
+            setLoadingDocuments(true);
+            const documentsResponse = await adminUsersApi.getDocuments(userId);
+            setUserDocuments(documentsResponse.data);
+        } catch (err) {
+            console.error('Error fetching user documents:', err);
+            addToast('Erreur lors du chargement des documents', 'error');
+        } finally {
+            setLoadingDocuments(false);
         }
     };
 
@@ -782,10 +888,31 @@ const StudentsAdmin: React.FC = () => {
                                         <div key={document.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
                                             <div className="flex items-start justify-between">
                                                 <div className="flex-1">
-                                                    <h5 className="font-medium text-gray-900 mb-1">{document.title}</h5>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <h5 className="font-medium text-gray-900">{document.title}</h5>
+                                                        {getValidationStatusBadge(document)}
+                                                    </div>
                                                     <p className="text-sm text-gray-500 mb-2">
                                                         Uploadé le {document.date}
                                                     </p>
+                                                    
+                                                    {/* Informations de validation */}
+                                                    {document.validatedAt && document.validatedBy && (
+                                                        <p className="text-xs text-gray-500 mb-2">
+                                                            {document.validationStatus === 'valide' ? 'Validé' : 'Rejeté'} le {new Date(document.validatedAt).toLocaleDateString('fr-FR')} par {document.validatedBy.firstName} {document.validatedBy.lastName}
+                                                        </p>
+                                                    )}
+                                                    
+                                                    {/* Raison du rejet */}
+                                                    {document.validationStatus === 'rejete' && document.rejectionReason && (
+                                                        <div className="bg-red-50 border border-red-200 rounded p-2 mb-2">
+                                                            <p className="text-xs text-red-700 flex items-start">
+                                                                <AlertTriangle className="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" />
+                                                                <span><strong>Raison du rejet:</strong> {document.rejectionReason}</span>
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                    
                                                     <div className="flex items-center text-xs text-gray-400">
                                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                                             document.type === 'pdf' ? 'bg-red-100 text-red-700' :
@@ -796,15 +923,38 @@ const StudentsAdmin: React.FC = () => {
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <a
-                                                    href={document.downloadUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="ml-3 p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                                                    title="Télécharger le document"
-                                                >
-                                                    <Download className="h-4 w-4" />
-                                                </a>
+                                                
+                                                <div className="ml-3 flex flex-col space-y-1">
+                                                    <a
+                                                        href={document.downloadUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                                                        title="Télécharger le document"
+                                                    >
+                                                        <Download className="h-4 w-4" />
+                                                    </a>
+                                                    
+                                                    {/* Boutons de validation seulement pour les documents d'inscription en attente */}
+                                                    {(document.category === 'attestation' && (document.validationStatus === 'en_attente' || !document.validationStatus)) && (
+                                                        <div className="flex flex-col space-y-1">
+                                                            <button
+                                                                onClick={() => handleValidateDocument(document)}
+                                                                className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
+                                                                title="Valider le document"
+                                                            >
+                                                                <CheckCircle className="h-4 w-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleRejectDocument(document)}
+                                                                className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                                                                title="Rejeter le document"
+                                                            >
+                                                                <XCircle className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
@@ -818,6 +968,93 @@ const StudentsAdmin: React.FC = () => {
                             )}
                         </div>
                     </>
+                )}
+            </Modal>
+
+            {/* Modal de validation/rejet de document */}
+            <Modal
+                isOpen={showValidationModal}
+                onClose={() => {
+                    setShowValidationModal(false);
+                    setDocumentToValidate(null);
+                    setValidationAction(null);
+                    setRejectionReason('');
+                }}
+                title={validationAction === 'validate' ? 'Valider le document' : 'Rejeter le document'}
+                size="md"
+            >
+                {documentToValidate && (
+                    <div className="space-y-4">
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <h4 className="font-medium text-gray-900 mb-2">{documentToValidate.title}</h4>
+                            <p className="text-sm text-gray-600">
+                                Étudiant: {selectedStudent?.firstName} {selectedStudent?.lastName}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                                Uploadé le: {documentToValidate.date}
+                            </p>
+                        </div>
+
+                        {validationAction === 'validate' ? (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <div className="flex items-center">
+                                    <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                                    <p className="text-green-800">
+                                        Êtes-vous sûr de vouloir valider ce document ? L'étudiant sera notifié par email.
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                    <div className="flex items-center mb-3">
+                                        <XCircle className="h-5 w-5 text-red-600 mr-2" />
+                                        <p className="text-red-800">
+                                            Veuillez préciser la raison du rejet. L'étudiant sera notifié par email.
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label htmlFor="rejectionReason" className="block text-sm font-medium text-gray-700 mb-2">
+                                        Raison du rejet *
+                                    </label>
+                                    <textarea
+                                        id="rejectionReason"
+                                        value={rejectionReason}
+                                        onChange={(e) => setRejectionReason(e.target.value)}
+                                        rows={4}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="Exemple: Le document n'est pas lisible, il manque la signature, etc."
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex justify-end space-x-3 pt-4">
+                            <Button
+                                variant="secondary"
+                                onClick={() => {
+                                    setShowValidationModal(false);
+                                    setDocumentToValidate(null);
+                                    setValidationAction(null);
+                                    setRejectionReason('');
+                                }}
+                                disabled={validationProcessing}
+                            >
+                                Annuler
+                            </Button>
+                            <Button
+                                variant={validationAction === 'validate' ? 'primary' : 'danger'}
+                                onClick={handleValidationSubmit}
+                                disabled={validationProcessing || (validationAction === 'reject' && !rejectionReason.trim())}
+                                loading={validationProcessing}
+                            >
+                                {validationAction === 'validate' ? 'Valider le document' : 'Rejeter le document'}
+                            </Button>
+                        </div>
+                    </div>
                 )}
             </Modal>
         </div>

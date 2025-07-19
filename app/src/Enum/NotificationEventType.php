@@ -40,6 +40,8 @@ class NotificationEventType
     public const DOCUMENTS_ADDED = 'documents_added';
     public const DOCUMENTS_ADDED_BY_INSTRUCTOR = 'documents_added_by_instructor';
     public const DIRECT_DOCUMENT_SENT = 'direct_document_sent';
+    public const DOCUMENT_VALIDATED = 'document_validated';
+    public const DOCUMENT_REJECTED = 'document_rejected';
     
     // Payment events
     public const PAYMENT_RECEIVED = 'payment_received';

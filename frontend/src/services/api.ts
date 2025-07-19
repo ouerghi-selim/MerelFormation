@@ -515,7 +515,15 @@ export const documentsApi = {
     }) => api.post('/admin/documents/finalize', data),
     
     // Nettoyer les fichiers temporaires anciens
-    cleanupTemp: () => api.post('/admin/documents/cleanup-temp')
+    cleanupTemp: () => api.post('/admin/documents/cleanup-temp'),
+    
+    // Valider un document d'inscription
+    validateDocument: (documentId: number) =>
+        api.put(`/admin/documents/${documentId}/validate`),
+    
+    // Rejeter un document d'inscription
+    rejectDocument: (documentId: number, reason: string) =>
+        api.put(`/admin/documents/${documentId}/reject`, { reason })
 };
 
 // Services API pour l'upload d'images

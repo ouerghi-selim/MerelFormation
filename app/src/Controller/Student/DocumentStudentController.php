@@ -95,7 +95,14 @@ class DocumentStudentController extends AbstractController
                         'fileName' => $document->getFileName(),
                         //'fileSize' => $this->formatFileSize($document->getFileSize() ?? 0),
                         'fileType' => $document->getType(),
-                        'downloadUrl' => '/uploads/documents/' . $document->getFileName()
+                        'downloadUrl' => '/uploads/documents/' . $document->getFileName(),
+                        'validationStatus' => $document->getValidationStatus(),
+                        'validatedAt' => $document->getValidatedAt()?->format('Y-m-d H:i:s'),
+                        'validatedBy' => $document->getValidatedBy() ? [
+                            'firstName' => $document->getValidatedBy()->getFirstName(),
+                            'lastName' => $document->getValidatedBy()->getLastName()
+                        ] : null,
+                        'rejectionReason' => $document->getRejectionReason()
                     ];
                 }
             }
@@ -124,7 +131,14 @@ class DocumentStudentController extends AbstractController
                         'fileName' => $document->getFileName(),
                         //'fileSize' => $this->formatFileSize($document->getFileSize() ?? 0),
                         'fileType' => $document->getType(),
-                        'downloadUrl' => '/uploads/documents/' . $document->getFileName()
+                        'downloadUrl' => '/uploads/documents/' . $document->getFileName(),
+                        'validationStatus' => $document->getValidationStatus(),
+                        'validatedAt' => $document->getValidatedAt()?->format('Y-m-d H:i:s'),
+                        'validatedBy' => $document->getValidatedBy() ? [
+                            'firstName' => $document->getValidatedBy()->getFirstName(),
+                            'lastName' => $document->getValidatedBy()->getLastName()
+                        ] : null,
+                        'rejectionReason' => $document->getRejectionReason()
                     ];
                 }
             }
@@ -153,6 +167,13 @@ class DocumentStudentController extends AbstractController
                     //'fileSize' => $this->formatFileSize($document->getFileSize() ?? 0),
                     'fileType' => $document->getType(),
                     'downloadUrl' => '/uploads/documents/' . $document->getFileName(),
+                    'validationStatus' => $document->getValidationStatus(),
+                    'validatedAt' => $document->getValidatedAt()?->format('Y-m-d H:i:s'),
+                    'validatedBy' => $document->getValidatedBy() ? [
+                        'firstName' => $document->getValidatedBy()->getFirstName(),
+                        'lastName' => $document->getValidatedBy()->getLastName()
+                    ] : null,
+                    'rejectionReason' => $document->getRejectionReason(),
                     'senderRole' => 'Moi-même'
                 ];
             }
@@ -183,6 +204,13 @@ class DocumentStudentController extends AbstractController
                     //'fileSize' => $this->formatFileSize($document->getFileSize() ?? 0),
                     'fileType' => $document->getType(),
                     'downloadUrl' => '/uploads/documents/' . $document->getFileName(),
+                    'validationStatus' => $document->getValidationStatus(),
+                    'validatedAt' => $document->getValidatedAt()?->format('Y-m-d H:i:s'),
+                    'validatedBy' => $document->getValidatedBy() ? [
+                        'firstName' => $document->getValidatedBy()->getFirstName(),
+                        'lastName' => $document->getValidatedBy()->getLastName()
+                    ] : null,
+                    'rejectionReason' => $document->getRejectionReason(),
                     'senderRole' => $sender ? $this->getHighestRole($sender) : 'Inconnu'
                 ];
             }

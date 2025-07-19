@@ -1166,4 +1166,71 @@ class NotificationService
         }
     }
 
+    /**
+     * Notifie l'étudiant que son document d'inscription a été validé
+     */
+    public function notifyDocumentValidated($document, $validatedByUser): void
+    {
+        try {
+            $student = $document->getUser();
+            if (!$student) {
+                $this->logger->warning('Document sans utilisateur associé - impossible d\'envoyer la notification de validation');
+                return;
+            }
+
+            $variables = [
+                'studentName' => $student->getFirstName() . ' ' . $student->getLastName(),
+                'documentTitle' => $document->getTitle(),
+                'validatedBy' => $validatedByUser->getFirstName() . ' ' . $validatedByUser->getLastName(),
+                'validatedDate' => $document->getValidatedAt()->format('d/m/Y à H:i'),
+                'loginUrl' => $this->baseUrl . '/login'
+            ];
+
+            $this->emailService->sendTemplatedEmailByEventAndRole(
+                $student->getEmail(),
+                'document_validated',
+                'ROLE_STUDENT',
+                $variables
+            );
+
+            $this->logger->info('Notification de validation de document envoyée à: ' . $student->getEmail());
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de la notification de validation de document: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notifie l'étudiant que son document d'inscription a été rejeté
+     */
+    public function notifyDocumentRejected($document, $rejectedByUser): void
+    {
+        try {
+            $student = $document->getUser();
+            if (!$student) {
+                $this->logger->warning('Document sans utilisateur associé - impossible d\'envoyer la notification de rejet');
+                return;
+            }
+
+            $variables = [
+                'studentName' => $student->getFirstName() . ' ' . $student->getLastName(),
+                'documentTitle' => $document->getTitle(),
+                'rejectedBy' => $rejectedByUser->getFirstName() . ' ' . $rejectedByUser->getLastName(),
+                'rejectedDate' => $document->getValidatedAt()->format('d/m/Y à H:i'),
+                'rejectionReason' => $document->getRejectionReason(),
+                'loginUrl' => $this->baseUrl . '/login'
+            ];
+
+            $this->emailService->sendTemplatedEmailByEventAndRole(
+                $student->getEmail(),
+                'document_rejected',
+                'ROLE_STUDENT',
+                $variables
+            );
+
+            $this->logger->info('Notification de rejet de document envoyée à: ' . $student->getEmail());
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de la notification de rejet de document: ' . $e->getMessage());
+        }
+    }
+
 }
