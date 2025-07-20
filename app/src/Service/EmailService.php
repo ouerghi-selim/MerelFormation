@@ -143,6 +143,45 @@ class EmailService
     }
 
     /**
+     * Envoi d'email en utilisant l'identifier unique du template
+     */
+    public function sendTemplatedEmailByIdentifier(
+        string $to,
+        string $templateIdentifier,
+        array $variables = [],
+        array $options = []
+    ): void {
+        // Rechercher le template par son identifiant unique
+        $template = $this->emailTemplateRepository->findOneBy([
+            'identifier' => $templateIdentifier
+        ]);
+
+        if (!$template) {
+            throw new \Exception("Template d'email non trouvé avec l'identifier: " . $templateIdentifier);
+        }
+
+        // Remplacer les variables dans le template
+        $content = $this->replaceVariables($template->getContent(), $variables);
+        $subject = $this->replaceVariables($template->getSubject(), $variables);
+
+        // Créer l'email
+        $email = (new Email())
+            ->from($options['from'] ?? 'no-reply@merelformation.com')
+            ->to($to)
+            ->subject($subject)
+            ->html($content);
+
+        if (isset($options['text']) && $options['text']) {
+            $email->text($options['text']);
+        } else {
+            $textContent = strip_tags($content);
+            $email->text($textContent);
+        }
+
+        $this->mailer->send($email);
+    }
+
+    /**
      * Remplace les variables dans un texte
      */
     private function replaceVariables(string $text, array $variables): string

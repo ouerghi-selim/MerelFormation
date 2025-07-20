@@ -1233,4 +1233,220 @@ class NotificationService
         }
     }
 
+    /**
+     * Notifie lors du changement de statut d'une réservation
+     */
+    public function notifyReservationStatusChange(Reservation $reservation, string $oldStatus, string $newStatus): void
+    {
+        try {
+            $student = $reservation->getUser();
+            if (!$student) {
+                $this->logger->warning('Réservation sans utilisateur associé - impossible d\'envoyer la notification de changement de statut');
+                return;
+            }
+
+            // Préparer les variables communes
+            $session = $reservation->getSession();
+            $formation = $session->getFormation();
+            
+            $commonVariables = [
+                'studentName' => $student->getFirstName() . ' ' . $student->getLastName(),
+                'formationTitle' => $formation->getTitle(),
+                'sessionDate' => $session->getStartDate()->format('d/m/Y'),
+                'reservationId' => $reservation->getId(),
+                'oldStatus' => $oldStatus,
+                'newStatus' => $newStatus,
+                'statusChangeDate' => (new \DateTime())->format('d/m/Y à H:i'),
+                'studentPortalUrl' => $this->baseUrl . '/student/dashboard',
+                'loginUrl' => $this->baseUrl . '/login'
+            ];
+
+            // Variables spécifiques selon le statut
+            $specificVariables = $this->getStatusSpecificVariables($reservation, $newStatus);
+            $variables = array_merge($commonVariables, $specificVariables);
+
+            // Identifier du template basé sur le nouveau statut
+            $templateIdentifier = 'reservation_status_' . $newStatus . '_student';
+
+            // Envoyer la notification à l'étudiant
+            $this->emailService->sendTemplatedEmailByIdentifier(
+                $student->getEmail(),
+                $templateIdentifier,
+                $variables
+            );
+
+            $this->logger->info("Notification de changement de statut envoyée: {$oldStatus} → {$newStatus} pour réservation {$reservation->getId()}");
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de la notification de changement de statut: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Retourne les variables spécifiques selon le statut
+     */
+    private function getStatusSpecificVariables(Reservation $reservation, string $status): array
+    {
+        $session = $reservation->getSession();
+        $formation = $session->getFormation();
+        
+        switch ($status) {
+            case 'submitted':
+                return [
+                    'submissionDate' => $reservation->getCreatedAt()->format('d/m/Y à H:i')
+                ];
+
+            case 'awaiting_documents':
+                return [
+                    'specificDocuments' => 'CV, lettre de motivation, diplômes'
+                ];
+
+            case 'documents_pending':
+                return [
+                    'documentsReceivedDate' => (new \DateTime())->format('d/m/Y'),
+                    'documentCount' => '3'
+                ];
+
+            case 'documents_rejected':
+                return [
+                    'rejectionReason' => 'Documents incomplets ou illisibles. Veuillez fournir des documents au format PDF de qualité.'
+                ];
+
+            case 'awaiting_prerequisites':
+                return [
+                    'missingPrerequisites' => 'Permis de conduire valide, formation code de la route'
+                ];
+
+            case 'awaiting_funding':
+                return [
+                    'totalAmount' => $formation->getPrice() ?? '1500',
+                    'duration' => $formation->getDurationHours() ?? '140'
+                ];
+
+            case 'funding_approved':
+                return [
+                    'fundingOrganization' => 'Pôle Emploi',
+                    'approvedAmount' => $formation->getPrice() ?? '1500',
+                    'fundingFileNumber' => 'PE-' . $reservation->getId(),
+                    'approvalDate' => (new \DateTime())->format('d/m/Y')
+                ];
+
+            case 'awaiting_payment':
+                return [
+                    'amountDue' => $formation->getPrice() ?? '1500',
+                    'invoiceNumber' => 'INV-' . $reservation->getId(),
+                    'paymentDeadline' => (new \DateTime('+15 days'))->format('d/m/Y'),
+                    'paymentUrl' => $this->baseUrl . '/student/payment/' . $reservation->getId()
+                ];
+
+            case 'payment_pending':
+                return [
+                    'paidAmount' => $formation->getPrice() ?? '1500',
+                    'paymentMethod' => 'Virement bancaire',
+                    'paymentDate' => (new \DateTime())->format('d/m/Y'),
+                    'paymentReference' => 'PAY-' . $reservation->getId()
+                ];
+
+            case 'confirmed':
+                return [
+                    'sessionStartDate' => $session->getStartDate()->format('d/m/Y'),
+                    'duration' => $formation->getDurationHours() ?? '140',
+                    'location' => 'Centre MerelFormation',
+                    'instructorName' => $session->getInstructor() ? 
+                        $session->getInstructor()->getFirstName() . ' ' . $session->getInstructor()->getLastName() 
+                        : 'À définir'
+                ];
+
+            case 'awaiting_start':
+                return [
+                    'sessionStartDate' => $session->getStartDate()->format('d/m/Y'),
+                    'startTime' => $session->getStartDate()->format('H:i'),
+                    'location' => 'Centre MerelFormation',
+                    'roomNumber' => 'Salle ' . ($reservation->getId() % 5 + 1),
+                    'instructorName' => $session->getInstructor() ? 
+                        $session->getInstructor()->getFirstName() . ' ' . $session->getInstructor()->getLastName() 
+                        : 'À définir',
+                    'specificRequirements' => 'Ordinateur portable conseillé',
+                    'firstDaySchedule' => '09h00-12h00 : Accueil et présentation\n13h30-17h00 : Premier module théorique',
+                    'emergencyPhone' => '04 XX XX XX XX'
+                ];
+
+            case 'in_progress':
+                return [
+                    'completedHours' => '20',
+                    'totalHours' => $formation->getDurationHours() ?? '140',
+                    'completedModules' => '2',
+                    'totalModules' => '8',
+                    'nextSessionDate' => (new \DateTime('+7 days'))->format('d/m/Y'),
+                    'progressPercentage' => '25'
+                ];
+
+            case 'attendance_issues':
+                return [
+                    'unjustifiedAbsences' => '3',
+                    'cumulatedDelays' => '2h30',
+                    'attendanceRate' => '65',
+                    'urgentPhone' => '04 XX XX XX XX'
+                ];
+
+            case 'suspended':
+                return [
+                    'suspensionDate' => (new \DateTime())->format('d/m/Y'),
+                    'suspensionReason' => 'Absences répétées non justifiées',
+                    'suspensionDuration' => '2 semaines',
+                    'suspendedBy' => 'Direction pédagogique',
+                    'resumptionConditions' => 'Entretien pédagogique obligatoire et engagement écrit sur l\'assiduité',
+                    'urgentPhone' => '04 XX XX XX XX',
+                    'deadlineDate' => (new \DateTime('+14 days'))->format('d/m/Y')
+                ];
+
+            case 'completed':
+                return [
+                    'completionDate' => (new \DateTime())->format('d/m/Y'),
+                    'totalHours' => $formation->getDurationHours() ?? '140',
+                    'finalGrade' => '16',
+                    'finalAttendanceRate' => '95',
+                    'certificateDownloadUrl' => $this->baseUrl . '/student/certificate/' . $reservation->getId(),
+                    'satisfactionSurveyUrl' => $this->baseUrl . '/student/survey/' . $reservation->getId()
+                ];
+
+            case 'failed':
+                return [
+                    'finalGrade' => '8',
+                    'attendanceRate' => '70',
+                    'validatedModules' => '5',
+                    'totalModules' => '8',
+                    'passingGrade' => '10',
+                    'failureReasons' => 'Note insuffisante aux évaluations finales et taux de présence en dessous du minimum requis',
+                    'retryDelay' => '6',
+                    'retryRegistrationUrl' => $this->baseUrl . '/formations/' . $formation->getId()
+                ];
+
+            case 'cancelled':
+                return [
+                    'cancellationDate' => (new \DateTime())->format('d/m/Y'),
+                    'cancellationReason' => 'Demande de l\'étudiant',
+                    'cancelledBy' => 'Étudiant',
+                    'refundConditions' => 'Remboursement intégral sous 15 jours (annulation > 7 jours avant début)',
+                    'refundDelay' => '15',
+                    'refundMethod' => 'Virement bancaire',
+                    'alternativeFormations' => 'Formation taxi 14h, Formation VTC, Recyclage conducteur'
+                ];
+
+            case 'refunded':
+                return [
+                    'refundAmount' => $formation->getPrice() ?? '1500',
+                    'refundDate' => (new \DateTime())->format('d/m/Y'),
+                    'refundMethod' => 'Virement bancaire',
+                    'refundReference' => 'REF-' . $reservation->getId(),
+                    'receptionDelay' => '3-5',
+                    'bankingDelay' => '2-3',
+                    'formationCatalogUrl' => $this->baseUrl . '/formations'
+                ];
+
+            default:
+                return [];
+        }
+    }
+
 }

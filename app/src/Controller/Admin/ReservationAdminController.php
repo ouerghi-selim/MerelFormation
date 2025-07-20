@@ -10,6 +10,8 @@ use Symfony\Component\Routing\Annotation\Route;
 use App\Repository\VehicleRentalRepository;
 use App\Repository\VehicleRepository;
 use App\Entity\Reservation;
+use App\Enum\ReservationStatus;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 
 class ReservationAdminController extends AbstractController
@@ -18,17 +20,20 @@ class ReservationAdminController extends AbstractController
     private $vehicleRentalRepository;
     private $vehicleRepository;
     private $entityManager;
+    private $notificationService;
 
     public function __construct(
         Security $security,
         VehicleRentalRepository $vehicleRentalRepository,
         VehicleRepository $vehicleRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        NotificationService $notificationService
     ) {
         $this->security = $security;
         $this->vehicleRentalRepository = $vehicleRentalRepository;
         $this->vehicleRepository = $vehicleRepository;
         $this->entityManager = $entityManager;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -141,14 +146,29 @@ class ReservationAdminController extends AbstractController
         // Récupérer les données de la requête
         $data = json_decode($request->getContent(), true);
         
-        // Valider le statut
-        $validStatuses = ['pending', 'confirmed', 'completed', 'cancelled'];
-        if (!isset($data['status']) || !in_array($data['status'], $validStatuses)) {
+        // Valider le statut (vérifier qu'il existe dans l'enum)
+        if (!isset($data['status']) || !in_array($data['status'], ReservationStatus::getAllStatuses())) {
             return $this->json(['message' => 'Statut invalide'], 400);
         }
         
+        $oldStatus = $reservation->getStatus();
+        $newStatus = $data['status'];
+        
         // Mettre à jour le statut
-        $reservation->setStatus($data['status']);
+        $reservation->setStatus($newStatus);
+
+        // Envoyer une notification email si le statut a changé
+        if ($oldStatus !== $newStatus) {
+            // Note: Pour les réservations de véhicules, il faudrait adapter la méthode
+            // ou créer une méthode spécifique dans NotificationService
+            // Pour l'instant, on utilise la même méthode
+            try {
+                $this->notificationService->notifyReservationStatusChange($reservation, $oldStatus, $newStatus);
+            } catch (\Exception $e) {
+                // Log l'erreur mais continue le processus
+                error_log('Erreur notification véhicule: ' . $e->getMessage());
+            }
+        }
         
         // Persister les modifications
         $this->entityManager->flush();

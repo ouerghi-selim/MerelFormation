@@ -8,8 +8,12 @@ import StatCard from '../../components/admin/StatCard';
 import LineChart from '../../components/charts/LineChart';
 import BarChart from '../../components/charts/BarChart';
 import Alert from '../../components/common/Alert';
+import Modal from '../../components/common/Modal';
+import Button from '../../components/common/Button';
 import ReservationDetailModal from '../../components/admin/ReservationDetailModal';
 import {adminDashboardApi, adminReservationsApi} from '@/services/api.ts';
+import { getStatusBadgeClass, getStatusLabel, ReservationStatus } from '../../utils/reservationStatuses';
+import { ChevronDown } from 'lucide-react';
 
 interface DashboardStats {
   activeStudents: number;
@@ -66,10 +70,57 @@ const DashboardAdmin: React.FC = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedReservationType, setSelectedReservationType] = useState<'vehicle' | 'session'>('vehicle');
   const [selectedReservationId, setSelectedReservationId] = useState<number | null>(null);
+  
+  // États pour la confirmation du changement de statut
+  const [showStatusConfirmModal, setShowStatusConfirmModal] = useState(false);
+  const [statusChangeData, setStatusChangeData] = useState<{
+    reservationId: number;
+    newStatus: string;
+    reservationType: 'vehicle' | 'session';
+    currentStatusLabel: string;
+    newStatusLabel: string;
+  } | null>(null);
+  const [statusChangeProcessing, setStatusChangeProcessing] = useState(false);
+
+  // États pour les statuts et les dropdowns
+  const [availableStatuses, setAvailableStatuses] = useState<ReservationStatus[]>([]);
+  const [showStatusDropdown, setShowStatusDropdown] = useState<Record<number, boolean>>({});
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Données de graphique (à remplacer par des données réelles)
   const [revenueData, setRevenueData] = useState([]);
   const [successRateData, setSuccessRateData] = useState([]);
+
+  // Effet pour charger les statuts disponibles
+  useEffect(() => {
+    const fetchStatuses = async () => {
+      try {
+        const response = await fetch('/api/admin/reservation-statuses');
+        const data = await response.json();
+        setAvailableStatuses(data);
+      } catch (err) {
+        console.error('Error fetching statuses:', err);
+        setAvailableStatuses([]);
+      }
+    };
+
+    fetchStatuses();
+  }, []);
+
+  // Effet pour fermer les dropdowns quand on clique ailleurs
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.relative')) {
+        setShowStatusDropdown({});
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
 
   // Méthodes pour le modal
   const handleOpenVehicleReservation = (id: number) => {
@@ -93,6 +144,87 @@ const DashboardAdmin: React.FC = () => {
   const handleReservationUpdated = () => {
     fetchDashboardData();
     setShowDetailModal(false);
+  };
+
+  // Fonction pour basculer l'affichage de la liste déroulante de statut
+  const toggleStatusDropdown = (reservationId: number) => {
+    setShowStatusDropdown(prev => ({
+      ...prev,
+      [reservationId]: !prev[reservationId]
+    }));
+  };
+
+  // Fonction pour initier le changement de statut avec confirmation
+  const initiateStatusChange = (reservationId: number, newStatus: string, reservationType: 'vehicle' | 'session') => {
+    // Trouver la réservation actuelle pour obtenir le statut actuel
+    const currentReservation = reservationType === 'vehicle' 
+      ? reservations.find(r => r.id === reservationId)
+      : sessionReservations.find(r => r.id === reservationId);
+    
+    if (!currentReservation) return;
+
+    const currentStatusLabel = getStatusLabel(currentReservation.status);
+    const newStatusLabel = getStatusLabel(newStatus);
+
+    setStatusChangeData({
+      reservationId,
+      newStatus,
+      reservationType,
+      currentStatusLabel,
+      newStatusLabel
+    });
+    setShowStatusConfirmModal(true);
+    
+    // Fermer la liste déroulante
+    setShowStatusDropdown(prev => ({ ...prev, [reservationId]: false }));
+  };
+
+  // Fonction pour confirmer et effectuer le changement de statut
+  const handleConfirmStatusChange = async () => {
+    if (!statusChangeData) return;
+
+    try {
+      setStatusChangeProcessing(true);
+      const { reservationId, newStatus, reservationType } = statusChangeData;
+
+      if (reservationType === 'vehicle') {
+        await adminReservationsApi.updateStatus(reservationId, newStatus);
+        setReservations(reservations.map(r =>
+          r.id === reservationId ? { ...r, status: newStatus } : r
+        ));
+      } else {
+        await adminReservationsApi.updateSessionReservationStatus(reservationId, newStatus);
+        setSessionReservations(sessionReservations.map(r =>
+          r.id === reservationId ? { ...r, status: newStatus } : r
+        ));
+      }
+
+      setSuccessMessage(`Statut mis à jour vers: ${getStatusLabel(newStatus)}`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+      
+      // Fermer le modal de confirmation
+      setShowStatusConfirmModal(false);
+      setStatusChangeData(null);
+    } catch (err) {
+      console.error('Error updating status:', err);
+      setError('Erreur lors de la mise à jour du statut');
+    } finally {
+      setStatusChangeProcessing(false);
+    }
+  };
+
+  // Fonction pour obtenir les statuts pour le filtre
+  const getStatusOptions = () => {
+    if (availableStatuses.length > 0) {
+      return availableStatuses;
+    }
+    // Fallback sur les anciens statuts
+    return [
+      { value: 'pending', label: 'En attente', phase: '', color: 'yellow', allowedTransitions: [] },
+      { value: 'confirmed', label: 'Confirmée', phase: '', color: 'green', allowedTransitions: [] },
+      { value: 'completed', label: 'Terminée', phase: '', color: 'blue', allowedTransitions: [] },
+      { value: 'cancelled', label: 'Annulée', phase: '', color: 'gray', allowedTransitions: [] },
+    ];
   };
 
   // Fonction pour formater les dates
@@ -176,6 +308,14 @@ const DashboardAdmin: React.FC = () => {
                 />
             )}
 
+            {successMessage && (
+                <Alert
+                    type="success"
+                    message={successMessage}
+                    onClose={() => setSuccessMessage(null)}
+                />
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <StatCard
                   title="Élèves actifs"
@@ -246,14 +386,34 @@ const DashboardAdmin: React.FC = () => {
                             <div className="text-sm text-gray-500">{formatDate(reservation.createdAt)}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                              ${reservation.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                reservation.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                    'bg-gray-100 text-gray-800'}`}>
-                              {reservation.status === 'pending' ? 'En attente' :
-                                  reservation.status === 'confirmed' ? 'Confirmée' :
-                                      'Annulée'}
-                            </span>
+                            <div className="relative">
+                              <button
+                                onClick={() => toggleStatusDropdown(reservation.id)}
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer hover:opacity-80 ${getStatusBadgeClass(reservation.status)}`}
+                              >
+                                {getStatusLabel(reservation.status)}
+                                <ChevronDown className="ml-1 h-3 w-3" />
+                              </button>
+                              
+                              {showStatusDropdown[reservation.id] && (
+                                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-20 min-w-48">
+                                  <div className="py-1 max-h-64 overflow-y-auto">
+                                    {getStatusOptions().map((status) => (
+                                      <button
+                                        key={status.value}
+                                        onClick={() => initiateStatusChange(reservation.id, status.value, 'session')}
+                                        className={`block w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${
+                                          reservation.status === status.value ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                                        }`}
+                                      >
+                                        <span className={`inline-block w-3 h-3 rounded-full mr-2 ${getStatusBadgeClass(status.value).split(' ')[0]}`}></span>
+                                        {status.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
@@ -314,16 +474,34 @@ const DashboardAdmin: React.FC = () => {
                             <div className="text-sm text-gray-500">{reservation.date}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                            ${reservation.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              reservation.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                  reservation.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                                      'bg-gray-100 text-gray-800'}`}>
-                            {reservation.status === 'pending' ? 'En attente' :
-                                reservation.status === 'confirmed' ? 'Confirmée' :
-                                    reservation.status === 'completed' ? 'Terminée' :
-                                        'Annulée'}
-                          </span>
+                            <div className="relative">
+                              <button
+                                onClick={() => toggleStatusDropdown(reservation.id)}
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer hover:opacity-80 ${getStatusBadgeClass(reservation.status)}`}
+                              >
+                                {getStatusLabel(reservation.status)}
+                                <ChevronDown className="ml-1 h-3 w-3" />
+                              </button>
+                              
+                              {showStatusDropdown[reservation.id] && (
+                                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-20 min-w-48">
+                                  <div className="py-1 max-h-64 overflow-y-auto">
+                                    {getStatusOptions().map((status) => (
+                                      <button
+                                        key={status.value}
+                                        onClick={() => initiateStatusChange(reservation.id, status.value, 'vehicle')}
+                                        className={`block w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${
+                                          reservation.status === status.value ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                                        }`}
+                                      >
+                                        <span className={`inline-block w-3 h-3 rounded-full mr-2 ${getStatusBadgeClass(status.value).split(' ')[0]}`}></span>
+                                        {status.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
@@ -348,6 +526,55 @@ const DashboardAdmin: React.FC = () => {
                 reservationId={selectedReservationId}
                 onSuccess={handleReservationUpdated}
             />
+
+            {/* Modal de confirmation pour le changement de statut */}
+            <Modal
+                isOpen={showStatusConfirmModal}
+                onClose={() => setShowStatusConfirmModal(false)}
+                title="Confirmer le changement de statut"
+                footer={
+                    <div className="flex justify-end space-x-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowStatusConfirmModal(false)}
+                        >
+                            Annuler
+                        </Button>
+                        <Button
+                            variant="primary"
+                            loading={statusChangeProcessing}
+                            onClick={handleConfirmStatusChange}
+                        >
+                            Confirmer
+                        </Button>
+                    </div>
+                }
+            >
+                {statusChangeData && (
+                    <div>
+                        <p className="text-gray-700 mb-2">
+                            Êtes-vous sûr de vouloir modifier le statut de cette réservation ?
+                        </p>
+                        <div className="bg-gray-50 p-3 rounded-md">
+                            <p className="text-sm">
+                                <span className="font-medium">Statut actuel :</span>{' '}
+                                <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeClass(statusChangeData.reservationType === 'vehicle' 
+                                  ? reservations.find(r => r.id === statusChangeData.reservationId)?.status || ''
+                                  : sessionReservations.find(r => r.id === statusChangeData.reservationId)?.status || ''
+                                )}`}>
+                                    {statusChangeData.currentStatusLabel}
+                                </span>
+                            </p>
+                            <p className="text-sm mt-1">
+                                <span className="font-medium">Nouveau statut :</span>{' '}
+                                <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeClass(statusChangeData.newStatus)}`}>
+                                    {statusChangeData.newStatusLabel}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                )}
+            </Modal>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-lg shadow">

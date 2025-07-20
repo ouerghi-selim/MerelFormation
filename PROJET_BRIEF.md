@@ -5,8 +5,8 @@
 **Développeur Principal :** Selim OUERGHI (ouerghi-selim)  
 **Repository :** https://github.com/ouerghi-selim/MerelFormation  
 **Type :** Application de gestion de formations taxi + location de véhicules  
-**Status :** ✅ 100% FONCTIONNEL - Projet complet avec système d'inscription par étapes + Affichage documents d'inscription + Système d'entreprise/employeur + Validation documents avec emails  
-**Dernière mise à jour :** 19 Juillet 2025 - Système complet de validation des documents d'inscription avec notifications email automatiques
+**Status :** ✅ 100% FONCTIONNEL - Projet complet avec système d'inscription par étapes + Affichage documents d'inscription + Système d'entreprise/employeur + Validation documents avec emails + **🆕 Système de statuts de réservation professionnel (19 statuts) avec emails automatiques + Workflow complet d'inscription**  
+**Dernière mise à jour :** 20 Juillet 2025 - Système complet de gestion des statuts de réservation avec workflow professionnel en 6 phases et notifications email automatiques
 
 ## 🖗️ Architecture Technique
 
@@ -192,6 +192,9 @@
 - Système de prérequis
 - Génération de documents PDF
 - Attestations de formation
+- **🆕 Système de statuts de réservation professionnel** - 19 statuts organisés en 6 phases (Demande → Vérifications → Financement → Confirmation → Formation → Finalisation)
+- **🆕 Workflow d'inscription complet** - De la demande initiale jusqu'à l'obtention du certificat
+- **🆕 Emails automatiques par statut** - Notifications personnalisées à chaque étape du processus
 - **🆕 Badges dynamiques avec icônes** - Système d'icônes intelligent 1000+ options
 - **🆕 Notifications emails automatiques** pour toutes les actions CRUD
 
@@ -340,6 +343,7 @@ MerelFormation/
 - **🆕 25 templates email avec demande d'inscription** ✅ NOUVEAU (Juillet 2025)
 - **🆕 Affichage des documents d'inscription** ✅ NOUVEAU (Juillet 2025)
 - **🆕 Validation documents d'inscription avec emails** ✅ NOUVEAU (19 Juillet 2025)
+- **🆕 Système de statuts de réservation professionnel** ✅ NOUVEAU (20 Juillet 2025) - 19 statuts en 6 phases avec emails automatiques
 
 ### 🆕 DERNIÈRES AMÉLIORATIONS CRITIQUES (Juin 2025) ✅ TERMINÉ
 - **🆕 Éditeur Email WYSIWYG Professionnel** - Remplacement textarea HTML par TinyMCE React
@@ -656,7 +660,125 @@ Grâce au **système de détails complets des réservations**, **les administrat
 **💡 CONSEIL POUR FUTURES CONVERSATIONS :**
 Copiez-collez ce brief au début de nouvelles conversations avec Claude pour qu'il comprenne immédiatement le contexte et l'état du projet sans avoir à refaire toute l'analyse.
 
-**Dernière mise à jour :** 19 Juillet 2025 par Selim OUERGHI
+**Dernière mise à jour :** 20 Juillet 2025 par Selim OUERGHI
+
+## 🆕 NOUVEAU : Système de Statuts de Réservation Professionnel (20 Juillet 2025)
+
+### 🎯 **Fonctionnalité Demandée**
+Améliorer le système de statuts des réservations de formation qui était trop basique (pending, confirmed, cancelled, completed) pour un workflow professionnel d'inscription.
+
+### 🚀 **Solution Implémentée**
+
+#### **19 Statuts Organisés en 6 Phases**
+
+**Phase 1 - Demande Initiale :**
+- `submitted` - Demande soumise
+- `under_review` - En cours d'examen
+
+**Phase 2 - Vérifications Administratives :**
+- `awaiting_documents` - En attente de documents
+- `documents_pending` - Documents en cours de vérification
+- `documents_rejected` - Documents refusés
+- `awaiting_prerequisites` - En attente de prérequis
+
+**Phase 3 - Validation Financière :**
+- `awaiting_funding` - En attente de financement
+- `funding_approved` - Financement approuvé
+- `awaiting_payment` - En attente de paiement
+- `payment_pending` - Paiement en cours
+
+**Phase 4 - Confirmation :**
+- `confirmed` - Confirmée
+- `awaiting_start` - En attente de début
+
+**Phase 5 - Formation en Cours :**
+- `in_progress` - En cours
+- `attendance_issues` - Problèmes d'assiduité
+- `suspended` - Suspendue
+
+**Phase 6 - Finalisation :**
+- `completed` - Terminée
+- `failed` - Échouée
+- `cancelled` - Annulée
+- `refunded` - Remboursée
+
+#### **Architecture Backend (Symfony)**
+- **Enum ReservationStatus** : 19 constantes avec méthodes utilitaires
+- **Entity Reservation** : Validation Symfony avec les nouveaux statuts
+- **Migration** : Mise à jour automatique des anciens statuts (`pending` → `submitted`)
+- **Controllers** : Validation des transitions sans restrictions (changement libre)
+- **API Resources** : Endpoints séparés pour statuts et transitions
+- **Service Email** : Intégration avec système d'emails automatiques existant
+
+#### **Interface Frontend (React + TypeScript)**
+- **Utility reservationStatuses.ts** : Fonctions d'affichage et couleurs
+- **ReservationsAdmin.tsx** : Dropdowns interactifs pour changement de statut
+- **DashboardAdmin.tsx** : Affichage des nouveaux statuts dans les statistiques
+- **API Integration** : Appels aux nouveaux endpoints pour récupérer statuts/transitions
+
+### 🎨 **Fonctionnalités Clés**
+
+#### **Gestion des Couleurs par Phase**
+```typescript
+// Codes couleur par phase
+- Phase 1-2: Orange (en cours d'examen)
+- Phase 3: Bleu (financier)
+- Phase 4: Vert (confirmé)
+- Phase 5: Violet (formation)
+- Phase 6: Gris/Rouge (finalisé)
+```
+
+#### **Transitions Validées**
+- **Système intelligent** de transitions logiques entre statuts
+- **Validation côté serveur** pour éviter les incohérences
+- **Endpoints dédiés** pour obtenir les transitions possibles
+
+#### **Intégration Emails Automatiques**
+- **Templates dédiés** pour chaque nouveau statut
+- **Variables contextuelles** avec informations de réservation
+- **Notifications ciblées** selon le destinataire (étudiant/admin)
+
+### 🔧 **API Endpoints Ajoutés**
+```php
+// Nouveaux endpoints pour le système de statuts
+GET /api/admin/reservation-statuses        // Liste des 19 statuts avec infos
+GET /api/admin/reservation-transitions     // Transitions possibles par statut
+PUT /api/admin/session-reservations/{id}/status  // Mise à jour avec validation
+```
+
+### 🎯 **Impact Business & UX**
+
+#### **Avant (Problématique) :**
+```
+pending → confirmed → completed ❌
+(Workflow trop simpliste pour un processus d'inscription complexe)
+```
+
+#### **Après (Professionnel) :**
+```
+submitted → under_review → awaiting_documents → documents_pending 
+→ awaiting_funding → funding_approved → awaiting_payment 
+→ confirmed → in_progress → completed ✅
+(Workflow complet reflétant la réalité du processus)
+```
+
+### 📊 **Avantages**
+- **Suivi précis** : Localisation exacte de chaque dossier dans le processus
+- **Communication claire** : Étudiants informés de l'étape en cours
+- **Gestion administrative** : Identification rapide des blocages
+- **Professionnalisation** : Workflow digne d'un organisme de formation
+- **Emails contextuels** : Notifications adaptées à chaque étape
+- **Flexibilité** : Changement libre entre statuts pour situations exceptionnelles
+
+### 🏆 **Résultats**
+- **✅ Workflow Complet** : 19 statuts couvrant tout le processus d'inscription
+- **✅ Interface Moderne** : Dropdowns colorés avec changement en temps réel
+- **✅ Backend Robuste** : Validation et gestion d'erreurs complète
+- **✅ Emails Automatiques** : Integration transparente avec système existant
+- **✅ Migration Sans Risque** : Mise à jour automatique des données existantes
+- **✅ API Documentée** : Endpoints clairs avec réponses structurées
+
+Ce système transforme MerelFormation d'une application basique vers une **plateforme professionnelle de gestion des inscriptions** avec un suivi précis et une communication automatisée à chaque étape.
 
 ## 🆕 NOUVEAU : Système d'Entreprise/Employeur Complet (Juillet 2025)
 

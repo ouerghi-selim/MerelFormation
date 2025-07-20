@@ -5,12 +5,14 @@ namespace App\Controller\Admin;
 use App\Entity\Reservation;
 use App\Repository\ReservationRepository;
 use App\Service\NotificationService;
+use App\Enum\ReservationStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Routing\Annotation\Route;
 
 class SessionReservationController extends AbstractController
 {
@@ -116,12 +118,25 @@ class SessionReservationController extends AbstractController
             return $this->json(['message' => 'Réservation non trouvée'], Response::HTTP_NOT_FOUND);
         }
 
-        // Mettre à jour le statut
         $oldStatus = $reservation->getStatus();
+        
+        // Vérifier que le statut est valide (existe dans l'enum)
+        if (!in_array($status, ReservationStatus::getAllStatuses())) {
+            return $this->json([
+                'message' => "Statut invalide: '{$status}'"
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Mettre à jour le statut
         $reservation->setStatus($status);
 
+        // Envoyer une notification email si le statut a changé
+        if ($oldStatus !== $status) {
+            $this->notificationService->notifyReservationStatusChange($reservation, $oldStatus, $status);
+        }
+
         // Si la réservation est confirmée, on peut ajouter l'utilisateur comme participant à la session
-        if ($status === 'confirmed') {
+        if ($status === ReservationStatus::CONFIRMED) {
             $session = $reservation->getSession();
             $user = $reservation->getUser();
 
@@ -130,8 +145,8 @@ class SessionReservationController extends AbstractController
             }
 
             // Envoyer l'email de confirmation avec URL de définition du mot de passe
-            // uniquement si le statut passe de 'pending' à 'confirmed'
-            if ($oldStatus === 'pending') {
+            // uniquement si le statut passe de 'submitted' à 'confirmed'
+            if ($oldStatus === ReservationStatus::SUBMITTED) {
                 $this->notificationService->notifyAboutRegistration($reservation);
             }
         }
@@ -139,5 +154,55 @@ class SessionReservationController extends AbstractController
         $this->entityManager->flush();
 
         return $this->json(['message' => 'Statut mis à jour avec succès']);
+    }
+
+    /**
+     * Obtenir tous les statuts disponibles avec leurs informations
+     * @Route("/api/admin/session-reservations/statuses", name="session_reservations_statuses", methods={"GET"})
+     */
+    public function getStatuses(): JsonResponse
+    {
+        $statusesByPhase = ReservationStatus::getStatusesByPhase();
+        $formattedStatuses = [];
+
+        foreach ($statusesByPhase as $phase => $statuses) {
+            foreach ($statuses as $value => $label) {
+                $formattedStatuses[] = [
+                    'value' => $value,
+                    'label' => $label,
+                    'phase' => $phase,
+                    'color' => ReservationStatus::getStatusColor($value),
+                    'allowedTransitions' => ReservationStatus::getAllowedTransitions($value)
+                ];
+            }
+        }
+
+        return $this->json($formattedStatuses);
+    }
+
+    /**
+     * Obtenir les transitions possibles pour un statut donné
+     * @Route("/api/admin/session-reservations/transitions", name="session_reservations_transitions", methods={"GET"})
+     */
+    public function getTransitions(Request $request): JsonResponse
+    {
+        $fromStatus = $request->query->get('from');
+        
+        if (!$fromStatus) {
+            return $this->json(['message' => 'Le paramètre "from" est requis'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $allowedTransitions = ReservationStatus::getAllowedTransitions($fromStatus);
+        $formattedTransitions = [];
+
+        foreach ($allowedTransitions as $status) {
+            $formattedTransitions[] = [
+                'value' => $status,
+                'label' => ReservationStatus::getStatusLabel($status),
+                'color' => ReservationStatus::getStatusColor($status)
+            ];
+        }
+
+        return $this->json($formattedTransitions);
     }
 }

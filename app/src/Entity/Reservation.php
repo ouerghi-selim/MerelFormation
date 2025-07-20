@@ -8,6 +8,7 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use App\Repository\ReservationRepository;
+use App\Enum\ReservationStatus;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -55,8 +56,8 @@ class Reservation
 
     #[ORM\Column(length: 50)]
     #[Groups(['reservation:read', 'reservation:write'])]
-    #[Assert\Choice(choices: ['pending', 'confirmed', 'cancelled', 'completed'])]
-    private ?string $status = 'pending';
+    #[Assert\Choice(callback: [ReservationStatus::class, 'getAllStatuses'])]
+    private ?string $status = ReservationStatus::SUBMITTED;
 
     #[ORM\OneToOne(targetEntity: Payment::class, inversedBy: 'reservation', cascade: ['persist', 'remove'])]
     #[Groups(['reservation:item:read'])]
