@@ -79,8 +79,10 @@ const DashboardAdmin: React.FC = () => {
     reservationType: 'vehicle' | 'session';
     currentStatusLabel: string;
     newStatusLabel: string;
+    studentName: string;
   } | null>(null);
   const [statusChangeProcessing, setStatusChangeProcessing] = useState(false);
+  const [customMessage, setCustomMessage] = useState('');
 
   // États pour les statuts et les dropdowns
   const [availableStatuses, setAvailableStatuses] = useState<ReservationStatus[]>([]);
@@ -203,13 +205,17 @@ const DashboardAdmin: React.FC = () => {
 
     const currentStatusLabel = getStatusLabel(currentReservation.status);
     const newStatusLabel = getStatusLabel(newStatus);
+    const studentName = reservationType === 'vehicle' 
+      ? currentReservation.clientName
+      : sessionReservations.find(r => r.id === reservationId)?.user.firstName + ' ' + sessionReservations.find(r => r.id === reservationId)?.user.lastName;
 
     setStatusChangeData({
       reservationId,
       newStatus,
       reservationType,
       currentStatusLabel,
-      newStatusLabel
+      newStatusLabel,
+      studentName: studentName || 'Nom non disponible'
     });
     setShowStatusConfirmModal(true);
     
@@ -226,12 +232,12 @@ const DashboardAdmin: React.FC = () => {
       const { reservationId, newStatus, reservationType } = statusChangeData;
 
       if (reservationType === 'vehicle') {
-        await adminReservationsApi.updateStatus(reservationId, newStatus);
+        await adminReservationsApi.updateStatus(reservationId, newStatus, customMessage);
         setReservations(reservations.map(r =>
           r.id === reservationId ? { ...r, status: newStatus } : r
         ));
       } else {
-        await adminReservationsApi.updateSessionReservationStatus(reservationId, newStatus);
+        await adminReservationsApi.updateSessionReservationStatus(reservationId, newStatus, customMessage);
         setSessionReservations(sessionReservations.map(r =>
           r.id === reservationId ? { ...r, status: newStatus } : r
         ));
@@ -243,6 +249,7 @@ const DashboardAdmin: React.FC = () => {
       // Fermer le modal de confirmation
       setShowStatusConfirmModal(false);
       setStatusChangeData(null);
+      setCustomMessage('');
     } catch (err) {
       console.error('Error updating status:', err);
       setError('Erreur lors de la mise à jour du statut');
@@ -646,13 +653,29 @@ const DashboardAdmin: React.FC = () => {
                                             </div>
                                         </div>
                                     </div>
+
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Message personnalisé (optionnel) :</label>
+                                        <div className="mt-1">
+                                            <textarea
+                                                rows={3}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                                placeholder="Ajoutez un message personnalisé qui sera inclus dans l'email..."
+                                                value={customMessage}
+                                                onChange={(e) => setCustomMessage(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Boutons */}
                             <div className="flex justify-end space-x-3">
                                 <button
-                                    onClick={() => setShowStatusConfirmModal(false)}
+                                    onClick={() => {
+                                        setShowStatusConfirmModal(false);
+                                        setCustomMessage('');
+                                    }}
                                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                 >
                                     Annuler

@@ -1236,7 +1236,7 @@ class NotificationService
     /**
      * Notifie lors du changement de statut d'une réservation
      */
-    public function notifyReservationStatusChange(Reservation $reservation, string $oldStatus, string $newStatus): void
+    public function notifyReservationStatusChange(Reservation $reservation, string $oldStatus, string $newStatus, ?string $customMessage = null): void
     {
         try {
             $student = $reservation->getUser();
@@ -1258,7 +1258,8 @@ class NotificationService
                 'newStatus' => $newStatus,
                 'statusChangeDate' => (new \DateTime())->format('d/m/Y à H:i'),
                 'studentPortalUrl' => $this->baseUrl . '/student/dashboard',
-                'loginUrl' => $this->baseUrl . '/login'
+                'loginUrl' => $this->baseUrl . '/login',
+                'customMessage' => $customMessage ?: ''
             ];
 
             // Variables spécifiques selon le statut

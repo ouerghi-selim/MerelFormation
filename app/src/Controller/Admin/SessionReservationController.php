@@ -107,6 +107,7 @@ class SessionReservationController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
         $status = $data['status'] ?? null;
+        $customMessage = $data['customMessage'] ?? null;
 
         if (!$status) {
             return $this->json(['message' => 'Le statut est requis'], Response::HTTP_BAD_REQUEST);
@@ -132,7 +133,7 @@ class SessionReservationController extends AbstractController
 
         // Envoyer une notification email si le statut a changé
         if ($oldStatus !== $status) {
-            $this->notificationService->notifyReservationStatusChange($reservation, $oldStatus, $status);
+            $this->notificationService->notifyReservationStatusChange($reservation, $oldStatus, $status, $customMessage);
         }
 
         // Si la réservation est confirmée, on peut ajouter l'utilisateur comme participant à la session

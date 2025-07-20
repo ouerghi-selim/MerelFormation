@@ -83,6 +83,7 @@ const ReservationsAdmin: React.FC = () => {
     currentStatus: string;
     studentName: string;
   } | null>(null);
+  const [customMessage, setCustomMessage] = useState('');
 
   // Effet pour fermer les dropdowns quand on clique ailleurs
   useEffect(() => {
@@ -194,7 +195,7 @@ const ReservationsAdmin: React.FC = () => {
   // Fonction pour mettre à jour le statut d'une réservation
   const handleReservationStatusChange = async (id: number, newStatus: string) => {
     try {
-      // Faire l'appel API
+      // Faire l'appel API (sans message personnalisé depuis le modal)
       await adminReservationsApi.updateStatus(id, newStatus);
 
       // Mettre à jour l'état local seulement après le succès de l'API
@@ -309,23 +310,25 @@ const ReservationsAdmin: React.FC = () => {
     
     try {
       if (reservationType === 'vehicle') {
-        await adminReservationsApi.updateStatus(reservationId, newStatus);
+        await adminReservationsApi.updateStatus(reservationId, newStatus, customMessage || undefined);
         setVehicleReservations(vehicleReservations.map(r =>
           r.id === reservationId ? { ...r, status: newStatus } : r
         ));
       } else {
-        await adminReservationsApi.updateSessionReservationStatus(reservationId, newStatus);
+        await adminReservationsApi.updateSessionReservationStatus(reservationId, newStatus, customMessage || undefined);
         setSessionReservations(sessionReservations.map(r =>
           r.id === reservationId ? { ...r, status: newStatus } : r
         ));
       }
 
-      setSuccessMessage(`Statut mis à jour vers: ${getStatusLabel(newStatus)} - Email envoyé à l'utilisateur`);
+      const messageText = customMessage ? ' avec message personnalisé' : '';
+      setSuccessMessage(`Statut mis à jour vers: ${getStatusLabel(newStatus)} - Email envoyé${messageText}`);
       setTimeout(() => setSuccessMessage(null), 5000);
       
       // Fermer le modal et nettoyer l'état
       setShowConfirmModal(false);
       setPendingStatusChange(null);
+      setCustomMessage('');
     } catch (err) {
       console.error('Error updating status:', err);
       setError('Erreur lors de la mise à jour du statut');
@@ -338,6 +341,7 @@ const ReservationsAdmin: React.FC = () => {
   const cancelStatusChange = () => {
     setShowConfirmModal(false);
     setPendingStatusChange(null);
+    setCustomMessage('');
   };
 
   // Fonction pour obtenir la description de l'email qui sera envoyé
@@ -818,6 +822,22 @@ const ReservationsAdmin: React.FC = () => {
                     </div>
 
                     <div>
+                      <label className="text-sm font-medium text-gray-700">Message personnalisé (optionnel) :</label>
+                      <div className="mt-1">
+                        <textarea
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Ajoutez un message personnalisé qui sera inclus dans l'email..."
+                          value={customMessage}
+                          onChange={(e) => setCustomMessage(e.target.value)}
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          Ce message sera ajouté dans l'email pour donner plus de contexte à l'utilisateur.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
                       <label className="text-sm font-medium text-gray-700">Email qui sera envoyé :</label>
                       <div className="mt-1 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <div className="flex items-center">
@@ -826,6 +846,11 @@ const ReservationsAdmin: React.FC = () => {
                           </svg>
                           <span className="text-sm text-blue-800 font-medium">
                             {getEmailDescription(pendingStatusChange.newStatus)}
+                            {customMessage && (
+                              <span className="block mt-1 text-xs">
+                                + Votre message personnalisé
+                              </span>
+                            )}
                           </span>
                         </div>
                       </div>

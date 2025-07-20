@@ -90,11 +90,11 @@ export const adminFormationsApi = {
 export const adminReservationsApi = {
     getAll: (queryParams = '') => api.get(`/admin/reservations${queryParams ? '?' + queryParams : ''}`),
     getById: (id: number) => api.get(`/admin/reservations/${id}`),
-    updateStatus: (id: number, status: string) => api.put(`/admin/reservations/${id}/status`, { status }),
+    updateStatus: (id: number, status: string, customMessage?: string) => api.put(`/admin/reservations/${id}/status`, { status, customMessage }),
     assignVehicle: (id: number, vehicleModel: string) => api.put(`/admin/reservations/${id}/assign-vehicle`, { vehicleModel }),
     getAvailableVehicles: (date: string) => api.get(`/admin/vehicles/available?date=${date}`),
     getSessionReservations: (queryParams = '') => api.get(`/admin/session-reservations${queryParams ? '?' + queryParams : ''}`),
-    updateSessionReservationStatus: (id: number, status: string) => api.put(`/admin/session-reservations/${id}/status`, { status }),
+    updateSessionReservationStatus: (id: number, status: string, customMessage?: string) => api.put(`/admin/session-reservations/${id}/status`, { status, customMessage }),
     getSessionReservationById: (id: number) => api.get(`/admin/session-reservations/${id}`)
 };
 

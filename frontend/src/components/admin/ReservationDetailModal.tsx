@@ -75,6 +75,7 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
         currentStatus: string;
         studentName: string;
     } | null>(null);
+    const [customMessage, setCustomMessage] = useState('');
     
     console.log("type:", reservationType);
 
@@ -199,7 +200,7 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
             setError(null);
 
             if (reservationType === 'vehicle') {
-                await adminReservationsApi.updateStatus(reservationId, status);
+                await adminReservationsApi.updateStatus(reservationId, status, customMessage);
                 if (vehicleReservation) {
                     setVehicleReservation({
                         ...vehicleReservation,
@@ -207,7 +208,7 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
                     });
                 }
             } else {
-                await adminReservationsApi.updateSessionReservationStatus(reservationId, status);
+                await adminReservationsApi.updateSessionReservationStatus(reservationId, status, customMessage);
                 if (sessionReservation) {
                     setSessionReservation({
                         ...sessionReservation,
@@ -227,11 +228,13 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
             // Fermer le modal de confirmation et nettoyer l'état
             setShowStatusConfirmModal(false);
             setPendingStatusChange(null);
+            setCustomMessage('');
         } catch (err) {
             console.error('Error updating status:', err);
             setError('Erreur lors de la mise à jour du statut');
             setShowStatusConfirmModal(false);
             setPendingStatusChange(null);
+            setCustomMessage('');
         } finally {
             setLoading(false);
         }
@@ -247,6 +250,7 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
     const cancelStatusChange = () => {
         setShowStatusConfirmModal(false);
         setPendingStatusChange(null);
+        setCustomMessage('');
     };
 
     const handleAssignVehicle = async () => {
@@ -599,6 +603,19 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
                                                     {getEmailDescription(pendingStatusChange.newStatus)}
                                                 </span>
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Message personnalisé (optionnel) :</label>
+                                        <div className="mt-1">
+                                            <textarea
+                                                rows={3}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                                placeholder="Ajoutez un message personnalisé qui sera inclus dans l'email..."
+                                                value={customMessage}
+                                                onChange={(e) => setCustomMessage(e.target.value)}
+                                            />
                                         </div>
                                     </div>
                                 </div>

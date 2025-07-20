@@ -145,6 +145,7 @@ class ReservationAdminController extends AbstractController
 
         // Récupérer les données de la requête
         $data = json_decode($request->getContent(), true);
+        $customMessage = $data['customMessage'] ?? null;
         
         // Valider le statut (vérifier qu'il existe dans l'enum)
         if (!isset($data['status']) || !in_array($data['status'], ReservationStatus::getAllStatuses())) {
@@ -163,7 +164,7 @@ class ReservationAdminController extends AbstractController
             // ou créer une méthode spécifique dans NotificationService
             // Pour l'instant, on utilise la même méthode
             try {
-                $this->notificationService->notifyReservationStatusChange($reservation, $oldStatus, $newStatus);
+                $this->notificationService->notifyReservationStatusChange($reservation, $oldStatus, $newStatus, $customMessage);
             } catch (\Exception $e) {
                 // Log l'erreur mais continue le processus
                 error_log('Erreur notification véhicule: ' . $e->getMessage());
