@@ -112,11 +112,13 @@ class NotificationService
         ];
 
         try {
-            $this->emailService->sendTemplatedEmailByEventAndRole(
+            // Utiliser le template 'submitted' pour uniformiser avec le système de statuts
+            $this->emailService->sendTemplatedEmailByIdentifier(
                 $student->getEmail(),
-                'registration_request', // Nouveau type d'événement
-                'ROLE_STUDENT', // Rôle cible
-                $studentVariables
+                'reservation_status_submitted_student', // Template unifié
+                array_merge($studentVariables, [
+                    'submissionDate' => $reservation->getCreatedAt()->format('d/m/Y à H:i')
+                ])
             );
             $this->logger->info('Email de demande d\'inscription envoyé à l\'étudiant: ' . $student->getEmail());
         } catch (\Exception $e) {

@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\User;
+use App\Enum\ReservationStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
@@ -77,8 +78,8 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     {
         return $this->createQueryBuilder('u')
             ->leftJoin('u.reservations', 'r')
-            ->andWhere('r.status = :status')
-            ->setParameter('status', 'pending')
+            ->andWhere('r.status IN (:statuses)')
+            ->setParameter('statuses', ['pending', ReservationStatus::SUBMITTED])
             ->distinct()
             ->getQuery()
             ->getResult();

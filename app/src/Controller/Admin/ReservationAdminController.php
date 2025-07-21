@@ -214,8 +214,8 @@ class ReservationAdminController extends AbstractController
         $reservation->setVehicle($vehicle);
         
         // Si la réservation est en attente, la confirmer
-        if ($reservation->getStatus() === 'pending') {
-            $reservation->setStatus('confirmed');
+        if ($reservation->getStatus() === 'pending' || $reservation->getStatus() === ReservationStatus::SUBMITTED) {
+            $reservation->setStatus(ReservationStatus::CONFIRMED);
         }
         
         // Persister les modifications

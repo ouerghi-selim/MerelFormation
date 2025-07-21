@@ -6,6 +6,7 @@ use AllowDynamicProperties;
 use App\Entity\Reservation;
 use App\Entity\Session;
 use App\Entity\User;
+use App\Enum\ReservationStatus;
 use App\Repository\SessionRepository;
 use App\Repository\UserRepository;
 use App\Service\NotificationService;
@@ -230,7 +231,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
         $reservation = new Reservation();
         $reservation->setUser($user);
         $reservation->setSession($session);
-        $reservation->setStatus('pending');
+        $reservation->setStatus(ReservationStatus::SUBMITTED);
         $reservation->setCreatedAt(new \DateTimeImmutable());
 
         $this->entityManager->persist($reservation);

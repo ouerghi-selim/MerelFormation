@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Reservation;
+use App\Enum\ReservationStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -62,12 +63,12 @@ class ReservationRepository extends ServiceEntityRepository
     public function findPendingReservations(): array
     {
         return $this->createQueryBuilder('r')
-            ->andWhere('r.status = :status')
+            ->andWhere('r.status IN (:statuses)')
             ->leftJoin('r.user', 'u')
             ->leftJoin('r.session', 's')
             ->leftJoin('s.formation', 'f')
             ->addSelect('u', 's', 'f')
-            ->setParameter('status', 'pending')
+            ->setParameter('statuses', ['pending', ReservationStatus::SUBMITTED])
             ->orderBy('r.createdAt', 'ASC')
             ->getQuery()
             ->getResult();
@@ -118,12 +119,19 @@ class ReservationRepository extends ServiceEntityRepository
     {
         $now = new \DateTimeImmutable();
 
-        // Statistiques de base
+        // Statistiques de base (compte les anciennes 'pending' et les nouvelles 'submitted')
+        $pendingCount = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->where('r.status IN (:pendingStatuses)')
+            ->setParameter('pendingStatuses', ['pending', ReservationStatus::SUBMITTED])
+            ->getQuery()
+            ->getSingleScalarResult();
+            
         $stats = [
             'totalReservations' => $this->count([]),
-            'pendingReservations' => $this->count(['status' => 'pending']),
-            'confirmedReservations' => $this->count(['status' => 'confirmed']),
-            'cancelledReservations' => $this->count(['status' => 'cancelled']),
+            'pendingReservations' => $pendingCount,
+            'confirmedReservations' => $this->count(['status' => ReservationStatus::CONFIRMED]),
+            'cancelledReservations' => $this->count(['status' => ReservationStatus::CANCELLED]),
         ];
 
         // Ajouter d'autres statistiques existantes
@@ -226,8 +234,8 @@ class ReservationRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('r')
             ->select('COUNT(r.id)')
-            ->andWhere('r.status = :status')
-            ->setParameter('status', 'pending')
+            ->andWhere('r.status IN (:statuses)')
+            ->setParameter('statuses', ['pending', ReservationStatus::SUBMITTED])
             ->getQuery()
             ->getSingleScalarResult();
     }

@@ -5,6 +5,7 @@ namespace App\DataFixtures;
 use App\Entity\Reservation;
 use App\Entity\User;
 use App\Entity\Session;
+use App\Enum\ReservationStatus;
 use App\Repository\UserRepository;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
@@ -34,9 +35,6 @@ class ReservationFixtures extends Fixture implements DependentFixtureInterface
             $students = [$this->getReference(UserFixtures::STUDENT_USER_REFERENCE, User::class)];
         }
 
-        // Statuts possibles pour les réservations
-        $statuses = ['pending', 'confirmed', 'cancelled', 'completed'];
-
         // Créer plusieurs réservations par étudiant
         foreach ($students as $index => $student) {
             // 2-3 réservations par étudiant
@@ -52,17 +50,21 @@ class ReservationFixtures extends Fixture implements DependentFixtureInterface
                 $session = $sessions[array_rand($sessions)];
                 $reservation->setSession($session);
 
-                // Statut aléatoire avec distribution pondérée
-                // 40% confirmed, 30% completed, 20% pending, 10% cancelled
+                // Statut aléatoire avec distribution pondérée utilisant les nouveaux statuts
+                // 30% confirmed, 25% completed, 15% submitted, 10% in_progress, 10% under_review, 10% cancelled
                 $rand = mt_rand(1, 100);
-                if ($rand <= 40) {
-                    $status = 'confirmed';
+                if ($rand <= 30) {
+                    $status = ReservationStatus::CONFIRMED;
+                } elseif ($rand <= 55) {
+                    $status = ReservationStatus::COMPLETED;
                 } elseif ($rand <= 70) {
-                    $status = 'completed';
+                    $status = ReservationStatus::SUBMITTED;
+                } elseif ($rand <= 80) {
+                    $status = ReservationStatus::IN_PROGRESS;
                 } elseif ($rand <= 90) {
-                    $status = 'pending';
+                    $status = ReservationStatus::UNDER_REVIEW;
                 } else {
-                    $status = 'cancelled';
+                    $status = ReservationStatus::CANCELLED;
                 }
                 $reservation->setStatus($status);
 
@@ -93,7 +95,7 @@ class ReservationFixtures extends Fixture implements DependentFixtureInterface
         $reservation = new Reservation();
         $reservation->setUser($admin);
         $reservation->setSession($sessions[0]); // Première session
-        $reservation->setStatus('confirmed');
+        $reservation->setStatus(ReservationStatus::CONFIRMED);
         $reservation->setCreatedAt(new \DateTimeImmutable('-5 days'));
         $reservation->setUpdatedAt(new \DateTimeImmutable('-5 days'));
         $manager->persist($reservation);
