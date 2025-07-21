@@ -144,13 +144,10 @@ class SessionReservationController extends AbstractController
             if ($session && $user && !$session->getParticipants()->contains($user)) {
                 $session->addParticipant($user);
             }
-
-            // Envoyer l'email de confirmation avec URL de définition du mot de passe
-            // uniquement si le statut passe de 'submitted' à 'confirmed'
-            if ($oldStatus === ReservationStatus::SUBMITTED) {
-                $this->notificationService->notifyAboutRegistration($reservation);
-            }
         }
+
+        // Note: L'URL de création de mot de passe est maintenant intégrée directement 
+        // dans le template awaiting_documents via getStatusSpecificVariables()
 
         $this->entityManager->flush();
 

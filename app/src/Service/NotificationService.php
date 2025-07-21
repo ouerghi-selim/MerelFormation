@@ -1298,8 +1298,22 @@ class NotificationService
                 ];
 
             case 'awaiting_documents':
+                // Générer un token sécurisé pour l'URL de création de compte
+                $student = $reservation->getUser();
+                $passwordToken = bin2hex(random_bytes(32));
+                
+                // Sauvegarder le token en base avec expiration (7 jours)
+                $expiresAt = new \DateTime();
+                $expiresAt->add(new \DateInterval('P7D')); // 7 jours
+                
+                $student->setSetupToken($passwordToken);
+                $student->setSetupTokenExpiresAt($expiresAt);
+                $this->em->persist($student);
+                
                 return [
-                    'specificDocuments' => 'CV, lettre de motivation, diplômes'
+                    'specificDocuments' => 'CV, lettre de motivation, diplômes',
+                    'studentPortalUrl' => $this->baseUrl . '/student/dashboard',
+                    'passwordSetupUrl' => $this->baseUrl . '/setup-password?token=' . $passwordToken . '&email=' . urlencode($student->getEmail())
                 ];
 
             case 'documents_pending':
@@ -1321,7 +1335,7 @@ class NotificationService
             case 'awaiting_funding':
                 return [
                     'totalAmount' => $formation->getPrice() ?? '1500',
-                    'duration' => $formation->getDurationHours() ?? '140'
+                    'duration' => $formation->getDuration() ?? '140'
                 ];
 
             case 'funding_approved':
@@ -1351,7 +1365,7 @@ class NotificationService
             case 'confirmed':
                 return [
                     'sessionStartDate' => $session->getStartDate()->format('d/m/Y'),
-                    'duration' => $formation->getDurationHours() ?? '140',
+                    'duration' => $formation->getDuration() ?? '140',
                     'location' => 'Centre MerelFormation',
                     'instructorName' => $session->getInstructor() ? 
                         $session->getInstructor()->getFirstName() . ' ' . $session->getInstructor()->getLastName() 
@@ -1375,7 +1389,7 @@ class NotificationService
             case 'in_progress':
                 return [
                     'completedHours' => '20',
-                    'totalHours' => $formation->getDurationHours() ?? '140',
+                    'totalHours' => $formation->getDuration() ?? '140',
                     'completedModules' => '2',
                     'totalModules' => '8',
                     'nextSessionDate' => (new \DateTime('+7 days'))->format('d/m/Y'),
@@ -1404,7 +1418,7 @@ class NotificationService
             case 'completed':
                 return [
                     'completionDate' => (new \DateTime())->format('d/m/Y'),
-                    'totalHours' => $formation->getDurationHours() ?? '140',
+                    'totalHours' => $formation->getDuration() ?? '140',
                     'finalGrade' => '16',
                     'finalAttendanceRate' => '95',
                     'certificateDownloadUrl' => $this->baseUrl . '/student/certificate/' . $reservation->getId(),
