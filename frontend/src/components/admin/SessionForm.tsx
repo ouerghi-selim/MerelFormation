@@ -1,5 +1,5 @@
 // src/components/admin/SessionForm.tsx - Composant unifié basé sur SessionNew.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Save, Plus, Trash2, Calendar, Clock, MapPin, Users, FileText, AlertCircle } from 'lucide-react';
 import Button from '../common/Button';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -37,7 +37,7 @@ interface SessionData {
     notes?: string;
     instructors?: number[];
     center?: { id: number } | null;
-    // Pour le planning
+    // Pour la compatibilité avec le calendrier
     start?: Date;
     end?: Date;
     title?: string;
@@ -47,14 +47,18 @@ interface SessionData {
     documents?: Array<{
         id: number;
         title: string;
-        type: string;
-        fileSize: string;
-        downloadUrl: string;
+        type?: string;
+        fileName?: string;
+        category?: string;
+        fileSize?: string;
+        downloadUrl?: string;
+        uploadedAt?: string;
+        uploadedBy?: string;
     }>;
 }
 
 interface SessionFormProps {
-    mode: 'create' | 'edit' | 'planning';
+    mode: 'create' | 'edit';
     session?: SessionData;
     onSave: (data: SessionData) => Promise<any>;
     onCancel: () => void;
@@ -87,6 +91,7 @@ const SessionForm: React.FC<SessionFormProps> = ({
     const { addToast } = useNotification();
     const [loading, setLoading] = useState(false);
     const [formErrors, setFormErrors] = useState<FormErrors>({});
+    const initializedSessionId = useRef<number | null>(null);
 
     // États pour les données
     const [formationsData, setFormationsData] = useState<Formation[]>([]);
@@ -127,15 +132,22 @@ const SessionForm: React.FC<SessionFormProps> = ({
             fetchFormations();
             fetchInstructors();
             fetchCenters(); // Toujours charger les centres
-            
-            // Initialiser avec les données de session existante
-            if (session) {
-                initializeForm(session);
-            } else {
-                resetForm();
-            }
         }
-    }, [isOpen, session, mode]);
+    }, [isOpen]);
+
+    // Initialiser le formulaire séparément pour éviter les doubles appels
+    useEffect(() => {
+        if (isOpen && session) {
+            // Éviter la double initialisation de la même session
+            if (initializedSessionId.current !== session.id) {
+                initializedSessionId.current = session.id;
+                initializeForm(session);
+            }
+        } else if (isOpen && !session) {
+            initializedSessionId.current = null;
+            resetForm();
+        }
+    }, [isOpen, session?.id]); // Supprimé 'mode' pour éviter les doubles appels
 
     const fetchFormations = async () => {
         try {
@@ -192,7 +204,7 @@ const SessionForm: React.FC<SessionFormProps> = ({
 
         // Traitement des dates - même logique pour tous les modes
         if (sessionData.start) {
-            // Si on a des dates Date (planning)
+            // Si on a des dates Date (calendrier)
             setStartDate(sessionData.start.toISOString().split('T')[0]);
             const hours = sessionData.start.getHours().toString().padStart(2, '0');
             const minutes = sessionData.start.getMinutes().toString().padStart(2, '0');
@@ -206,7 +218,7 @@ const SessionForm: React.FC<SessionFormProps> = ({
         }
         
         if (sessionData.end) {
-            // Si on a des dates Date (planning)
+            // Si on a des dates Date (calendrier)
             setEndDate(sessionData.end.toISOString().split('T')[0]);
             const hours = sessionData.end.getHours().toString().padStart(2, '0');
             const minutes = sessionData.end.getMinutes().toString().padStart(2, '0');
@@ -219,9 +231,12 @@ const SessionForm: React.FC<SessionFormProps> = ({
             }
         }
 
-        // Instructeurs
-        if (sessionData.instructors) {
-            setSelectedInstructors(sessionData.instructors);
+        // Instructeurs - extraire les IDs du tableau d'objets
+        if (sessionData.instructors && Array.isArray(sessionData.instructors)) {
+            const instructorIds = sessionData.instructors.map(inst => 
+                typeof inst === 'number' ? inst : inst.id
+            );
+            setSelectedInstructors(instructorIds);
         }
 
         // Réinitialiser les documents
@@ -231,7 +246,21 @@ const SessionForm: React.FC<SessionFormProps> = ({
         
         // Charger les documents existants pour l'édition
         if (mode === 'edit' && sessionData.id) {
-            fetchExistingDocuments(sessionData.id);
+            // Utiliser les documents déjà présents dans sessionData si disponibles
+            if (sessionData.documents && sessionData.documents.length > 0) {
+                // Adapter le format des documents
+                const formattedDocuments = sessionData.documents.map(doc => ({
+                    id: doc.id,
+                    title: doc.title,
+                    type: doc.type || 'pdf',
+                    fileSize: doc.fileSize || 'N/A',
+                    downloadUrl: doc.downloadUrl || `/uploads/documents/${doc.fileName || ''}`
+                }));
+                setExistingDocuments(formattedDocuments);
+            } else {
+                // Sinon faire un appel API pour les récupérer
+                fetchExistingDocuments(sessionData.id);
+            }
         } else {
             setExistingDocuments([]);
         }
@@ -304,7 +333,7 @@ const SessionForm: React.FC<SessionFormProps> = ({
             let sessionData: SessionData;
 
             if (showTimeFields) {
-                // Mode planning
+                // Mode calendrier
                 const startDateTime = new Date(startDate);
                 const endDateTime = new Date(endDate);
                 
@@ -388,7 +417,7 @@ const SessionForm: React.FC<SessionFormProps> = ({
             }
 
 
-            addToast(`Session ${mode === 'create' ? 'créée' : mode === 'edit' ? 'modifiée' : 'mise à jour'} avec succès`, 'success');
+            addToast(`Session ${mode === 'create' ? 'créée' : 'modifiée'} avec succès`, 'success');
             
         } catch (error) {
             console.error('Error saving session:', error);
@@ -471,6 +500,7 @@ const SessionForm: React.FC<SessionFormProps> = ({
         if (mode === 'create') {
             setDocuments([...documents, ...Array.from(files)]);
         } else if (mode === 'edit') {
+            // Utiliser le système de documents temporaires pour edit
             handleTempDocumentUpload(files);
         }
         

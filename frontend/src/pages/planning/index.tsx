@@ -242,7 +242,7 @@ const PlanningCalendar: React.FC = () => {
                 maxWidth="max-w-2xl"
             >
                 <SessionForm
-                    mode="planning"
+                    mode="edit"
                     session={selectedEvent}
                     onSave={handleSaveEvent}
                     onCancel={() => setShowEventModal(false)}

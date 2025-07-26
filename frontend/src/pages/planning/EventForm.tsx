@@ -241,12 +241,13 @@ const EventForm: React.FC<EventFormProps> = ({
 
     return (
         <SessionForm
-            mode="planning"
+            mode="edit"
             session={event}
             onSave={onSave}
             onCancel={onCancel}
             isOpen={isOpen}
             isExamEvent={isExamEvent}
+            showDocuments={true}
         />
     );
 };
