@@ -106,24 +106,13 @@ const CentersAdmin: React.FC = () => {
         try {
             setSubmitting(true);
 
-            const url = editingCenter 
-                ? `http://merelformation.localhost/api/admin/centers/${editingCenter.id}`
-                : 'http://merelformation.localhost/api/admin/centers';
-            
-            const method = editingCenter ? 'PUT' : 'POST';
-
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify(formData)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Erreur lors de la sauvegarde');
+            let response;
+            if (editingCenter) {
+                // Mise à jour d'un centre existant
+                response = await adminCentersApi.update(editingCenter.id, formData);
+            } else {
+                // Création d'un nouveau centre
+                response = await adminCentersApi.create(formData);
             }
 
             addToast(
@@ -135,7 +124,7 @@ const CentersAdmin: React.FC = () => {
             handleCloseModal();
         } catch (error: any) {
             console.error('Erreur:', error);
-            addToast(error.message || 'Erreur lors de la sauvegarde', 'error');
+            addToast(error.response?.data?.error || error.message || 'Erreur lors de la sauvegarde', 'error');
         } finally {
             setSubmitting(false);
         }
@@ -147,23 +136,12 @@ const CentersAdmin: React.FC = () => {
         }
 
         try {
-            const response = await fetch(`http://merelformation.localhost/api/admin/centers/${center.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Erreur lors de la suppression');
-            }
-
+            await adminCentersApi.delete(center.id);
             addToast('Centre supprimé avec succès', 'success');
             await fetchCenters();
         } catch (error: any) {
             console.error('Erreur:', error);
-            addToast(error.message || 'Erreur lors de la suppression', 'error');
+            addToast(error.response?.data?.error || error.message || 'Erreur lors de la suppression', 'error');
         }
     };
 

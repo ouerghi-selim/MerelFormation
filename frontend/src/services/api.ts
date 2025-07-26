@@ -237,6 +237,9 @@ export const adminCentersApi = {
     getById: (id: number) => api.get(`/admin/centers/${id}`),
     getForFormations: () => api.get('/admin/centers/formation'),
     getForExams: () => api.get('/admin/centers/exam'),
+    create: (data: any) => api.post('/admin/centers', data),
+    update: (id: number, data: any) => api.put(`/admin/centers/${id}`, data),
+    delete: (id: number) => api.delete(`/admin/centers/${id}`),
 };
 
 export const vehicleRentalsApi = {
