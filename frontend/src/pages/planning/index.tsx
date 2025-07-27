@@ -11,7 +11,7 @@ import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
 import EventForm from './EventForm';
 import { usePlanningData } from './usePlanningData';
-import { messages, eventStyleGetter } from './calendarConfig';
+import { messages, eventStyleGetter, statusColors } from './calendarConfig';
 import { CalendarEvent } from './types';
 import SessionForm from '../../components/admin/SessionForm';
 import { adminSessionsApi } from '../../services/api';
@@ -149,8 +149,8 @@ const PlanningCalendar: React.FC = () => {
                     <div className="bg-white rounded-lg shadow overflow-hidden">
                         <div className="p-4 border-b flex flex-row justify-between items-center">
                             <div className="text-sm text-gray-600">
-                                <p><strong>Note :</strong> Ce planning affiche uniquement les sessions programmées et les examens confirmés.</p>
-                                <p>Les examens doivent être gérés depuis la section "Réservations".</p>
+                                <p><strong>Note :</strong> Ce planning affiche toutes les sessions (tous statuts) et les examens confirmés.</p>
+                                <p>Les couleurs indiquent le statut de chaque session. Les examens doivent être gérés depuis la section "Réservations".</p>
                             </div>
                             <Button
                                 onClick={handleAddEvent}
@@ -189,39 +189,84 @@ const PlanningCalendar: React.FC = () => {
                                         setSelectedEvent(null);
                                         setShowEventModal(true);
                                     }}
-                                    // ✅ Format des événements dans le tooltip
+                                    // ✅ Format des événements avec pastilles d'indication
                                     components={{
-                                        event: ({ event }) => (
-                                            <div className="text-xs">
-                                                <div className="font-semibold">{event.title}</div>
-                                                <div>{event.location}</div>
-                                                {event.type === 'exam' && event.clientName && (
-                                                    <div>Client: {event.clientName}</div>
-                                                )}
-                                                {event.type === 'formation' && (
-                                                    <div>{event.currentParticipants}/{event.maxParticipants} participants</div>
-                                                )}
-                                            </div>
-                                        )
+                                        event: ({ event }) => {
+                                            const isEventFull = event.currentParticipants >= event.maxParticipants;
+                                            const hasAvailablePlaces = event.currentParticipants < event.maxParticipants;
+                                            
+                                            return (
+                                                <div className="text-xs relative">
+                                                    <div className="font-semibold">{event.title}</div>
+                                                    <div>{event.location}</div>
+                                                    {event.type === 'exam' && event.clientName && (
+                                                        <div>Client: {event.clientName}</div>
+                                                    )}
+                                                    {event.type === 'formation' && (
+                                                        <div>{event.currentParticipants}/{event.maxParticipants} participants</div>
+                                                    )}
+                                                    
+                                                    {/* Pastille d'indication de capacité pour les formations */}
+                                                    {event.type === 'formation' && (
+                                                        <div className="absolute top-1 right-1">
+                                                            {isEventFull ? (
+                                                                <div 
+                                                                    className="w-3 h-3 rounded-full bg-red-500 border border-white shadow-sm"
+                                                                    title="Session complète"
+                                                                ></div>
+                                                            ) : hasAvailablePlaces ? (
+                                                                <div 
+                                                                    className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm"
+                                                                    title="Places disponibles"
+                                                                ></div>
+                                                            ) : null}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
                                     }}
                                 />
                             </div>
                         )}
                     </div>
 
-                    {/* Légende */}
-                    <div className="mt-4 flex flex-wrap items-center gap-4">
-                        <div className="flex items-center">
-                            <div className="w-3 h-3 bg-blue-100 border border-blue-300 rounded mr-2"></div>
-                            <span className="text-sm text-gray-600">Session de formation</span>
+                    {/* Légende des statuts et indicateurs */}
+                    <div className="mt-4 bg-white rounded-lg shadow p-4">
+                        <h3 className="text-sm font-medium text-gray-700 mb-3">Légende</h3>
+                        
+                        {/* Statuts des sessions */}
+                        <div className="mb-4">
+                            <h4 className="text-xs font-medium text-gray-600 mb-2">Statuts des sessions :</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                                {Object.entries(statusColors).map(([key, colors]) => (
+                                    <div key={key} className="flex items-center">
+                                        <div 
+                                            className="w-4 h-4 rounded mr-2 border"
+                                            style={{
+                                                backgroundColor: colors.background,
+                                                borderColor: colors.border
+                                            }}
+                                        ></div>
+                                        <span className="text-sm text-gray-600">{colors.label}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                        <div className="flex items-center">
-                            <div className="w-3 h-3 bg-green-100 border border-green-300 rounded mr-2"></div>
-                            <span className="text-sm text-gray-600">Examen confirmé</span>
-                        </div>
-                        <div className="flex items-center">
-                            <div className="w-3 h-3 bg-red-100 border border-red-300 rounded mr-2"></div>
-                            <span className="text-sm text-gray-600">Session complète</span>
+
+                        {/* Indicateurs de capacité */}
+                        <div>
+                            <h4 className="text-xs font-medium text-gray-600 mb-2">Indicateurs de capacité :</h4>
+                            <div className="flex gap-6">
+                                <div className="flex items-center">
+                                    <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm mr-2"></div>
+                                    <span className="text-sm text-gray-600">Places disponibles</span>
+                                </div>
+                                <div className="flex items-center">
+                                    <div className="w-3 h-3 rounded-full bg-red-500 border border-white shadow-sm mr-2"></div>
+                                    <span className="text-sm text-gray-600">Session complète</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -242,7 +287,7 @@ const PlanningCalendar: React.FC = () => {
                 maxWidth="max-w-2xl"
             >
                 <SessionForm
-                    mode="edit"
+                    mode={selectedEvent ? "edit" : "create"}
                     session={selectedEvent}
                     onSave={handleSaveEvent}
                     onCancel={() => setShowEventModal(false)}

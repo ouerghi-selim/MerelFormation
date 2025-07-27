@@ -17,52 +17,94 @@ export const messages = {
     showMore: (total: number) => `+ ${total} de plus`
 };
 
+// Définition des couleurs par statut de session
+export const statusColors = {
+    scheduled: {
+        background: '#EBF5FF', // Bleu pâle
+        color: '#1E40AF',       // Bleu foncé
+        border: '#93C5FD',      // Bleu moyen
+        label: 'Programmée'
+    },
+    ongoing: {
+        background: '#F0FDF4', // Vert pâle
+        color: '#15803D',       // Vert foncé
+        border: '#86EFAC',      // Vert moyen
+        label: 'En cours'
+    },
+    completed: {
+        background: '#F3F4F6', // Gris pâle
+        color: '#374151',       // Gris foncé
+        border: '#D1D5DB',      // Gris moyen
+        label: 'Terminée'
+    },
+    cancelled: {
+        background: '#FEF2F2', // Rouge pâle
+        color: '#B91C1C',       // Rouge foncé
+        border: '#FCA5A5',      // Rouge moyen
+        label: 'Annulée'
+    },
+    exam: {
+        background: '#E6F4EA', // Vert lime pâle
+        color: '#0C5A31',       // Vert lime foncé
+        border: '#A7F3D0',      // Vert lime moyen
+        label: 'Examen'
+    }
+};
+
 // Personnalisation des événements
 export const eventStyleGetter = (event: BigCalendarEvent) => {
     // Déterminer si l'événement est complet
     const isEventFull = event.currentParticipants >= event.maxParticipants;
 
-    // Style de base pour les formations
-    if (event.type === 'formation') {
-        if (isEventFull) {
-            // Formation complète
-            return {
-                style: {
-                    backgroundColor: '#FEF2F2', // Rouge pâle
-                    color: '#B91C1C',          // Rouge foncé
-                    border: '1px solid #FCA5A5',
-                    borderRadius: '4px',
-                    opacity: 0.9,
-                    display: 'block',
-                    overflow: 'hidden'
-                }
-            };
-        } else {
-            // Formation normale
-            return {
-                style: {
-                    backgroundColor: '#EBF5FF', // Bleu pâle
-                    color: '#1E40AF',         // Bleu foncé
-                    border: '1px solid #93C5FD',
-                    borderRadius: '4px',
-                    opacity: 0.9,
-                    display: 'block',
-                    overflow: 'hidden'
-                }
-            };
-        }
-    }
     // Style pour les examens
-    else if (event.type === 'exam') {
+    if (event.type === 'exam') {
+        const colors = statusColors.exam;
         return {
             style: {
-                backgroundColor: '#E6F4EA', // Vert pâle
-                color: '#0C5A31',         // Vert foncé
-                border: '1px solid #A7F3D0',
+                backgroundColor: colors.background,
+                color: colors.color,
+                border: `1px solid ${colors.border}`,
                 borderRadius: '4px',
                 opacity: 0.9,
                 display: 'block',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                fontWeight: '600'
+            }
+        };
+    }
+
+    // Style pour les formations selon le statut
+    if (event.type === 'formation') {
+        let colors;
+
+        // Couleur selon le statut uniquement
+        switch (event.status) {
+            case 'ongoing':
+                colors = statusColors.ongoing;
+                break;
+            case 'completed':
+                colors = statusColors.completed;
+                break;
+            case 'cancelled':
+                colors = statusColors.cancelled;
+                break;
+            case 'scheduled':
+            default:
+                colors = statusColors.scheduled;
+                break;
+        }
+
+        return {
+            style: {
+                backgroundColor: colors.background,
+                color: colors.color,
+                border: `1px solid ${colors.border}`,
+                borderRadius: '4px',
+                opacity: 0.9,
+                display: 'block',
+                overflow: 'hidden',
+                fontWeight: '500',
+                position: 'relative'
             }
         };
     }

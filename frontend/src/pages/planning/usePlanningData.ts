@@ -83,7 +83,7 @@ export const usePlanningData = () => {
                 const sessionParams = new URLSearchParams();
                 sessionParams.append('startDate', startDate);
                 sessionParams.append('endDate', endDate);
-                sessionParams.append('status', 'scheduled'); // Seulement les sessions programmées
+                // Récupérer toutes les sessions peu importe leur statut
 
                 const sessionResponse = await adminSessionsApi.getAll(sessionParams.toString());
 
