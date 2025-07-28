@@ -92,8 +92,10 @@ const VehiclesAdmin: React.FC = () => {
             setProcessing(true);
             const response = await adminVehiclesApi.create(newVehicle);
 
-            // Ajouter le nouveau véhicule à la liste
-            setVehicles({ ...vehicles, data: [...vehicles.data, response.data] });
+
+            // Ajouter le nouveau véhicule à la liste - extraire les données du véhicule
+            const currentVehicles = Array.isArray(vehicles) ? vehicles : [];
+            setVehicles([...currentVehicles, response.data.data]);
             addToast('Véhicule ajouté avec succès', 'success');
 
             // Réinitialiser le formulaire
@@ -127,10 +129,11 @@ const VehiclesAdmin: React.FC = () => {
 
         try {
             setProcessing(true);
-            await adminVehiclesApi.update(vehicleToEdit.id, vehicleToEdit);
+            const response = await adminVehiclesApi.update(vehicleToEdit.id, vehicleToEdit);
 
-            // Mettre à jour la liste des véhicules
-            setVehicles({ ...vehicles, data: vehicles.data.map(v => v.id === vehicleToEdit.id ? vehicleToEdit : v) });
+            // Mettre à jour la liste des véhicules avec les données retournées par l'API
+            const currentVehicles = Array.isArray(vehicles) ? vehicles : [];
+            setVehicles(currentVehicles.map(v => v.id === vehicleToEdit.id ? response.data.data : v));
             addToast('Véhicule mis à jour avec succès', 'success');
 
             setShowEditModal(false);
@@ -150,7 +153,8 @@ const VehiclesAdmin: React.FC = () => {
             await adminVehiclesApi.delete(vehicleToDelete.id);
 
             // Mettre à jour la liste des véhicules
-            setVehicles({ ...vehicles, data: vehicles.data.filter(v => v.id !== vehicleToDelete.id) });
+            const currentVehicles = Array.isArray(vehicles) ? vehicles : [];
+            setVehicles(currentVehicles.filter(v => v.id !== vehicleToDelete.id));
             addToast('Véhicule supprimé avec succès', 'success');
 
             setShowDeleteModal(false);
@@ -396,11 +400,13 @@ const VehiclesAdmin: React.FC = () => {
         </div>
     );
 
-    // États calculés pour les statistiques
-    const activeVehicles = vehicles.data ? vehicles.data.filter(v => v.isActive).length : 0;
-    const availableVehicles = vehicles.data ? vehicles.data.filter(v => v.isActive && v.status === 'available').length : 0;
-    const rentedVehicles = vehicles.data ? vehicles.data.filter(v => v.isActive && v.status === 'rented').length : 0;
-    const maintenanceVehicles = vehicles.data ? vehicles.data.filter(v => v.isActive && v.status === 'maintenance').length : 0;
+    // États calculés pour les statistiques - s'assurer que vehicles est un tableau
+    const vehiclesArray = Array.isArray(vehicles) ? vehicles : [];
+    
+    const activeVehicles = vehiclesArray.filter(v => v.isActive).length;
+    const availableVehicles = vehiclesArray.filter(v => v.isActive && v.status === 'available').length;
+    const rentedVehicles = vehiclesArray.filter(v => v.isActive && v.status === 'rented').length;
+    const maintenanceVehicles = vehiclesArray.filter(v => v.isActive && v.status === 'maintenance').length;
 
     return (
         <div className="flex min-h-screen bg-gray-50">
@@ -433,7 +439,7 @@ const VehiclesAdmin: React.FC = () => {
                     </div>
 
                     <DataTable<Vehicle>
-                        data={vehicles.data || []}
+                        data={vehiclesArray}
                         columns={columns}
                         keyField="id"
                         loading={loading}

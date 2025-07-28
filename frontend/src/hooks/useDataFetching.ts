@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 interface UseDataFetchingProps<T> {
-    fetchFn: () => Promise<T[]>;
+    fetchFn: () => Promise<{data: T[]} | T[]>;
     dependencies?: any[];
 }
 
@@ -14,7 +14,11 @@ const useDataFetching = <T,>({ fetchFn, dependencies = [] }: UseDataFetchingProp
         try {
             setLoading(true);
             const response = await fetchFn();
-            setData(response);
+            
+            // Vérifier si la réponse a une propriété data (axios response) ou si c'est directement un tableau
+            const dataArray = Array.isArray(response) ? response : response.data;
+            
+            setData(Array.isArray(dataArray) ? dataArray : []);
             setError(null);
         } catch (err) {
             console.error('Error fetching data:', err);

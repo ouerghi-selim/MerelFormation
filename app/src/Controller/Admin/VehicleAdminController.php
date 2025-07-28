@@ -140,7 +140,18 @@ class VehicleAdminController extends AbstractController
 
         return $this->json([
             'message' => 'Véhicule créé avec succès',
-            'data' => $vehicle
+            'data' => [
+                'id' => $vehicle->getId(),
+                'model' => $vehicle->getModel(),
+                'plate' => $vehicle->getPlate(),
+                'year' => $vehicle->getYear(),
+                'status' => $vehicle->getStatus(),
+                'dailyRate' => $vehicle->getDailyRate(),
+                'isActive' => $vehicle->isIsActive(),
+                'category' => $vehicle->getCategory(),
+                'createdAt' => $vehicle->getCreatedAt()->format('Y-m-d H:i:s'),
+                'updatedAt' => $vehicle->getUpdatedAt()->format('Y-m-d H:i:s')
+            ]
         ], 201);
     }
 
@@ -189,7 +200,18 @@ class VehicleAdminController extends AbstractController
 
         return $this->json([
             'message' => 'Véhicule mis à jour avec succès',
-            'data' => $vehicle
+            'data' => [
+                'id' => $vehicle->getId(),
+                'model' => $vehicle->getModel(),
+                'plate' => $vehicle->getPlate(),
+                'year' => $vehicle->getYear(),
+                'status' => $vehicle->getStatus(),
+                'dailyRate' => $vehicle->getDailyRate(),
+                'isActive' => $vehicle->isIsActive(),
+                'category' => $vehicle->getCategory(),
+                'createdAt' => $vehicle->getCreatedAt()->format('Y-m-d H:i:s'),
+                'updatedAt' => $vehicle->getUpdatedAt()->format('Y-m-d H:i:s')
+            ]
         ]);
     }
 

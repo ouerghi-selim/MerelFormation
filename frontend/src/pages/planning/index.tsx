@@ -58,17 +58,31 @@ const PlanningCalendar: React.FC = () => {
 
     const handleSaveEvent = async (sessionData: any) => {
         try {
-            // Utiliser la même API que SessionForm
-            await adminSessionsApi.update(sessionData.id, {
-                ...sessionData,
-                instructors: sessionData.instructors
-            });
+            let result;
+            
+            if (selectedEvent && sessionData.id) {
+                // Mode modification - utiliser UPDATE
+                result = await adminSessionsApi.update(sessionData.id, {
+                    ...sessionData,
+                    instructors: sessionData.instructors
+                });
+            } else {
+                // Mode création - utiliser CREATE
+                result = await adminSessionsApi.create({
+                    ...sessionData,
+                    instructors: sessionData.instructors
+                });
+            }
+            
             setShowEventModal(false);
             setSelectedEvent(null);
             // Recharger les données du planning
             window.location.reload(); // Simple refresh pour voir les changements
+            
+            return result; // Retourner le résultat pour SessionForm en mode create
         } catch (error) {
-            console.error('Error updating session from planning:', error);
+            console.error('Error saving session from planning:', error);
+            throw error; // Propager l'erreur pour que SessionForm puisse la gérer
         }
     };
 

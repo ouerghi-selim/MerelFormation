@@ -762,8 +762,8 @@ class NotificationService
 
             $variables = [
                 'vehicleModel' => $vehicle->getModel(),
-                'vehiclePlate' => $vehicle->getPlateNumber(),
-                'vehicleType' => $vehicle->getType(),
+                'vehiclePlate' => $vehicle->getPlate(),
+                'vehicleType' => $vehicle->getCategory(),
                 'addedBy' => $addedBy->getFirstName() . ' ' . $addedBy->getLastName(),
                 'addedAt' => (new \DateTime())->format('d/m/Y H:i')
             ];
