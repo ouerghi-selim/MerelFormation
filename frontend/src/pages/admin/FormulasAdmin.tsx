@@ -252,7 +252,7 @@ const FormulasAdmin: React.FC = () => {
                             onChange={(e) => setSelectedCenterFilter(e.target.value ? parseInt(e.target.value) : '')}
                         >
                             <option value="">Tous les centres</option>
-                            {examCenters.map(center => (
+                            {examCenters.filter(center => center.isActive).map(center => (
                                 <option key={center.id} value={center.id}>
                                     {center.name}
                                 </option>
@@ -453,7 +453,7 @@ const FormulasAdmin: React.FC = () => {
                                         onChange={(e) => setFormData({...formData, examCenterId: e.target.value ? parseInt(e.target.value) : ''})}
                                     >
                                         <option value="">Sélectionnez un centre</option>
-                                        {examCenters.map(center => (
+                                        {examCenters.filter(center => center.isActive).map(center => (
                                             <option key={center.id} value={center.id}>
                                                 {center.name} - {center.city}
                                             </option>

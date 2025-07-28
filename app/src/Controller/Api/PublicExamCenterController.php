@@ -2,7 +2,7 @@
 
 namespace App\Controller\Api;
 
-use App\Repository\ExamCenterRepository;
+use App\Repository\CenterRepository;
 use App\Repository\FormulaRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -14,7 +14,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 class PublicExamCenterController extends AbstractController
 {
     public function __construct(
-        private ExamCenterRepository $examCenterRepository,
+        private CenterRepository $centerRepository,
         private FormulaRepository $formulaRepository,
         private SerializerInterface $serializer
     ) {}
@@ -23,10 +23,10 @@ class PublicExamCenterController extends AbstractController
     public function getExamCenters(): JsonResponse
     {
         try {
-            $examCenters = $this->examCenterRepository->findActive();
+            $examCenters = $this->centerRepository->findActiveExamCenters();
 
             return new JsonResponse(
-                $this->serializer->serialize($examCenters, 'json', ['groups' => ['exam_center:read']]),
+                $this->serializer->serialize($examCenters, 'json', ['groups' => ['center:read']]),
                 Response::HTTP_OK,
                 [
                     'Access-Control-Allow-Origin' => '*',
@@ -47,10 +47,10 @@ class PublicExamCenterController extends AbstractController
     public function getExamCentersWithFormulas(): JsonResponse
     {
         try {
-            $examCenters = $this->examCenterRepository->findWithFormulas();
+            $examCenters = $this->centerRepository->findExamCentersWithFormulas();
 
             return new JsonResponse(
-                $this->serializer->serialize($examCenters, 'json', ['groups' => ['exam_center:read']]),
+                $this->serializer->serialize($examCenters, 'json', ['groups' => ['center:read']]),
                 Response::HTTP_OK,
                 [
                     'Access-Control-Allow-Origin' => '*',
@@ -118,15 +118,15 @@ class PublicExamCenterController extends AbstractController
     public function getExamCenterFormulas(int $id): JsonResponse
     {
         try {
-            $examCenter = $this->examCenterRepository->find($id);
+            $center = $this->centerRepository->find($id);
             
-            if (!$examCenter || !$examCenter->isActive()) {
+            if (!$center || !$center->isActive()) {
                 return new JsonResponse([
                     'error' => 'Centre d\'examen non trouvé ou inactif'
                 ], Response::HTTP_NOT_FOUND);
             }
 
-            $formulas = $this->formulaRepository->findByExamCenter($examCenter);
+            $formulas = $this->formulaRepository->findByExamCenter($center);
 
             return new JsonResponse(
                 $this->serializer->serialize($formulas, 'json', ['groups' => ['formula:read']]),

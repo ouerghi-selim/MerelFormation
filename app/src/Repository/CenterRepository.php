@@ -136,4 +136,33 @@ class CenterRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Find active exam centers (for public API)
+     *
+     * @return Center[]
+     */
+    public function findActiveExamCenters(): array
+    {
+        return $this->findForExams();
+    }
+
+    /**
+     * Find active exam centers with their formulas
+     *
+     * @return Center[]
+     */
+    public function findExamCentersWithFormulas(): array
+    {
+        return $this->createQueryBuilder('c')
+            ->leftJoin('c.formulas', 'f')
+            ->addSelect('f')
+            ->where('c.isActive = :active')
+            ->andWhere('c.type IN (:types)')
+            ->setParameter('active', true)
+            ->setParameter('types', [Center::TYPE_EXAM, Center::TYPE_BOTH])
+            ->orderBy('c.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }
