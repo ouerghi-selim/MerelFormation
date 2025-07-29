@@ -149,6 +149,7 @@ class CenterRepository extends ServiceEntityRepository
 
     /**
      * Find active exam centers with their formulas
+     * Equivalent to old ExamCenterRepository::findWithFormulas()
      *
      * @return Center[]
      */
@@ -159,10 +160,93 @@ class CenterRepository extends ServiceEntityRepository
             ->addSelect('f')
             ->where('c.isActive = :active')
             ->andWhere('c.type IN (:types)')
+            ->andWhere('f.isActive = :formulaActive OR f.id IS NULL')
             ->setParameter('active', true)
+            ->setParameter('formulaActive', true)
             ->setParameter('types', [Center::TYPE_EXAM, Center::TYPE_BOTH])
             ->orderBy('c.name', 'ASC')
+            ->addOrderBy('f.type', 'ASC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Find centers for admin listing with optional search
+     * Equivalent to old ExamCenterRepository::findForAdmin()
+     *
+     * @return Center[]
+     */
+    public function findForAdmin(?string $search = null, ?string $type = null): array
+    {
+        $qb = $this->createQueryBuilder('c')
+            ->leftJoin('c.formulas', 'f')
+            ->addSelect('f')
+            ->orderBy('c.createdAt', 'DESC');
+
+        if ($search) {
+            $qb->andWhere('c.name LIKE :search OR c.city LIKE :search OR c.code LIKE :search')
+               ->setParameter('search', '%' . $search . '%');
+        }
+
+        if ($type) {
+            $qb->andWhere('c.type = :type OR c.type = :both')
+               ->setParameter('type', $type)
+               ->setParameter('both', Center::TYPE_BOTH);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * Find one center by code
+     * Equivalent to old ExamCenterRepository::findOneByCode()
+     */
+    public function findOneByCode(string $code): ?Center
+    {
+        return $this->createQueryBuilder('c')
+            ->andWhere('c.code = :code')
+            ->andWhere('c.isActive = :active')
+            ->setParameter('code', $code)
+            ->setParameter('active', true)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * Count total centers
+     * Equivalent to old ExamCenterRepository::countTotal()
+     */
+    public function countTotal(?string $type = null): int
+    {
+        $qb = $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)');
+
+        if ($type) {
+            $qb->andWhere('c.type = :type OR c.type = :both')
+               ->setParameter('type', $type)
+               ->setParameter('both', Center::TYPE_BOTH);
+        }
+
+        return $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Count active centers
+     * Equivalent to old ExamCenterRepository::countActive()
+     */
+    public function countActive(?string $type = null): int
+    {
+        $qb = $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->andWhere('c.isActive = :active')
+            ->setParameter('active', true);
+
+        if ($type) {
+            $qb->andWhere('c.type = :type OR c.type = :both')
+               ->setParameter('type', $type)
+               ->setParameter('both', Center::TYPE_BOTH);
+        }
+
+        return $qb->getQuery()->getSingleScalarResult();
     }
 }

@@ -468,13 +468,13 @@ export const adminFormulasApi = {
     getStats: () => api.get('/admin/formulas/stats')
 };
 
-// Services API publiques pour les centres d'examen (sans authentification)
-export const publicExamCentersApi = {
+// Services API publiques pour les centres (sans authentification)
+export const publicCentersApi = {
     // Récupérer les centres actifs
-    getActiveCenters: () => api.get('/api/exam-centers'),
+    getActiveCenters: () => api.get('/api/centers'),
 
     // Récupérer les centres actifs avec leurs formules
-    getActiveCentersWithFormulas: () => api.get('/api/exam-centers/with-formulas'),
+    getActiveCentersWithFormulas: () => api.get('/api/centers/with-formulas'),
 
     // Récupérer les formules actives
     getActiveFormulas: () => api.get('/api/formulas'),
@@ -483,8 +483,11 @@ export const publicExamCentersApi = {
     getFormulasGroupedByCenter: () => api.get('/api/formulas/grouped-by-center'),
 
     // Récupérer les formules d'un centre spécifique
-    getCenterFormulas: (centerId: number) => api.get(`/api/exam-centers/${centerId}/formulas`)
+    getCenterFormulas: (centerId: number) => api.get(`/api/centers/${centerId}/formulas`)
 };
+
+// Alias pour compatibilité - À supprimer progressivement
+export const publicExamCentersApi = publicCentersApi;
 
 // Services API pour le contact (public)
 export const contactApi = {

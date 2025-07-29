@@ -1234,3 +1234,78 @@ Email "Inscription confirmée" + URL finalisation ✅
 - **`Version20250714151818.php`** : Création template demande + amélioration confirmation
 
 Cette évolution professionnalise le processus d'inscription en alignant la communication avec le workflow réel de validation.
+
+## 🆕 NOUVEAU : Unification Complète de l'Architecture Centers (Juillet 2025)
+
+### 🎯 **Problème Résolu**
+L'architecture avait une duplication entre les entités `ExamCenter` et `Center`, créant des conflits et une complexité de maintenance. Le système utilisait deux entités distinctes pour gérer les centres d'examen et de formation.
+
+### 🚀 **Solution Implémentée**
+
+#### **Migration Complète vers Architecture Unifiée**
+- **Suppression définitive** de l'entité `ExamCenter` et `ExamCenterRepository`
+- **Migration des données** : Conservation des centres d'examen dans `Center` avec `type='exam'`
+- **Unification des contrôleurs** : Remplacement de `PublicExamCenterController` par `CenterController` + `FormulaController`
+- **Nettoyage des endpoints** : Modernisation de `/api/exam-centers` vers `/api/centers`
+
+#### **Architecture Backend Modernisée**
+- **Entité Center Unifiée** : Support `type='formation'|'exam'|'both'`
+- **CenterRepository Enrichi** : Toutes les méthodes de l'ancien `ExamCenterRepository` intégrées
+- **FormulaController Dédié** : API spécialisée pour la gestion des formules
+- **Migration Base de Données** : `Version20250729073248.php` - Suppression table `exam_center`
+
+#### **API Cohérente et Moderne**
+```php
+// Nouveaux endpoints unifiés
+GET /api/centers                    // Liste des centres
+GET /api/centers/with-formulas      // Centres avec formules
+GET /api/centers/{id}/formulas      // Formules d'un centre
+GET /api/formulas                   // Liste des formules
+GET /api/formulas/grouped-by-center // Formules groupées
+```
+
+#### **CenterRepository Complet**
+Toutes les méthodes de l'ancien `ExamCenterRepository` préservées et améliorées :
+- ✅ `findActive()` - Centres actifs
+- ✅ `findExamCentersWithFormulas()` - Centres d'examen avec formules (+ filtrage formules actives)
+- ✅ `findForAdmin()` - Interface admin avec recherche (+ paramètre type optionnel)
+- ✅ `findOneByCode()` - Recherche par code
+- ✅ `countTotal()` / `countActive()` - Statistiques (+ paramètre type optionnel)
+- 🆕 Méthodes bonus : `findForFormations()`, `findByCity()`, `findByTypeAndDepartment()`
+
+### 🔧 **Fichiers Supprimés**
+- ❌ `app/src/Entity/ExamCenter.php`
+- ❌ `app/src/Repository/ExamCenterRepository.php`
+- ❌ `app/src/Controller/Api/PublicExamCenterController.php`
+- ❌ `app/src/DataFixtures/ExamCenterFixtures.php`
+- ❌ `app/src/ApiResource/PublicExamCenter.php`
+
+### 🎯 **Impact Business & Technique**
+
+#### **Simplification Architecturale**
+- **31 entités** au lieu de 32 (ExamCenter supprimé)
+- **Une seule source de vérité** pour les centres
+- **Code plus maintenable** sans duplication
+- **Performance améliorée** sans jointures entre tables dupliquées
+
+#### **API Moderne et Cohérente** 
+- **Endpoints logiques** : `/api/centers` et `/api/formulas`
+- **Contrôleurs spécialisés** : Séparation claire centres/formules
+- **Documentation API** mise à jour dans `PublicCenters.php`
+- **Rétrocompatibilité** : Anciens endpoints maintenus temporairement
+
+#### **Sécurité des Données**
+- **Migration réversible** : Possibilité de rollback complet
+- **Données préservées** : 9 formules toujours liées correctement
+- **IDs conservés** : Aucune rupture de liens existants
+- **Tests réussis** : Validation complète du schéma Doctrine
+
+### 📊 **Résultats**
+- **✅ Architecture Unifiée** : Une seule entité `Center` pour formation + examen
+- **✅ API Moderne** : Endpoints cohérents et logiques
+- **✅ Code Propre** : Suppression de tout le code legacy
+- **✅ Fonctionnalités Préservées** : Aucune perte de fonctionnalité
+- **✅ Performance Optimisée** : Requêtes simplifiées
+- **✅ Maintenabilité** : Architecture claire et extensible
+
+Cette unification transforme MerelFormation d'une architecture dupliquée vers une **solution moderne, cohérente et maintenable** tout en préservant toutes les fonctionnalités existantes.

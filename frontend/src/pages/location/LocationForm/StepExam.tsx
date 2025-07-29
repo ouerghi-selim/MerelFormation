@@ -62,7 +62,7 @@ const StepExam: React.FC<StepExamProps> = ({ onNext, onPrev }) => {
             setError(null);
 
             // Appel API public pour récupérer les centres avec leurs formules
-            const response = await fetch('/api/exam-centers/with-formulas');
+            const response = await fetch('/api/centers/with-formulas');
 
             if (!response.ok) {
                 throw new Error('Erreur lors du chargement des centres d\'examen');
