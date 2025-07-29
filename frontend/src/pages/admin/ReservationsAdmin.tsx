@@ -61,9 +61,6 @@ const ReservationsAdmin: React.FC = () => {
   const [sessionStatusFilter, setSessionStatusFilter] = useState('');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // États pour les statuts disponibles
-  const [availableStatuses, setAvailableStatuses] = useState<ReservationStatus[]>([]);
-  const [loadingStatuses, setLoadingStatuses] = useState(true);
 
   // États pour le modal de détail
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -85,6 +82,11 @@ const ReservationsAdmin: React.FC = () => {
   } | null>(null);
   const [customMessage, setCustomMessage] = useState('');
 
+  // Fonction helper pour les labels de statuts
+  const getStatusLabelForType = (status: string) => {
+    return activeTab === 'vehicle' ? getStatusLabel(status, 'vehicle') : getStatusLabel(status, 'formation');
+  };
+
   // Effet pour fermer les dropdowns quand on clique ailleurs
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -100,25 +102,6 @@ const ReservationsAdmin: React.FC = () => {
     };
   }, []);
 
-  // Effet pour charger les statuts disponibles
-  useEffect(() => {
-    const fetchStatuses = async () => {
-      try {
-        setLoadingStatuses(true);
-        const response = await fetch('/api/admin/reservation-statuses');
-        const data = await response.json();
-        setAvailableStatuses(data);
-        setLoadingStatuses(false);
-      } catch (err) {
-        console.error('Error fetching statuses:', err);
-        setLoadingStatuses(false);
-        // Utiliser les statuts de fallback si l'API n'est pas disponible
-        setAvailableStatuses([]);
-      }
-    };
-
-    fetchStatuses();
-  }, []);
 
   // Effet pour charger les réservations de véhicules
   useEffect(() => {
@@ -322,7 +305,7 @@ const ReservationsAdmin: React.FC = () => {
       }
 
       const messageText = customMessage ? ' avec message personnalisé' : '';
-      setSuccessMessage(`Statut mis à jour vers: ${getStatusLabel(newStatus)} - Email envoyé${messageText}`);
+      setSuccessMessage(`Statut mis à jour vers: ${getStatusLabelForType(newStatus)} - Email envoyé${messageText}`);
       setTimeout(() => setSuccessMessage(null), 5000);
       
       // Fermer le modal et nettoyer l'état
@@ -382,18 +365,31 @@ const ReservationsAdmin: React.FC = () => {
     return emailDescriptions[status] || 'Email de notification de changement de statut';
   };
 
-  // Fonction pour obtenir les statuts pour le filtre
+  // Fonction pour obtenir les statuts selon le type actif
   const getStatusOptions = () => {
-    if (availableStatuses.length > 0) {
-      return availableStatuses;
-    }
-    // Fallback sur les anciens statuts
-    return [
-      { value: 'pending', label: 'En attente', phase: '', color: 'yellow', allowedTransitions: [] },
-      { value: 'confirmed', label: 'Confirmée', phase: '', color: 'green', allowedTransitions: [] },
-      { value: 'completed', label: 'Terminée', phase: '', color: 'blue', allowedTransitions: [] },
-      { value: 'cancelled', label: 'Annulée', phase: '', color: 'gray', allowedTransitions: [] },
+    const vehicleStatuses = [
+      'submitted', 'under_review', 'awaiting_documents', 'documents_pending', 
+      'documents_rejected', 'awaiting_payment', 'payment_pending', 'confirmed', 
+      'in_progress', 'completed', 'cancelled', 'refunded'
     ];
+    
+    const formationStatuses = [
+      'submitted', 'under_review', 'awaiting_documents', 'documents_pending', 
+      'documents_rejected', 'awaiting_prerequisites', 'awaiting_funding', 
+      'funding_approved', 'awaiting_payment', 'payment_pending', 'confirmed', 
+      'awaiting_start', 'in_progress', 'attendance_issues', 'suspended', 
+      'completed', 'failed', 'cancelled', 'refunded'
+    ];
+
+    const statuses = activeTab === 'vehicle' ? vehicleStatuses : formationStatuses;
+    
+    return statuses.map(status => ({
+      value: status,
+      label: getStatusLabel(status, activeTab === 'vehicle' ? 'vehicle' : 'formation'),
+      phase: '',
+      color: 'gray',
+      allowedTransitions: []
+    }));
   };
 
   return (
@@ -559,7 +555,7 @@ const ReservationsAdmin: React.FC = () => {
                                         onClick={() => toggleStatusDropdown(reservation.id)}
                                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer hover:opacity-80 ${getStatusBadgeClass(reservation.status)}`}
                                       >
-                                        {getStatusLabel(reservation.status)}
+                                        {getStatusLabelForType(reservation.status)}
                                         <ChevronDown className="ml-1 h-3 w-3" />
                                       </button>
                                       
@@ -708,7 +704,7 @@ const ReservationsAdmin: React.FC = () => {
                                         onClick={() => toggleStatusDropdown(reservation.id)}
                                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer hover:opacity-80 ${getStatusBadgeClass(reservation.status)}`}
                                       >
-                                        {getStatusLabel(reservation.status)}
+                                        {getStatusLabelForType(reservation.status)}
                                         <ChevronDown className="ml-1 h-3 w-3" />
                                       </button>
                                       
@@ -806,7 +802,7 @@ const ReservationsAdmin: React.FC = () => {
                         <label className="text-sm font-medium text-gray-700">Statut actuel :</label>
                         <div className="mt-1">
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(pendingStatusChange.currentStatus)}`}>
-                            {getStatusLabel(pendingStatusChange.currentStatus)}
+                            {getStatusLabelForType(pendingStatusChange.currentStatus)}
                           </span>
                         </div>
                       </div>
@@ -815,7 +811,7 @@ const ReservationsAdmin: React.FC = () => {
                         <label className="text-sm font-medium text-gray-700">Nouveau statut :</label>
                         <div className="mt-1">
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(pendingStatusChange.newStatus)}`}>
-                            {getStatusLabel(pendingStatusChange.newStatus)}
+                            {getStatusLabelForType(pendingStatusChange.newStatus)}
                           </span>
                         </div>
                       </div>

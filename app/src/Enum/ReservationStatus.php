@@ -165,6 +165,65 @@ class ReservationStatus
     }
 
     /**
+     * Retourne les statuts disponibles pour un type de réservation
+     */
+    public static function getStatusesForType(string $type): array
+    {
+        $commonStatuses = [
+            self::SUBMITTED,
+            self::UNDER_REVIEW,
+            self::AWAITING_DOCUMENTS,
+            self::DOCUMENTS_PENDING,
+            self::DOCUMENTS_REJECTED,
+            self::AWAITING_PAYMENT,
+            self::PAYMENT_PENDING,
+            self::CONFIRMED,
+            self::IN_PROGRESS,
+            self::COMPLETED,
+            self::CANCELLED,
+            self::REFUNDED,
+        ];
+
+        $formationSpecific = [
+            self::AWAITING_PREREQUISITES,
+            self::AWAITING_FUNDING,
+            self::FUNDING_APPROVED,
+            self::AWAITING_START,
+            self::ATTENDANCE_ISSUES,
+            self::SUSPENDED,
+            self::FAILED,
+        ];
+
+        return match($type) {
+            'formation' => array_merge($commonStatuses, $formationSpecific),
+            'vehicle' => $commonStatuses,
+            default => self::getAllStatuses()
+        };
+    }
+
+    /**
+     * Retourne les statuts par phase pour un type donné
+     */
+    public static function getStatusesByPhaseForType(string $type): array
+    {
+        $allPhases = self::getStatusesByPhase();
+        $allowedStatuses = self::getStatusesForType($type);
+        
+        $filteredPhases = [];
+        foreach ($allPhases as $phaseName => $statuses) {
+            $filteredStatuses = array_filter($statuses, function($status) use ($allowedStatuses) {
+                return in_array($status, $allowedStatuses);
+            }, ARRAY_FILTER_USE_KEY);
+            
+            if (!empty($filteredStatuses)) {
+                $filteredPhases[$phaseName] = $filteredStatuses;
+            }
+        }
+        
+        return $filteredPhases;
+    }
+
+    /**
      * Retourne les transitions autorisées depuis un statut donné
      */
     public static function getAllowedTransitions(string $fromStatus): array
@@ -191,5 +250,33 @@ class ReservationStatus
             self::REFUNDED => [], // État final
             default => []
         };
+    }
+
+    /**
+     * Retourne les transitions autorisées pour un type spécifique
+     */
+    public static function getAllowedTransitionsForType(string $fromStatus, string $type): array
+    {
+        $allowedStatuses = self::getStatusesForType($type);
+        $transitions = self::getAllowedTransitions($fromStatus);
+        
+        // Filtrer uniquement les transitions autorisées pour ce type
+        return array_intersect($transitions, $allowedStatuses);
+    }
+
+    /**
+     * Vérifie si un statut est valide pour un type donné
+     */
+    public static function isValidForType(string $status, string $type): bool
+    {
+        return in_array($status, self::getStatusesForType($type));
+    }
+
+    /**
+     * Callback pour validation des statuts véhicules
+     */
+    public static function getVehicleStatuses(): array
+    {
+        return self::getStatusesForType('vehicle');
     }
 }

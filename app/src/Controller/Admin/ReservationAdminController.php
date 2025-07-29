@@ -160,11 +160,9 @@ class ReservationAdminController extends AbstractController
 
         // Envoyer une notification email si le statut a changé
         if ($oldStatus !== $newStatus) {
-            // Note: Pour les réservations de véhicules, il faudrait adapter la méthode
-            // ou créer une méthode spécifique dans NotificationService
-            // Pour l'instant, on utilise la même méthode
+            // Appeler la méthode spécifique pour les véhicules
             try {
-                $this->notificationService->notifyReservationStatusChange($reservation, $oldStatus, $newStatus, $customMessage);
+                $this->notificationService->notifyVehicleRentalStatusChange($reservation, $oldStatus, $newStatus, $customMessage);
             } catch (\Exception $e) {
                 // Log l'erreur mais continue le processus
                 error_log('Erreur notification véhicule: ' . $e->getMessage());

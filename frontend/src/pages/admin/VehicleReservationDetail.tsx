@@ -62,6 +62,7 @@ const VehicleReservationDetail: React.FC = () => {
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [availableVehicles, setAvailableVehicles] = useState<string[]>([]);
     const [selectedVehicle, setSelectedVehicle] = useState<string>('');
+    const [availableTransitions, setAvailableTransitions] = useState<any[]>([]);
     
     // États pour le modal de confirmation de changement de statut
     const [showStatusConfirmModal, setShowStatusConfirmModal] = useState(false);
@@ -75,8 +76,18 @@ const VehicleReservationDetail: React.FC = () => {
     useEffect(() => {
         if (id) {
             fetchReservationDetails();
+            fetchAvailableTransitions();
         }
     }, [id]);
+
+    const fetchAvailableTransitions = async () => {
+        try {
+            const response = await adminReservationsApi.getVehicleRentalTransitions();
+            setAvailableTransitions(response.data);
+        } catch (err) {
+            console.error('Error fetching transitions:', err);
+        }
+    };
 
     const fetchReservationDetails = async () => {
         try {
@@ -126,7 +137,7 @@ const VehicleReservationDetail: React.FC = () => {
             setLoading(true);
             await adminReservationsApi.updateStatus(reservation.id, pendingStatusChange.newStatus, customMessage);
             setReservation({ ...reservation, status: pendingStatusChange.newStatus });
-            setSuccessMessage(`Statut mis à jour avec succès vers "${getReservationStatusLabel(pendingStatusChange.newStatus)}"`);
+            setSuccessMessage(`Statut mis à jour avec succès vers "${getReservationStatusLabel(pendingStatusChange.newStatus, 'vehicle')}"`);
             setTimeout(() => setSuccessMessage(null), 3000);
             
             // Fermer le modal de confirmation et nettoyer l'état
@@ -178,32 +189,40 @@ const VehicleReservationDetail: React.FC = () => {
     };
 
     const getStatusLabel = (status: string) => {
-        switch (status) {
-            case 'pending': return 'En attente';
-            case 'confirmed': return 'Confirmée';
-            case 'completed': return 'Terminée';
-            case 'cancelled': return 'Annulée';
-            default: return status;
-        }
+        return getReservationStatusLabel(status, 'vehicle');
     };
 
     const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-            case 'confirmed': return 'bg-green-100 text-green-800 border-green-200';
-            case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
-            case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
-            default: return 'bg-gray-100 text-gray-800 border-gray-200';
-        }
+        return getStatusBadgeClass(status) + ' border';
     };
 
     const getStatusIcon = (status: string) => {
         switch (status) {
-            case 'pending': return <AlertCircle className="w-5 h-5" />;
-            case 'confirmed': return <CheckCircle className="w-5 h-5" />;
-            case 'completed': return <CheckCircle className="w-5 h-5" />;
-            case 'cancelled': return <XCircle className="w-5 h-5" />;
-            default: return <AlertCircle className="w-5 h-5" />;
+            case 'submitted': return <AlertCircle className="w-4 h-4" />;
+            case 'under_review': return <Clock className="w-4 h-4" />;
+            case 'awaiting_documents': return <FileText className="w-4 h-4" />;
+            case 'documents_pending': return <FileText className="w-4 h-4" />;
+            case 'documents_rejected': return <XCircle className="w-4 h-4" />;
+            case 'awaiting_payment': return <CreditCard className="w-4 h-4" />;
+            case 'payment_pending': return <CreditCard className="w-4 h-4" />;
+            case 'confirmed': return <CheckCircle className="w-4 h-4" />;
+            case 'in_progress': return <Car className="w-4 h-4" />;
+            case 'completed': return <CheckCircle className="w-4 h-4" />;
+            case 'cancelled': return <XCircle className="w-4 h-4" />;
+            case 'refunded': return <CreditCard className="w-4 h-4" />;
+            // Anciens statuts pour compatibilité
+            case 'pending': return <AlertCircle className="w-4 h-4" />;
+            default: return <AlertCircle className="w-4 h-4" />;
+        }
+    };
+
+    const getButtonVariant = (status: string): 'primary' | 'success' | 'danger' | 'outline' => {
+        switch (status) {
+            case 'confirmed': return 'success';
+            case 'completed': return 'primary';
+            case 'cancelled': return 'danger';
+            case 'refunded': return 'outline';
+            default: return 'outline';
         }
     };
 
@@ -488,43 +507,35 @@ const VehicleReservationDetail: React.FC = () => {
                                     <h3 className="text-lg font-semibold text-gray-900">Actions</h3>
                                 </div>
                                 <div className="p-6 space-y-3">
-                                    {reservation.status === 'pending' && (
-                                        <Button 
-                                            onClick={() => requestStatusChange('confirmed')} 
-                                            variant="success" 
-                                            className="w-full"
-                                        >
-                                            <CheckCircle className="w-4 h-4 mr-2" />
-                                            Confirmer
-                                        </Button>
-                                    )}
+                                    {/* Affichage des transitions autorisées */}
+                                    {availableTransitions
+                                        .find(t => t.fromStatus === reservation.status)?.toStatuses
+                                        .map((transition: any) => (
+                                            <Button 
+                                                key={transition.status}
+                                                onClick={() => requestStatusChange(transition.status)} 
+                                                variant={getButtonVariant(transition.status)}
+                                                className="w-full"
+                                            >
+                                                {getStatusIcon(transition.status)}
+                                                <span className="ml-2">{transition.label}</span>
+                                            </Button>
+                                        ))
+                                    }
                                     
-                                    {(reservation.status === 'pending' || reservation.status === 'confirmed') && (
-                                        <Button 
-                                            onClick={() => requestStatusChange('cancelled')} 
-                                            variant="danger" 
-                                            className="w-full"
-                                        >
-                                            <XCircle className="w-4 h-4 mr-2" />
-                                            Annuler
-                                        </Button>
-                                    )}
-
-                                    {reservation.status === 'confirmed' && (
-                                        <Button 
-                                            onClick={() => requestStatusChange('completed')} 
-                                            variant="primary" 
-                                            className="w-full"
-                                        >
-                                            <CheckCircle className="w-4 h-4 mr-2" />
-                                            Marquer comme terminée
-                                        </Button>
+                                    {/* Message si aucune transition disponible */}
+                                    {availableTransitions.length > 0 && 
+                                     (!availableTransitions.find(t => t.fromStatus === reservation.status)?.toStatuses?.length || 
+                                      availableTransitions.find(t => t.fromStatus === reservation.status)?.toStatuses?.length === 0) && (
+                                        <div className="text-center text-gray-500 text-sm py-4">
+                                            Aucune action disponible pour ce statut
+                                        </div>
                                     )}
                                 </div>
                             </div>
 
                             {/* Assignation de véhicule */}
-                            {(reservation.status === 'pending' || reservation.status === 'confirmed') && (
+                            {(['submitted', 'under_review', 'confirmed', 'awaiting_payment', 'payment_pending'].includes(reservation.status)) && (
                                 <div className="bg-white rounded-lg shadow">
                                     <div className="p-6 border-b border-gray-200">
                                         <h3 className="text-lg font-semibold text-gray-900">Assignation Véhicule</h3>
@@ -632,7 +643,7 @@ const VehicleReservationDetail: React.FC = () => {
                                             <label className="text-sm font-medium text-gray-700">Statut actuel :</label>
                                             <div className="mt-1">
                                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(pendingStatusChange.currentStatus)}`}>
-                                                    {getReservationStatusLabel(pendingStatusChange.currentStatus)}
+                                                    {getReservationStatusLabel(pendingStatusChange.currentStatus, 'vehicle')}
                                                 </span>
                                             </div>
                                         </div>
@@ -641,7 +652,7 @@ const VehicleReservationDetail: React.FC = () => {
                                             <label className="text-sm font-medium text-gray-700">Nouveau statut :</label>
                                             <div className="mt-1">
                                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(pendingStatusChange.newStatus)}`}>
-                                                    {getReservationStatusLabel(pendingStatusChange.newStatus)}
+                                                    {getReservationStatusLabel(pendingStatusChange.newStatus, 'vehicle')}
                                                 </span>
                                             </div>
                                         </div>

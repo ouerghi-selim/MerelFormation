@@ -8,6 +8,7 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use App\Repository\VehicleRentalRepository;
+use App\Enum\ReservationStatus;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -80,8 +81,8 @@ class VehicleRental
 
     #[ORM\Column(length: 50)]
     #[Groups(['rental:read', 'rental:write'])]
-    #[Assert\Choice(choices: ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'])]
-    private ?string $status = 'pending';
+    #[Assert\Choice(callback: [ReservationStatus::class, 'getVehicleStatuses'])]
+    private ?string $status = ReservationStatus::SUBMITTED;
 
     #[ORM\OneToOne(targetEntity: Invoice::class, mappedBy: 'vehicleRental', cascade: ['persist'])]
     #[Groups(['rental:item:read'])]

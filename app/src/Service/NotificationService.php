@@ -1466,4 +1466,170 @@ class NotificationService
         }
     }
 
+    /**
+     * Notifie lors du changement de statut d'une réservation de véhicule
+     */
+    public function notifyVehicleRentalStatusChange(VehicleRental $rental, string $oldStatus, string $newStatus, ?string $customMessage = null): void
+    {
+        try {
+            $student = $rental->getUser();
+            if (!$student) {
+                $this->logger->warning('Réservation véhicule sans utilisateur associé - impossible d\'envoyer la notification de changement de statut');
+                return;
+            }
+
+            // Préparer les variables communes pour véhicules
+            $vehicle = $rental->getVehicle();
+            
+            $commonVariables = [
+                'studentName' => $student->getFirstName() . ' ' . $student->getLastName(),
+                'vehicleModel' => $vehicle ? $vehicle->getModel() : 'À assigner',
+                'examCenter' => $rental->getExamCenter() ?: 'Non spécifié',
+                'examDate' => $rental->getStartDate()->format('d/m/Y'),
+                'examTime' => $rental->getExamTime() ?: 'À confirmer',
+                'pickupLocation' => $rental->getPickupLocation(),
+                'returnLocation' => $rental->getReturnLocation(),
+                'rentalId' => $rental->getId(),
+                'oldStatus' => $oldStatus,
+                'newStatus' => $newStatus,
+                'statusChangeDate' => (new \DateTime())->format('d/m/Y à H:i'),
+                'studentPortalUrl' => $this->baseUrl . '/student/dashboard',
+                'trackingUrl' => $this->baseUrl . '/track-rental/' . $rental->getTrackingToken(),
+                'loginUrl' => $this->baseUrl . '/login',
+                'customMessage' => $customMessage ?: '',
+                'message' => $customMessage ?: ''
+            ];
+
+            // Variables spécifiques selon le statut pour véhicules
+            $specificVariables = $this->getVehicleStatusSpecificVariables($rental, $newStatus);
+            $variables = array_merge($commonVariables, $specificVariables);
+
+            // Identifier du template basé sur le nouveau statut pour véhicule
+            $templateIdentifier = 'vehicle_rental_status_' . $newStatus . '_student';
+
+            // Envoyer la notification à l'étudiant
+            $this->emailService->sendTemplatedEmailByIdentifier(
+                $student->getEmail(),
+                $templateIdentifier,
+                $variables
+            );
+
+            $this->logger->info("Notification de changement de statut véhicule envoyée: {$oldStatus} → {$newStatus} pour location {$rental->getId()}");
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de la notification de changement de statut véhicule: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Retourne les variables spécifiques selon le statut pour les réservations de véhicules
+     */
+    private function getVehicleStatusSpecificVariables(VehicleRental $rental, string $status): array
+    {
+        $vehicle = $rental->getVehicle();
+        
+        switch ($status) {
+            case 'submitted':
+                return [
+                    'submissionDate' => $rental->getCreatedAt()->format('d/m/Y à H:i'),
+                    'estimatedPrice' => $rental->getTotalPrice() . ' €'
+                ];
+
+            case 'under_review':
+                return [
+                    'reviewStartDate' => (new \DateTime())->format('d/m/Y'),
+                    'expectedResponseTime' => '24-48 heures',
+                    'requiredDocuments' => 'Permis de conduire valide, pièce d\'identité'
+                ];
+
+            case 'awaiting_documents':
+                return [
+                    'requiredDocuments' => 'Copie recto/verso du permis de conduire, pièce d\'identité, justificatif de domicile',
+                    'documentUploadUrl' => $this->baseUrl . '/student/upload-documents',
+                    'deadline' => (new \DateTime('+7 days'))->format('d/m/Y')
+                ];
+
+            case 'documents_pending':
+                return [
+                    'documentsReceivedDate' => (new \DateTime())->format('d/m/Y'),
+                    'verificationTime' => '24-48 heures',
+                    'documentCount' => '3'
+                ];
+
+            case 'documents_rejected':
+                return [
+                    'rejectionReason' => 'Documents illisibles ou expirés. Veuillez fournir des documents valides et de qualité.',
+                    'resubmissionUrl' => $this->baseUrl . '/student/resubmit-documents/' . $rental->getId()
+                ];
+
+            case 'awaiting_payment':
+                return [
+                    'totalAmount' => $rental->getTotalPrice() . ' €',
+                    'invoiceNumber' => 'RENT-' . $rental->getId(),
+                    'paymentDeadline' => (new \DateTime('+7 days'))->format('d/m/Y'),
+                    'paymentUrl' => $this->baseUrl . '/student/payment/rental/' . $rental->getId(),
+                    'paymentMethods' => 'Carte bancaire, virement, chèque'
+                ];
+
+            case 'payment_pending':
+                return [
+                    'paidAmount' => $rental->getTotalPrice() . ' €',
+                    'paymentMethod' => $rental->getPaymentMethod() ?: 'À confirmer',
+                    'paymentDate' => (new \DateTime())->format('d/m/Y'),
+                    'paymentReference' => 'PAY-RENT-' . $rental->getId()
+                ];
+
+            case 'confirmed':
+                return [
+                    'confirmedVehicle' => $vehicle ? $vehicle->getModel() . ' (' . $vehicle->getPlate() . ')' : 'Véhicule à assigner',
+                    'pickupTime' => '08h00',
+                    'returnTime' => '18h00',
+                    'pickupAddress' => $rental->getPickupLocation(),
+                    'emergencyPhone' => '04 XX XX XX XX',
+                    'vehicleFeatures' => 'Double commande, climatisation, GPS',
+                    'importantInstructions' => 'Présentation 15 minutes avant l\'heure. Permis de conduire obligatoire.'
+                ];
+
+            case 'in_progress':
+                return [
+                    'pickupDate' => $rental->getStartDate()->format('d/m/Y à H:i'),
+                    'expectedReturnDate' => $rental->getEndDate()->format('d/m/Y à H:i'),
+                    'currentVehicle' => $vehicle ? $vehicle->getModel() . ' (' . $vehicle->getPlate() . ')' : 'N/A',
+                    'emergencyPhone' => '04 XX XX XX XX'
+                ];
+
+            case 'completed':
+                return [
+                    'returnDate' => $rental->getEndDate()->format('d/m/Y à H:i'),
+                    'totalDuration' => $rental->getTotalDays() . ' jour(s)',
+                    'finalAmount' => $rental->getTotalPrice() . ' €',
+                    'vehicleCondition' => 'Bon état',
+                    'satisfactionSurveyUrl' => $this->baseUrl . '/student/survey/rental/' . $rental->getId(),
+                    'receiptDownloadUrl' => $this->baseUrl . '/student/receipt/rental/' . $rental->getId()
+                ];
+
+            case 'cancelled':
+                return [
+                    'cancellationDate' => (new \DateTime())->format('d/m/Y'),
+                    'cancellationReason' => 'Demande du client',
+                    'refundConditions' => 'Remboursement selon conditions générales',
+                    'refundDelay' => '5-10 jours ouvrés',
+                    'alternativeVehicles' => 'Consultez notre flotte disponible'
+                ];
+
+            case 'refunded':
+                return [
+                    'refundAmount' => $rental->getTotalPrice() . ' €',
+                    'refundDate' => (new \DateTime())->format('d/m/Y'),
+                    'refundMethod' => 'Virement bancaire',
+                    'refundReference' => 'REF-RENT-' . $rental->getId(),
+                    'receptionDelay' => '3-5 jours ouvrés',
+                    'vehicleCatalogUrl' => $this->baseUrl . '/vehicle-rental'
+                ];
+
+            default:
+                return [];
+        }
+    }
+
 }

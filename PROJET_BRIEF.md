@@ -5,8 +5,8 @@
 **Développeur Principal :** Selim OUERGHI (ouerghi-selim)  
 **Repository :** https://github.com/ouerghi-selim/MerelFormation  
 **Type :** Application de gestion de formations taxi + location de véhicules  
-**Status :** ✅ 100% FONCTIONNEL - Projet complet avec système d'inscription par étapes + Affichage documents d'inscription + Système d'entreprise/employeur + Validation documents avec emails + **🆕 Système de statuts de réservation professionnel (19 statuts) avec emails automatiques + Workflow complet d'inscription**  
-**Dernière mise à jour :** 20 Juillet 2025 - Système complet de gestion des statuts de réservation avec workflow professionnel en 6 phases et notifications email automatiques
+**Status :** ✅ 100% FONCTIONNEL - Projet complet avec système d'inscription par étapes + Affichage documents d'inscription + Système d'entreprise/employeur + Validation documents avec emails + **🆕 Système de statuts de réservation professionnel (19 statuts formations + 12 statuts véhicules) avec emails automatiques + Workflow complet d'inscription**  
+**Dernière mise à jour :** 29 Juillet 2025 - Système d'emails véhicules complet avec 12 templates, WYSIWYG intégré et messages personnalisés
 
 ## 🖗️ Architecture Technique
 
@@ -73,7 +73,7 @@
 - **Reservation** - Réservations génériques
 - **CalendarEvent** - Événements calendrier
 - **Notification** - Système de notifications
-- **EmailTemplate** - Templates d'emails
+- **EmailTemplate** - Templates d'emails (36 templates : 24 formations + 12 véhicules)
 - **Media** - Gestion des médias
 - **Settings** - Configuration système
 - **ActivityLog** - Logs d'activité
@@ -205,6 +205,11 @@
 - Gestion des tarifs
 - Facturation automatique
 - **🆕 Notifications de maintenance** avec alternatives automatiques
+- **🆕 Système de statuts unifié** - 12 statuts organisés en 6 phases (submitted → refunded)
+- **🆕 Emails automatiques véhicules** - Templates personnalisés pour chaque statut
+- **🆕 Page de suivi client améliorée** - Progression visuelle avec phases et prochaines étapes
+- **🆕 Messages personnalisés admin** - Section message personnalisé dans tous les emails
+- **🆕 Interface WYSIWYG intégrée** - Variables contextuelles pour personnalisation des templates
 
 ### ✅ Gestion Utilisateurs (RGPD COMPLIANT)
 - Système de rôles (Admin, Student, Instructor)
@@ -415,8 +420,8 @@ MerelFormation/
 - **🆕 Spécialisations Fonctionnelles** - Sauvegarde et affichage des spécialisations instructeurs enfin opérationnels
 
 ### 🆕 ✅ SYSTÈME D'EMAILS AUTOMATIQUES & WYSIWYG COMPLET (Janvier 2025)
-- **24 Templates d'emails professionnels** - HTML avec CSS inline pour compatibilité maximale
-- **18 Event Types** - Couvrant formations, sessions, utilisateurs, véhicules, documents, contacts
+- **36 Templates d'emails professionnels** - HTML avec CSS inline pour compatibilité maximale (24 formations + 12 véhicules)
+- **19 Event Types** - Couvrant formations, sessions, utilisateurs, véhicules, documents, contacts + vehicle_rental_status_updated
 - **Notifications ciblées par rôle** - Admin, Étudiant, Instructeur selon le contexte
 - **Variables dynamiques** - Personnalisation complète avec `{{nom}}`, `{{formation}}`, etc.
 - **Contrôleurs mis à jour** - Tous les CRUD déclenchent les emails appropriés
@@ -434,6 +439,38 @@ MerelFormation/
 - **🆕 Système hybride** - Utilise les variables de l'entité en priorité + fallback mapping
 
 ### 🆕 Dernières Améliorations (Juillet 2025)
+
+#### **🆕 Système d'Emails Véhicules Complet (29 Juillet 2025) - PRODUCTION READY**
+- **12 Templates Email Véhicules** - Templates personnalisés pour chaque statut (submitted, under_review, awaiting_documents, documents_pending, documents_rejected, awaiting_payment, payment_pending, confirmed, in_progress, completed, cancelled, refunded)
+- **Architecture Unifiée** - Séparation correcte entre `NotificationService::notifyReservationStatusChange()` (formations) et `NotificationService::notifyVehicleRentalStatusChange()` (véhicules)
+- **Variables Contextuelles 40+** - Variables spécifiques véhicules : vehicleModel, examCenter, rentalDates, pickupLocation, totalPrice, trackingUrl, emergencyPhone, etc.
+- **Page de Suivi Améliorée** - RentalTrackingPage.tsx avec progression visuelle 6 phases, timeline détaillée, prochaines étapes automatiques
+- **Messages Personnalisés** - Section message conditionnel {{#if message}} dans tous les templates avec design professionnel
+- **WYSIWYG Intégré** - Variables véhicules ajoutées à l'éditeur TinyMCE avec suggestions contextuelles pour event_type `vehicle_rental_status_updated`
+- **Migration Automatique** - Migration `Version20250729235000.php` pour mise à jour des templates existants
+- **Fixtures Corrigées** - VehicleRentalEmailTemplateFixtures.php avec variable 'message' pour nouveaux déploiements
+- **Controller Unifié** - ReservationAdminController corrigé pour appeler la bonne méthode de notification selon le type d'entité
+- **Email Automatique** - Envoi automatique lors des changements de statut via interface admin avec messages personnalisés optionnels
+
+**Fichiers Clés Modifiés :**
+- `app/src/DataFixtures/VehicleRentalEmailTemplateFixtures.php` - 12 nouveaux templates
+- `app/src/Service/NotificationService.php` - Méthode notifyVehicleRentalStatusChange() + variable message
+- `app/src/Controller/Admin/ReservationAdminController.php` - Correction appel méthode véhicules  
+- `frontend/src/components/common/WysiwygEditor.tsx` - Variables véhicules + mapping vehicle_rental_status_updated
+- `frontend/src/services/vehicleRentalTrackingService.ts` - Système progression 6 phases
+- `frontend/src/pages/RentalTrackingPage.tsx` - Interface progression visuelle améliorée
+- `app/migrations/Version20250729235000.php` - Migration ajout sections message existantes
+
+**Architecture Finale :**
+```php
+// FORMATIONS : SessionReservationController
+notifyReservationStatusChange(Reservation $reservation, ...)
+
+// VÉHICULES : ReservationAdminController  
+notifyVehicleRentalStatusChange(VehicleRental $rental, ...)
+```
+
+### 🆕 Améliorations Antérieures (Juillet 2025)
 
 #### **🆕 Système d'Affichage Documents d'Inscription (17 Juillet 2025) - NOUVEAU**
 - **Problème résolu**: Les documents uploadés pendant l'inscription étaient invisibles pour les utilisateurs et administrateurs

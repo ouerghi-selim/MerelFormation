@@ -7,6 +7,7 @@ use App\Entity\VehicleRental;
 use App\Repository\UserRepository;
 use App\Service\NotificationService;
 use App\Service\VehicleRentalTrackingService;
+use App\Enum\ReservationStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -134,7 +135,7 @@ class VehicleRentalController extends AbstractController
         $rental = new VehicleRental();
         $rental->setUser($user);
         //$rental->setRentalType($request->request->get('rentalType', 'exam'));
-        $rental->setStatus($request->request->get('status', 'pending'));
+        $rental->setStatus($request->request->get('status', ReservationStatus::SUBMITTED));
 
         // Ajouter les notes si présentes
         if ($notes = $request->request->get('notes')) {
@@ -200,7 +201,7 @@ class VehicleRentalController extends AbstractController
             'success' => true,
             'message' => 'Votre demande de réservation a été enregistrée avec succès.',
             'id' => $rental->getId(),
-            'status' => 'pending',
+            'status' => ReservationStatus::SUBMITTED,
             'next_steps' => 'Un de nos conseillers vous contactera prochainement avec un devis personnalisé.'
         ], Response::HTTP_CREATED);
     }
@@ -297,24 +298,52 @@ class VehicleRentalController extends AbstractController
             ], Response::HTTP_BAD_REQUEST);
         }
 
-        // Valider le statut
-        $validStatuses = ['pending', 'confirmed', 'completed', 'cancelled'];
-
-        if (!in_array($data['status'], $validStatuses)) {
+        // Valider le statut avec le système unifié
+        if (!ReservationStatus::isValidForType($data['status'], 'vehicle')) {
+            $validStatuses = ReservationStatus::getStatusesForType('vehicle');
             return $this->json([
                 'success' => false,
-                'message' => 'Statut invalide. Valeurs possibles: ' . implode(', ', $validStatuses)
+                'message' => 'Statut invalide pour les réservations de véhicule. Valeurs possibles: ' . implode(', ', $validStatuses)
             ], Response::HTTP_BAD_REQUEST);
         }
+
+        // Vérifier que la transition est autorisée
+        $currentStatus = $rental->getStatus();
+        $allowedTransitions = ReservationStatus::getAllowedTransitionsForType($currentStatus, 'vehicle');
+        
+        if (!in_array($data['status'], $allowedTransitions)) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Transition non autorisée de "' . ReservationStatus::getStatusLabel($currentStatus) . '" vers "' . ReservationStatus::getStatusLabel($data['status']) . '"'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Récupérer l'ancien statut pour la notification
+        $oldStatus = $rental->getStatus();
+        $customMessage = $data['customMessage'] ?? null;
 
         // Mettre à jour le statut
         $rental->setStatus($data['status']);
         $this->entityManager->flush();
 
+        // Envoyer la notification email automatique
+        try {
+            $this->notificationService->notifyVehicleRentalStatusChange(
+                $rental, 
+                $oldStatus, 
+                $data['status'], 
+                $customMessage
+            );
+        } catch (\Exception $e) {
+            // Logguer l'erreur mais ne pas faire échouer la mise à jour
+            error_log('Erreur lors de l\'envoi de notification email: ' . $e->getMessage());
+        }
+
         return $this->json([
             'success' => true,
-            'message' => 'Statut mis à jour avec succès',
-            'status' => $data['status']
+            'message' => 'Statut mis à jour avec succès et email de notification envoyé',
+            'status' => $data['status'],
+            'oldStatus' => $oldStatus
         ]);
     }
 

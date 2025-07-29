@@ -95,7 +95,12 @@ export const adminReservationsApi = {
     getAvailableVehicles: (date: string) => api.get(`/admin/vehicles/available?date=${date}`),
     getSessionReservations: (queryParams = '') => api.get(`/admin/session-reservations${queryParams ? '?' + queryParams : ''}`),
     updateSessionReservationStatus: (id: number, status: string, customMessage?: string) => api.put(`/admin/session-reservations/${id}/status`, { status, customMessage }),
-    getSessionReservationById: (id: number) => api.get(`/admin/session-reservations/${id}`)
+    getSessionReservationById: (id: number) => api.get(`/admin/session-reservations/${id}`),
+    // Nouveaux endpoints pour les statuts unifiés
+    getReservationStatuses: () => api.get('/admin/reservation-statuses'),
+    getReservationTransitions: () => api.get('/admin/reservation-transitions'),
+    getVehicleRentalStatuses: () => api.get('/admin/vehicle-rental-statuses'),
+    getVehicleRentalTransitions: () => api.get('/admin/vehicle-rental-transitions'),
 };
 
 // Services API pour le dashboard étudiant

@@ -67,45 +67,67 @@ export const getStatusBadgeClass = (status: string): string => {
   return colorMap[color] || 'bg-gray-100 text-gray-800';
 };
 
-// Fonction pour obtenir le libellé d'un statut (fallback si l'API n'est pas disponible)
-export const getStatusLabel = (status: string): string => {
-  const statusLabels: Record<string, string> = {
-    // Phase 1 : Demande Initiale
-    submitted: 'Demande soumise',
-    under_review: 'En cours d\'examen',
-    
-    // Phase 2 : Vérifications Administratives
-    awaiting_documents: 'En attente de documents',
-    documents_pending: 'Documents en cours de validation',
-    documents_rejected: 'Documents refusés',
-    awaiting_prerequisites: 'En attente de prérequis',
-    
-    // Phase 3 : Validation Financière
-    awaiting_funding: 'En attente de financement',
-    funding_approved: 'Financement approuvé',
-    awaiting_payment: 'En attente de paiement',
-    payment_pending: 'Paiement en cours',
-    
-    // Phase 4 : Finalisation
-    confirmed: 'Inscription confirmée',
-    awaiting_start: 'En attente du début',
-    
-    // Phase 5 : Formation en Cours
-    in_progress: 'Formation en cours',
-    attendance_issues: 'Problèmes d\'assiduité',
-    suspended: 'Inscription suspendue',
-    
-    // Phase 6 : Finalisation
-    completed: 'Formation terminée',
-    failed: 'Échec de formation',
-    cancelled: 'Inscription annulée',
-    refunded: 'Remboursement effectué',
+// Fonction pour obtenir le libellé d'un statut selon le type
+export const getStatusLabel = (status: string, type: 'formation' | 'vehicle' = 'formation'): string => {
+  const statusLabels: Record<string, Record<string, string>> = {
+    common: {
+      // Phase 1 : Demande Initiale
+      submitted: 'Demande soumise',
+      under_review: 'En cours d\'examen',
+      
+      // Phase 2 : Vérifications Administratives
+      awaiting_documents: 'En attente de documents',
+      documents_pending: 'Documents en cours de validation',
+      documents_rejected: 'Documents refusés',
+      
+      // Phase 3 : Validation Financière
+      awaiting_payment: 'En attente de paiement',
+      payment_pending: 'Paiement en cours',
+      
+      // Phase 4 : Finalisation
+      confirmed: 'Confirmé',
+      
+      // Phase 5 : En Cours
+      in_progress: 'En cours',
+      
+      // Phase 6 : Finalisation
+      completed: 'Terminé',
+      cancelled: 'Annulé',
+      refunded: 'Remboursé',
 
-    // Anciens statuts (pour compatibilité)
-    pending: 'En attente',
+      // Anciens statuts (pour compatibilité)
+      pending: 'En attente',
+    },
+    formation: {
+      // Spécifique aux formations
+      awaiting_prerequisites: 'En attente de prérequis',
+      awaiting_funding: 'En attente de financement',
+      funding_approved: 'Financement approuvé',
+      confirmed: 'Inscription confirmée',
+      awaiting_start: 'En attente du début',
+      in_progress: 'Formation en cours',
+      attendance_issues: 'Problèmes d\'assiduité',
+      suspended: 'Inscription suspendue',
+      completed: 'Formation terminée',
+      failed: 'Échec de formation',
+      cancelled: 'Inscription annulée',
+      refunded: 'Remboursement effectué',
+    },
+    vehicle: {
+      // Spécifique aux véhicules
+      confirmed: 'Réservation confirmée',
+      in_progress: 'Location en cours',
+      completed: 'Location terminée',
+      cancelled: 'Réservation annulée',
+      refunded: 'Remboursement effectué',
+    }
   };
 
-  return statusLabels[status] || status;
+  // Utiliser d'abord les libellés spécifiques au type, puis les communs
+  const typeLabels = statusLabels[type] || {};
+  const commonLabels = statusLabels.common;
+
+  return typeLabels[status] || commonLabels[status] || status;
 };
 
 // Grouper les statuts par phase pour l'affichage
