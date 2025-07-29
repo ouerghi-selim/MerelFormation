@@ -25,27 +25,27 @@ use App\Controller\Api\FormulaController;
         ),
         // Nouvelles opérations modernes avec endpoints centers
         new Get(
-            uriTemplate: '/api/centers',
+            uriTemplate: '/centers',
             controller: CenterController::class . '::list',
             description: 'Récupère la liste des centres actifs (API publique)'
         ),
         new Get(
-            uriTemplate: '/api/centers/with-formulas',
+            uriTemplate: '/centers/with-formulas',
             controller: CenterController::class . '::withFormulas',
             description: 'Récupère les centres actifs avec leurs formules (API publique)'
         ),
         new Get(
-            uriTemplate: '/api/centers/{id}/formulas',
+            uriTemplate: '/centers/{id}/formulas',
             controller: CenterController::class . '::centerFormulas',
             description: 'Récupère les formules d\'un centre spécifique (API publique)'
         ),
         new Get(
-            uriTemplate: '/api/formulas',
+            uriTemplate: '/formulas',
             controller: FormulaController::class . '::list',
             description: 'Récupère la liste des formules actives (API publique)'
         ),
         new Get(
-            uriTemplate: '/api/formulas/grouped-by-center',
+            uriTemplate: '/formulas/grouped-by-center',
             controller: FormulaController::class . '::groupedByCenter',
             description: 'Récupère les formules groupées par centre (API publique)'
         ),
