@@ -182,7 +182,7 @@ class VehicleRentalController extends AbstractController
         // Persister la réservation
         $this->entityManager->persist($rental);
         $this->entityManager->flush();
-        $this->notificationService->notifyAdminAboutVehicleRental($rental);
+        
         // Générer le token de suivi
         $trackingToken = $this->trackingService->generateTrackingToken($rental);
         $rental->setTrackingToken($trackingToken);
@@ -190,8 +190,16 @@ class VehicleRentalController extends AbstractController
         // Sauvegarder
         $this->entityManager->flush();
 
-        // Envoyer l'email de confirmation
-        $this->trackingService->sendTrackingEmail($rental);
+        // Envoyer uniquement les notifications du nouveau système unifié
+        // 1. Notification admin (nouvelle réservation créée)
+        $this->notificationService->notifyAdminAboutVehicleRental($rental);
+        
+        // 2. Notification étudiant (statut 'submitted' avec lien de suivi)
+        $this->notificationService->notifyVehicleRentalStatusChange(
+            $rental, 
+            '', // Pas d'ancien statut pour une création
+            ReservationStatus::SUBMITTED
+        );
 
         // Logs pour le débogage
         error_log('Réservation créée: ID=' . $rental->getId() . ', Utilisateur=' . $user->getEmail());
