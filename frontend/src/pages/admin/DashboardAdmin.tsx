@@ -265,7 +265,7 @@ const DashboardAdmin: React.FC = () => {
     }
     // Fallback sur les anciens statuts
     return [
-      { value: 'pending', label: 'En attente', phase: '', color: 'yellow', allowedTransitions: [] },
+      { value: 'submitted', label: 'Demande soumise', phase: '', color: 'blue', allowedTransitions: [] },
       { value: 'confirmed', label: 'Confirmée', phase: '', color: 'green', allowedTransitions: [] },
       { value: 'completed', label: 'Terminée', phase: '', color: 'blue', allowedTransitions: [] },
       { value: 'cancelled', label: 'Annulée', phase: '', color: 'gray', allowedTransitions: [] },

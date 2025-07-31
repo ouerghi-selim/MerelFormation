@@ -59,8 +59,6 @@ export const getStatusBadgeClass = (status: string): string => {
     cancelled: 'red',
     refunded: 'gray',
 
-    // Anciens statuts (pour compatibilité)
-    pending: 'yellow',
   };
 
   const color = statusColorMap[status] || 'gray';
@@ -95,8 +93,6 @@ export const getStatusLabel = (status: string, type: 'formation' | 'vehicle' = '
       cancelled: 'Annulé',
       refunded: 'Remboursé',
 
-      // Anciens statuts (pour compatibilité)
-      pending: 'En attente',
     },
     formation: {
       // Spécifique aux formations

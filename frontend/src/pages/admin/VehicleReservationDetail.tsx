@@ -163,7 +163,7 @@ const VehicleReservationDetail: React.FC = () => {
     // Fonction pour obtenir la description de l'email
     const getEmailDescription = (status: string): string => {
         const emailDescriptions: Record<string, string> = {
-            'pending': 'Email de confirmation de demande',
+            'submitted': 'Email de confirmation de demande soumise',
             'confirmed': 'Email de confirmation de réservation',
             'completed': 'Email de confirmation de fin de service',
             'cancelled': 'Email de confirmation d\'annulation'
@@ -210,8 +210,7 @@ const VehicleReservationDetail: React.FC = () => {
             case 'completed': return <CheckCircle className="w-4 h-4" />;
             case 'cancelled': return <XCircle className="w-4 h-4" />;
             case 'refunded': return <CreditCard className="w-4 h-4" />;
-            // Anciens statuts pour compatibilité
-            case 'pending': return <AlertCircle className="w-4 h-4" />;
+            case 'submitted': return <AlertCircle className="w-4 h-4" />;
             default: return <AlertCircle className="w-4 h-4" />;
         }
     };

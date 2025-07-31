@@ -289,25 +289,7 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
         });
     };
 
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case 'pending': return 'En attente';
-            case 'confirmed': return 'Confirmée';
-            case 'completed': return 'Terminée';
-            case 'cancelled': return 'Annulée';
-            default: return status;
-        }
-    };
-
-    const getStatusClass = (status: string) => {
-        switch (status) {
-            case 'pending': return 'bg-yellow-100 text-yellow-800';
-            case 'confirmed': return 'bg-green-100 text-green-800';
-            case 'completed': return 'bg-blue-100 text-blue-800';
-            case 'cancelled': return 'bg-gray-100 text-gray-800';
-            default: return 'bg-gray-100 text-gray-800';
-        }
-    };
+    // Utilisation des fonctions utilitaires unifiées
 
     // Fonction pour naviguer vers la page de détails complets
     const handleViewFullDetails = () => {
@@ -348,14 +330,14 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
                     <div>
                         <p className="text-sm text-gray-500">Statut</p>
                         <p className="font-medium">
-            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(vehicleReservation.status)}`}>
-                {getStatusLabel(vehicleReservation.status)}
+            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(vehicleReservation.status)}`}>
+                {getStatusLabel(vehicleReservation.status, 'vehicle')}
             </span>
                         </p>
                     </div>
                 </div>
 
-                {(vehicleReservation.status === 'pending' || vehicleReservation.status === 'confirmed') && (
+                {(vehicleReservation.status === 'submitted' || vehicleReservation.status === 'under_review' || vehicleReservation.status === 'confirmed') && (
                     <div className="mb-6">
                         <h4 className="font-medium mb-2">Assigner un véhicule</h4>
                         <div className="flex space-x-3">
@@ -414,8 +396,8 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
                 <div>
                     <p className="text-sm text-gray-500">Statut</p>
                     <p className="font-medium">
-            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(sessionReservation.status)}`}>
-                {getStatusLabel(sessionReservation.status)}
+            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(sessionReservation.status)}`}>
+                {getStatusLabel(sessionReservation.status, 'formation')}
             </span>
                     </p>
                 </div>
@@ -470,7 +452,7 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
                         Fermer
                     </Button>
 
-                    {reservationType === 'vehicle' && vehicleReservation?.status === 'pending' && (
+                    {reservationType === 'vehicle' && (vehicleReservation?.status === 'submitted' || vehicleReservation?.status === 'under_review') && (
                         <Button
                             variant="success"
                             onClick={() => requestStatusChange('confirmed')}
@@ -479,7 +461,7 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
                         </Button>
                     )}
 
-                    {reservationType === 'vehicle' && (vehicleReservation?.status === 'pending' || vehicleReservation?.status === 'confirmed') && (
+                    {reservationType === 'vehicle' && (vehicleReservation?.status === 'submitted' || vehicleReservation?.status === 'under_review' || vehicleReservation?.status === 'confirmed') && (
                         <Button
                             variant="danger"
                             onClick={() => requestStatusChange('cancelled')}
@@ -488,7 +470,7 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
                         </Button>
                     )}
 
-                    {reservationType === 'session' && sessionReservation?.status === 'pending' && (
+                    {reservationType === 'session' && (sessionReservation?.status === 'submitted' || sessionReservation?.status === 'under_review') && (
                         <Button
                             variant="success"
                             onClick={() => requestStatusChange('confirmed')}
@@ -497,7 +479,7 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
                         </Button>
                     )}
 
-                    {reservationType === 'session' && (sessionReservation?.status === 'pending' || sessionReservation?.status === 'confirmed') && (
+                    {reservationType === 'session' && (sessionReservation?.status === 'submitted' || sessionReservation?.status === 'under_review' || sessionReservation?.status === 'confirmed') && (
                         <Button
                             variant="danger"
                             onClick={() => requestStatusChange('cancelled')}

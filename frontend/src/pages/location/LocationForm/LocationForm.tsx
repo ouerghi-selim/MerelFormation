@@ -45,7 +45,7 @@ const LocationForm: React.FC<LocationFormProps> = ({ isOpen, onClose }) => {
 
             // Informations de base
             formDataToSend.append('rentalType', 'exam');
-            formDataToSend.append('status', 'pending');
+            formDataToSend.append('status', 'submitted');
             formDataToSend.append('notes', formData.observations || '');
 
             // Dates d'examen

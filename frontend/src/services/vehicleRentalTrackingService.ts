@@ -61,8 +61,6 @@ export const getStatusColor = (status: string): string => {
     case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
     case 'refunded': return 'bg-gray-100 text-gray-800 border-gray-200';
     
-    // Anciens statuts (compatibilité)
-    case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
     default: return 'bg-gray-100 text-gray-800 border-gray-200';
   }
 };
@@ -94,11 +92,6 @@ export const getStatusText = (status: string): string => {
     case 'cancelled': return 'Réservation annulée';
     case 'refunded': return 'Remboursement effectué';
     
-    // Anciens statuts (compatibilité)
-    case 'pending': return 'En attente';
-    case 'confirmed': return 'Confirmée';
-    case 'cancelled': return 'Annulée';
-    case 'completed': return 'Terminée';
     default: return status;
   }
 };
@@ -130,8 +123,6 @@ export const getStatusIcon = (status: string): string => {
     case 'cancelled': return '❌';
     case 'refunded': return '💸';
     
-    // Anciens statuts (compatibilité)
-    case 'pending': return '⏳';
     default: return '📋';
   }
 };
