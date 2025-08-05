@@ -1632,4 +1632,82 @@ class NotificationService
         }
     }
 
+    /**
+     * Notifie l'ajout de documents à une réservation de véhicule
+     */
+    public function notifyVehicleRentalDocumentsAdded(VehicleRental $rental, array $documents): void
+    {
+        try {
+            // Obtenir les administrateurs
+            $admins = $this->em->getRepository(User::class)->findByRole('ROLE_ADMIN');
+            
+            if (empty($admins)) {
+                $this->logger->warning('Aucun administrateur trouvé pour envoyer la notification de documents véhicule');
+                return;
+            }
+
+            $title = 'Nouveaux documents pour réservation de véhicule';
+            $customerName = $rental->getUser() 
+                ? $rental->getUser()->getFirstName() . ' ' . $rental->getUser()->getLastName()
+                : 'Client inconnu';
+            
+            $content = sprintf(
+                "Le client %s a ajouté %d document(s) à sa réservation de véhicule #%d pour l'examen du %s.",
+                $customerName,
+                count($documents),
+                $rental->getId(),
+                $rental->getStartDate()->format('d/m/Y')
+            );
+
+            // Préparer les variables pour le template
+            $documentTitles = array_map(fn($doc) => $doc->getTitle(), $documents);
+            
+            $variables = [
+                'customerName' => $customerName,
+                'rentalId' => $rental->getId(),
+                'examDate' => $rental->getStartDate()->format('d/m/Y'),
+                'examTime' => $rental->getExamTime() ?: 'À confirmer',
+                'examCenter' => $rental->getExamCenter() ?: 'Non spécifié',
+                'documentCount' => count($documents),
+                'documentTitles' => implode(', ', $documentTitles),
+                'adminUrl' => $this->baseUrl . '/admin/reservations/vehicle/' . $rental->getId(),
+                'adminName' => '' // Sera remplacé pour chaque admin
+            ];
+
+            foreach ($admins as $admin) {
+                // Créer une notification dans la base de données
+                $notification = new Notification();
+                $notification->setTitle($title);
+                $notification->setContent($content);
+                $notification->setType('info');
+                $notification->setUser($admin);
+
+                $this->em->persist($notification);
+
+                // Personnaliser les variables pour cet admin
+                $adminVariables = array_merge($variables, [
+                    'adminName' => $admin->getFirstName()
+                ]);
+
+                // Envoyer l'email
+                $this->emailService->sendTemplatedEmailByEventAndRole(
+                    $admin->getEmail(),
+                    NotificationEventType::DOCUMENT_ADDED,
+                    'ROLE_ADMIN',
+                    $adminVariables
+                );
+            }
+
+            $this->em->flush();
+            
+            $this->logger->info('Notifications envoyées pour ajout de documents véhicule #' . $rental->getId());
+
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de l\'envoi des notifications de documents véhicule: ' . $e->getMessage(), [
+                'rental_id' => $rental->getId(),
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
 }

@@ -550,4 +550,31 @@ export const imageUploadApi = {
         api.delete(`/admin/images/${encodeURIComponent(filename)}`)
 };
 
+// Services API pour les documents de réservation de véhicules
+export const vehicleRentalDocumentsApi = {
+    // Upload temporaire de document pour réservation de véhicule
+    tempUpload: (formData: FormData) =>
+        api.post('/vehicle-rental-documents/temp-upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+    
+    // Finaliser les documents pour une réservation de véhicule
+    finalizeDocuments: (data: {
+        tempIds: string[];
+        vehicleRentalId: number;
+    }) => api.post('/vehicle-rental-documents/finalize', data),
+    
+    // Récupérer les documents d'une réservation de véhicule
+    getByRental: (vehicleRentalId: number) =>
+        api.get(`/vehicle-rental-documents/${vehicleRentalId}`),
+    
+    // Supprimer un document
+    deleteDocument: (documentId: number) =>
+        api.delete(`/vehicle-rental-documents/${documentId}`),
+    
+    // URL de téléchargement (ne nécessite pas d'appel API direct)
+    getDownloadUrl: (documentId: number) => 
+        `${baseURL}/vehicle-rental-documents/download/${documentId}`
+};
+
 export default api;

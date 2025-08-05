@@ -164,7 +164,7 @@ class VehicleRentalTrackingService
     private function getStatusText(string $status): string
     {
         return match($status) {
-            'pending' => 'En attente',
+            'submitted' => 'Demande soumise',
             'confirmed' => 'Confirmée',
             'cancelled' => 'Annulée',
             'completed' => 'Terminée',

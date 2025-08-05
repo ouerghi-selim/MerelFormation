@@ -67,12 +67,12 @@ class VehicleRentalTrackingController extends AbstractController
     {
         $history = [];
 
-        // Toujours créé
+        // Toujours créé avec le statut actuel
         $history[] = [
-            'status' => 'pending',
-            'label' => 'Demande reçue',
+            'status' => 'submitted',
+            'label' => 'Demande soumise',
             'date' => $rental->getCreatedAt()?->format('Y-m-d H:i'),
-            'description' => 'Votre demande de réservation a été reçue et est en cours de traitement.'
+            'description' => 'Votre demande de réservation a été soumise avec succès.'
         ];
 
         // Si confirmé ou terminé

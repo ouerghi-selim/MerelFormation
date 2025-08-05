@@ -16,14 +16,30 @@ import {
     Phone,
     Mail,
     Building,
-    X
+    X,
+    ChevronDown,
+    Upload,
+    Download,
+    Trash2,
+    Plus
 } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
 import Button from '../../components/common/Button';
-import { adminReservationsApi } from '../../services/api';
+import { adminReservationsApi, vehicleRentalDocumentsApi } from '../../services/api';
 import Alert from '../../components/common/Alert';
 import { getStatusBadgeClass, getStatusLabel as getReservationStatusLabel } from '../../utils/reservationStatuses';
+
+// Interface pour les documents
+interface VehicleDocument {
+    id: number;
+    title: string;
+    fileName: string;
+    fileType: string;
+    fileSize: string;
+    uploadedAt: string;
+    downloadUrl: string;
+}
 
 interface VehicleReservationDetail {
     id: number;
@@ -72,21 +88,61 @@ const VehicleReservationDetail: React.FC = () => {
         studentName: string;
     } | null>(null);
     const [customMessage, setCustomMessage] = useState('');
+    const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+    
+    // États pour la gestion des documents
+    const [documents, setDocuments] = useState<VehicleDocument[]>([]);
+    const [showUploadModal, setShowUploadModal] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+    const [uploadError, setUploadError] = useState<string | null>(null);
 
     useEffect(() => {
         if (id) {
             fetchReservationDetails();
             fetchAvailableTransitions();
+            fetchDocuments();
         }
     }, [id]);
 
+    // Fermer le dropdown quand on clique ailleurs
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (showStatusDropdown) {
+                const target = event.target as Element;
+                if (!target.closest('.relative')) {
+                    setShowStatusDropdown(false);
+                }
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showStatusDropdown]);
+
     const fetchAvailableTransitions = async () => {
-        try {
-            const response = await adminReservationsApi.getVehicleRentalTransitions();
-            setAvailableTransitions(response.data);
-        } catch (err) {
-            console.error('Error fetching transitions:', err);
-        }
+        // Utiliser la même approche que la liste des réservations : tous les statuts disponibles
+        const vehicleStatuses = [
+            'submitted', 'under_review', 'awaiting_documents', 'documents_pending', 
+            'documents_rejected', 'awaiting_payment', 'payment_pending', 'confirmed', 
+            'in_progress', 'completed', 'cancelled', 'refunded'
+        ];
+
+        const allStatuses = vehicleStatuses.map(status => ({
+            status: status,
+            label: getStatusLabel(status),
+            color: getStatusBadgeClass(status)
+        }));
+
+        // Créer une structure unique pour tous les statuts
+        const vehicleTransitions = [{
+            fromStatus: 'all', // Utiliser 'all' comme clé universelle
+            toStatuses: allStatuses
+        }];
+        
+        setAvailableTransitions(vehicleTransitions);
     };
 
     const fetchReservationDetails = async () => {
@@ -192,6 +248,81 @@ const VehicleReservationDetail: React.FC = () => {
         return getReservationStatusLabel(status, 'vehicle');
     };
 
+    // Fonctions de gestion des documents
+    const fetchDocuments = async () => {
+        if (!id) return;
+        
+        try {
+            const response = await vehicleRentalDocumentsApi.getByRental(Number(id));
+            const documentsData = response.data.map((doc: any) => ({
+                id: doc.id,
+                title: doc.title,
+                fileName: doc.fileName,
+                fileType: doc.fileType,
+                fileSize: doc.fileSize,
+                uploadedAt: doc.uploadedAt,
+                downloadUrl: vehicleRentalDocumentsApi.getDownloadUrl(doc.id)
+            }));
+            setDocuments(documentsData);
+        } catch (err) {
+            console.error('Error fetching documents:', err);
+            // En cas d'erreur, laisser documents vide
+            setDocuments([]);
+        }
+    };
+
+    const handleDocumentUpload = async (file: File, title: string) => {
+        if (!id) return;
+
+        try {
+            setUploading(true);
+            setUploadError(null);
+
+            // Étape 1: Upload temporaire
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('title', title);
+            formData.append('vehicleRentalId', id);
+
+            const tempResponse = await vehicleRentalDocumentsApi.tempUpload(formData);
+            const tempId = tempResponse.data.tempId;
+
+            // Étape 2: Finaliser immédiatement
+            await vehicleRentalDocumentsApi.finalizeDocuments({
+                tempIds: [tempId],
+                vehicleRentalId: Number(id)
+            });
+
+            // Recharger la liste des documents
+            await fetchDocuments();
+            
+            setUploadSuccess('Document uploadé avec succès !');
+            setShowUploadModal(false);
+            
+            // Masquer le message de succès après 3 secondes
+            setTimeout(() => setUploadSuccess(null), 3000);
+            
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || err.message || 'Erreur lors de l\'upload du document';
+            setUploadError(errorMessage);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleDocumentDelete = async (documentId: number) => {
+        try {
+            await vehicleRentalDocumentsApi.deleteDocument(documentId);
+            setDocuments(prev => prev.filter(doc => doc.id !== documentId));
+            setUploadSuccess('Document supprimé avec succès !');
+            setTimeout(() => setUploadSuccess(null), 3000);
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || err.message || 'Erreur lors de la suppression du document';
+            setUploadError(errorMessage);
+            setTimeout(() => setUploadError(null), 5000);
+        }
+    };
+
     const getStatusColor = (status: string) => {
         return getStatusBadgeClass(status) + ' border';
     };
@@ -227,7 +358,18 @@ const VehicleReservationDetail: React.FC = () => {
 
     const formatDate = (dateString: string): string => {
         if (!dateString) return 'Non renseigné';
+        
+        // Si la date est déjà au format DD/MM/YYYY, la retourner directement
+        if (dateString.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+            return dateString;
+        }
+        
+        // Sinon, essayer de la parser comme ISO date
         const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            return 'Date invalide';
+        }
+        
         return date.toLocaleDateString('fr-FR', {
             day: '2-digit',
             month: '2-digit',
@@ -237,7 +379,18 @@ const VehicleReservationDetail: React.FC = () => {
 
     const formatDateTime = (dateString: string): string => {
         if (!dateString) return 'Non renseigné';
+        
+        // Si c'est déjà un format français DD/MM/YYYY, ne pas ajouter l'heure
+        if (dateString.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+            return dateString;
+        }
+        
+        // Sinon, essayer de la parser comme ISO date
         const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            return 'Date invalide';
+        }
+        
         return date.toLocaleDateString('fr-FR', {
             day: '2-digit',
             month: '2-digit',
@@ -496,6 +649,90 @@ const VehicleReservationDetail: React.FC = () => {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Section Documents */}
+                            <div className="bg-white rounded-lg shadow">
+                                <div className="p-6 border-b border-gray-200">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            <FileText className="w-5 h-5 text-blue-600 mr-2" />
+                                            <h2 className="text-lg font-semibold text-gray-900">Documents</h2>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowUploadModal(true)}
+                                            className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                                        >
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Ajouter un document
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="p-6">
+                                    {/* Messages de succès/erreur */}
+                                    {uploadSuccess && (
+                                        <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4">
+                                            <p className="flex items-center">
+                                                <CheckCircle className="mr-2 h-4 w-4" />
+                                                {uploadSuccess}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {uploadError && (
+                                        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
+                                            <p className="flex items-center">
+                                                <XCircle className="mr-2 h-4 w-4" />
+                                                {uploadError}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Liste des documents */}
+                                    {documents.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {documents.map((document) => (
+                                                <div key={document.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                                                    <div className="flex items-center">
+                                                        <FileText className="h-8 w-8 text-gray-400 mr-3" />
+                                                        <div>
+                                                            <p className="text-sm font-medium text-gray-900">{document.title}</p>
+                                                            <p className="text-xs text-gray-500">
+                                                                {document.fileType.toUpperCase()} • {document.fileSize} • 
+                                                                Uploadé le {new Date(document.uploadedAt).toLocaleDateString('fr-FR')}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <a
+                                                            href={document.downloadUrl}
+                                                            download
+                                                            className="inline-flex items-center px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                                                        >
+                                                            <Download className="h-3 w-3 mr-1" />
+                                                            Télécharger
+                                                        </a>
+                                                        <button
+                                                            onClick={() => handleDocumentDelete(document.id)}
+                                                            className="inline-flex items-center px-3 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                                                        >
+                                                            <Trash2 className="h-3 w-3 mr-1" />
+                                                            Supprimer
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8">
+                                            <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                                            <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun document</h3>
+                                            <p className="mt-1 text-sm text-gray-500">
+                                                Aucun document n'a encore été uploadé pour cette réservation.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         {/* Colonne latérale */}
@@ -506,28 +743,65 @@ const VehicleReservationDetail: React.FC = () => {
                                     <h3 className="text-lg font-semibold text-gray-900">Actions</h3>
                                 </div>
                                 <div className="p-6 space-y-3">
-                                    {/* Affichage des transitions autorisées */}
-                                    {availableTransitions
-                                        .find(t => t.fromStatus === reservation.status)?.toStatuses
-                                        .map((transition: any) => (
-                                            <Button 
-                                                key={transition.status}
-                                                onClick={() => requestStatusChange(transition.status)} 
-                                                variant={getButtonVariant(transition.status)}
-                                                className="w-full"
-                                            >
-                                                {getStatusIcon(transition.status)}
-                                                <span className="ml-2">{transition.label}</span>
-                                            </Button>
-                                        ))
-                                    }
+                                    {/* Bouton dropdown pour changer le statut */}
+                                    <div className="relative">
+                                        <button 
+                                            onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                                            className={`w-full px-4 py-2 inline-flex items-center justify-center text-sm leading-5 font-semibold rounded-lg cursor-pointer hover:opacity-80 border ${getStatusColor(reservation.status)}`}
+                                        >
+                                            {getStatusIcon(reservation.status)}
+                                            <span className="ml-2">{getStatusLabel(reservation.status)}</span>
+                                            <ChevronDown className="ml-2 h-4 w-4" />
+                                        </button>
+                                        
+                                        {/* Dropdown menu */}
+                                        {showStatusDropdown && (
+                                            <div className="absolute left-0 mt-2 w-full bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                                                <div className="py-1">
+                                                    {Array.isArray(availableTransitions) && availableTransitions.length > 0 ? (
+                                                        <>
+                                                            {availableTransitions[0]?.toStatuses
+                                                                ?.filter((transition: any) => transition.status !== reservation.status)
+                                                                ?.map((transition: any) => (
+                                                                    <button
+                                                                        key={transition.status}
+                                                                        onClick={() => {
+                                                                            requestStatusChange(transition.status);
+                                                                            setShowStatusDropdown(false);
+                                                                        }}
+                                                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                                                                    >
+                                                                        <div className="flex items-center">
+                                                                            <span className={`inline-block w-3 h-3 rounded-full mr-2 ${transition.color}`}></span>
+                                                                            {transition.label}
+                                                                        </div>
+                                                                    </button>
+                                                                )) 
+                                                            }
+                                                            {(!availableTransitions[0]?.toStatuses?.length) && (
+                                                                <div className="px-4 py-2 text-sm text-gray-500 italic">
+                                                                    Aucune action disponible
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <div className="px-4 py-2 text-sm text-gray-500 italic">
+                                                            Chargement des statuts...
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                     
-                                    {/* Message si aucune transition disponible */}
-                                    {availableTransitions.length > 0 && 
-                                     (!availableTransitions.find(t => t.fromStatus === reservation.status)?.toStatuses?.length || 
-                                      availableTransitions.find(t => t.fromStatus === reservation.status)?.toStatuses?.length === 0) && (
+                                    {/* Message informatif */}
+                                    {Array.isArray(availableTransitions) && availableTransitions.length > 0 ? (
+                                        <div className="text-center text-gray-500 text-xs py-2">
+                                            Cliquez sur le bouton ci-dessus pour changer le statut
+                                        </div>
+                                    ) : (
                                         <div className="text-center text-gray-500 text-sm py-4">
-                                            Aucune action disponible pour ce statut
+                                            Chargement des actions disponibles...
                                         </div>
                                     )}
                                 </div>
@@ -706,6 +980,224 @@ const VehicleReservationDetail: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Modal d'upload de documents */}
+            {showUploadModal && (
+                <DocumentUploadModal
+                    isOpen={showUploadModal}
+                    onClose={() => {
+                        setShowUploadModal(false);
+                        setUploadError(null);
+                    }}
+                    onUpload={handleDocumentUpload}
+                    uploading={uploading}
+                />
+            )}
+        </div>
+    );
+};
+
+// Composant Modal d'Upload de Documents pour Admin
+interface DocumentUploadModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onUpload: (file: File, title: string) => void;
+    uploading: boolean;
+}
+
+const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
+    isOpen,
+    onClose,
+    onUpload,
+    uploading
+}) => {
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [title, setTitle] = useState<string>('');
+    const [dragActive, setDragActive] = useState(false);
+
+    const handleFileChange = (file: File) => {
+        setSelectedFile(file);
+        if (!title) {
+            // Auto-générer le titre basé sur le nom du fichier
+            const fileName = file.name.replace(/\.[^/.]+$/, ""); // Enlever l'extension
+            setTitle(fileName);
+        }
+    };
+
+    const handleDrag = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setDragActive(true);
+        } else if (e.type === "dragleave") {
+            setDragActive(false);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleFileChange(e.dataTransfer.files[0]);
+        }
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (!selectedFile || !title.trim()) {
+            return;
+        }
+
+        onUpload(selectedFile, title.trim());
+    };
+
+    const resetForm = () => {
+        setSelectedFile(null);
+        setTitle('');
+        setDragActive(false);
+    };
+
+    const handleClose = () => {
+        if (!uploading) {
+            resetForm();
+            onClose();
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+                <div className="flex items-center justify-between p-6 border-b">
+                    <h3 className="text-lg font-semibold text-gray-900">Ajouter un document</h3>
+                    <button
+                        onClick={handleClose}
+                        className="text-gray-400 hover:text-gray-600"
+                        disabled={uploading}
+                    >
+                        <X className="h-6 w-6" />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-6">
+                    <div className="space-y-4">
+                        {/* Titre du document */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Titre du document *
+                            </label>
+                            <input
+                                type="text"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Ex: Justificatif, Document administratif..."
+                                required
+                                disabled={uploading}
+                            />
+                        </div>
+
+                        {/* Zone de drop de fichier */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Fichier *
+                            </label>
+                            
+                            <div
+                                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                                    dragActive 
+                                        ? 'border-blue-400 bg-blue-50' 
+                                        : selectedFile 
+                                            ? 'border-green-400 bg-green-50' 
+                                            : 'border-gray-300 hover:border-gray-400'
+                                }`}
+                                onDragEnter={handleDrag}
+                                onDragLeave={handleDrag}
+                                onDragOver={handleDrag}
+                                onDrop={handleDrop}
+                            >
+                                {selectedFile ? (
+                                    <div className="text-center">
+                                        <FileText className="mx-auto h-12 w-12 text-green-500" />
+                                        <p className="mt-2 text-sm font-medium text-green-900">
+                                            {selectedFile.name}
+                                        </p>
+                                        <p className="text-xs text-green-600 mt-1">
+                                            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedFile(null)}
+                                            className="mt-2 text-xs text-red-600 hover:text-red-800"
+                                            disabled={uploading}
+                                        >
+                                            Supprimer
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                                        <p className="mt-2 text-sm text-gray-600">
+                                            <span className="font-medium">Cliquez pour choisir</span> ou glissez-déposez
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            PDF, DOC, DOCX, JPG, PNG (max 10MB)
+                                        </p>
+                                    </>
+                                )}
+                                
+                                <input
+                                    type="file"
+                                    onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
+                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                    className="hidden"
+                                    id="admin-file-upload"
+                                    disabled={uploading}
+                                />
+                                
+                                {!selectedFile && (
+                                    <label
+                                        htmlFor="admin-file-upload"
+                                        className="absolute inset-0 cursor-pointer"
+                                    />
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 mt-6">
+                        <button
+                            type="button"
+                            onClick={handleClose}
+                            className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                            disabled={uploading}
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={!selectedFile || !title.trim() || uploading}
+                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                        >
+                            {uploading ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                    Upload en cours...
+                                </>
+                            ) : (
+                                <>
+                                    <Upload className="h-4 w-4" />
+                                    Uploader
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 };

@@ -429,64 +429,35 @@ const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
     // Rendu du footer avec les actions
     const renderFooter = () => {
         return (
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center bg-gray-50 px-6 py-4 rounded-b-lg border-t border-gray-200">
                 {/* Bouton "Voir détails complets" à gauche, seulement pour les véhicules */}
                 <div>
-                    {reservationType === 'vehicle' && vehicleReservation && (
-                        <Button
-                            variant="outline"
+                    {reservationType === 'vehicle' && vehicleReservation ? (
+                        <button
                             onClick={handleViewFullDetails}
-                            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors shadow-sm"
                         >
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
                             Voir détails complets
-                        </Button>
+                        </button>
+                    ) : (
+                        <div></div> // Placeholder pour maintenir l'alignement
                     )}
                 </div>
 
-                {/* Actions principales à droite */}
-                <div className="flex justify-end space-x-3">
-                    <Button
-                        variant="outline"
+                {/* Actions principales à droite - seulement Fermer */}
+                <div className="flex space-x-3">
+                    <button
                         onClick={onClose}
+                        className="inline-flex items-center px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors shadow-sm"
                     >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                         Fermer
-                    </Button>
-
-                    {reservationType === 'vehicle' && (vehicleReservation?.status === 'submitted' || vehicleReservation?.status === 'under_review') && (
-                        <Button
-                            variant="success"
-                            onClick={() => requestStatusChange('confirmed')}
-                        >
-                            Confirmer
-                        </Button>
-                    )}
-
-                    {reservationType === 'vehicle' && (vehicleReservation?.status === 'submitted' || vehicleReservation?.status === 'under_review' || vehicleReservation?.status === 'confirmed') && (
-                        <Button
-                            variant="danger"
-                            onClick={() => requestStatusChange('cancelled')}
-                        >
-                            Annuler
-                        </Button>
-                    )}
-
-                    {reservationType === 'session' && (sessionReservation?.status === 'submitted' || sessionReservation?.status === 'under_review') && (
-                        <Button
-                            variant="success"
-                            onClick={() => requestStatusChange('confirmed')}
-                        >
-                            Confirmer l'inscription
-                        </Button>
-                    )}
-
-                    {reservationType === 'session' && (sessionReservation?.status === 'submitted' || sessionReservation?.status === 'under_review' || sessionReservation?.status === 'confirmed') && (
-                        <Button
-                            variant="danger"
-                            onClick={() => requestStatusChange('cancelled')}
-                        >
-                            Annuler l'inscription
-                        </Button>
-                    )}
+                    </button>
                 </div>
             </div>
         );

@@ -13,7 +13,11 @@ import {
   XCircle, 
   AlertCircle,
   Home,
-  RefreshCw
+  RefreshCw,
+  Upload,
+  Download,
+  Trash2,
+  X
 } from 'lucide-react';
 import { 
   trackRental, 
@@ -26,6 +30,18 @@ import {
   VehicleRentalTracking,
   ProgressPhase
 } from '../services/vehicleRentalTrackingService';
+import { vehicleRentalDocumentsApi } from '../services/api';
+
+// Interface pour les documents
+interface RentalDocument {
+  id: number;
+  title: string;
+  fileName: string;
+  fileType: string;
+  fileSize: string;
+  uploadedAt: string;
+  downloadUrl: string;
+}
 
 const RentalTrackingPage: React.FC = () => {
   const { trackingToken } = useParams<{ trackingToken: string }>();
@@ -33,6 +49,103 @@ const RentalTrackingPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // États pour la gestion des documents
+  const [documents, setDocuments] = useState<RentalDocument[]>([]);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [tempDocuments, setTempDocuments] = useState<{tempId: string, document: any}[]>([]);
+
+  // Fonction pour vérifier si l'upload de documents est nécessaire
+  const requiresDocuments = (status: string): boolean => {
+    return ['awaiting_documents', 'documents_pending', 'documents_rejected'].includes(status);
+  };
+
+  // Fonction pour récupérer les documents associés à la réservation
+  const fetchDocuments = async (rentalId: number) => {
+    try {
+      const response = await vehicleRentalDocumentsApi.getByRental(rentalId);
+      const documentsData = response.data.map((doc: any) => ({
+        id: doc.id,
+        title: doc.title,
+        fileName: doc.fileName,
+        fileType: doc.fileType,
+        fileSize: doc.fileSize,
+        uploadedAt: doc.uploadedAt,
+        downloadUrl: vehicleRentalDocumentsApi.getDownloadUrl(doc.id)
+      }));
+      setDocuments(documentsData);
+    } catch (err) {
+      console.error('Error fetching documents:', err);
+      // En cas d'erreur, laisser documents vide
+      setDocuments([]);
+    }
+  };
+
+  // Fonction pour uploader un document
+  const handleDocumentUpload = async (file: File, title: string) => {
+    if (!rental) return;
+
+    try {
+      setUploading(true);
+      setUploadError(null);
+
+      // Étape 1: Upload temporaire
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', title);
+      formData.append('vehicleRentalId', rental.id.toString());
+
+      const tempResponse = await vehicleRentalDocumentsApi.tempUpload(formData);
+      const tempId = tempResponse.data.tempId;
+      
+      // Ajouter au state des documents temporaires
+      setTempDocuments(prev => [...prev, {
+        tempId,
+        document: tempResponse.data.document
+      }]);
+
+      // Étape 2: Finaliser immédiatement (pour les documents de réservation de véhicule)
+      const finalizeResponse = await vehicleRentalDocumentsApi.finalizeDocuments({
+        tempIds: [tempId],
+        vehicleRentalId: rental.id
+      });
+
+      // Retirer des documents temporaires
+      setTempDocuments(prev => prev.filter(temp => temp.tempId !== tempId));
+      
+      // Recharger la liste des documents
+      await fetchDocuments(rental.id);
+      
+      setUploadSuccess('Document uploadé avec succès !');
+      setShowUploadModal(false);
+      
+      // Masquer le message de succès après 3 secondes
+      setTimeout(() => setUploadSuccess(null), 3000);
+      
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Erreur lors de l\'upload du document';
+      setUploadError(errorMessage);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Fonction pour supprimer un document
+  const handleDocumentDelete = async (documentId: number) => {
+    try {
+      await vehicleRentalDocumentsApi.deleteDocument(documentId);
+      setDocuments(prev => prev.filter(doc => doc.id !== documentId));
+      setUploadSuccess('Document supprimé avec succès !');
+      setTimeout(() => setUploadSuccess(null), 3000);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Erreur lors de la suppression du document';
+      setUploadError(errorMessage);
+      setTimeout(() => setUploadError(null), 5000);
+    }
+  };
 
   const fetchRental = async () => {
     if (!trackingToken) return;
@@ -42,6 +155,11 @@ const RentalTrackingPage: React.FC = () => {
       const data = await trackRental(trackingToken);
       setRental(data);
       setError(null);
+      
+      // Récupérer les documents associés si la réservation nécessite des documents
+      if (data && requiresDocuments(data.status)) {
+        await fetchDocuments(data.id);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erreur lors du chargement des données');
       console.error('Error tracking rental:', err);
@@ -305,20 +423,40 @@ const RentalTrackingPage: React.FC = () => {
               <Car className="mr-2 h-5 w-5 text-blue-600" />
               Véhicule réservé
             </h2>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-500">Modèle</label>
-                <p className="text-lg font-medium text-gray-900">{rental.vehicle.model}</p>
+            {rental.vehicle.model || rental.vehicle.plate || rental.vehicle.category ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Modèle</label>
+                  <p className="text-lg font-medium text-gray-900">
+                    {rental.vehicle.model || <span className="text-gray-400 italic">En cours d'attribution</span>}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Plaque d'immatriculation</label>
+                  <p className="text-gray-900 font-mono">
+                    {rental.vehicle.plate || <span className="text-gray-400 italic">Non attribuée</span>}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Catégorie</label>
+                  <p className="text-gray-900">
+                    {rental.vehicle.category || <span className="text-gray-400 italic">À définir</span>}
+                  </p>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500">Plaque d'immatriculation</label>
-                <p className="text-gray-900 font-mono">{rental.vehicle.plate}</p>
+            ) : (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <Clock className="h-5 w-5 text-amber-500 mr-2" />
+                  <div>
+                    <h3 className="text-sm font-medium text-amber-800">Véhicule en cours d'attribution</h3>
+                    <p className="text-sm text-amber-700 mt-1">
+                      Le véhicule sera attribué après validation de votre demande
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500">Catégorie</label>
-                <p className="text-gray-900">{rental.vehicle.category}</p>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Dates et prix */}
@@ -356,7 +494,14 @@ const RentalTrackingPage: React.FC = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">Prix total</label>
-                <p className="text-2xl font-bold text-green-600">{rental.totalPrice}€</p>
+                {parseFloat(rental.totalPrice) > 0 ? (
+                  <p className="text-2xl font-bold text-green-600">{rental.totalPrice}€</p>
+                ) : (
+                  <div className="flex items-center">
+                    <p className="text-gray-400 italic">En cours de calcul</p>
+                    <Clock className="ml-2 h-4 w-4 text-gray-400" />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -401,17 +546,25 @@ const RentalTrackingPage: React.FC = () => {
               Réservation pour examen
             </h2>
             <div className="bg-white rounded-lg p-4">
-              <label className="block text-sm font-medium text-purple-600 mb-1">Date d'examen</label>
-              <p className="text-lg font-medium text-purple-900">
-                {new Date(rental.examTime).toLocaleDateString('fr-FR', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-purple-600 mb-1">Date d'examen</label>
+                  <p className="text-lg font-medium text-purple-900">
+                    {new Date(rental.startDate).toLocaleDateString('fr-FR', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-purple-600 mb-1">Heure d'examen</label>
+                  <p className="text-lg font-medium text-purple-900">
+                    {rental.examTime}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -441,6 +594,109 @@ const RentalTrackingPage: React.FC = () => {
           </div>
         )}
 
+        {/* Section Documents - Visible seulement si nécessaire */}
+        {rental && requiresDocuments(rental.status) && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center">
+                <FileText className="mr-2 h-5 w-5 text-orange-600" />
+                Documents requis pour votre réservation
+              </h2>
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="inline-flex items-center px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Ajouter un document
+              </button>
+            </div>
+
+            {/* Messages de succès/erreur */}
+            {uploadSuccess && (
+              <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4">
+                <p className="flex items-center">
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  {uploadSuccess}
+                </p>
+              </div>
+            )}
+
+            {uploadError && (
+              <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
+                <p className="flex items-center">
+                  <XCircle className="mr-2 h-4 w-4" />
+                  {uploadError}
+                </p>
+              </div>
+            )}
+
+            {/* Instructions selon le statut */}
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start">
+                <AlertCircle className="h-5 w-5 text-orange-500 mr-2 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-medium text-orange-800">
+                    {rental.status === 'awaiting_documents' && 'Documents en attente'}
+                    {rental.status === 'documents_pending' && 'Documents en cours de validation'}
+                    {rental.status === 'documents_rejected' && 'Documents à renouveler'}
+                  </h3>
+                  <p className="text-sm text-orange-700 mt-1">
+                    {rental.status === 'awaiting_documents' && 'Veuillez fournir les documents demandés pour continuer le traitement de votre réservation.'}
+                    {rental.status === 'documents_pending' && 'Vos documents sont en cours de validation par notre équipe.'}
+                    {rental.status === 'documents_rejected' && 'Certains documents ont été rejetés. Veuillez les corriger et les re-soumettre.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Liste des documents */}
+            {documents.length > 0 ? (
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-gray-900">Documents soumis</h3>
+                {documents.map((document) => (
+                  <div key={document.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                    <div className="flex items-center">
+                      <FileText className="h-5 w-5 text-gray-400 mr-3" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{document.title}</p>
+                        <p className="text-xs text-gray-500">
+                          {document.fileType.toUpperCase()} • {document.fileSize} • 
+                          Uploadé le {new Date(document.uploadedAt).toLocaleDateString('fr-FR')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <a
+                        href={document.downloadUrl}
+                        download
+                        className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                      >
+                        <Download className="h-3 w-3 mr-1" />
+                        Télécharger
+                      </a>
+                      <button
+                        onClick={() => handleDocumentDelete(document.id)}
+                        className="inline-flex items-center px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Supprimer
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun document</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Aucun document n'a encore été uploadé pour cette réservation.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Footer */}
         <div className="bg-white rounded-lg shadow-sm p-6 mt-6 text-center">
           <p className="text-sm text-gray-500 mb-3">
@@ -450,6 +706,224 @@ const RentalTrackingPage: React.FC = () => {
             Conservez ce lien pour suivre l'évolution de votre demande • MerelFormation
           </p>
         </div>
+
+        {/* Modal d'upload de documents */}
+        {showUploadModal && (
+          <DocumentUploadModal
+            isOpen={showUploadModal}
+            onClose={() => {
+              setShowUploadModal(false);
+              setUploadError(null);
+            }}
+            onUpload={handleDocumentUpload}
+            uploading={uploading}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Composant Modal d'Upload de Documents
+interface DocumentUploadModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onUpload: (file: File, title: string) => void;
+  uploading: boolean;
+}
+
+const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
+  isOpen,
+  onClose,
+  onUpload,
+  uploading
+}) => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [title, setTitle] = useState<string>('');
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleFileChange = (file: File) => {
+    setSelectedFile(file);
+    if (!title) {
+      // Auto-générer le titre basé sur le nom du fichier
+      const fileName = file.name.replace(/\.[^/.]+$/, ""); // Enlever l'extension
+      setTitle(fileName);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileChange(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedFile || !title.trim()) {
+      return;
+    }
+
+    onUpload(selectedFile, title.trim());
+  };
+
+  const resetForm = () => {
+    setSelectedFile(null);
+    setTitle('');
+    setDragActive(false);
+  };
+
+  const handleClose = () => {
+    if (!uploading) {
+      resetForm();
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div className="flex items-center justify-between p-6 border-b">
+          <h3 className="text-lg font-semibold text-gray-900">Ajouter un document</h3>
+          <button
+            onClick={handleClose}
+            className="text-gray-400 hover:text-gray-600"
+            disabled={uploading}
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="space-y-4">
+            {/* Titre du document */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Titre du document *
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="Ex: Permis de conduire, Carte professionnelle..."
+                required
+                disabled={uploading}
+              />
+            </div>
+
+            {/* Zone de drop de fichier */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fichier *
+              </label>
+              
+              <div
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                  dragActive 
+                    ? 'border-orange-400 bg-orange-50' 
+                    : selectedFile 
+                      ? 'border-green-400 bg-green-50' 
+                      : 'border-gray-300 hover:border-gray-400'
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              >
+                {selectedFile ? (
+                  <div className="text-center">
+                    <FileText className="mx-auto h-12 w-12 text-green-500" />
+                    <p className="mt-2 text-sm font-medium text-green-900">
+                      {selectedFile.name}
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFile(null)}
+                      className="mt-2 text-xs text-red-600 hover:text-red-800"
+                      disabled={uploading}
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                    <p className="mt-2 text-sm text-gray-600">
+                      <span className="font-medium">Cliquez pour choisir</span> ou glissez-déposez
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      PDF, DOC, DOCX, JPG, PNG (max 10MB)
+                    </p>
+                  </>
+                )}
+                
+                <input
+                  type="file"
+                  onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  className="hidden"
+                  id="file-upload"
+                  disabled={uploading}
+                />
+                
+                {!selectedFile && (
+                  <label
+                    htmlFor="file-upload"
+                    className="absolute inset-0 cursor-pointer"
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 mt-6">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+              disabled={uploading}
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={!selectedFile || !title.trim() || uploading}
+              className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            >
+              {uploading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Upload en cours...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4" />
+                  Uploader
+                </>
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

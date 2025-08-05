@@ -102,25 +102,25 @@ class ReservationAdminController extends AbstractController
             'clientName' => $client->getFirstName() . ' ' . $client->getLastName(),
             'clientEmail' => $client->getEmail(),
             'clientPhone' => $client->getPhone(),
-            'date' => $reservation->getstartDate()->format('d/m/Y'),
+            'date' => $reservation->getStartDate()->format('d/m/Y'),
             'examCenter' => $reservation->getExamCenter(),
             'formula' => $reservation->getFormula(),
             'status' => $reservation->getStatus(),
+            'startDate' => $reservation->getStartDate()->format('d/m/Y'),
+            'endDate' => $reservation->getEndDate()->format('d/m/Y'),
+            'totalPrice' => $reservation->getTotalPrice(),
+            'pickupLocation' => $reservation->getPickupLocation(),
+            'returnLocation' => $reservation->getReturnLocation(),
+            'examTime' => $reservation->getExamTime(),
+            'financing' => $reservation->getFinancing(),
+            'paymentMethod' => $reservation->getPaymentMethod(),
+            'notes' => $reservation->getNotes(),
             'createdAt' => $reservation->getCreatedAt()->format('d/m/Y'),
-       'startDate'=> $reservation->getStartDate()->format('d/m/Y'),
- 'endDate'=> $reservation->getEndDate()->format('d/m/Y'),
-    'totalPrice'=> $reservation->getTotalPrice(),
-        'pickupLocation' => $reservation->getPickupLocation(),
-        'returnLocation' => $reservation->getReturnLocation(),
-  'examTime'=>$reservation->getExamTime(),
-  'financing' => $reservation->getFinancing(),
-       'paymentMethod' => $reservation->getPaymentMethod(),
-       'notes' => $reservation->getNotes(),
-   'createdAt' => $reservation->getCreatedAt()->format('d/m/Y'),
-        // Documents et facture
-   'documents'=> $reservation->getDocuments(),
- 'invoice'=> $reservation->getInvoice(),
-        'vehicleAssigned' => $reservation->getVehicle() ? $reservation->getVehicle()->getModel() : null
+            'updatedAt' => $reservation->getUpdatedAt() ? $reservation->getUpdatedAt()->format('d/m/Y H:i') : null,
+            // Documents et facture
+            'documents' => $reservation->getDocuments(),
+            'invoice' => $reservation->getInvoice(),
+            'vehicleAssigned' => $reservation->getVehicle() ? $reservation->getVehicle()->getModel() : null
         ];
 
         return $this->json($formattedReservation);
@@ -211,10 +211,7 @@ class ReservationAdminController extends AbstractController
         // Assigner le véhicule à la réservation
         $reservation->setVehicle($vehicle);
         
-        // Si la réservation est en attente, la confirmer
-        if ($reservation->getStatus() === 'pending' || $reservation->getStatus() === ReservationStatus::SUBMITTED) {
-            $reservation->setStatus(ReservationStatus::CONFIRMED);
-        }
+        // Ne pas changer le statut - l'assignation de véhicule est indépendante du statut
         
         // Persister les modifications
         $this->entityManager->flush();
