@@ -58,9 +58,14 @@ const RentalTrackingPage: React.FC = () => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [tempDocuments, setTempDocuments] = useState<{tempId: string, document: any}[]>([]);
 
-  // Fonction pour vérifier si l'upload de documents est nécessaire
-  const requiresDocuments = (status: string): boolean => {
-    return ['awaiting_documents', 'documents_pending', 'documents_rejected'].includes(status);
+  // Fonction pour vérifier si l'upload de documents est autorisé
+  const canUploadDocuments = (status: string): boolean => {
+    return status === 'awaiting_documents';
+  };
+
+  // Fonction pour vérifier si la suppression de documents est autorisée
+  const canDeleteDocuments = (status: string): boolean => {
+    return status === 'awaiting_documents';
   };
 
   // Fonction pour récupérer les documents associés à la réservation
@@ -156,8 +161,8 @@ const RentalTrackingPage: React.FC = () => {
       setRental(data);
       setError(null);
       
-      // Récupérer les documents associés si la réservation nécessite des documents
-      if (data && requiresDocuments(data.status)) {
+      // Récupérer les documents associés pour toutes les réservations
+      if (data) {
         await fetchDocuments(data.id);
       }
     } catch (err: any) {
@@ -594,21 +599,23 @@ const RentalTrackingPage: React.FC = () => {
           </div>
         )}
 
-        {/* Section Documents - Visible seulement si nécessaire */}
-        {rental && requiresDocuments(rental.status) && (
+        {/* Section Documents - Toujours visible */}
+        {rental && (
           <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center">
                 <FileText className="mr-2 h-5 w-5 text-orange-600" />
-                Documents requis pour votre réservation
+                Documents de votre réservation
               </h2>
-              <button
-                onClick={() => setShowUploadModal(true)}
-                className="inline-flex items-center px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Ajouter un document
-              </button>
+              {canUploadDocuments(rental.status) && (
+                <button
+                  onClick={() => setShowUploadModal(true)}
+                  className="inline-flex items-center px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Ajouter un document
+                </button>
+              )}
             </div>
 
             {/* Messages de succès/erreur */}
@@ -630,24 +637,20 @@ const RentalTrackingPage: React.FC = () => {
               </div>
             )}
 
-            {/* Instructions selon le statut */}
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
-              <div className="flex items-start">
-                <AlertCircle className="h-5 w-5 text-orange-500 mr-2 mt-0.5" />
-                <div>
-                  <h3 className="text-sm font-medium text-orange-800">
-                    {rental.status === 'awaiting_documents' && 'Documents en attente'}
-                    {rental.status === 'documents_pending' && 'Documents en cours de validation'}
-                    {rental.status === 'documents_rejected' && 'Documents à renouveler'}
-                  </h3>
-                  <p className="text-sm text-orange-700 mt-1">
-                    {rental.status === 'awaiting_documents' && 'Veuillez fournir les documents demandés pour continuer le traitement de votre réservation.'}
-                    {rental.status === 'documents_pending' && 'Vos documents sont en cours de validation par notre équipe.'}
-                    {rental.status === 'documents_rejected' && 'Certains documents ont été rejetés. Veuillez les corriger et les re-soumettre.'}
-                  </p>
+            {/* Instructions selon le statut - seulement si upload possible */}
+            {canUploadDocuments(rental.status) && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start">
+                  <AlertCircle className="h-5 w-5 text-orange-500 mr-2 mt-0.5" />
+                  <div>
+                    <h3 className="text-sm font-medium text-orange-800">Documents en attente</h3>
+                    <p className="text-sm text-orange-700 mt-1">
+                      Veuillez fournir les documents demandés pour continuer le traitement de votre réservation.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Liste des documents */}
             {documents.length > 0 ? (
@@ -674,13 +677,15 @@ const RentalTrackingPage: React.FC = () => {
                         <Download className="h-3 w-3 mr-1" />
                         Télécharger
                       </a>
-                      <button
-                        onClick={() => handleDocumentDelete(document.id)}
-                        className="inline-flex items-center px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-                      >
-                        <Trash2 className="h-3 w-3 mr-1" />
-                        Supprimer
-                      </button>
+                      {canDeleteDocuments(rental.status) && (
+                        <button
+                          onClick={() => handleDocumentDelete(document.id)}
+                          className="inline-flex items-center px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Supprimer
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -690,7 +695,10 @@ const RentalTrackingPage: React.FC = () => {
                 <FileText className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun document</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Aucun document n'a encore été uploadé pour cette réservation.
+                  {canUploadDocuments(rental.status) 
+                    ? "Aucun document n'a encore été uploadé pour cette réservation."
+                    : "Aucun document n'est associé à cette réservation."
+                  }
                 </p>
               </div>
             )}
@@ -797,8 +805,16 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !uploading) {
+          handleClose();
+        }
+      }}
+    >
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full"
+           onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-6 border-b">
           <h3 className="text-lg font-semibold text-gray-900">Ajouter un document</h3>
           <button
@@ -835,7 +851,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
               </label>
               
               <div
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                   dragActive 
                     ? 'border-orange-400 bg-orange-50' 
                     : selectedFile 
@@ -866,7 +882,10 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                     </button>
                   </div>
                 ) : (
-                  <>
+                  <label
+                    htmlFor="file-upload"
+                    className="cursor-pointer block"
+                  >
                     <Upload className="mx-auto h-12 w-12 text-gray-400" />
                     <p className="mt-2 text-sm text-gray-600">
                       <span className="font-medium">Cliquez pour choisir</span> ou glissez-déposez
@@ -874,7 +893,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                     <p className="text-xs text-gray-500 mt-1">
                       PDF, DOC, DOCX, JPG, PNG (max 10MB)
                     </p>
-                  </>
+                  </label>
                 )}
                 
                 <input
@@ -885,13 +904,6 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                   id="file-upload"
                   disabled={uploading}
                 />
-                
-                {!selectedFile && (
-                  <label
-                    htmlFor="file-upload"
-                    className="absolute inset-0 cursor-pointer"
-                  />
-                )}
               </div>
             </div>
           </div>

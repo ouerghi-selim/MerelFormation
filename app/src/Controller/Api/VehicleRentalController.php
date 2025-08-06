@@ -355,6 +355,53 @@ class VehicleRentalController extends AbstractController
         ]);
     }
 
+    public function updateRental(int $id, Request $request): JsonResponse
+    {
+        // Vérifier que l'utilisateur est admin
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Accès refusé'
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $rental = $this->entityManager->getRepository(VehicleRental::class)->find($id);
+        if (!$rental) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Réservation non trouvée'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        // Mettre à jour les champs autorisés
+        if (isset($data['totalPrice'])) {
+            $rental->setTotalPrice((string) $data['totalPrice']);
+        }
+
+        if (isset($data['notes'])) {
+            $rental->setNotes($data['notes']);
+        }
+
+        // Sauvegarder les modifications
+        $this->entityManager->flush();
+
+        // Retourner la réservation mise à jour
+        $response = [
+            'id' => $rental->getId(),
+            'totalPrice' => $rental->getTotalPrice(),
+            'notes' => $rental->getNotes(),
+            'updatedAt' => $rental->getUpdatedAt() ? $rental->getUpdatedAt()->format('Y-m-d H:i:s') : null
+        ];
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Réservation mise à jour avec succès',
+            'data' => $response
+        ]);
+    }
+
     #[Route('/user/current', name: 'api_vehicle_rental_user_rentals', methods: ['GET'])]
     public function getUserRentals(): JsonResponse
     {

@@ -21,12 +21,14 @@ import {
     Upload,
     Download,
     Trash2,
-    Plus
+    Plus,
+    Edit2,
+    Check
 } from 'lucide-react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminHeader from '../../components/admin/AdminHeader';
 import Button from '../../components/common/Button';
-import { adminReservationsApi, vehicleRentalDocumentsApi } from '../../services/api';
+import { adminReservationsApi, vehicleRentalDocumentsApi, vehicleRentalsApi } from '../../services/api';
 import Alert from '../../components/common/Alert';
 import { getStatusBadgeClass, getStatusLabel as getReservationStatusLabel } from '../../utils/reservationStatuses';
 
@@ -96,6 +98,11 @@ const VehicleReservationDetail: React.FC = () => {
     const [uploading, setUploading] = useState(false);
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
     const [uploadError, setUploadError] = useState<string | null>(null);
+
+    // États pour l'édition du prix
+    const [isEditingPrice, setIsEditingPrice] = useState(false);
+    const [editedPrice, setEditedPrice] = useState<string>('');
+    const [priceUpdateLoading, setPriceUpdateLoading] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -320,6 +327,41 @@ const VehicleReservationDetail: React.FC = () => {
             const errorMessage = err.response?.data?.message || err.message || 'Erreur lors de la suppression du document';
             setUploadError(errorMessage);
             setTimeout(() => setUploadError(null), 5000);
+        }
+    };
+
+    // Fonctions pour la gestion du prix
+    const handleEditPrice = () => {
+        if (reservation?.totalPrice) {
+            setEditedPrice(reservation.totalPrice.toString());
+        }
+        setIsEditingPrice(true);
+    };
+
+    const handleCancelEditPrice = () => {
+        setIsEditingPrice(false);
+        setEditedPrice('');
+    };
+
+    const handleSavePrice = async () => {
+        if (!reservation || !editedPrice) return;
+
+        try {
+            setPriceUpdateLoading(true);
+            const updatedReservation = await vehicleRentalsApi.update(reservation.id, {
+                totalPrice: parseFloat(editedPrice)
+            });
+            
+            setReservation(updatedReservation.data);
+            setIsEditingPrice(false);
+            setSuccessMessage('Prix mis à jour avec succès');
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Erreur lors de la mise à jour du prix';
+            setError(errorMessage);
+            setTimeout(() => setError(null), 5000);
+        } finally {
+            setPriceUpdateLoading(false);
         }
     };
 
@@ -611,11 +653,66 @@ const VehicleReservationDetail: React.FC = () => {
                                 </div>
                                 <div className="p-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-500">Prix total</label>
-                                            <p className="mt-1 text-lg font-semibold text-gray-900">
-                                                {reservation.totalPrice ? `${reservation.totalPrice}€` : 'Non renseigné'}
-                                            </p>
+                                        <div className="col-span-2">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <label className="text-sm font-medium text-gray-500">Prix total</label>
+                                                {!isEditingPrice && (
+                                                    <button
+                                                        onClick={handleEditPrice}
+                                                        className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                                                    >
+                                                        <Edit2 className="w-3 h-3 mr-1" />
+                                                        Modifier
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {isEditingPrice ? (
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="relative flex-1 max-w-xs">
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            min="0"
+                                                            value={editedPrice}
+                                                            onChange={(e) => setEditedPrice(e.target.value)}
+                                                            className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            placeholder="0.00"
+                                                        />
+                                                        <span className="absolute right-3 top-2 text-gray-500">€</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={handleSavePrice}
+                                                        disabled={priceUpdateLoading || !editedPrice}
+                                                        className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                                    >
+                                                        {priceUpdateLoading ? (
+                                                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                                                        ) : (
+                                                            <Check className="w-3 h-3 mr-1" />
+                                                        )}
+                                                        Valider
+                                                    </button>
+                                                    <button
+                                                        onClick={handleCancelEditPrice}
+                                                        disabled={priceUpdateLoading}
+                                                        className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                                    >
+                                                        <X className="w-3 h-3 mr-1" />
+                                                        Annuler
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center space-x-2">
+                                                    <p className="text-lg font-semibold text-gray-900">
+                                                        {reservation.totalPrice ? `${reservation.totalPrice}€` : 'Non renseigné'}
+                                                    </p>
+                                                    {reservation.vehicle && (
+                                                        <span className="text-xs text-gray-500">
+                                                            (Prix suggéré : {(reservation.vehicle.dailyRate * ((new Date(reservation.endDate).getTime() - new Date(reservation.startDate).getTime()) / (1000 * 60 * 60 * 24)) || 0).toFixed(2)}€)
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                         <div>
                                             <label className="text-sm font-medium text-gray-500">Mode de paiement</label>
@@ -1070,8 +1167,16 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            onClick={(e) => {
+                if (e.target === e.currentTarget && !uploading) {
+                    handleClose();
+                }
+            }}
+        >
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full"
+                 onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between p-6 border-b">
                     <h3 className="text-lg font-semibold text-gray-900">Ajouter un document</h3>
                     <button
@@ -1108,7 +1213,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                             </label>
                             
                             <div
-                                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                                className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                                     dragActive 
                                         ? 'border-blue-400 bg-blue-50' 
                                         : selectedFile 
@@ -1139,7 +1244,10 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                                         </button>
                                     </div>
                                 ) : (
-                                    <>
+                                    <label
+                                        htmlFor="admin-file-upload"
+                                        className="cursor-pointer block"
+                                    >
                                         <Upload className="mx-auto h-12 w-12 text-gray-400" />
                                         <p className="mt-2 text-sm text-gray-600">
                                             <span className="font-medium">Cliquez pour choisir</span> ou glissez-déposez
@@ -1147,7 +1255,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                                         <p className="text-xs text-gray-500 mt-1">
                                             PDF, DOC, DOCX, JPG, PNG (max 10MB)
                                         </p>
-                                    </>
+                                    </label>
                                 )}
                                 
                                 <input
@@ -1158,13 +1266,6 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                                     id="admin-file-upload"
                                     disabled={uploading}
                                 />
-                                
-                                {!selectedFile && (
-                                    <label
-                                        htmlFor="admin-file-upload"
-                                        className="absolute inset-0 cursor-pointer"
-                                    />
-                                )}
                             </div>
                         </div>
                     </div>

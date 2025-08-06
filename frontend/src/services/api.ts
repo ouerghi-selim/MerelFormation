@@ -254,6 +254,9 @@ export const vehicleRentalsApi = {
         }),
     getAvailable: (date: string) =>
         api.get(`/vehicles/available?date=${date}`),
+    // Admin endpoints for vehicle rental management
+    update: (id: number, data: any) => 
+        api.put(`/admin/vehicle-rentals/${id}`, data),
 };
 
 export const adminEmailTemplatesApi = {

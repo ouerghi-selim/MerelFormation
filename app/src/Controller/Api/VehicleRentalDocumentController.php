@@ -261,10 +261,12 @@ class VehicleRentalDocumentController extends AbstractController
             return $this->json(['message' => 'Ce document n\'est pas associé à une réservation de véhicule'], 400);
         }
 
-        // Supprimer le fichier physique
-        $filePath = $this->getParameter('kernel.project_dir') . '/public/uploads/documents/' . $document->getFileName();
-        if (file_exists($filePath)) {
-            unlink($filePath);
+        // Supprimer le fichier physique si fileName n'est pas null
+        if ($document->getFileName() !== null) {
+            $filePath = $this->getParameter('kernel.project_dir') . '/public/uploads/documents/' . $document->getFileName();
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
         }
 
         // Supprimer l'entité de la BDD
@@ -287,6 +289,11 @@ class VehicleRentalDocumentController extends AbstractController
         // Vérifier que c'est bien un document de réservation de véhicule
         if (!$document->getVehicleRental()) {
             return $this->json(['message' => 'Ce document n\'est pas associé à une réservation de véhicule'], 400);
+        }
+
+        // Vérifier que fileName n'est pas null
+        if ($document->getFileName() === null) {
+            return $this->json(['message' => 'Nom de fichier manquant'], 404);
         }
 
         $filePath = $this->getParameter('kernel.project_dir') . '/public/uploads/documents/' . $document->getFileName();
