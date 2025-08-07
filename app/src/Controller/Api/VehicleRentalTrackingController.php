@@ -56,7 +56,12 @@ class VehicleRentalTrackingController extends AbstractController
             'examTime' => $rental->getExamTime(),
             'notes' => $rental->getNotes(),
             'adminNotes' => $rental->getAdminNotes(),
-            'statusHistory' => $this->getStatusHistory($rental)
+            'statusHistory' => $this->getStatusHistory($rental),
+            // Documents de permis de conduire
+            'driverLicense' => [
+                'frontFile' => $user?->getDriverLicenseFrontFile(),
+                'backFile' => $user?->getDriverLicenseBackFile()
+            ]
         ]);
     }
 

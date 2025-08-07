@@ -120,7 +120,17 @@ class ReservationAdminController extends AbstractController
             // Documents et facture
             'documents' => $reservation->getDocuments(),
             'invoice' => $reservation->getInvoice(),
-            'vehicleAssigned' => $reservation->getVehicle() ? $reservation->getVehicle()->getModel() : null
+            'vehicleAssigned' => $reservation->getVehicle() ? $reservation->getVehicle()->getModel() : null,
+            // Informations utilisateur avec documents de permis
+            'user' => [
+                'id' => $client->getId(),
+                'firstName' => $client->getFirstName(),
+                'lastName' => $client->getLastName(),
+                'email' => $client->getEmail(),
+                'phone' => $client->getPhone(),
+                'driverLicenseFrontFile' => $client->getDriverLicenseFrontFile(),
+                'driverLicenseBackFile' => $client->getDriverLicenseBackFile()
+            ]
         ];
 
         return $this->json($formattedReservation);

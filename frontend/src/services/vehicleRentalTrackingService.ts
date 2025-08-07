@@ -20,6 +20,10 @@ export interface VehicleRentalTracking {
   notes?: string;
   adminNotes?: string;
   statusHistory: StatusHistoryItem[];
+  driverLicense: {
+    frontFile?: string;
+    backFile?: string;
+  };
 }
 
 export interface StatusHistoryItem {

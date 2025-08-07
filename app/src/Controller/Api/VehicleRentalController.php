@@ -384,6 +384,81 @@ class VehicleRentalController extends AbstractController
             $rental->setNotes($data['notes']);
         }
 
+        // Informations client
+        if (isset($data['firstName']) || isset($data['lastName'])) {
+            $firstName = $data['firstName'] ?? $rental->getUser()->getFirstName();
+            $lastName = $data['lastName'] ?? $rental->getUser()->getLastName();
+            $rental->getUser()->setFirstName($firstName);
+            $rental->getUser()->setLastName($lastName);
+        }
+
+        if (isset($data['customerEmail'])) {
+            $rental->getUser()->setEmail($data['customerEmail']);
+        }
+
+        if (isset($data['customerPhone'])) {
+            $rental->getUser()->setPhone($data['customerPhone']);
+        }
+
+        if (isset($data['birthDate'])) {
+            if ($data['birthDate']) {
+                $birthDate = new \DateTimeImmutable($data['birthDate']);
+                $rental->getUser()->setBirthDate($birthDate);
+            }
+        }
+
+        if (isset($data['birthPlace'])) {
+            $rental->getUser()->setBirthPlace($data['birthPlace']);
+        }
+
+        // Adresse
+        if (isset($data['address'])) {
+            $rental->getUser()->setAddress($data['address']);
+        }
+
+        if (isset($data['postalCode'])) {
+            $rental->getUser()->setPostalCode($data['postalCode']);
+        }
+
+        if (isset($data['city'])) {
+            $rental->getUser()->setCity($data['city']);
+        }
+
+        if (isset($data['facturation'])) {
+            // Pour l'instant on peut stocker ça dans notes ou créer un nouveau champ
+            $rental->setFacturation($data['facturation']);
+        }
+
+        // Informations examen
+        if (isset($data['examCenter'])) {
+            $rental->setExamCenter($data['examCenter']);
+        }
+
+        if (isset($data['formula'])) {
+            $rental->setFormula($data['formula']);
+        }
+
+        if (isset($data['examDate'])) {
+            if ($data['examDate']) {
+                $examDate = new \DateTimeImmutable($data['examDate']);
+                $rental->setStartDate($examDate);
+                $rental->setEndDate($examDate); // Pour les examens, début = fin
+            }
+        }
+
+        if (isset($data['examTime'])) {
+            $rental->setExamTime($data['examTime']);
+        }
+
+        // Paiement
+        if (isset($data['financing'])) {
+            $rental->setFinancing($data['financing']);
+        }
+
+        if (isset($data['paymentMethod'])) {
+            $rental->setPaymentMethod($data['paymentMethod']);
+        }
+
         // Sauvegarder les modifications
         $this->entityManager->flush();
 

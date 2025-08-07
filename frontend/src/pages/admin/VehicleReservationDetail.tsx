@@ -31,6 +31,7 @@ import Button from '../../components/common/Button';
 import { adminReservationsApi, vehicleRentalDocumentsApi, vehicleRentalsApi } from '../../services/api';
 import Alert from '../../components/common/Alert';
 import { getStatusBadgeClass, getStatusLabel as getReservationStatusLabel } from '../../utils/reservationStatuses';
+import { FileDisplay } from '../../components/common/FileDisplay';
 
 // Interface pour les documents
 interface VehicleDocument {
@@ -68,6 +69,16 @@ interface VehicleReservationDetail {
     // Documents et facture
     documents?: any[];
     invoice?: any;
+    // Informations utilisateur avec documents de permis
+    user?: {
+        id: number;
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone?: string;
+        driverLicenseFrontFile?: string;
+        driverLicenseBackFile?: string;
+    };
 }
 
 const VehicleReservationDetail: React.FC = () => {
@@ -103,6 +114,21 @@ const VehicleReservationDetail: React.FC = () => {
     const [isEditingPrice, setIsEditingPrice] = useState(false);
     const [editedPrice, setEditedPrice] = useState<string>('');
     const [priceUpdateLoading, setPriceUpdateLoading] = useState(false);
+
+    // États pour l'édition des sections
+    const [isEditingClient, setIsEditingClient] = useState(false);
+    const [isEditingAddress, setIsEditingAddress] = useState(false);
+    const [isEditingExam, setIsEditingExam] = useState(false);
+    const [isEditingFinance, setIsEditingFinance] = useState(false);
+    const [isEditingNotes, setIsEditingNotes] = useState(false);
+    const [sectionUpdateLoading, setSectionUpdateLoading] = useState<string | null>(null);
+
+    // États pour stocker les données éditées
+    const [editedData, setEditedData] = useState<any>({});
+
+    // États pour les listes déroulantes
+    const [examCenters, setExamCenters] = useState<any[]>([]);
+    const [formulas, setFormulas] = useState<any[]>([]);
 
     useEffect(() => {
         if (id) {
@@ -365,6 +391,99 @@ const VehicleReservationDetail: React.FC = () => {
         }
     };
 
+    // Fonctions pour la gestion de l'édition par section
+    const handleEditSection = (section: string) => {
+        if (!reservation) return;
+
+        // Initialiser editedData avec les données actuelles
+        const currentData = {
+            // Informations client
+            customerName: reservation.customerName,
+            firstName: reservation.customerName?.split(' ').slice(0, -1).join(' ') || '',
+            lastName: reservation.customerName?.split(' ').slice(-1)[0] || '',
+            customerEmail: reservation.customerEmail, 
+            customerPhone: reservation.customerPhone,
+            birthDate: reservation.birthDate ? reservation.birthDate.split('T')[0] : '',
+            birthPlace: reservation.birthPlace,
+            
+            // Adresse
+            address: reservation.address,
+            postalCode: reservation.postalCode,
+            city: reservation.city,
+            facturation: reservation.facturation,
+            
+            // Examen
+            examCenter: reservation.examCenter,
+            formula: reservation.formula,
+            examDate: reservation.examDate,
+            examTime: reservation.examTime,
+            
+            // Finance
+            financing: reservation.financing,
+            paymentMethod: reservation.paymentMethod,
+            
+            // Notes
+            observations: reservation.notes
+        };
+        
+        setEditedData(currentData);
+
+        // Activer l'édition pour la section spécifiée
+        switch (section) {
+            case 'client': setIsEditingClient(true); break;
+            case 'address': setIsEditingAddress(true); break;
+            case 'exam': setIsEditingExam(true); break;
+            case 'finance': setIsEditingFinance(true); break;
+            case 'notes': setIsEditingNotes(true); break;
+        }
+    };
+
+    const handleCancelEditSection = (section: string) => {
+        switch (section) {
+            case 'client': setIsEditingClient(false); break;
+            case 'address': setIsEditingAddress(false); break;
+            case 'exam': setIsEditingExam(false); break;
+            case 'finance': setIsEditingFinance(false); break;
+            case 'notes': setIsEditingNotes(false); break;
+        }
+        setEditedData({});
+    };
+
+    const handleSaveSection = async (section: string) => {
+        if (!reservation) return;
+
+        try {
+            setSectionUpdateLoading(section);
+            const updatedReservation = await vehicleRentalsApi.update(reservation.id, editedData);
+            
+            setReservation(updatedReservation.data);
+            handleCancelEditSection(section);
+            setSuccessMessage(`${getSectionLabel(section)} mis à jour avec succès`);
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || `Erreur lors de la mise à jour des ${getSectionLabel(section)}`;
+            setError(errorMessage);
+            setTimeout(() => setError(null), 5000);
+        } finally {
+            setSectionUpdateLoading(null);
+        }
+    };
+
+    const getSectionLabel = (section: string) => {
+        switch (section) {
+            case 'client': return 'informations client';
+            case 'address': return 'informations d\'adresse';
+            case 'exam': return 'informations d\'examen';
+            case 'finance': return 'informations financières';
+            case 'notes': return 'notes';
+            default: return 'informations';
+        }
+    };
+
+    const updateEditedData = (field: string, value: any) => {
+        setEditedData(prev => ({ ...prev, [field]: value }));
+    };
+
     const getStatusColor = (status: string) => {
         return getStatusBadgeClass(status) + ' border';
     };
@@ -532,32 +651,151 @@ const VehicleReservationDetail: React.FC = () => {
                             {/* Section Client */}
                             <div className="bg-white rounded-lg shadow">
                                 <div className="p-6 border-b border-gray-200">
-                                    <div className="flex items-center">
-                                        <User className="w-5 h-5 text-blue-600 mr-2" />
-                                        <h2 className="text-lg font-semibold text-gray-900">Informations Client</h2>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            <User className="w-5 h-5 text-blue-600 mr-2" />
+                                            <h2 className="text-lg font-semibold text-gray-900">Informations Client</h2>
+                                        </div>
+                                        {!isEditingClient && (
+                                            <button
+                                                onClick={() => handleEditSection('client')}
+                                                className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                                            >
+                                                <Edit2 className="w-3 h-3 mr-1" />
+                                                Modifier
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="p-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-500">Nom complet</label>
-                                            <p className="mt-1 text-sm text-gray-900">{reservation.clientName}</p>
-                                        </div>
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-500">Email</label>
-                                            <div className="mt-1 flex items-center">
-                                                <Mail className="w-4 h-4 text-gray-400 mr-2" />
-                                                <p className="text-sm text-gray-900">{reservation.clientEmail}</p>
+                                    {isEditingClient ? (
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Nom *</label>
+                                                    <input
+                                                        type="text"
+                                                        value={editedData.lastName || ''}
+                                                        onChange={(e) => updateEditedData('lastName', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="Nom de famille"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Prénom *</label>
+                                                    <input
+                                                        type="text"
+                                                        value={editedData.firstName || ''}
+                                                        onChange={(e) => updateEditedData('firstName', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="Prénom"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Email *</label>
+                                                    <input
+                                                        type="email"
+                                                        value={editedData.customerEmail || ''}
+                                                        onChange={(e) => updateEditedData('customerEmail', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="email@exemple.com"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Téléphone *</label>
+                                                    <input
+                                                        type="tel"
+                                                        value={editedData.customerPhone || ''}
+                                                        onChange={(e) => updateEditedData('customerPhone', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="06 XX XX XX XX"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Date de naissance</label>
+                                                    <input
+                                                        type="date"
+                                                        value={editedData.birthDate || ''}
+                                                        onChange={(e) => updateEditedData('birthDate', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Lieu de naissance</label>
+                                                    <input
+                                                        type="text"
+                                                        value={editedData.birthPlace || ''}
+                                                        onChange={(e) => updateEditedData('birthPlace', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="Ville de naissance"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-end space-x-2 pt-4 border-t">
+                                                <button
+                                                    onClick={() => handleCancelEditSection('client')}
+                                                    disabled={sectionUpdateLoading === 'client'}
+                                                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 disabled:opacity-50 flex items-center"
+                                                >
+                                                    <X className="w-3 h-3 mr-1" />
+                                                    Annuler
+                                                </button>
+                                                <button
+                                                    onClick={() => handleSaveSection('client')}
+                                                    disabled={sectionUpdateLoading === 'client'}
+                                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center"
+                                                >
+                                                    {sectionUpdateLoading === 'client' ? (
+                                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                                                    ) : (
+                                                        <Check className="w-3 h-3 mr-1" />
+                                                    )}
+                                                    Valider
+                                                </button>
                                             </div>
                                         </div>
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-500">Téléphone</label>
-                                            <div className="mt-1 flex items-center">
-                                                <Phone className="w-4 h-4 text-gray-400 mr-2" />
-                                                <p className="text-sm text-gray-900">{reservation.clientPhone}</p>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500">Nom complet</label>
+                                                <p className="mt-1 text-sm text-gray-900">{reservation.customerName || 'Non renseigné'}</p>
+                                            </div>
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500">Email</label>
+                                                <div className="mt-1 flex items-center">
+                                                    <Mail className="w-4 h-4 text-gray-400 mr-2" />
+                                                    <p className="text-sm text-gray-900">{reservation.customerEmail || 'Non renseigné'}</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500">Téléphone</label>
+                                                <div className="mt-1 flex items-center">
+                                                    <Phone className="w-4 h-4 text-gray-400 mr-2" />
+                                                    <p className="text-sm text-gray-900">{reservation.customerPhone || 'Non renseigné'}</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500">Date de naissance</label>
+                                                <div className="mt-1 flex items-center">
+                                                    <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                                                    <p className="text-sm text-gray-900">
+                                                        {reservation.birthDate ? new Date(reservation.birthDate).toLocaleDateString('fr-FR') : 'Non renseigné'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500">Lieu de naissance</label>
+                                                <div className="mt-1 flex items-center">
+                                                    <MapPin className="w-4 h-4 text-gray-400 mr-2" />
+                                                    <p className="text-sm text-gray-900">{reservation.birthPlace || 'Non renseigné'}</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -783,6 +1021,54 @@ const VehicleReservationDetail: React.FC = () => {
                                             </p>
                                         </div>
                                     )}
+
+                                    {/* Documents de permis de conduire */}
+                                    {(reservation.user?.driverLicenseFrontFile || reservation.user?.driverLicenseBackFile) && (
+                                        <div className="mb-6">
+                                            <h3 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
+                                                <FileText className="w-4 h-4 mr-2 text-blue-600" />
+                                                Documents de permis de conduire
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {reservation.user.driverLicenseFrontFile && (
+                                                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                                        <div className="p-3 bg-gray-50 border-b">
+                                                            <h4 className="text-sm font-medium text-gray-900">Permis - Recto</h4>
+                                                        </div>
+                                                        <div className="p-3">
+                                                            <FileDisplay
+                                                                fileName={reservation.user.driverLicenseFrontFile}
+                                                                baseUrl="/uploads/licenses"
+                                                                title="Permis de conduire - Recto"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {reservation.user.driverLicenseBackFile && (
+                                                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                                        <div className="p-3 bg-gray-50 border-b">
+                                                            <h4 className="text-sm font-medium text-gray-900">Permis - Verso</h4>
+                                                        </div>
+                                                        <div className="p-3">
+                                                            <FileDisplay
+                                                                fileName={reservation.user.driverLicenseBackFile}
+                                                                baseUrl="/uploads/licenses"
+                                                                title="Permis de conduire - Verso"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Autres documents */}
+                                    <div className="mb-4">
+                                        <h3 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
+                                            <FileText className="w-4 h-4 mr-2 text-green-600" />
+                                            Autres documents
+                                        </h3>
+                                    </div>
 
                                     {/* Liste des documents */}
                                     {documents.length > 0 ? (

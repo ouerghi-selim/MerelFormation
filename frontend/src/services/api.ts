@@ -3,11 +3,15 @@ import axios from 'axios';
 // Configuration de l'API
 const baseURL = import.meta.env.VITE_API_URL || '/api';
 
+// Configuration pour les fichiers statiques (images, documents, etc.)
+export const mediaBaseURL = import.meta.env.VITE_MEDIA_URL || '';
+
 // Log de configuration (uniquement en mode développement)
 if (import.meta.env.DEV) {
     console.log('🌍 API Configuration:', {
         environment: import.meta.env.MODE,
-        baseURL
+        baseURL,
+        mediaBaseURL
     });
 }
 

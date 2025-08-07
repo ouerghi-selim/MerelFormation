@@ -19,6 +19,7 @@ import {
   Trash2,
   X
 } from 'lucide-react';
+import { FileDisplay } from '../components/common/FileDisplay';
 import { 
   trackRental, 
   getStatusColor, 
@@ -618,6 +619,58 @@ const RentalTrackingPage: React.FC = () => {
               )}
             </div>
 
+            {/* Documents de permis de conduire */}
+            {(rental.driverLicense?.frontFile || rental.driverLicense?.backFile) && (
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
+                  <FileText className="w-4 h-4 mr-2 text-blue-600" />
+                  Votre permis de conduire
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {rental.driverLicense.frontFile && (
+                    <div className="border border-gray-200 rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50">
+                      <div className="p-3 bg-blue-100 border-b border-blue-200">
+                        <h4 className="text-sm font-medium text-blue-900 flex items-center">
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Permis - Recto
+                        </h4>
+                      </div>
+                      <div className="p-3">
+                        <FileDisplay
+                          fileName={rental.driverLicense.frontFile}
+                          baseUrl="/uploads/licenses"
+                          title="Permis de conduire - Recto"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {rental.driverLicense.backFile && (
+                    <div className="border border-gray-200 rounded-lg overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50">
+                      <div className="p-3 bg-green-100 border-b border-green-200">
+                        <h4 className="text-sm font-medium text-green-900 flex items-center">
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Permis - Verso
+                        </h4>
+                      </div>
+                      <div className="p-3">
+                        <FileDisplay
+                          fileName={rental.driverLicense.backFile}
+                          baseUrl="/uploads/licenses"
+                          title="Permis de conduire - Verso"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-xs text-green-800 flex items-center">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Documents de permis reçus et validés
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Messages de succès/erreur */}
             {uploadSuccess && (
               <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4">
@@ -636,6 +689,14 @@ const RentalTrackingPage: React.FC = () => {
                 </p>
               </div>
             )}
+
+            {/* Séparateur et titre pour autres documents */}
+            <div className="mb-4">
+              <h3 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
+                <FileText className="w-4 h-4 mr-2 text-orange-600" />
+                Autres documents
+              </h3>
+            </div>
 
             {/* Instructions selon le statut - seulement si upload possible */}
             {canUploadDocuments(rental.status) && (
