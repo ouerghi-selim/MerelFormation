@@ -662,12 +662,6 @@ const RentalTrackingPage: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                  <p className="text-xs text-green-800 flex items-center">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Documents de permis reçus et validés
-                  </p>
-                </div>
               </div>
             )}
 
@@ -689,6 +683,56 @@ const RentalTrackingPage: React.FC = () => {
                 </p>
               </div>
             )}
+
+            {/* Section Facture - Mise en avant */}
+            {(() => {
+              const invoice = documents.find(doc => 
+                doc.title.startsWith('INVOICE_') || doc.title.startsWith('[FACTURE]')
+              );
+              
+              return invoice ? (
+                <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4">
+                  <div className="flex items-center mb-3">
+                    <div className="bg-green-100 p-2 rounded-full mr-3">
+                      <DollarSign className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-green-900 flex items-center">
+                        Facture disponible
+                      </h3>
+                      <p className="text-sm text-green-700">
+                        Votre facture est prête et peut être téléchargée
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <FileText className="h-6 w-6 text-green-600 mr-3" />
+                        <div>
+                          <p className="font-medium text-green-900">{invoice.title}</p>
+                          <p className="text-sm text-green-700">
+                            {invoice.fileType.toUpperCase()} • {invoice.fileSize} • 
+                            Généré le {new Date(invoice.uploadedAt).toLocaleDateString('fr-FR')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <a
+                          href={invoice.downloadUrl}
+                          download
+                          className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Télécharger la facture
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null;
+            })()}
 
             {/* Séparateur et titre pour autres documents */}
             <div className="mb-4">
@@ -713,11 +757,11 @@ const RentalTrackingPage: React.FC = () => {
               </div>
             )}
 
-            {/* Liste des documents */}
-            {documents.length > 0 ? (
+            {/* Liste des documents (exclure les factures) */}
+            {documents.filter(doc => !doc.title.startsWith('INVOICE_') && !doc.title.startsWith('[FACTURE]')).length > 0 ? (
               <div className="space-y-3">
                 <h3 className="text-sm font-medium text-gray-900">Documents soumis</h3>
-                {documents.map((document) => (
+                {documents.filter(doc => !doc.title.startsWith('INVOICE_') && !doc.title.startsWith('[FACTURE]')).map((document) => (
                   <div key={document.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                     <div className="flex items-center">
                       <FileText className="h-5 w-5 text-gray-400 mr-3" />
@@ -757,8 +801,8 @@ const RentalTrackingPage: React.FC = () => {
                 <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun document</h3>
                 <p className="mt-1 text-sm text-gray-500">
                   {canUploadDocuments(rental.status) 
-                    ? "Aucun document n'a encore été uploadé pour cette réservation."
-                    : "Aucun document n'est associé à cette réservation."
+                    ? "Aucun document complémentaire n'a encore été uploadé pour cette réservation."
+                    : "Aucun document complémentaire n'est associé à cette réservation."
                   }
                 </p>
               </div>

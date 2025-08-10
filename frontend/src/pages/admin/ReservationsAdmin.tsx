@@ -10,14 +10,19 @@ import { getStatusBadgeClass, getStatusLabel, ReservationStatus, ReservationTran
 
 interface VehicleReservation {
   id: number;
-  clientName: string;
-  clientEmail: string;
-  clientPhone: string;
   date: string;
   examCenter: string;
   formula: string;
   status: string;
   vehicleAssigned: string | null;
+  user: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    fullName: string;
+  };
 }
 
 interface SessionReservation {
@@ -261,7 +266,7 @@ const ReservationsAdmin: React.FC = () => {
       const reservation = vehicleReservations.find(r => r.id === reservationId);
       if (reservation) {
         currentStatus = reservation.status;
-        studentName = reservation.clientName;
+        studentName = reservation.user.fullName;
       }
     } else {
       const reservation = sessionReservations.find(r => r.id === reservationId);
@@ -532,8 +537,8 @@ const ReservationsAdmin: React.FC = () => {
                             {vehicleReservations.map((reservation) => (
                                 <tr key={reservation.id}>
                                   <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm font-medium text-gray-900">{reservation.clientName}</div>
-                                    <div className="text-xs text-gray-500">{reservation.clientEmail}</div>
+                                    <div className="text-sm font-medium text-gray-900">{reservation.user.fullName}</div>
+                                    <div className="text-xs text-gray-500">{reservation.user.email}</div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-900">{reservation.date}</div>

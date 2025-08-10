@@ -5,8 +5,8 @@
 **Développeur Principal :** Selim OUERGHI (ouerghi-selim)  
 **Repository :** https://github.com/ouerghi-selim/MerelFormation  
 **Type :** Application de gestion de formations taxi + location de véhicules  
-**Status :** ✅ 100% FONCTIONNEL - Projet complet avec système d'inscription par étapes + Affichage documents d'inscription + Système d'entreprise/employeur + Validation documents avec emails + **🆕 Système de statuts de réservation professionnel (19 statuts formations + 12 statuts véhicules) avec emails automatiques + Workflow complet d'inscription**  
-**Dernière mise à jour :** 29 Juillet 2025 - Système d'emails véhicules complet avec 12 templates, WYSIWYG intégré et messages personnalisés
+**Status :** ✅ 100% FONCTIONNEL - Projet complet avec système d'inscription par étapes + Affichage documents d'inscription + Système d'entreprise/employeur + Validation documents avec emails + **🆕 Système de statuts de réservation professionnel (19 statuts formations + 12 statuts véhicules) avec emails automatiques + Workflow complet d'inscription + 🆕 Système de visualisation adaptative des documents par type de fichier**  
+**Dernière mise à jour :** 07 Août 2025 - Système de visualisation intelligente des documents (PDF, images, Word, Excel) avec composants réutilisables
 
 ## 🖗️ Architecture Technique
 
@@ -1065,7 +1065,13 @@ $this->emailService->sendTemplatedEmailByEventAndRole(
 
 Ce système professionnalise la gestion des documents d'inscription en ajoutant un contrôle qualité rigoureux avec communication automatisée.
 
-**🎯 NOUVELLES FONCTIONNALITÉS AJOUTÉES (Juillet 2025) :**
+**🎯 NOUVELLES FONCTIONNALITÉS AJOUTÉES (Août 2025) :**
+- **🆕 Système Page de Modification Réservation Véhicule Complet** - Interface administrative complète pour modifier tous les aspects d'une réservation véhicule
+- **🆕 Données Centralisées User** - Réorganisation complète pour éliminer la duplication des données client (clientName/user.firstName)
+- **🆕 Formulaires d'Édition Dynamiques** - Modification par section avec pré-remplissage automatique des données existantes
+- **🆕 Système de Gestion de Factures** - Integration upload/téléchargement factures dans section financière comme document standard
+- **🆕 API Backend Uniformisée** - Structure cohérente avec données client centralisées dans objet user uniquement
+- **🆕 Centres d'Examen et Formules Dynamiques** - Remplacement listes statiques par données dynamiques depuis API `/api/centers/with-formulas`
 - **🆕 Système d'Inscription par Étapes** - Interface professionnelle `/setup-password` en 2 étapes avec validation sécurisée
 - **🆕 Tokens de Finalisation** - Système de tokens 64 chars avec expiration 7 jours et validation multi-niveaux
 - **🆕 Documents Conditionnels** - Upload optionnel selon type formation (INITIALE→permis, MOBILITÉ→carte pro)
@@ -1346,3 +1352,127 @@ Toutes les méthodes de l'ancien `ExamCenterRepository` préservées et amélior
 - **✅ Maintenabilité** : Architecture claire et extensible
 
 Cette unification transforme MerelFormation d'une architecture dupliquée vers une **solution moderne, cohérente et maintenable** tout en préservant toutes les fonctionnalités existantes.
+
+## 🆕 NOUVEAU : Système de Visualisation Adaptative des Documents (Août 2025)
+
+### 🎯 **Problème Résolu**
+L'ancien système affichait tous les documents comme des images, causant des erreurs de visualisation pour les PDF, documents Word/Excel et autres formats non-images.
+
+### 🚀 **Solution Implémentée**
+
+#### **Architecture de Détection Intelligente**
+- **`imageUtils.ts`** - Utilitaires de détection et configuration centralisée
+- **`FileDisplay.tsx`** - Composant réutilisable pour affichage adaptatif
+- **`api.ts`** - Configuration `mediaBaseURL` centralisée pour flexibilité environnements
+
+#### **Détection Automatique par Extension**
+```typescript
+// Formats supportés avec icônes et couleurs spécifiques
+- Images: JPG, JPEG, PNG, GIF, WEBP → Prévisualisation + miniature
+- PDF: Icône rouge + "Document PDF"
+- Word: DOC, DOCX → Icône bleue + "Document Word"  
+- Excel: XLS, XLSX → Icône verte + "Feuille Excel"
+- Texte: TXT → Icône grise + "Document texte"
+- Autres: Extension détectée → Icône générique
+```
+
+### 🎨 **Interface Utilisateur**
+
+#### **Pour les Images (JPEG, PNG, etc.)**
+- ✅ **Miniature cliquable** : Aperçu visuel direct
+- ✅ **Zoom interactif** : Clic → ouverture en plein écran
+- ✅ **Bouton téléchargement** : Bleu avec icône
+
+#### **Pour les PDF et Autres Documents**
+- ✅ **Grande icône colorée** : Rouge pour PDF, bleu pour Word, etc.
+- ✅ **Informations détaillées** : Type + nom du fichier + extension
+- ✅ **Prévisualisation** : Clic → ouverture dans navigateur/lecteur approprié
+- ✅ **Bouton téléchargement** : Couleur adaptée au type
+
+### 🔧 **Configuration Technique**
+
+#### **Gestion Environnements avec `mediaBaseURL`**
+```bash
+# Développement
+VITE_MEDIA_URL="" → URLs relatives '/uploads/licenses/file.pdf'
+
+# Production CDN
+VITE_MEDIA_URL="https://cdn.merelformation.com" 
+→ 'https://cdn.merelformation.com/uploads/licenses/file.pdf'
+```
+
+#### **Composant Réutilisable**
+```typescript
+<FileDisplay
+  fileName="document.pdf"
+  baseUrl="/uploads/licenses" 
+  title="Permis de conduire - Recto"
+  showDownload={true}
+/>
+```
+
+### 🎯 **Intégration Pages Existantes**
+
+#### **Page Admin (`VehicleReservationDetail.tsx`)**
+- ✅ Documents de permis avec visualisation adaptative
+- ✅ Section séparée "Documents de permis" vs "Autres documents"
+- ✅ Interface cohérente avec design existant
+
+#### **Page Tracking Public (`RentalTrackingPage.tsx`)**
+- ✅ Documents de permis pour utilisateurs finaux
+- ✅ Design attractif avec dégradés colorés conservés
+- ✅ Fonctionnalité prévisualisation/téléchargement
+
+### 📊 **Impact Business & UX**
+
+#### **Avant (Problématique)**
+```
+❌ PDF affiché comme image cassée
+❌ Documents Word/Excel non reconnus
+❌ UX frustrante pour utilisateurs
+❌ Pas de distinction visuelle entre formats
+```
+
+#### **Après (Solution Professionnelle)**
+```
+✅ PDF: Icône rouge claire avec type identifié
+✅ Images: Prévisualisation parfaite
+✅ Word/Excel: Icônes appropriées et informatives
+✅ UX intuitive: Actions évidentes pour chaque type
+✅ Cohérence visuelle: Même expérience partout
+```
+
+### 🏆 **Avantages Techniques**
+
+#### **Architecture Propre**
+- **Séparation des responsabilités** : Utilitaires `.ts` + Composants `.tsx`
+- **Configuration centralisée** : `mediaBaseURL` dans `api.ts`
+- **Réutilisabilité** : Composant `FileDisplay` utilisable partout
+- **Maintenabilité** : Ajout facile de nouveaux formats
+
+#### **Performance et Flexibilité**
+- **Chargement conditionnel** : Miniatures uniquement pour images
+- **URLs optimisées** : CDN-ready avec variables d'environnement
+- **Fallbacks robustes** : Gestion gracieuse des fichiers manquants
+- **TypeScript intégral** : Sécurité des types garantie
+
+### 📁 **Fichiers Modifiés/Créés**
+
+#### **Nouveaux Fichiers**
+- **`/components/common/FileDisplay.tsx`** - Composant de visualisation adaptative
+- **Fonctions ajoutées à `imageUtils.ts`** - `getFileTypeInfo()`, `formatFileSize()`, etc.
+
+#### **Fichiers Mis à Jour**
+- **`api.ts`** - Configuration `mediaBaseURL` centralisée
+- **`VehicleReservationDetail.tsx`** - Intégration composant FileDisplay
+- **`RentalTrackingPage.tsx`** - Remplacement affichage documents permis
+
+### 🎊 **Résultats**
+- **✅ UX Professionnelle** : Visualisation appropriée pour tous formats
+- **✅ Architecture Évolutive** : Ajout facile nouveaux types de fichiers
+- **✅ Configuration Flexible** : Compatible dev/production/CDN
+- **✅ Code Maintenable** : Composants réutilisables et typés
+- **✅ Performance Optimisée** : Chargement intelligent selon type
+- **✅ Compatibilité Totale** : Intégration transparente avec existant
+
+Ce système transforme l'expérience de visualisation des documents de **problématique technique** en **fonctionnalité professionnelle** adaptée aux besoins métier réels.

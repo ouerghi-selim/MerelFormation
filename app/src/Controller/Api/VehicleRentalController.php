@@ -392,12 +392,12 @@ class VehicleRentalController extends AbstractController
             $rental->getUser()->setLastName($lastName);
         }
 
-        if (isset($data['customerEmail'])) {
-            $rental->getUser()->setEmail($data['customerEmail']);
+        if (isset($data['clientEmail'])) {
+            $rental->getUser()->setEmail($data['clientEmail']);
         }
 
-        if (isset($data['customerPhone'])) {
-            $rental->getUser()->setPhone($data['customerPhone']);
+        if (isset($data['clientPhone'])) {
+            $rental->getUser()->setPhone($data['clientPhone']);
         }
 
         if (isset($data['birthDate'])) {

@@ -63,14 +63,20 @@ class ReservationAdminController extends AbstractController
             $client = $reservation->getUser();
             $formattedReservations[] = [
                 'id' => $reservation->getId(),
-                'clientName' => $client->getFirstName() . ' ' . $client->getLastName(),
-                'clientEmail' => $client->getEmail(),
-                'clientPhone' => $client->getPhone(),
                 'date' => $reservation->getstartDate()->format('d/m/Y'),
                 'examCenter' => $reservation->getExamCenter(),
                 'formula' => $reservation->getFormula(),
                 'status' => $reservation->getStatus(),
-                'vehicleAssigned' => $reservation->getVehicle() ? $reservation->getVehicle()->getModel() : null
+                'vehicleAssigned' => $reservation->getVehicle() ? $reservation->getVehicle()->getModel() : null,
+                // Centraliser toutes les données client dans l'objet user
+                'user' => [
+                    'id' => $client->getId(),
+                    'firstName' => $client->getFirstName(),
+                    'lastName' => $client->getLastName(),
+                    'email' => $client->getEmail(),
+                    'phone' => $client->getPhone(),
+                    'fullName' => $client->getFirstName() . ' ' . $client->getLastName()
+                ]
             ];
         }
 
@@ -99,9 +105,6 @@ class ReservationAdminController extends AbstractController
         // Formater les données pour le frontend
         $formattedReservation = [
             'id' => $reservation->getId(),
-            'clientName' => $client->getFirstName() . ' ' . $client->getLastName(),
-            'clientEmail' => $client->getEmail(),
-            'clientPhone' => $client->getPhone(),
             'date' => $reservation->getStartDate()->format('d/m/Y'),
             'examCenter' => $reservation->getExamCenter(),
             'formula' => $reservation->getFormula(),
@@ -121,13 +124,19 @@ class ReservationAdminController extends AbstractController
             'documents' => $reservation->getDocuments(),
             'invoice' => $reservation->getInvoice(),
             'vehicleAssigned' => $reservation->getVehicle() ? $reservation->getVehicle()->getModel() : null,
-            // Informations utilisateur avec documents de permis
+            // Centraliser toutes les données client dans l'objet user
             'user' => [
                 'id' => $client->getId(),
                 'firstName' => $client->getFirstName(),
                 'lastName' => $client->getLastName(),
                 'email' => $client->getEmail(),
                 'phone' => $client->getPhone(),
+                'fullName' => $client->getFirstName() . ' ' . $client->getLastName(),
+                'birthDate' => $client->getBirthDate() ? $client->getBirthDate()->format('Y-m-d') : null,
+                'birthPlace' => $client->getBirthPlace(),
+                'address' => $client->getAddress(),
+                'postalCode' => $client->getPostalCode(),
+                'city' => $client->getCity(),
                 'driverLicenseFrontFile' => $client->getDriverLicenseFrontFile(),
                 'driverLicenseBackFile' => $client->getDriverLicenseBackFile()
             ]

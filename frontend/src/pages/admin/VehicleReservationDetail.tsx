@@ -109,15 +109,14 @@ const VehicleReservationDetail: React.FC = () => {
     const [uploading, setUploading] = useState(false);
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
     const [uploadError, setUploadError] = useState<string | null>(null);
+    
+    // État pour différencier upload de facture vs document normal
+    const [uploadingInvoice, setUploadingInvoice] = useState(false);
 
-    // États pour l'édition du prix
-    const [isEditingPrice, setIsEditingPrice] = useState(false);
-    const [editedPrice, setEditedPrice] = useState<string>('');
-    const [priceUpdateLoading, setPriceUpdateLoading] = useState(false);
 
     // États pour l'édition des sections
     const [isEditingClient, setIsEditingClient] = useState(false);
-    const [isEditingAddress, setIsEditingAddress] = useState(false);
+    const [isEditingReservation, setIsEditingReservation] = useState(false);
     const [isEditingExam, setIsEditingExam] = useState(false);
     const [isEditingFinance, setIsEditingFinance] = useState(false);
     const [isEditingNotes, setIsEditingNotes] = useState(false);
@@ -125,6 +124,10 @@ const VehicleReservationDetail: React.FC = () => {
 
     // États pour stocker les données éditées
     const [editedData, setEditedData] = useState<any>({});
+
+    // États pour les centres et formules
+    const [centersWithFormulas, setCentersWithFormulas] = useState<any[]>([]);
+    const [availableFormulas, setAvailableFormulas] = useState<any[]>([]);
 
     // États pour les listes déroulantes
     const [examCenters, setExamCenters] = useState<any[]>([]);
@@ -136,7 +139,20 @@ const VehicleReservationDetail: React.FC = () => {
             fetchAvailableTransitions();
             fetchDocuments();
         }
+        // Charger les centres avec formules
+        fetchCentersWithFormulas();
     }, [id]);
+
+    // Fonction pour charger les centres avec formules
+    const fetchCentersWithFormulas = async () => {
+        try {
+            const response = await fetch('/api/centers/with-formulas');
+            const centers = await response.json();
+            setCentersWithFormulas(centers);
+        } catch (error) {
+            console.error('Erreur lors du chargement des centres avec formules:', error);
+        }
+    };
 
     // Fermer le dropdown quand on clique ailleurs
     useEffect(() => {
@@ -314,7 +330,10 @@ const VehicleReservationDetail: React.FC = () => {
             // Étape 1: Upload temporaire
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('title', title);
+            
+            // Préfixer le titre pour les factures pour les distinguer
+            const documentTitle = uploadingInvoice ? `[FACTURE] ${title}` : title;
+            formData.append('title', documentTitle);
             formData.append('vehicleRentalId', id);
 
             const tempResponse = await vehicleRentalDocumentsApi.tempUpload(formData);
@@ -326,17 +345,20 @@ const VehicleReservationDetail: React.FC = () => {
                 vehicleRentalId: Number(id)
             });
 
-            // Recharger la liste des documents
+            // Recharger la liste des documents et les détails de la réservation
             await fetchDocuments();
+            await fetchReservationDetails();
             
-            setUploadSuccess('Document uploadé avec succès !');
+            const successMessage = uploadingInvoice ? 'Facture uploadée avec succès !' : 'Document uploadé avec succès !';
+            setUploadSuccess(successMessage);
             setShowUploadModal(false);
+            setUploadingInvoice(false);
             
             // Masquer le message de succès après 3 secondes
             setTimeout(() => setUploadSuccess(null), 3000);
             
         } catch (err: any) {
-            const errorMessage = err.response?.data?.message || err.message || 'Erreur lors de l\'upload du document';
+            const errorMessage = err.response?.data?.message || err.message || 'Erreur lors de l\'upload';
             setUploadError(errorMessage);
         } finally {
             setUploading(false);
@@ -356,40 +378,6 @@ const VehicleReservationDetail: React.FC = () => {
         }
     };
 
-    // Fonctions pour la gestion du prix
-    const handleEditPrice = () => {
-        if (reservation?.totalPrice) {
-            setEditedPrice(reservation.totalPrice.toString());
-        }
-        setIsEditingPrice(true);
-    };
-
-    const handleCancelEditPrice = () => {
-        setIsEditingPrice(false);
-        setEditedPrice('');
-    };
-
-    const handleSavePrice = async () => {
-        if (!reservation || !editedPrice) return;
-
-        try {
-            setPriceUpdateLoading(true);
-            const updatedReservation = await vehicleRentalsApi.update(reservation.id, {
-                totalPrice: parseFloat(editedPrice)
-            });
-            
-            setReservation(updatedReservation.data);
-            setIsEditingPrice(false);
-            setSuccessMessage('Prix mis à jour avec succès');
-            setTimeout(() => setSuccessMessage(null), 3000);
-        } catch (err: any) {
-            const errorMessage = err.response?.data?.message || 'Erreur lors de la mise à jour du prix';
-            setError(errorMessage);
-            setTimeout(() => setError(null), 5000);
-        } finally {
-            setPriceUpdateLoading(false);
-        }
-    };
 
     // Fonctions pour la gestion de l'édition par section
     const handleEditSection = (section: string) => {
@@ -397,41 +385,48 @@ const VehicleReservationDetail: React.FC = () => {
 
         // Initialiser editedData avec les données actuelles
         const currentData = {
-            // Informations client
-            customerName: reservation.customerName,
-            firstName: reservation.customerName?.split(' ').slice(0, -1).join(' ') || '',
-            lastName: reservation.customerName?.split(' ').slice(-1)[0] || '',
-            customerEmail: reservation.customerEmail, 
-            customerPhone: reservation.customerPhone,
-            birthDate: reservation.birthDate ? reservation.birthDate.split('T')[0] : '',
-            birthPlace: reservation.birthPlace,
+            // Informations client - Utiliser uniquement les données de l'objet user
+            clientName: reservation.user?.fullName || `${reservation.user?.firstName || ''} ${reservation.user?.lastName || ''}`.trim(),
+            firstName: reservation.user?.firstName || '',
+            lastName: reservation.user?.lastName || '',
+            clientEmail: reservation.user?.email || '', 
+            clientPhone: reservation.user?.phone || '',
+            birthDate: reservation.user?.birthDate ? reservation.user.birthDate.split('T')[0] : '',
+            birthPlace: reservation.user?.birthPlace || '',
             
-            // Adresse
-            address: reservation.address,
-            postalCode: reservation.postalCode,
-            city: reservation.city,
-            facturation: reservation.facturation,
+            // Réservation - Convertir DD/MM/YYYY vers YYYY-MM-DD pour les inputs date
+            startDate: reservation.startDate ? reservation.startDate.split('/').reverse().join('-') : '',
+            endDate: reservation.endDate ? reservation.endDate.split('/').reverse().join('-') : '',
+            pickupLocation: reservation.pickupLocation,
+            returnLocation: reservation.returnLocation,
             
             // Examen
             examCenter: reservation.examCenter,
             formula: reservation.formula,
-            examDate: reservation.examDate,
+            date: reservation.date,
             examTime: reservation.examTime,
             
             // Finance
+            totalPrice: reservation.totalPrice,
             financing: reservation.financing,
             paymentMethod: reservation.paymentMethod,
             
             // Notes
-            observations: reservation.notes
+            notes: reservation.notes
         };
         
         setEditedData(currentData);
 
+        // Si on édite la section examen, initialiser les formules disponibles
+        if (section === 'exam') {
+            const selectedCenter = centersWithFormulas.find(center => center.name === reservation.examCenter);
+            setAvailableFormulas(selectedCenter?.formulas || []);
+        }
+
         // Activer l'édition pour la section spécifiée
         switch (section) {
             case 'client': setIsEditingClient(true); break;
-            case 'address': setIsEditingAddress(true); break;
+            case 'reservation': setIsEditingReservation(true); break;
             case 'exam': setIsEditingExam(true); break;
             case 'finance': setIsEditingFinance(true); break;
             case 'notes': setIsEditingNotes(true); break;
@@ -441,7 +436,7 @@ const VehicleReservationDetail: React.FC = () => {
     const handleCancelEditSection = (section: string) => {
         switch (section) {
             case 'client': setIsEditingClient(false); break;
-            case 'address': setIsEditingAddress(false); break;
+            case 'reservation': setIsEditingReservation(false); break;
             case 'exam': setIsEditingExam(false); break;
             case 'finance': setIsEditingFinance(false); break;
             case 'notes': setIsEditingNotes(false); break;
@@ -454,9 +449,20 @@ const VehicleReservationDetail: React.FC = () => {
 
         try {
             setSectionUpdateLoading(section);
-            const updatedReservation = await vehicleRentalsApi.update(reservation.id, editedData);
+            const response = await vehicleRentalsApi.update(reservation.id, editedData);
             
-            setReservation(updatedReservation.data);
+            // Merger les données mises à jour avec les données existantes
+            const updatedReservation = {
+                ...reservation,
+                ...editedData,
+                // Garder les données retournées par l'API pour les champs système
+                id: response.data.id || reservation.id,
+                updatedAt: response.data.updatedAt || reservation.updatedAt,
+                totalPrice: response.data.totalPrice || editedData.totalPrice || reservation.totalPrice,
+                notes: response.data.notes !== undefined ? response.data.notes : (editedData.notes !== undefined ? editedData.notes : reservation.notes)
+            };
+            
+            setReservation(updatedReservation);
             handleCancelEditSection(section);
             setSuccessMessage(`${getSectionLabel(section)} mis à jour avec succès`);
             setTimeout(() => setSuccessMessage(null), 3000);
@@ -472,7 +478,7 @@ const VehicleReservationDetail: React.FC = () => {
     const getSectionLabel = (section: string) => {
         switch (section) {
             case 'client': return 'informations client';
-            case 'address': return 'informations d\'adresse';
+            case 'reservation': return 'informations de réservation';
             case 'exam': return 'informations d\'examen';
             case 'finance': return 'informations financières';
             case 'notes': return 'notes';
@@ -481,7 +487,25 @@ const VehicleReservationDetail: React.FC = () => {
     };
 
     const updateEditedData = (field: string, value: any) => {
-        setEditedData(prev => ({ ...prev, [field]: value }));
+        setEditedData(prev => {
+            const updatedData = { ...prev, [field]: value };
+            
+            // Si le centre d'examen change, mettre à jour les formules disponibles
+            if (field === 'examCenter') {
+                const selectedCenter = centersWithFormulas.find(center => center.name === value);
+                setAvailableFormulas(selectedCenter?.formulas || []);
+                // Réinitialiser la formule sélectionnée si elle n'est plus disponible
+                if (selectedCenter) {
+                    const currentFormula = prev.formula;
+                    const formulaStillAvailable = selectedCenter.formulas.some((f: any) => f.fullText === currentFormula);
+                    if (!formulaStillAvailable) {
+                        updatedData.formula = '';
+                    }
+                }
+            }
+            
+            return updatedData;
+        });
     };
 
     const getStatusColor = (status: string) => {
@@ -697,8 +721,8 @@ const VehicleReservationDetail: React.FC = () => {
                                                     <label className="text-sm font-medium text-gray-500 mb-2 block">Email *</label>
                                                     <input
                                                         type="email"
-                                                        value={editedData.customerEmail || ''}
-                                                        onChange={(e) => updateEditedData('customerEmail', e.target.value)}
+                                                        value={editedData.clientEmail || ''}
+                                                        onChange={(e) => updateEditedData('clientEmail', e.target.value)}
                                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                         placeholder="email@exemple.com"
                                                     />
@@ -707,8 +731,8 @@ const VehicleReservationDetail: React.FC = () => {
                                                     <label className="text-sm font-medium text-gray-500 mb-2 block">Téléphone *</label>
                                                     <input
                                                         type="tel"
-                                                        value={editedData.customerPhone || ''}
-                                                        onChange={(e) => updateEditedData('customerPhone', e.target.value)}
+                                                        value={editedData.clientPhone || ''}
+                                                        onChange={(e) => updateEditedData('clientPhone', e.target.value)}
                                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                         placeholder="06 XX XX XX XX"
                                                     />
@@ -762,20 +786,20 @@ const VehicleReservationDetail: React.FC = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
                                                 <label className="text-sm font-medium text-gray-500">Nom complet</label>
-                                                <p className="mt-1 text-sm text-gray-900">{reservation.customerName || 'Non renseigné'}</p>
+                                                <p className="mt-1 text-sm text-gray-900">{reservation.user?.fullName || `${reservation.user?.firstName || ''} ${reservation.user?.lastName || ''}`.trim() || 'Non renseigné'}</p>
                                             </div>
                                             <div>
                                                 <label className="text-sm font-medium text-gray-500">Email</label>
                                                 <div className="mt-1 flex items-center">
                                                     <Mail className="w-4 h-4 text-gray-400 mr-2" />
-                                                    <p className="text-sm text-gray-900">{reservation.customerEmail || 'Non renseigné'}</p>
+                                                    <p className="text-sm text-gray-900">{reservation.user?.email || 'Non renseigné'}</p>
                                                 </div>
                                             </div>
                                             <div>
                                                 <label className="text-sm font-medium text-gray-500">Téléphone</label>
                                                 <div className="mt-1 flex items-center">
                                                     <Phone className="w-4 h-4 text-gray-400 mr-2" />
-                                                    <p className="text-sm text-gray-900">{reservation.customerPhone || 'Non renseigné'}</p>
+                                                    <p className="text-sm text-gray-900">{reservation.user?.phone || 'Non renseigné'}</p>
                                                 </div>
                                             </div>
                                             <div>
@@ -783,7 +807,7 @@ const VehicleReservationDetail: React.FC = () => {
                                                 <div className="mt-1 flex items-center">
                                                     <Calendar className="w-4 h-4 text-gray-400 mr-2" />
                                                     <p className="text-sm text-gray-900">
-                                                        {reservation.birthDate ? new Date(reservation.birthDate).toLocaleDateString('fr-FR') : 'Non renseigné'}
+                                                        {reservation.user?.birthDate ? new Date(reservation.user.birthDate).toLocaleDateString('fr-FR') : 'Non renseigné'}
                                                     </p>
                                                 </div>
                                             </div>
@@ -791,7 +815,7 @@ const VehicleReservationDetail: React.FC = () => {
                                                 <label className="text-sm font-medium text-gray-500">Lieu de naissance</label>
                                                 <div className="mt-1 flex items-center">
                                                     <MapPin className="w-4 h-4 text-gray-400 mr-2" />
-                                                    <p className="text-sm text-gray-900">{reservation.birthPlace || 'Non renseigné'}</p>
+                                                    <p className="text-sm text-gray-900">{reservation.user?.birthPlace || 'Non renseigné'}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -802,171 +826,424 @@ const VehicleReservationDetail: React.FC = () => {
                             {/* Section Réservation */}
                             <div className="bg-white rounded-lg shadow">
                                 <div className="p-6 border-b border-gray-200">
-                                    <div className="flex items-center">
-                                        <Car className="w-5 h-5 text-blue-600 mr-2" />
-                                        <h2 className="text-lg font-semibold text-gray-900">Détails de la Réservation</h2>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            <Car className="w-5 h-5 text-blue-600 mr-2" />
+                                            <h2 className="text-lg font-semibold text-gray-900">Détails de la Réservation</h2>
+                                        </div>
+                                        {!isEditingReservation && (
+                                            <button
+                                                onClick={() => handleEditSection('reservation')}
+                                                className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                                            >
+                                                <Edit2 className="w-3 h-3 mr-1" />
+                                                Modifier
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="p-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-500">Date de début</label>
-                                            <div className="mt-1 flex items-center">
-                                                <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                                                <p className="text-sm text-gray-900">{reservation.startDate ? formatDate(reservation.startDate) : reservation.date}</p>
+                                    {isEditingReservation ? (
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Date de début</label>
+                                                    <input
+                                                        type="date"
+                                                        value={editedData.startDate || ''}
+                                                        onChange={(e) => updateEditedData('startDate', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Date de fin</label>
+                                                    <input
+                                                        type="date"
+                                                        value={editedData.endDate || ''}
+                                                        onChange={(e) => updateEditedData('endDate', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Lieu de prise en charge</label>
+                                                    <input
+                                                        type="text"
+                                                        value={editedData.pickupLocation || ''}
+                                                        onChange={(e) => updateEditedData('pickupLocation', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="Lieu de prise en charge"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Lieu de retour</label>
+                                                    <input
+                                                        type="text"
+                                                        value={editedData.returnLocation || ''}
+                                                        onChange={(e) => updateEditedData('returnLocation', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="Lieu de retour"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-end space-x-2 pt-4 border-t">
+                                                <button
+                                                    onClick={() => handleCancelEditSection('reservation')}
+                                                    disabled={sectionUpdateLoading === 'reservation'}
+                                                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 disabled:opacity-50 flex items-center"
+                                                >
+                                                    <X className="w-3 h-3 mr-1" />
+                                                    Annuler
+                                                </button>
+                                                <button
+                                                    onClick={() => handleSaveSection('reservation')}
+                                                    disabled={sectionUpdateLoading === 'reservation'}
+                                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center"
+                                                >
+                                                    {sectionUpdateLoading === 'reservation' ? (
+                                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                                                    ) : (
+                                                        <Check className="w-3 h-3 mr-1" />
+                                                    )}
+                                                    Valider
+                                                </button>
                                             </div>
                                         </div>
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-500">Date de fin</label>
-                                            <div className="mt-1 flex items-center">
-                                                <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                                                <p className="text-sm text-gray-900">{reservation.endDate ? formatDate(reservation.endDate) : 'Non renseigné'}</p>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500">Date de début</label>
+                                                <div className="mt-1 flex items-center">
+                                                    <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                                                    <p className="text-sm text-gray-900">{reservation.startDate ? formatDate(reservation.startDate) : reservation.date}</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500">Date de fin</label>
+                                                <div className="mt-1 flex items-center">
+                                                    <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                                                    <p className="text-sm text-gray-900">{reservation.endDate ? formatDate(reservation.endDate) : reservation.date}</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500">Lieu de prise en charge</label>
+                                                <div className="mt-1 flex items-center">
+                                                    <MapPin className="w-4 h-4 text-gray-400 mr-2" />
+                                                    <p className="text-sm text-gray-900">{reservation.pickupLocation || 'Non renseigné'}</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500">Lieu de retour</label>
+                                                <div className="mt-1 flex items-center">
+                                                    <MapPin className="w-4 h-4 text-gray-400 mr-2" />
+                                                    <p className="text-sm text-gray-900">{reservation.returnLocation || 'Non renseigné'}</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500">Véhicule assigné</label>
+                                                <p className="text-sm text-gray-900">{reservation.vehicleAssigned || 'Aucun véhicule assigné'}</p>
                                             </div>
                                         </div>
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-500">Lieu de prise en charge</label>
-                                            <div className="mt-1 flex items-center">
-                                                <MapPin className="w-4 h-4 text-gray-400 mr-2" />
-                                                <p className="text-sm text-gray-900">{reservation.pickupLocation || 'Non renseigné'}</p>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-500">Lieu de retour</label>
-                                            <div className="mt-1 flex items-center">
-                                                <MapPin className="w-4 h-4 text-gray-400 mr-2" />
-                                                <p className="text-sm text-gray-900">{reservation.returnLocation || 'Non renseigné'}</p>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-500">Véhicule assigné</label>
-                                            <p className="text-sm text-gray-900">{reservation.vehicleAssigned || 'Aucun véhicule assigné'}</p>
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Section Examen */}
                             <div className="bg-white rounded-lg shadow">
                                 <div className="p-6 border-b border-gray-200">
-                                    <div className="flex items-center">
-                                        <Building className="w-5 h-5 text-blue-600 mr-2" />
-                                        <h2 className="text-lg font-semibold text-gray-900">Détails de l'Examen</h2>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            <Building className="w-5 h-5 text-blue-600 mr-2" />
+                                            <h2 className="text-lg font-semibold text-gray-900">Détails de l'Examen</h2>
+                                        </div>
+                                        {!isEditingExam && (
+                                            <button
+                                                onClick={() => handleEditSection('exam')}
+                                                className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                                            >
+                                                <Edit2 className="w-3 h-3 mr-1" />
+                                                Modifier
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="p-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-500">Centre d'examen</label>
-                                            <p className="mt-1 text-sm text-gray-900">{reservation.examCenter}</p>
-                                        </div>
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-500">Date d'examen</label>
-                                            <div className="mt-1 flex items-center">
-                                                <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                                                <p className="text-sm text-gray-900">{reservation.date}</p>
+                                    {isEditingExam ? (
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Centre d'examen *</label>
+                                                    <select
+                                                        value={editedData.examCenter || ''}
+                                                        onChange={(e) => updateEditedData('examCenter', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    >
+                                                        <option value="">Sélectionner un centre...</option>
+                                                        {centersWithFormulas.map(center => (
+                                                            <option key={center.id} value={center.name}>
+                                                                {center.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Date d'examen *</label>
+                                                    <input
+                                                        type="date"
+                                                        value={editedData.date ? editedData.date.split('/').reverse().join('-') : ''}
+                                                        onChange={(e) => {
+                                                            // Convertir de YYYY-MM-DD vers DD/MM/YYYY
+                                                            const dateParts = e.target.value.split('-');
+                                                            const formattedDate = dateParts.reverse().join('/');
+                                                            updateEditedData('date', formattedDate);
+                                                        }}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Heure d'examen</label>
+                                                    <input
+                                                        type="time"
+                                                        value={editedData.examTime || ''}
+                                                        onChange={(e) => updateEditedData('examTime', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Formule</label>
+                                                    <select
+                                                        value={editedData.formula || ''}
+                                                        onChange={(e) => updateEditedData('formula', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        disabled={!editedData.examCenter}
+                                                    >
+                                                        <option value="">
+                                                            {editedData.examCenter ? 'Sélectionner une formule...' : 'Sélectionnez d\'abord un centre d\'examen'}
+                                                        </option>
+                                                        {availableFormulas.map(formula => (
+                                                            <option key={formula.id} value={formula.fullText}>
+                                                                {formula.name} ({formula.formattedPrice})
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-end space-x-2 pt-4 border-t">
+                                                <button
+                                                    onClick={() => handleCancelEditSection('exam')}
+                                                    disabled={sectionUpdateLoading === 'exam'}
+                                                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 disabled:opacity-50 flex items-center"
+                                                >
+                                                    <X className="w-3 h-3 mr-1" />
+                                                    Annuler
+                                                </button>
+                                                <button
+                                                    onClick={() => handleSaveSection('exam')}
+                                                    disabled={sectionUpdateLoading === 'exam'}
+                                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center"
+                                                >
+                                                    {sectionUpdateLoading === 'exam' ? (
+                                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                                                    ) : (
+                                                        <Check className="w-3 h-3 mr-1" />
+                                                    )}
+                                                    Valider
+                                                </button>
                                             </div>
                                         </div>
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-500">Heure d'examen</label>
-                                            <div className="mt-1 flex items-center">
-                                                <Clock className="w-4 h-4 text-gray-400 mr-2" />
-                                                <p className="text-sm text-gray-900">{reservation.examTime || 'Non renseigné'}</p>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500">Centre d'examen</label>
+                                                <p className="mt-1 text-sm text-gray-900">{reservation.examCenter}</p>
+                                            </div>
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500">Date d'examen</label>
+                                                <div className="mt-1 flex items-center">
+                                                    <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                                                    <p className="text-sm text-gray-900">{reservation.date}</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500">Heure d'examen</label>
+                                                <div className="mt-1 flex items-center">
+                                                    <Clock className="w-4 h-4 text-gray-400 mr-2" />
+                                                    <p className="text-sm text-gray-900">{reservation.examTime || 'Non renseigné'}</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500">Formule</label>
+                                                <p className="mt-1 text-sm text-gray-900">{reservation.formula}</p>
                                             </div>
                                         </div>
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-500">Formule</label>
-                                            <p className="mt-1 text-sm text-gray-900">{reservation.formula}</p>
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Section Financière */}
                             <div className="bg-white rounded-lg shadow">
                                 <div className="p-6 border-b border-gray-200">
-                                    <div className="flex items-center">
-                                        <CreditCard className="w-5 h-5 text-blue-600 mr-2" />
-                                        <h2 className="text-lg font-semibold text-gray-900">Informations Financières</h2>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            <CreditCard className="w-5 h-5 text-blue-600 mr-2" />
+                                            <h2 className="text-lg font-semibold text-gray-900">Informations Financières</h2>
+                                        </div>
+                                        {!isEditingFinance && (
+                                            <button
+                                                onClick={() => handleEditSection('finance')}
+                                                className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                                            >
+                                                <Edit2 className="w-3 h-3 mr-1" />
+                                                Modifier
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="p-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="col-span-2">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <label className="text-sm font-medium text-gray-500">Prix total</label>
-                                                {!isEditingPrice && (
-                                                    <button
-                                                        onClick={handleEditPrice}
-                                                        className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
-                                                    >
-                                                        <Edit2 className="w-3 h-3 mr-1" />
-                                                        Modifier
-                                                    </button>
-                                                )}
-                                            </div>
-                                            {isEditingPrice ? (
-                                                <div className="flex items-center space-x-2">
-                                                    <div className="relative flex-1 max-w-xs">
+                                    {isEditingFinance ? (
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Prix total *</label>
+                                                    <div className="relative">
                                                         <input
                                                             type="number"
                                                             step="0.01"
                                                             min="0"
-                                                            value={editedPrice}
-                                                            onChange={(e) => setEditedPrice(e.target.value)}
+                                                            value={editedData.totalPrice || ''}
+                                                            onChange={(e) => updateEditedData('totalPrice', e.target.value)}
                                                             className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                             placeholder="0.00"
                                                         />
                                                         <span className="absolute right-3 top-2 text-gray-500">€</span>
                                                     </div>
-                                                    <button
-                                                        onClick={handleSavePrice}
-                                                        disabled={priceUpdateLoading || !editedPrice}
-                                                        className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                                                    >
-                                                        {priceUpdateLoading ? (
-                                                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
-                                                        ) : (
-                                                            <Check className="w-3 h-3 mr-1" />
-                                                        )}
-                                                        Valider
-                                                    </button>
-                                                    <button
-                                                        onClick={handleCancelEditPrice}
-                                                        disabled={priceUpdateLoading}
-                                                        className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                                                    >
-                                                        <X className="w-3 h-3 mr-1" />
-                                                        Annuler
-                                                    </button>
                                                 </div>
-                                            ) : (
-                                                <div className="flex items-center space-x-2">
-                                                    <p className="text-lg font-semibold text-gray-900">
-                                                        {reservation.totalPrice ? `${reservation.totalPrice}€` : 'Non renseigné'}
-                                                    </p>
-                                                    {reservation.vehicle && (
-                                                        <span className="text-xs text-gray-500">
-                                                            (Prix suggéré : {(reservation.vehicle.dailyRate * ((new Date(reservation.endDate).getTime() - new Date(reservation.startDate).getTime()) / (1000 * 60 * 60 * 24)) || 0).toFixed(2)}€)
-                                                        </span>
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Financement</label>
+                                                    <select
+                                                        value={editedData.financing || ''}
+                                                        onChange={(e) => updateEditedData('financing', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    >
+                                                        <option value="">Sélectionner...</option>
+                                                        <option value="Personnel">Personnel</option>
+                                                        <option value="CPF">CPF</option>
+                                                        <option value="Pôle Emploi">Pôle Emploi</option>
+                                                        <option value="Entreprise">Entreprise</option>
+                                                        <option value="Autre">Autre</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500 mb-2 block">Mode de paiement</label>
+                                                <textarea
+                                                    rows={3}
+                                                    value={editedData.paymentMethod || ''}
+                                                    onChange={(e) => updateEditedData('paymentMethod', e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    placeholder="Ex: Virement bancaire IBAN: ... BIC: ..."
+                                                />
+                                            </div>
+                                            <div className="flex justify-end space-x-2 pt-4 border-t">
+                                                <button
+                                                    onClick={() => handleCancelEditSection('finance')}
+                                                    disabled={sectionUpdateLoading === 'finance'}
+                                                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 disabled:opacity-50 flex items-center"
+                                                >
+                                                    <X className="w-3 h-3 mr-1" />
+                                                    Annuler
+                                                </button>
+                                                <button
+                                                    onClick={() => handleSaveSection('finance')}
+                                                    disabled={sectionUpdateLoading === 'finance'}
+                                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center"
+                                                >
+                                                    {sectionUpdateLoading === 'finance' ? (
+                                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                                                    ) : (
+                                                        <Check className="w-3 h-3 mr-1" />
                                                     )}
+                                                    Valider
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500">Prix total</label>
+                                                <p className="mt-1 text-lg font-semibold text-gray-900">
+                                                    {reservation.totalPrice ? `${reservation.totalPrice}€` : 'Non renseigné'}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-500">Financement</label>
+                                                <p className="mt-1 text-sm text-gray-900">{reservation.financing || 'Non renseigné'}</p>
+                                            </div>
+                                            <div className="col-span-2">
+                                                <label className="text-sm font-medium text-gray-500">Mode de paiement</label>
+                                                <p className="mt-1 text-sm text-gray-900">{reservation.paymentMethod || 'Non renseigné'}</p>
+                                            </div>
+                                            <div className="col-span-2">
+                                                <div className="flex items-center justify-between">
+                                                    <label className="text-sm font-medium text-gray-500">Facture</label>
+                                                    <button
+                                                        onClick={() => {
+                                                            setUploadingInvoice(true);
+                                                            setShowUploadModal(true);
+                                                        }}
+                                                        className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                                                    >
+                                                        <Plus className="w-3 h-3 mr-1" />
+                                                        {documents.some(doc => doc.title.startsWith('INVOICE_') || doc.title.startsWith('[FACTURE]')) ? 'Remplacer' : 'Ajouter'}
+                                                    </button>
                                                 </div>
-                                            )}
+                                                {(() => {
+                                                    // Trouver la facture dans les documents
+                                                    const invoice = documents.find(doc => 
+                                                        doc.title.startsWith('INVOICE_') || doc.title.startsWith('[FACTURE]')
+                                                    );
+                                                    
+                                                    return invoice ? (
+                                                        <div className="mt-2 p-3 bg-gray-50 rounded-lg border">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center">
+                                                                    <FileText className="w-4 h-4 text-blue-600 mr-2" />
+                                                                    <div>
+                                                                        <span className="text-sm font-medium text-gray-900">{invoice.title}</span>
+                                                                        <p className="text-xs text-gray-500">
+                                                                            {invoice.fileType.toUpperCase()} • {invoice.fileSize} • 
+                                                                            Uploadé le {new Date(invoice.uploadedAt).toLocaleDateString('fr-FR')}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center space-x-2">
+                                                                    <a
+                                                                        href={invoice.downloadUrl}
+                                                                        className="text-blue-600 hover:text-blue-700 text-sm"
+                                                                        title="Télécharger"
+                                                                    >
+                                                                        <Download className="w-4 h-4" />
+                                                                    </a>
+                                                                    <button 
+                                                                        className="text-red-600 hover:text-red-700 text-sm"
+                                                                        title="Supprimer"
+                                                                        onClick={() => handleDocumentDelete(invoice.id)}
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="mt-2 text-sm text-gray-500">Aucune facture uploadée</p>
+                                                    );
+                                                })()}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-500">Mode de paiement</label>
-                                            <p className="mt-1 text-sm text-gray-900">{reservation.paymentMethod || 'Non renseigné'}</p>
-                                        </div>
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-500">Financement</label>
-                                            <p className="mt-1 text-sm text-gray-900">{reservation.financing || 'Non renseigné'}</p>
-                                        </div>
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-500">Facture</label>
-                                            <p className="mt-1 text-sm text-gray-900">
-                                                {reservation.invoice ? 'Générée' : 'Non générée'}
-                                            </p>
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -974,13 +1251,61 @@ const VehicleReservationDetail: React.FC = () => {
                             {reservation.notes && (
                                 <div className="bg-white rounded-lg shadow">
                                     <div className="p-6 border-b border-gray-200">
-                                        <div className="flex items-center">
-                                            <MessageSquare className="w-5 h-5 text-blue-600 mr-2" />
-                                            <h2 className="text-lg font-semibold text-gray-900">Notes et Commentaires</h2>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center">
+                                                <MessageSquare className="w-5 h-5 text-blue-600 mr-2" />
+                                                <h2 className="text-lg font-semibold text-gray-900">Notes et Commentaires</h2>
+                                            </div>
+                                            {!isEditingNotes && (
+                                                <button
+                                                    onClick={() => handleEditSection('notes')}
+                                                    className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                                                >
+                                                    <Edit2 className="w-3 h-3 mr-1" />
+                                                    Modifier
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="p-6">
-                                        <p className="text-sm text-gray-900 whitespace-pre-wrap">{reservation.notes}</p>
+                                        {isEditingNotes ? (
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Notes et commentaires</label>
+                                                    <textarea
+                                                        rows={5}
+                                                        value={editedData.notes || ''}
+                                                        onChange={(e) => updateEditedData('notes', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="Ajoutez vos notes et commentaires..."
+                                                    />
+                                                </div>
+                                                <div className="flex justify-end space-x-2 pt-4 border-t">
+                                                    <button
+                                                        onClick={() => handleCancelEditSection('notes')}
+                                                        disabled={sectionUpdateLoading === 'notes'}
+                                                        className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 disabled:opacity-50 flex items-center"
+                                                    >
+                                                        <X className="w-3 h-3 mr-1" />
+                                                        Annuler
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleSaveSection('notes')}
+                                                        disabled={sectionUpdateLoading === 'notes'}
+                                                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center"
+                                                    >
+                                                        {sectionUpdateLoading === 'notes' ? (
+                                                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                                                        ) : (
+                                                            <Check className="w-3 h-3 mr-1" />
+                                                        )}
+                                                        Valider
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{reservation.notes}</p>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -994,7 +1319,10 @@ const VehicleReservationDetail: React.FC = () => {
                                             <h2 className="text-lg font-semibold text-gray-900">Documents</h2>
                                         </div>
                                         <button
-                                            onClick={() => setShowUploadModal(true)}
+                                            onClick={() => {
+                                                setUploadingInvoice(false);
+                                                setShowUploadModal(true);
+                                            }}
                                             className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                                         >
                                             <Plus className="w-4 h-4 mr-2" />
@@ -1070,10 +1398,10 @@ const VehicleReservationDetail: React.FC = () => {
                                         </h3>
                                     </div>
 
-                                    {/* Liste des documents */}
-                                    {documents.length > 0 ? (
+                                    {/* Liste des documents (exclure les factures) */}
+                                    {documents.filter(doc => !doc.title.startsWith('INVOICE_') && !doc.title.startsWith('[FACTURE]')).length > 0 ? (
                                         <div className="space-y-3">
-                                            {documents.map((document) => (
+                                            {documents.filter(doc => !doc.title.startsWith('INVOICE_') && !doc.title.startsWith('[FACTURE]')).map((document) => (
                                                 <div key={document.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
                                                     <div className="flex items-center">
                                                         <FileText className="h-8 w-8 text-gray-400 mr-3" />
@@ -1371,9 +1699,11 @@ const VehicleReservationDetail: React.FC = () => {
                     onClose={() => {
                         setShowUploadModal(false);
                         setUploadError(null);
+                        setUploadingInvoice(false);
                     }}
                     onUpload={handleDocumentUpload}
                     uploading={uploading}
+                    isInvoice={uploadingInvoice}
                 />
             )}
         </div>
@@ -1386,13 +1716,15 @@ interface DocumentUploadModalProps {
     onClose: () => void;
     onUpload: (file: File, title: string) => void;
     uploading: boolean;
+    isInvoice?: boolean;
 }
 
 const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
     isOpen,
     onClose,
     onUpload,
-    uploading
+    uploading,
+    isInvoice = false
 }) => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [title, setTitle] = useState<string>('');
@@ -1464,7 +1796,9 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full"
                  onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between p-6 border-b">
-                    <h3 className="text-lg font-semibold text-gray-900">Ajouter un document</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                        {isInvoice ? 'Ajouter une facture' : 'Ajouter un document'}
+                    </h3>
                     <button
                         onClick={handleClose}
                         className="text-gray-400 hover:text-gray-600"
@@ -1479,14 +1813,14 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                         {/* Titre du document */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Titre du document *
+                                {isInvoice ? 'Titre de la facture *' : 'Titre du document *'}
                             </label>
                             <input
                                 type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Ex: Justificatif, Document administratif..."
+                                placeholder={isInvoice ? "Ex: Facture formation taxi VTC..." : "Ex: Justificatif, Document administratif..."}
                                 required
                                 disabled={uploading}
                             />
