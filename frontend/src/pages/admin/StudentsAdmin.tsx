@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { UserPlus, Edit, Trash2, Eye, GraduationCap, Check, X, Users, Archive, FileText, Download, Building2, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
+import AdminLayout from '../../components/layout/AdminLayout';
 import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
@@ -510,19 +509,14 @@ const StudentsAdmin: React.FC = () => {
     const inactiveStudents = students ? students.filter(s => !s.isActive).length : 0;
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <AdminSidebar />
-            <div className="flex-1">
-                <AdminHeader
-                    title="Gestion des élèves"
-                    breadcrumbItems={[
-                        { label: 'Admin', path: '/admin' },
-                        { label: 'Utilisateurs', path: '/admin/users' },
-                        { label: 'Élèves' }
-                    ]}
-                />
-
-                <div className="p-6">
+        <AdminLayout 
+            title="Gestion des élèves"
+            breadcrumbItems={[
+                { label: 'Admin', path: '/admin' },
+                { label: 'Utilisateurs', path: '/admin/users' },
+                { label: 'Élèves' }
+            ]}
+        >
                     {error && (
                         <Alert
                             type="error"
@@ -625,8 +619,6 @@ const StudentsAdmin: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
             {/* Modal d'ajout d'élève */}
             <Modal
@@ -1057,7 +1049,7 @@ const StudentsAdmin: React.FC = () => {
                     </div>
                 )}
             </Modal>
-        </div>
+        </AdminLayout>
     );
 };
 

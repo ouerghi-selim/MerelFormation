@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search, Star, StarOff, Eye, EyeOff } from 'lucide-react';
 import { adminTestimonialApi } from '@/services/api.ts';
 import { Testimonial, TestimonialFilters } from '../../types/cms';
-import AdminSidebar from "@/components/admin/AdminSidebar.tsx";
-import AdminHeader from "@/components/admin/AdminHeader.tsx";
+import AdminLayout from '@/components/layout/AdminLayout.tsx';
 import Alert from "@/components/common/Alert.tsx";
 
 const TestimonialsAdmin: React.FC = () => {
@@ -226,12 +225,7 @@ const TestimonialsAdmin: React.FC = () => {
   }
 
   return (
-      <div className="flex min-h-screen bg-gray-50">
-        <AdminSidebar />
-        <div className="flex-1">
-          <AdminHeader title="Gestion des réservations" />
-
-          <div className="p-6">
+      <AdminLayout title="Gestion des témoignages">
             {error && (
                 <Alert
                     type="error"
@@ -800,9 +794,7 @@ const TestimonialsAdmin: React.FC = () => {
         </div>
       )}
     </div>
-          </div>
-        </div>
-      </div>
+      </AdminLayout>
   );
 };
 

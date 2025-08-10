@@ -1,12 +1,11 @@
 // src/pages/admin/ReservationsAdmin.tsx
 import React, { useState, useEffect } from 'react';
 import { Calendar, Search, Filter, ChevronDown, Eye, Check, X, User, Car, BookOpen } from 'lucide-react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
-import { adminReservationsApi } from '../../services/api';
+import AdminLayout from '../../components/layout/AdminLayout';
+import { adminReservationsApi } from '@/services/api.ts';
 import Alert from '../../components/common/Alert';
 import ReservationDetailModal from '../../components/admin/ReservationDetailModal';
-import { getStatusBadgeClass, getStatusLabel, ReservationStatus, ReservationTransition } from '../../utils/reservationStatuses';
+import { getStatusBadgeClass, getStatusLabel, ReservationStatus, ReservationTransition } from '@/utils/reservationStatuses.ts';
 
 interface VehicleReservation {
   id: number;
@@ -398,12 +397,7 @@ const ReservationsAdmin: React.FC = () => {
   };
 
   return (
-      <div className="flex min-h-screen bg-gray-50">
-        <AdminSidebar />
-        <div className="flex-1">
-          <AdminHeader title="Gestion des réservations" />
-
-          <div className="p-6">
+    <AdminLayout title="Gestion des réservations">
             {error && (
                 <Alert
                     type="error"
@@ -753,10 +747,6 @@ const ReservationsAdmin: React.FC = () => {
                   )}
                 </>
             )}
-          </div>
-        </div>
-
-
 
         {/* Modal de confirmation pour changement de statut */}
         {showConfirmModal && pendingStatusChange && (
@@ -888,7 +878,7 @@ const ReservationsAdmin: React.FC = () => {
             onStatusChange={handleReservationStatusChange}
             onSuccess={handleModalSuccess}
         />
-      </div>
+    </AdminLayout>
   );
 };
 

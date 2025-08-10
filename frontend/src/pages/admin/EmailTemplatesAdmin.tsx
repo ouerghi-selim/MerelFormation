@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Edit, Trash2, Eye } from 'lucide-react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
+import AdminLayout from '../../components/layout/AdminLayout';
 import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
 import { useNotification } from '../../contexts/NotificationContext';
 import useDataFetching from '../../hooks/useDataFetching';
-import { adminEmailTemplatesApi } from '../../services/api';
+import { adminEmailTemplatesApi } from '@/services/api.ts';
 
 interface EmailTemplate {
     id: number;
@@ -286,18 +285,13 @@ const EmailTemplatesAdmin: React.FC = () => {
     );
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <AdminSidebar />
-            <div className="flex-1">
-                <AdminHeader
-                    title="Gestion des templates d'emails"
-                    breadcrumbItems={[
-                        { label: 'Admin', path: '/admin' },
-                        { label: 'Templates d\'emails' }
-                    ]}
-                />
-
-                <div className="p-6">
+        <AdminLayout
+            title="Gestion des templates d'emails"
+            breadcrumbItems={[
+                { label: 'Admin', path: '/admin' },
+                { label: 'Templates d\'emails' }
+            ]}
+        >
                     {error && (
                         <Alert
                             type="error"
@@ -325,8 +319,6 @@ const EmailTemplatesAdmin: React.FC = () => {
                         searchFields={['name', 'subject']}
                         emptyMessage="Aucun template d'email trouvé"
                     />
-                </div>
-            </div>
 
             {/* Modal de prévisualisation */}
             <Modal
@@ -416,7 +408,7 @@ const EmailTemplatesAdmin: React.FC = () => {
                     Cette action est irréversible.
                 </p>
             </Modal>
-        </div>
+        </AdminLayout>
     );
 };
 

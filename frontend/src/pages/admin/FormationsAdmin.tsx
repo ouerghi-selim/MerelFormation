@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {Plus, Edit, Trash2, Eye} from 'lucide-react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
+import AdminLayout from '../../components/layout/AdminLayout';
 import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
@@ -355,12 +354,8 @@ const FormationsAdmin: React.FC = () => {
   );
 
   return (
-      <div className="flex min-h-screen bg-gray-50">
-        <AdminSidebar />
-        <div className="flex-1">
-          <AdminHeader title="Gestion des formations" />
+    <AdminLayout title="Gestion des formations">
 
-          <div className="p-6">
             {error && (
                 <Alert
                     type="error"
@@ -398,8 +393,6 @@ const FormationsAdmin: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
         {/* Modal d'édition */}
         <Modal
@@ -711,7 +704,7 @@ const FormationsAdmin: React.FC = () => {
             Cette action est irréversible.
           </p>
         </Modal>
-      </div>
+    </AdminLayout>
   );
 };
 

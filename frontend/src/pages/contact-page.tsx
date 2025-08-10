@@ -3,6 +3,7 @@ import { Phone, MapPin, Clock, AlertCircle, Info, Send, User, Mail, Smartphone, 
 import { GoogleMap, useJsApiLoader, InfoWindow } from '@react-google-maps/api';
 import { MarkerF } from '@react-google-maps/api';  // Utiliser MarkerF au lieu de Marker
 import { contactApi, adminContentTextApi } from '../services/api';
+import PageContainer from '../components/layout/PageContainer';
 
 interface CMSContent {
   [key: string]: string;
@@ -214,10 +215,10 @@ const ContactPage = () => {
         <div className="min-h-screen bg-gray-50">
             {/* Hero Section */}
             <section className="bg-blue-900 text-white py-16 lg:py-24">
-                <div className="container mx-auto px-4">
+                <PageContainer>
                     <h1 className="text-4xl md:text-5xl font-bold mb-6 text-center"
                         dangerouslySetInnerHTML={{__html: getContent('contact_hero_title', 'Contactez-nous')}}/>
-                    <p className="text-xl text-blue-100 max-w-3xl mx-auto text-center mb-8"
+                    <p className="text-xl text-blue-100 text-center mb-8"
                        dangerouslySetInnerHTML={{__html: getContent('contact_hero_description', 'Une question sur nos formations ? Besoin d\'informations ? Notre équipe est à votre écoute pour vous accompagner dans votre projet professionnel.')}} />
                     <div className="flex flex-wrap justify-center gap-6 mt-10">
 
@@ -235,12 +236,12 @@ const ContactPage = () => {
                         <span className="font-semibold">contact@merelformation.fr</span>
                         </a>
                     </div>
-                </div>
+                </PageContainer>
         </section>
 
     {/* Contact Info Cards */}
     <section className="py-12 -mt-10">
-        <div className="container mx-auto px-4">
+        <PageContainer>
             <div className="grid md:grid-cols-3 gap-6">
                 <div className="bg-white rounded-xl shadow-lg p-6 transform hover:-translate-y-1 transition-all duration-300">
                     <div className="bg-blue-100 w-14 h-14 rounded-full flex items-center justify-center mb-5 mx-auto">
@@ -277,13 +278,13 @@ const ContactPage = () => {
                     />
                 </div>
             </div>
-        </div>
+        </PageContainer>
     </section>
 
     {/* Carte Google Maps */}
     <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-            <div className="max-w-5xl mx-auto">
+        <PageContainer>
+            <div>
                 <h2 className="text-3xl font-bold mb-8 text-center"
                     dangerouslySetInnerHTML={{__html: getContent('contact_map_title', 'Nous situer')}} />
                 <div className="shadow-xl rounded-xl overflow-hidden border-4 border-white">
@@ -333,13 +334,13 @@ const ContactPage = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </PageContainer>
     </section>
 
     {/* Contact Form Section */}
     <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-            <div className="max-w-5xl mx-auto">
+        <PageContainer>
+            <div>
                 <h2 className="text-3xl font-bold mb-8 text-center"
                     dangerouslySetInnerHTML={{__html: getContent('contact_form_title', 'Envoyez-nous un message')}} />
 
@@ -570,13 +571,13 @@ const ContactPage = () => {
                     </form>
                 </div>
             </div>
-        </div>
+        </PageContainer>
     </section>
 
     {/* Informations Légales Section */}
     <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-            <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
+        <PageContainer>
+            <div className="grid md:grid-cols-2 gap-8">
                 <div className="bg-gray-50 p-6 rounded-lg shadow">
                     <h3 className="text-xl font-bold mb-4 flex items-center text-blue-900">
                         <Info className="h-6 w-6 mr-2" />
@@ -605,7 +606,7 @@ const ContactPage = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </PageContainer>
     </section>
 </div>
 );

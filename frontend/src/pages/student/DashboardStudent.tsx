@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {BookOpen, FileText, Bell, Calendar, CreditCard, Download, Building2, User} from 'lucide-react';
-import StudentHeader from '../../components/student/StudentHeader';
+import StudentLayout from '../../components/layout/StudentLayout';
 import { studentDashboardApi, studentDocumentsApi } from '@/services/api.ts';
 
 interface Company {
@@ -102,35 +102,27 @@ const DashboardStudent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <StudentHeader />
+      <StudentLayout>
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900"></div>
         </div>
-      </div>
+      </StudentLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <StudentHeader />
+      <StudentLayout>
         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mt-6">
           <p>{error}</p>
         </div>
-      </div>
+      </StudentLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <StudentHeader />
-      
-      <main className="container mx-auto px-4 py-8">
+    <StudentLayout title={`Bienvenue, ${userName}`}>
         <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-gray-800">
-            Bienvenue, {userName}
-          </h1>
           <p className="text-gray-600 mt-2">
             Votre espace de formation personnel
           </p>
@@ -323,8 +315,7 @@ const DashboardStudent: React.FC = () => {
             Graphique de progression (à implémenter)
           </div>
         </div>
-      </main>
-    </div>
+    </StudentLayout>
   );
 };
 

@@ -5,7 +5,8 @@ import { Link } from 'react-router-dom';
 import taxiCar from '@assets/images/pages/taxi-car.png';
 import LocationForm from './LocationForm/LocationForm';
 import Button from '../../components/common/Button';
-import { adminContentTextApi } from '../../services/api';
+import { adminContentTextApi } from '@/services/api.ts';
+import PageContainer from '../../components/layout/PageContainer';
 
 interface CMSContent {
   [key: string]: string;
@@ -63,7 +64,7 @@ const LocationPage = () => {
         <div className="min-h-screen bg-gray-50">
             {/* Hero Section */}
             <div className="bg-blue-900 text-white py-16">
-                <div className="container mx-auto px-4">
+                <PageContainer>
                     <h1 className="text-4xl md:text-5xl font-bold mb-6"
                         dangerouslySetInnerHTML={{__html: getContent('location_hero_title', 'Location Véhicule « double commande »')}} />
                     <p className="text-xl mb-8 text-blue-100"
@@ -76,12 +77,12 @@ const LocationPage = () => {
                     >
                        <p dangerouslySetInnerHTML={{__html: getContent('location_hero_cta', 'Réserver un véhicule')}} />
                     </Button>
-                </div>
+                </PageContainer>
             </div>
 
             {/* Section d'information principale */}
             <section className="py-16">
-                <div className="container mx-auto px-4">
+                <PageContainer>
                     <div className="bg-white rounded-lg shadow-lg p-8 mb-12">
                         <h2 className="text-3xl font-bold mb-6"
                             dangerouslySetInnerHTML={{__html: getContent('location_info_title', 'Examen TAXI-VTC')}} />
@@ -141,12 +142,12 @@ const LocationPage = () => {
                             </Button>
                         </div>
                     </div>
-                </div>
+                </PageContainer>
             </section>
 
             {/* Section de détails du véhicule */}
             <section className="py-16 bg-gray-50">
-                <div className="container mx-auto px-4">
+                <PageContainer>
                     <h2 className="text-3xl font-bold mb-12 text-center"
                         dangerouslySetInnerHTML={{__html: getContent('location_vehicles_title', 'Nos véhicules d\'examen')}}/>
                     <div className="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -180,12 +181,12 @@ const LocationPage = () => {
                             </div>
                         </div>
                     </div>
-                </div>
+                </PageContainer>
             </section>
 
             {/* CTA Final */}
             <section className="py-16 bg-blue-900 text-white">
-                <div className="container mx-auto px-4 text-center">
+                <PageContainer className="text-center">
                     <h2 className="text-3xl font-bold mb-6"
                         dangerouslySetInnerHTML={{__html: getContent('location_cta_title', 'Prêt pour votre examen de taxi ?')}}/>
                     <p className="text-xl mb-8"
@@ -206,7 +207,7 @@ const LocationPage = () => {
                             Nous contacter
                         </Link>
                     </div>
-                </div>
+                </PageContainer>
             </section>
 
             {/* Formulaire modal */}

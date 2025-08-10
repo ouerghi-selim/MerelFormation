@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Users, BookOpen, Calendar, AlertCircle, X } from 'lucide-react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
+import AdminLayout from '../../components/layout/AdminLayout';
 import StatCard from '../../components/admin/StatCard';
 import LineChart from '../../components/charts/LineChart';
 import BarChart from '../../components/charts/BarChart';
@@ -321,30 +320,23 @@ const DashboardAdmin: React.FC = () => {
 
   if (loading) {
     return (
-        <div className="flex min-h-screen">
-          <AdminSidebar />
-          <div className="flex-1 p-8">
-            <div className="flex justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900"></div>
-            </div>
-          </div>
+      <AdminLayout title="Tableau de bord">
+        <div className="flex justify-center items-center h-full">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900"></div>
         </div>
+      </AdminLayout>
     );
   }
 
   return (
-      <div className="flex min-h-screen bg-gray-50">
-        <AdminSidebar />
-        <div className="flex-1">
-          <AdminHeader
-              title="Tableau de bord"
-              breadcrumbItems={[
-                { label: 'Admin', path: '/admin' },
-                { label: 'Tableau de bord' }
-              ]}
-          />
+    <AdminLayout 
+      title="Tableau de bord"
+      breadcrumbItems={[
+        { label: 'Admin', path: '/admin' },
+        { label: 'Tableau de bord' }
+      ]}
+    >
 
-          <div className="p-6">
             {error && (
                 <Alert
                     type="error"
@@ -710,9 +702,7 @@ const DashboardAdmin: React.FC = () => {
                 />
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+    </AdminLayout>
   );
 };
 

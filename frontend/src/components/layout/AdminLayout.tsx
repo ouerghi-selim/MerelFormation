@@ -19,7 +19,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
       <div className="flex-1">
         <AdminHeader title={title} breadcrumbItems={breadcrumbItems} />
         <div className="p-6">
-          {children}
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </div>
       </div>
     </div>

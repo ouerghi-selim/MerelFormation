@@ -1,8 +1,7 @@
 import React, { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, GraduationCap, Award } from 'lucide-react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
+import AdminLayout from '../../components/layout/AdminLayout';
 import useDataFetching from '../../hooks/useDataFetching';
 import { adminUsersApi } from '../../services/api';
 import Alert from '../../components/common/Alert';
@@ -98,18 +97,13 @@ const UsersAdmin: React.FC = () => {
   ];
 
   return (
-      <div className="flex min-h-screen bg-gray-50">
-        <AdminSidebar />
-        <div className="flex-1">
-          <AdminHeader
-              title="Gestion des utilisateurs"
-              breadcrumbItems={[
+    <AdminLayout 
+      title="Gestion des utilisateurs"
+      breadcrumbItems={[
                 { label: 'Admin', path: '/admin' },
                 { label: 'Utilisateurs' }
               ]}
-          />
-
-          <div className="p-6">
+    >
             {error && (
                 <Alert
                     type="error"
@@ -190,9 +184,7 @@ const UsersAdmin: React.FC = () => {
 
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+    </AdminLayout>
   );
 };
 

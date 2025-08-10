@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight, Star, Calendar, Car, Book, CheckCircle, ArrowRight } from 'lucide-react';
 import { adminContentTextApi, adminTestimonialApi } from '../services/api';
 import heroImage from '@assets/images/hero/classroom.jpg';
+import PageContainer from '../components/layout/PageContainer';
 
 interface FormationStats {
   totalFormations: number;
@@ -189,10 +190,10 @@ const HomePage = () => {
   if (error) return <ErrorDisplay message={error} />;
 
   return (
-      <div className="min-h-screen">
+    <div className="min-h-screen">
         {/* Hero Section */}
         <section className="bg-gradient-to-br from-blue-900 to-blue-800 text-white py-16 lg:py-24">
-          <div className="container mx-auto px-4">
+          <PageContainer>
             <div className="flex flex-col md:flex-row items-center">
               <div className="md:w-1/2 mb-8 md:mb-0 animate-fadeIn">
                 <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight"
@@ -229,16 +230,16 @@ const HomePage = () => {
                 />
               </div>
             </div>
-          </div>
+          </PageContainer>
         </section>
 
         {/* Services Section */}
         <section className="py-16 lg:py-24 bg-gray-50">
-          <div className="container mx-auto px-4">
+          <PageContainer>
             <div className="text-center mb-16 animate-fadeIn">
               <h2 className="text-3xl lg:text-4xl font-bold mb-4"
                   dangerouslySetInnerHTML={{__html: getContent('home_services_title', 'Nos Services Complets')}} />
-              <p className="text-gray-600 text-lg max-w-2xl mx-auto"
+              <p className="text-gray-600 text-lg text-center"
                  dangerouslySetInnerHTML={{__html: getContent('home_services_description', 'Une offre complète pour votre réussite professionnelle, de la formation à la mise en route.')}} />
             </div>
 
@@ -282,12 +283,12 @@ const HomePage = () => {
                   linkText="Voir le planning"
               />
             </div>
-          </div>
+          </PageContainer>
         </section>
 
         {/* Stats Section */}
         <section className="bg-gradient-to-r from-blue-900 to-blue-800 text-white py-16">
-          <div className="container mx-auto px-4">
+          <PageContainer>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
               <AnimatedCounter
                   value={formationStats ? formationStats.totalSessions : getContent('home_stats_students_value', '500+')}
@@ -307,12 +308,12 @@ const HomePage = () => {
                   label={getContent('home_stats_experience_label', 'Années d\'Expérience')}
               />
             </div>
-          </div>
+          </PageContainer>
         </section>
 
         {/* Testimonials Section */}
         <section className="py-16 bg-gray-50">
-          <div className="container mx-auto px-4">
+          <PageContainer>
             <h2 className="text-3xl font-bold text-center mb-12"
                 dangerouslySetInnerHTML={{__html: getContent('home_testimonials_title', 'Ils nous font confiance')}} />
             <div className="grid md:grid-cols-3 gap-8">
@@ -347,16 +348,16 @@ const HomePage = () => {
                 </>
               )}
             </div>
-          </div>
+          </PageContainer>
         </section>
 
         {/* CTA Section */}
         <section className="py-16">
-          <div className="container mx-auto px-4">
+          <PageContainer>
             <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white rounded-2xl p-8 md:p-12 text-center shadow-xl transform hover:scale-[1.01] transition-transform duration-300">
               <h2 className="text-3xl md:text-4xl font-bold mb-4"
                   dangerouslySetInnerHTML={{__html: getContent('home_cta_title', 'Prêt à démarrer votre carrière ?')}} />
-              <p className="text-xl mb-8 text-blue-100 max-w-3xl mx-auto"
+              <p className="text-xl mb-8 text-blue-100 text-center"
                  dangerouslySetInnerHTML={{__html: getContent('home_cta_description', 'Inscrivez-vous à nos formations et lancez-vous dans l\'aventure du taxi professionnel.')}} />
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Link to="/contact"
@@ -370,9 +371,9 @@ const HomePage = () => {
                 </Link>
               </div>
             </div>
-                </div>
+          </PageContainer>
         </section>
-      </div>
+    </div>
   );
 };
 

@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Edit, Trash2, Calendar, Users, Eye } from 'lucide-react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
+import AdminLayout from '../../components/layout/AdminLayout';
 import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
@@ -457,19 +456,14 @@ const SessionsAdmin: React.FC = () => {
     ) : 0;
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <AdminSidebar />
-            <div className="flex-1">
-                <AdminHeader
-                    title="Gestion des sessions"
-                    breadcrumbItems={[
-                        { label: 'Admin', path: '/admin' },
-                        { label: 'Formations', path: '/admin/formations' },
-                        { label: 'Sessions' }
-                    ]}
-                />
-
-                <div className="p-6">
+        <AdminLayout 
+            title="Gestion des sessions"
+            breadcrumbItems={[
+                { label: 'Admin', path: '/admin' },
+                { label: 'Formations', path: '/admin/formations' },
+                { label: 'Sessions' }
+            ]}
+        >
                     {error && (
                         <Alert
                             type="error"
@@ -555,8 +549,6 @@ const SessionsAdmin: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
             {/* Modal de confirmation de suppression */}
             <Modal
@@ -595,10 +587,7 @@ const SessionsAdmin: React.FC = () => {
                 onCancel={() => setShowEditModal(false)}
                 isOpen={showEditModal}
             />
-
-
-
-        </div>
+        </AdminLayout>
     );
 };
 

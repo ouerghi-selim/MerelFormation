@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import SessionSelectionModal from '../components/front/modals/SessionSelectionModal';
 import RegistrationFormModal from '../components/front/modals/RegistrationFormModal';
 import { adminContentTextApi } from '../services/api';
+import PageContainer from '../components/layout/PageContainer';
 
 interface Formation {
   slug: number;
@@ -251,17 +252,17 @@ const FormationsPage = () => {
       <div className="min-h-screen bg-gray-50">
         {/* Hero Section */}
         <div className="bg-blue-900 text-white py-16">
-          <div className="container mx-auto px-4">
+          <PageContainer>
             <h1 className="text-4xl md:text-5xl font-bold mb-6"
                 dangerouslySetInnerHTML={{__html: getContent('formations_hero_title', 'Nos Formations Taxi')}} />
 
-            <p className="text-xl max-w-2xl"
+            <p className="text-xl"
                dangerouslySetInnerHTML={{__html: getContent('formations_hero_description', 'Découvrez nos programmes de formation certifiants pour devenir chauffeur de taxi professionnel. Des formations adaptées à tous les niveaux pour réussir dans le métier.')}} />
-          </div>
+          </PageContainer>
         </div>
 
         {/* Barre de recherche et filtres */}
-        <div className="container mx-auto px-4 py-8">
+        <PageContainer className="py-8">
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8 -mt-12 relative z-10">
             <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
@@ -295,11 +296,11 @@ const FormationsPage = () => {
                 >
                   <Search className="h-5 w-5 mr-2"/> Rechercher
                 </button>
-              </div>
+            </div>
             </form>
           </div>
 
-          {/* Résultats de recherche */}
+        {/* Résultats de recherche */}
           <div className="mb-6">
             <h2 className="text-2xl font-bold mb-2">Nos formations disponibles</h2>
             <p className="text-gray-600">
@@ -435,11 +436,11 @@ const FormationsPage = () => {
                 </nav>
               </div>
           )}
-        </div>
+        </PageContainer>
 
         {/* Section des avantages */}
         <div className="bg-white py-16">
-          <div className="container mx-auto px-4">
+          <PageContainer>
             <h2 className="text-3xl font-bold text-center mb-12"
                 dangerouslySetInnerHTML={{__html: getContent('formations_advantages_title', 'Pourquoi choisir nos formations ?')}} />
             <div className="grid md:grid-cols-3 gap-8">
@@ -470,7 +471,7 @@ const FormationsPage = () => {
                 <p className="text-gray-700"
                     dangerouslySetInnerHTML={{__html: getContent('advantage_support_description', 'Un suivi individuel tout au long de votre formation pour garantir votre réussite et vous aider à préparer efficacement l\'examen.')}} />
               </div>
-            </div>
+        </div>
 
             <div className="text-center mt-12">
               <Link to="/contact"
@@ -478,7 +479,7 @@ const FormationsPage = () => {
                 Contactez-nous <ChevronRight className="ml-2 h-5 w-5"/>
               </Link>
             </div>
-          </div>
+          </PageContainer>
         </div>
 
         {/* Modaux */}

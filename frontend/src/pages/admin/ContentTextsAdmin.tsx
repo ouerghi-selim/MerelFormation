@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search, Eye, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { adminContentTextApi } from '../../services/api.ts';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
+import AdminLayout from '../../components/layout/AdminLayout';
 import { 
   ContentText, 
   CMS_PAGES, 
@@ -203,12 +202,7 @@ const ContentTextsAdmin: React.FC = () => {
   const groupedContent = groupContentByPageAndSection();
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar />
-      <div className="flex-1">
-        <AdminHeader title="Gestion du contenu du site" />
-
-        <div className="p-6">
+    <AdminLayout title="Gestion du contenu du site">
           {error && (
             <Alert
               type="error"
@@ -599,9 +593,7 @@ const ContentTextsAdmin: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
-      </div>
-    </div>
+    </AdminLayout>
   );
 };
 

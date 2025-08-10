@@ -1,14 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { UserPlus, Edit, Trash2, Eye, Shield, Check, X } from 'lucide-react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
+import AdminLayout from '../../components/layout/AdminLayout';
 import DataTable from '../../components/common/DataTable';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Alert from '../../components/common/Alert';
 import { useNotification } from '../../contexts/NotificationContext';
 import useDataFetching from '../../hooks/useDataFetching';
-import { adminUsersApi } from '../../services/api';
+import { adminUsersApi } from '@/services/api.ts';
 import { useLocation } from 'react-router-dom';
 
 
@@ -342,19 +341,14 @@ const AdminsAdmin: React.FC = () => {
     const inactiveAdmins = admins ? admins.filter(a => !a.isActive).length : 0;
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <AdminSidebar />
-            <div className="flex-1">
-                <AdminHeader
-                    title="Gestion des administrateurs"
-                    breadcrumbItems={[
-                        { label: 'Admin', path: '/admin' },
-                        { label: 'Utilisateurs', path: '/admin/users' },
-                        { label: 'Administrateurs' }
-                    ]}
-                />
-
-                <div className="p-6">
+        <AdminLayout
+            title="Gestion des administrateurs"
+            breadcrumbItems={[
+                { label: 'Admin', path: '/admin' },
+                { label: 'Utilisateurs', path: '/admin/users' },
+                { label: 'Administrateurs' }
+            ]}
+        >
                     {error && (
                         <Alert
                             type="error"
@@ -420,8 +414,6 @@ const AdminsAdmin: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
             {/* Modal d'ajout d'administrateur */}
             <Modal
@@ -569,7 +561,7 @@ const AdminsAdmin: React.FC = () => {
                     </div>
                 )}
             </Modal>
-        </div>
+        </AdminLayout>
     );
 };
 

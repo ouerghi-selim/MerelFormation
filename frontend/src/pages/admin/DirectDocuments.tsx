@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Send, Plus, FileText, Trash2, Users, Mail, Calendar } from 'lucide-react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
+import AdminLayout from '../../components/layout/AdminLayout';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
 import Modal from '../../components/common/Modal';
 import DataTable from '../../components/common/DataTable';
 import { useNotification } from '../../contexts/NotificationContext';
-import { adminDirectDocumentsApi } from '../../services/api';
-import { getErrorMessage } from '../../utils/errorUtils';
+import { adminDirectDocumentsApi } from '@/services/api.ts';
+import { getErrorMessage } from '@/utils/errorUtils.ts';
 
 interface Student {
     id: number;
@@ -262,39 +261,15 @@ const DirectDocuments: React.FC = () => {
         </div>
     );
 
-    if (loading) {
-        return (
-            <div className="flex min-h-screen bg-gray-50">
-                <AdminSidebar />
-                <div className="flex-1">
-                    <AdminHeader
-                        title="Documents directs"
-                        breadcrumbItems={[
-                            { label: 'Admin', path: '/admin' },
-                            { label: 'Documents directs' }
-                        ]}
-                    />
-                    <div className="p-6 flex justify-center items-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900"></div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <AdminSidebar />
-            <div className="flex-1">
-                <AdminHeader
-                    title="Documents directs"
-                    breadcrumbItems={[
-                        { label: 'Admin', path: '/admin' },
-                        { label: 'Documents directs' }
-                    ]}
-                />
-
-                <div className="p-6">
+        <AdminLayout
+            title="Documents directs"
+            breadcrumbItems={[
+                { label: 'Admin', path: '/admin' },
+                { label: 'Documents directs' }
+            ]}
+        >
                     {error && (
                         <Alert
                             type="error"
@@ -381,8 +356,6 @@ const DirectDocuments: React.FC = () => {
                             emptyMessage="Aucun document envoyé"
                         />
                     </div>
-                </div>
-            </div>
 
             {/* Modal d'envoi de document */}
             <Modal
@@ -487,7 +460,7 @@ const DirectDocuments: React.FC = () => {
                     </div>
                 </form>
             </Modal>
-        </div>
+        </AdminLayout>
     );
 };
 
