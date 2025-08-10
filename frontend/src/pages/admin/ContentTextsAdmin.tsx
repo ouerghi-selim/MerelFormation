@@ -268,7 +268,6 @@ const ContentTextsAdmin: React.FC = () => {
                       className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex items-center space-x-3">
-                        <span className="text-xl">{page.split(' ')[0]}</span>
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900 text-left">
                             {page}
@@ -298,7 +297,6 @@ const ContentTextsAdmin: React.FC = () => {
                                 className="w-full px-8 py-3 flex items-center justify-between hover:bg-gray-25 transition-colors"
                               >
                                 <div className="flex items-center space-x-2">
-                                  <span className="text-lg">{section.split(' ')[0]}</span>
                                   <span className="font-medium text-gray-700">{section}</span>
                                   <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
                                     {contents.length} texte(s)

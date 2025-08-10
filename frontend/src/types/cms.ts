@@ -144,7 +144,14 @@ export const CONTENT_SECTIONS = [
   'contact_info',
   'contact_map',
   'contact_form',
-  'contact_legal'
+  'contact_legal',
+  'tracking_header',
+  'tracking_progress',
+  'tracking_history',
+  'tracking_documents',
+  'tracking_invoice',
+  'tracking_status',
+  'tracking_footer'
 ] as const;
 
 export const CONTENT_TYPES = [
@@ -209,6 +216,13 @@ export const CMS_PAGES: PageSection[] = [
     description: 'Contenu de la page de contact',
     icon: '📞',
     sections: ['contact_hero', 'contact_info', 'contact_map', 'contact_form', 'contact_legal']
+  },
+  {
+    id: 'tracking',
+    name: '🔍 Page suivi réservation',
+    description: 'Contenu de la page de suivi des réservations de véhicules',
+    icon: '🔍',
+    sections: ['tracking_header', 'tracking_progress', 'tracking_history', 'tracking_documents', 'tracking_invoice', 'tracking_status', 'tracking_footer']
   }
 ];
 
@@ -738,6 +752,110 @@ export const CONTENT_DESCRIPTIONS: { [key: string]: { label: string; description
     description: 'Informations sur la médiation',
     page: '📞 Page contact',
     section: '⚖️ Informations légales'
+  },
+
+  // Page Tracking - En-tête
+  'tracking_header_title': {
+    label: 'Titre principal',
+    description: 'Titre principal de la page de suivi',
+    page: '🔍 Page suivi réservation',
+    section: '🎯 En-tête'
+  },
+  'tracking_header_description': {
+    label: 'Description principale',
+    description: 'Description sous le titre principal',
+    page: '🔍 Page suivi réservation',
+    section: '🎯 En-tête'
+  },
+
+  // Page Tracking - Progression
+  'tracking_progress_title': {
+    label: 'Titre progression',
+    description: 'Titre de la section progression de la réservation',
+    page: '🔍 Page suivi réservation',
+    section: '📈 Progression'
+  },
+  'tracking_progress_description': {
+    label: 'Description progression',
+    description: 'Description de la progression de la réservation',
+    page: '🔍 Page suivi réservation',
+    section: '📈 Progression'
+  },
+
+  // Page Tracking - Historique
+  'tracking_history_title': {
+    label: 'Titre historique',
+    description: 'Titre de la section historique détaillé',
+    page: '🔍 Page suivi réservation',
+    section: '📜 Historique'
+  },
+  'tracking_history_description': {
+    label: 'Description historique',
+    description: 'Description de la section historique',
+    page: '🔍 Page suivi réservation',
+    section: '📜 Historique'
+  },
+
+  // Page Tracking - Documents
+  'tracking_documents_title': {
+    label: 'Titre documents',
+    description: 'Titre de la section documents de la réservation',
+    page: '🔍 Page suivi réservation',
+    section: '📄 Documents'
+  },
+  'tracking_documents_description': {
+    label: 'Description documents',
+    description: 'Description de la section documents',
+    page: '🔍 Page suivi réservation',
+    section: '📄 Documents'
+  },
+
+  // Page Tracking - Facture
+  'tracking_invoice_title': {
+    label: 'Titre facture',
+    description: 'Titre de la section facture disponible',
+    page: '🔍 Page suivi réservation',
+    section: '💰 Facture'
+  },
+  'tracking_invoice_description': {
+    label: 'Description facture',
+    description: 'Description de la disponibilité de la facture',
+    page: '🔍 Page suivi réservation',
+    section: '💰 Facture'
+  },
+  'tracking_invoice_download_button': {
+    label: 'Bouton téléchargement facture',
+    description: 'Texte du bouton pour télécharger la facture',
+    page: '🔍 Page suivi réservation',
+    section: '💰 Facture'
+  },
+
+  // Page Tracking - Messages de statut
+  'tracking_status_awaiting_docs': {
+    label: 'Message attente documents',
+    description: 'Message affiché quand des documents sont attendus',
+    page: '🔍 Page suivi réservation',
+    section: '⚠️ Messages de statut'
+  },
+  'tracking_status_no_docs': {
+    label: 'Message aucun document',
+    description: 'Message affiché quand aucun document n\'est associé',
+    page: '🔍 Page suivi réservation',
+    section: '⚠️ Messages de statut'
+  },
+
+  // Page Tracking - Footer
+  'tracking_footer_note': {
+    label: 'Note du footer',
+    description: 'Note explicative en bas de page',
+    page: '🔍 Page suivi réservation',
+    section: '🔻 Pied de page'
+  },
+  'tracking_footer_brand': {
+    label: 'Marque du footer',
+    description: 'Nom de la marque affiché en footer',
+    page: '🔍 Page suivi réservation',
+    section: '🔻 Pied de page'
   }
 };
 

@@ -31,7 +31,7 @@ import {
   VehicleRentalTracking,
   ProgressPhase
 } from '../services/vehicleRentalTrackingService';
-import { vehicleRentalDocumentsApi } from '../services/api';
+import { vehicleRentalDocumentsApi, adminContentTextApi } from '../services/api';
 
 // Interface pour les documents
 interface RentalDocument {
@@ -42,6 +42,11 @@ interface RentalDocument {
   fileSize: string;
   uploadedAt: string;
   downloadUrl: string;
+}
+
+// Interface pour le contenu CMS
+interface CMSContent {
+  [key: string]: string;
 }
 
 const RentalTrackingPage: React.FC = () => {
@@ -58,6 +63,45 @@ const RentalTrackingPage: React.FC = () => {
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [tempDocuments, setTempDocuments] = useState<{tempId: string, document: any}[]>([]);
+
+  // États pour le contenu CMS
+  const [cmsContent, setCmsContent] = useState<CMSContent>({});
+
+  // Fonction pour récupérer le contenu CMS
+  const fetchCMSContent = async () => {
+    try {
+      // Récupérer tous les contenus texte pour les sections de tracking
+      const contentResponse = await adminContentTextApi.getAll({
+        section: ['tracking_header', 'tracking_progress', 'tracking_history', 'tracking_documents', 'tracking_invoice', 'tracking_status', 'tracking_footer'].join(',')
+      });
+      
+      // Transformer en objet avec identifiants comme clés
+      const contentMap: CMSContent = {};
+      if (contentResponse.data?.data) {
+        contentResponse.data.data.forEach((item: any) => {
+          contentMap[item.identifier] = item.content;
+        });
+      }
+      setCmsContent(contentMap);
+    } catch (err) {
+      console.error('Erreur lors du chargement du contenu CMS:', err);
+      // En cas d'erreur, utiliser les valeurs par défaut
+      setCmsContent({
+        'tracking_header_title': 'Suivi de réservation',
+        'tracking_header_description': 'Suivez l\'évolution de votre demande de réservation en temps réel',
+        'tracking_progress_title': 'Progression de votre réservation',
+        'tracking_invoice_title': 'Facture disponible',
+        'tracking_invoice_description': 'Votre facture est prête et peut être téléchargée',
+        'tracking_invoice_download_button': 'Télécharger la facture',
+        'tracking_documents_title': 'Documents de votre réservation',
+        'tracking_history_title': 'Historique détaillé',
+        'tracking_status_awaiting_docs': 'Veuillez fournir les documents demandés pour continuer le traitement de votre réservation',
+        'tracking_status_no_docs': 'Aucun document complémentaire n\'est associé à cette réservation',
+        'tracking_footer_note': 'Conservez ce lien pour suivre l\'évolution de votre demande',
+        'tracking_footer_brand': 'MerelFormation'
+      });
+    }
+  };
 
   // Fonction pour vérifier si l'upload de documents est autorisé
   const canUploadDocuments = (status: string): boolean => {
@@ -177,6 +221,7 @@ const RentalTrackingPage: React.FC = () => {
 
   useEffect(() => {
     fetchRental();
+    fetchCMSContent();
   }, [trackingToken]);
 
   const handleRefresh = () => {
@@ -236,8 +281,8 @@ const RentalTrackingPage: React.FC = () => {
             <div className="flex items-center space-x-3">
               <Car className="h-8 w-8 text-blue-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Suivi de réservation
+                <h1 className="text-2xl font-bold text-gray-900"
+                    dangerouslySetInnerHTML={{__html: cmsContent['tracking_header_title'] || 'Suivi de réservation'}}>
                 </h1>
                 <p className="text-gray-500">
                   Réservation #{rental.id} • {rental.customerName}
@@ -274,7 +319,7 @@ const RentalTrackingPage: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-lg font-semibold mb-6 flex items-center">
             <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
-            Progression de votre réservation
+            <span dangerouslySetInnerHTML={{__html: cmsContent['tracking_progress_title'] || 'Progression de votre réservation'}} />
           </h2>
           
           <div className="relative">
@@ -352,7 +397,7 @@ const RentalTrackingPage: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4 flex items-center">
             <Clock className="mr-2 h-5 w-5" />
-            Historique détaillé
+            <span dangerouslySetInnerHTML={{__html: cmsContent['tracking_history_title'] || 'Historique détaillé'}} />
           </h2>
           <div className="space-y-4">
             {rental.statusHistory.map((item, index) => {
@@ -606,7 +651,7 @@ const RentalTrackingPage: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center">
                 <FileText className="mr-2 h-5 w-5 text-orange-600" />
-                Documents de votre réservation
+                <span dangerouslySetInnerHTML={{__html: cmsContent['tracking_documents_title'] || 'Documents de votre réservation'}} />
               </h2>
               {canUploadDocuments(rental.status) && (
                 <button
@@ -697,11 +742,11 @@ const RentalTrackingPage: React.FC = () => {
                       <DollarSign className="w-6 h-6 text-green-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-green-900 flex items-center">
-                        Facture disponible
+                      <h3 className="text-lg font-semibold text-green-900 flex items-center"
+                          dangerouslySetInnerHTML={{__html: cmsContent['tracking_invoice_title'] || 'Facture disponible'}}>
                       </h3>
-                      <p className="text-sm text-green-700">
-                        Votre facture est prête et peut être téléchargée
+                      <p className="text-sm text-green-700"
+                         dangerouslySetInnerHTML={{__html: cmsContent['tracking_invoice_description'] || 'Votre facture est prête et peut être téléchargée'}}>
                       </p>
                     </div>
                   </div>
@@ -725,7 +770,7 @@ const RentalTrackingPage: React.FC = () => {
                           className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
                         >
                           <Download className="h-4 w-4 mr-2" />
-                          Télécharger la facture
+                          <span dangerouslySetInnerHTML={{__html: cmsContent['tracking_invoice_download_button'] || 'Télécharger la facture'}} />
                         </a>
                       </div>
                     </div>
@@ -749,8 +794,8 @@ const RentalTrackingPage: React.FC = () => {
                   <AlertCircle className="h-5 w-5 text-orange-500 mr-2 mt-0.5" />
                   <div>
                     <h3 className="text-sm font-medium text-orange-800">Documents en attente</h3>
-                    <p className="text-sm text-orange-700 mt-1">
-                      Veuillez fournir les documents demandés pour continuer le traitement de votre réservation.
+                    <p className="text-sm text-orange-700 mt-1"
+                       dangerouslySetInnerHTML={{__html: cmsContent['tracking_status_awaiting_docs'] || 'Veuillez fournir les documents demandés pour continuer le traitement de votre réservation.'}}>
                     </p>
                   </div>
                 </div>
@@ -799,12 +844,15 @@ const RentalTrackingPage: React.FC = () => {
               <div className="text-center py-8">
                 <FileText className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun document</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  {canUploadDocuments(rental.status) 
-                    ? "Aucun document complémentaire n'a encore été uploadé pour cette réservation."
-                    : "Aucun document complémentaire n'est associé à cette réservation."
-                  }
-                </p>
+                {canUploadDocuments(rental.status) ? (
+                  <p className="mt-1 text-sm text-gray-500">
+                    Aucun document complémentaire n'a encore été uploadé pour cette réservation.
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm text-gray-500"
+                     dangerouslySetInnerHTML={{__html: cmsContent['tracking_status_no_docs'] || "Aucun document complémentaire n'est associé à cette réservation."}}>
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -816,7 +864,9 @@ const RentalTrackingPage: React.FC = () => {
             Réservation créée le {new Date(rental.createdAt).toLocaleDateString('fr-FR')} à {new Date(rental.createdAt).toLocaleTimeString('fr-FR')}
           </p>
           <p className="text-xs text-gray-400">
-            Conservez ce lien pour suivre l'évolution de votre demande • MerelFormation
+            <span dangerouslySetInnerHTML={{__html: cmsContent['tracking_footer_note'] || 'Conservez ce lien pour suivre l\'évolution de votre demande'}} />
+            {' • '}
+            <span dangerouslySetInnerHTML={{__html: cmsContent['tracking_footer_brand'] || 'MerelFormation'}} />
           </p>
         </div>
 
