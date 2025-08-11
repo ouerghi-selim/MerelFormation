@@ -7,12 +7,17 @@ interface Formation {
   id: number;
   title: string;
   type: string;
-  progress: number;
-  startDate: string;
-  endDate: string;
-  instructor: string;
-  nextSession: string | null;
-  status: 'active' | 'completed' | 'pending';
+  description?: string;
+  duration?: number;
+  nextSession?: {
+    id: number;
+    startDate: string;
+    endDate: string;
+    location: string;
+  } | null;
+  status: 'active' | 'completed' | 'pending' | 'upcoming' | 'scheduled' | 'ongoing' | 'cancelled';
+  sessionsCount: number;
+  completedSessions: number;
 }
 
 const FormationsStudent: React.FC = () => {
@@ -30,8 +35,10 @@ const FormationsStudent: React.FC = () => {
 
         // Remplaçons le mock par l'appel API réel
         const response = await studentFormationsApi.getAll();
-        setFormations(response.data);
-        setFilteredFormations(response.data);
+        // L'API renvoie {success: true, data: [...]}
+        const formationsData = response.data?.data || response.data || [];
+        setFormations(formationsData);
+        setFilteredFormations(formationsData);
         setLoading(false);
 
       } catch (err) {
@@ -58,7 +65,7 @@ const FormationsStudent: React.FC = () => {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(formation => 
         formation.title.toLowerCase().includes(query) || 
-        formation.instructor.toLowerCase().includes(query)
+        (formation.description && formation.description.toLowerCase().includes(query))
       );
     }
     
@@ -67,18 +74,30 @@ const FormationsStudent: React.FC = () => {
 
   const getStatusLabel = (status: string): string => {
     switch (status) {
-      case 'active': return 'En cours';
+      // Statuts de sessions
+      case 'scheduled': return 'Programmée';
+      case 'ongoing': return 'En cours';
       case 'completed': return 'Terminée';
-      case 'pending': return 'À venir';
+      case 'cancelled': return 'Annulée';
+      // Statuts de formations (calculés)
+      case 'active': return 'En cours';
+      case 'pending': return 'En attente';
+      case 'upcoming': return 'À venir';
       default: return status;
     }
   };
 
   const getStatusColor = (status: string): string => {
     switch (status) {
+      // Statuts de sessions
+      case 'scheduled': return 'bg-blue-100 text-blue-800';
+      case 'ongoing': return 'bg-green-100 text-green-800';
+      case 'completed': return 'bg-gray-100 text-gray-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      // Statuts de formations (calculés)
       case 'active': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
       case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'upcoming': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -188,22 +207,26 @@ const FormationsStudent: React.FC = () => {
                     <div className="w-full bg-gray-200 rounded-full h-2.5">
                       <div 
                         className="bg-blue-700 h-2.5 rounded-full" 
-                        style={{ width: `${formation.progress}%` }}
+                        style={{ width: `${formation.sessionsCount > 0 ? (formation.completedSessions / formation.sessionsCount) * 100 : 0}%` }}
                       ></div>
                     </div>
-                    <div className="text-right text-sm text-gray-600 mt-1">{formation.progress}%</div>
+                    <div className="text-right text-sm text-gray-600 mt-1">
+                      {formation.sessionsCount > 0 ? Math.round((formation.completedSessions / formation.sessionsCount) * 100) : 0}%
+                    </div>
                   </div>
                   
                   <div className="space-y-2 mb-6">
                     <div className="flex items-center text-gray-600">
-                      <span>Du {formation.startDate} au {formation.endDate}</span>
+                      <span>Sessions: {formation.completedSessions}/{formation.sessionsCount}</span>
                     </div>
-                    <div className="flex items-center text-gray-600">
-                      <span>Formateur: {formation.instructor}</span>
-                    </div>
+                    {formation.duration && (
+                      <div className="flex items-center text-gray-600">
+                        <span>Durée: {formation.duration}h</span>
+                      </div>
+                    )}
                     {formation.nextSession && (
                       <div className="flex items-center text-gray-600">
-                        <span>Prochaine session: {formation.nextSession}</span>
+                        <span>Prochaine session: {new Date(formation.nextSession.startDate).toLocaleDateString('fr-FR')}</span>
                       </div>
                     )}
                   </div>

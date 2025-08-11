@@ -192,7 +192,7 @@ const DashboardStudent: React.FC = () => {
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-800">Prochaines sessions</h2>
-              <Link to="/student/planning" className="text-blue-700 hover:text-blue-900 text-sm font-medium">
+              <Link to="/student/formations" className="text-blue-700 hover:text-blue-900 text-sm font-medium">
                 Voir tout
               </Link>
             </div>
@@ -307,14 +307,6 @@ const DashboardStudent: React.FC = () => {
           </div>
         )}
 
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-bold text-gray-800 mb-6">Progression des formations</h2>
-          
-          {/* Ce composant pourrait être remplacé par un graphique ou une visualisation plus élaborée */}
-          <div className="h-48 flex items-center justify-center text-gray-500">
-            Graphique de progression (à implémenter)
-          </div>
-        </div>
     </StudentLayout>
   );
 };

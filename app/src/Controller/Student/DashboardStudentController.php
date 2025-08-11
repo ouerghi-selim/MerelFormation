@@ -54,25 +54,36 @@ class DashboardStudentController extends AbstractController
 
         try {
             // Récupérer les données du dashboard
-            // TODO: Vérifier que cette méthode existe dans FormationRepository ou la créer
-            $activeFormations = 0; // Temporairement en dur jusqu'à correction du FormationRepository
-            // $activeFormations = $this->formationRepository->countActiveFormationsForStudent($user->getId());
+            $activeFormations = $this->formationRepository->countActiveFormationsForStudent($user->getId());
 
             $documentsCount = count($this->getStudentDocuments($user->getId()));
             // $documentsCount = $this->documentRepository->countDocumentsForStudent($user->getId());
 
             $pendingPayments = 0; // À implémenter selon votre logique métier
 
-            // Récupérer les prochaines sessions
-            $upcomingSessions = $this->sessionRepository->findUpcomingSessionsForStudent($user->getId(), 3);
+            // Récupérer les prochaines sessions via les réservations
+            $upcomingReservations = $this->reservationRepository->createQueryBuilder('r')
+                ->join('r.session', 's')
+                ->where('r.user = :user')
+                ->andWhere('r.status IN (:statuses)')
+                ->andWhere('s.startDate > :now')
+                ->setParameter('user', $user)
+                ->setParameter('statuses', ['confirmed', 'completed'])
+                ->setParameter('now', new \DateTimeImmutable())
+                ->orderBy('s.startDate', 'ASC')
+                ->setMaxResults(3)
+                ->getQuery()
+                ->getResult();
+                
             $formattedSessions = [];
-            foreach ($upcomingSessions as $session) {
+            foreach ($upcomingReservations as $reservation) {
+                $session = $reservation->getSession();
                 $formattedSessions[] = [
                     'id' => $session->getId(),
                     'formationTitle' => $session->getFormation()->getTitle(),
                     'startDate' => $session->getStartDate()->format('d/m/Y'),
                     'startTime' => $session->getStartDate()->format('H:i'),
-                    'location' => $session->getLocation()
+                    'location' => $session->getEffectiveLocation()
                 ];
             }
 
@@ -135,9 +146,19 @@ class DashboardStudentController extends AbstractController
 
     private function getStudentDocuments(int $userId): array
     {
-        $sessions = $this->sessionRepository->findByParticipant($userId);
+        // Récupérer les réservations confirmées de l'utilisateur
+        $reservations = $this->reservationRepository->createQueryBuilder('r')
+            ->join('r.session', 's')
+            ->where('r.user = :userId')
+            ->andWhere('r.status IN (:statuses)')
+            ->setParameter('userId', $userId)
+            ->setParameter('statuses', ['confirmed', 'completed'])
+            ->getQuery()
+            ->getResult();
+            
         $documents = [];
-        foreach ($sessions as $session) {
+        foreach ($reservations as $reservation) {
+            $session = $reservation->getSession();
             if ($session) {
                 // Documents de session
                 $sessionDocs = $this->documentRepository->findBy(['session' => $session->getId()]);

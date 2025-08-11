@@ -9,37 +9,51 @@ interface FormationDetail {
   title: string;
   description: string;
   type: string;
-  instructor: string;
-  startDate: string;
-  endDate: string;
+  duration?: number;
   progress: number;
+  prerequisites: Prerequisite[];
   modules: Module[];
-  documents: Document[];
-  upcomingSessions: Session[];
+  documents: DocumentItem[];
+  sessions: SessionItem[];
+  totalSessions: number;
+  completedSessions: number;
 }
 
 interface Module {
   id: number;
   title: string;
-  description: string;
-  status: 'completed' | 'in_progress' | 'pending';
-  progress: number;
+  duration?: number;
+  position?: number;
+  points: ModulePoint[];
 }
 
-interface Document {
+interface ModulePoint {
+  id: number;
+  content: string;
+}
+
+interface Prerequisite {
+  id: number;
+  content: string;
+}
+
+interface DocumentItem {
   id: number;
   title: string;
   type: string;
-  date: string;
+  fileName: string;
+  updatedAt: string | null;
   downloadUrl: string;
 }
 
-interface Session {
+interface SessionItem {
   id: number;
-  date: string;
-  time: string;
+  startDate: string;
+  endDate: string;
   location: string;
-  topic: string;
+  status: string;
+  reservationStatus: string;
+  instructors: string[];
 }
 
 // @ts-ignore
@@ -57,7 +71,9 @@ const FormationDetailStudent: React.FC = () => {
 
         // Remplaçons le mock par l'appel API réel
         const response = await studentFormationsApi.getById(parseInt(id || '0'));
-        setFormation(response.data);
+        // L'API renvoie {success: true, data: {...}}
+        const formationData = response.data?.data || response.data;
+        setFormation(formationData);
         setLoading(false);
 
       } catch (err) {
@@ -173,15 +189,15 @@ const FormationDetailStudent: React.FC = () => {
                     <Calendar className="h-5 w-5 text-blue-700 mr-2" />
                     <div>
                       <div className="text-sm text-gray-500">Période de formation</div>
-                      <div>Du {formation.startDate} au {formation.endDate}</div>
+                      <div>Durée: {formation.duration ? formation.duration + 'h' : 'Non définie'}</div>
                     </div>
                   </div>
                   
                   <div className="flex items-center">
                     <User className="h-5 w-5 text-blue-700 mr-2" />
                     <div>
-                      <div className="text-sm text-gray-500">Formateur</div>
-                      <div>{formation.instructor}</div>
+                      <div className="text-sm text-gray-500">Progression</div>
+                      <div>Sessions: {formation.completedSessions}/{formation.totalSessions}</div>
                     </div>
                   </div>
                 </div>
@@ -196,13 +212,32 @@ const FormationDetailStudent: React.FC = () => {
         
         <div className="grid md:grid-cols-3 gap-8">
           <div className="md:col-span-2">
+            {/* Section Prérequis */}
+            {formation.prerequisites && formation.prerequisites.length > 0 && (
+              <div className="bg-white rounded-lg shadow mb-8">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-xl font-bold text-gray-800">Prérequis</h2>
+                </div>
+                <div className="p-6">
+                  <ul className="space-y-3">
+                    {formation.prerequisites.map((prerequisite) => (
+                      <li key={prerequisite.id} className="flex items-start">
+                        <span className="w-2 h-2 bg-red-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                        <span className="text-gray-700">{prerequisite.content}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+
             <div className="bg-white rounded-lg shadow mb-8">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-xl font-bold text-gray-800">Modules de formation</h2>
               </div>
               
               <div className="p-6">
-                {formation.modules.length > 0 ? (
+                {formation.modules && formation.modules.length > 0 ? (
                   <div className="space-y-4">
                     {formation.modules.map(module => (
                       <div key={module.id} className="border border-gray-200 rounded-lg overflow-hidden">
@@ -211,30 +246,20 @@ const FormationDetailStudent: React.FC = () => {
                           onClick={() => toggleModule(module.id)}
                         >
                           <div className="flex items-center">
-                            <div className={`h-10 w-10 rounded-full flex items-center justify-center mr-4 ${
-                              module.status === 'completed' ? 'bg-green-100' : 
-                              module.status === 'in_progress' ? 'bg-blue-100' : 
-                              'bg-gray-100'
-                            }`}>
-                              {module.status === 'completed' ? (
-                                <CheckCircle className="h-6 w-6 text-green-700" />
-                              ) : (
-                                <BookOpen className={`h-6 w-6 ${
-                                  module.status === 'in_progress' ? 'text-blue-700' : 'text-gray-500'
-                                }`} />
-                              )}
+                            <div className="h-10 w-10 rounded-full flex items-center justify-center mr-4 bg-blue-100">
+                              <BookOpen className="h-6 w-6 text-blue-700" />
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{module.title}</div>
                               <div className="text-sm text-gray-500">
-                                Progression: {module.progress}%
+                                {module.duration ? `Durée: ${module.duration}h` : 'Module de formation'}
                               </div>
                             </div>
                           </div>
                           
                           <div className="flex items-center">
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full mr-3 ${getStatusColor(module.status)}`}>
-                              {getStatusLabel(module.status)}
+                            <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full mr-3 bg-blue-100 text-blue-800">
+                              Module
                             </span>
                             <ChevronDown className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
                               expandedModule === module.id ? 'transform rotate-180' : ''
@@ -244,18 +269,21 @@ const FormationDetailStudent: React.FC = () => {
                         
                         {expandedModule === module.id && (
                           <div className="p-4 border-t border-gray-200 bg-gray-50">
-                            <p className="text-gray-700 mb-4">{module.description}</p>
-                            {module.status === 'in_progress' && (
-                              <Link 
-                                to={`/student/formations/${formation.id}/modules/${module.id}`}
-                                className="inline-flex items-center bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800 transition-colors"
-                              >
-                                Continuer ce module
-                              </Link>
-                            )}
-                            {module.status === 'pending' && (
-                              <div className="text-sm text-gray-500">
-                                Ce module sera disponible prochainement.
+                            <p className="text-gray-700 mb-4">
+                              Durée: {module.duration ? module.duration + 'h' : 'Non définie'} 
+                              {module.position && ` • Position: ${module.position}`}
+                            </p>
+                            {module.points && module.points.length > 0 && (
+                              <div className="mt-4">
+                                <h4 className="font-medium text-gray-900 mb-2">Points du module :</h4>
+                                <ul className="space-y-2">
+                                  {module.points.map((point) => (
+                                    <li key={point.id} className="flex items-start">
+                                      <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                      <span className="text-gray-700">{point.content}</span>
+                                    </li>
+                                  ))}
+                                </ul>
                               </div>
                             )}
                           </div>
@@ -277,21 +305,29 @@ const FormationDetailStudent: React.FC = () => {
               </div>
               
               <div className="p-6">
-                {formation.upcomingSessions && formation.upcomingSessions.length > 0 ? (
+                {formation.sessions && formation.sessions.length > 0 ? (
                   <div className="space-y-4">
-                    {formation.upcomingSessions.map(session => (
+                    {formation.sessions.map(session => (
                       <div key={session.id} className="flex items-start p-4 border border-gray-200 rounded-lg">
                         <div className="bg-blue-100 p-3 rounded-lg mr-4">
                           <Calendar className="h-5 w-5 text-blue-700" />
                         </div>
                         <div>
-                          <div className="font-medium text-gray-900">{session.topic}</div>
+                          <div className="font-medium text-gray-900">Session de formation</div>
                           <div className="text-sm text-gray-600 mt-1">
-                            {session.date} à {session.time}
+                            Du {session.startDate} au {session.endDate}
                           </div>
                           <div className="text-sm text-gray-500 mt-1">
-                            Lieu: {session.location}
+                            Lieu: {session.location || 'Non défini'}
                           </div>
+                          <div className="text-sm text-gray-500 mt-1">
+                            Statut: {session.reservationStatus}
+                          </div>
+                          {session.instructors && session.instructors.length > 0 && (
+                            <div className="text-sm text-gray-500 mt-1">
+                              Instructeurs: {session.instructors.join(', ')}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}

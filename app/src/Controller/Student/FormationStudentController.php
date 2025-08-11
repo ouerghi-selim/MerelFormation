@@ -4,36 +4,33 @@ namespace App\Controller\Student;
 
 use App\Repository\FormationRepository;
 use App\Repository\SessionRepository;
-use App\Repository\UserFormationRepository;
+use App\Repository\ReservationRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Routing\Annotation\Route;
 
-/**
- * @Route("/api/student/formations", name="api_student_formations_")
- */
+#[Route('/api/student/formations', name: 'api_student_formations_')]
 class FormationStudentController extends AbstractController
 {
-    private $security;
-    private $formationRepository;
-    private $userFormationRepository;
-    private $sessionRepository;
+    private Security $security;
+    private FormationRepository $formationRepository;
+    private ReservationRepository $reservationRepository;
+    private SessionRepository $sessionRepository;
 
     public function __construct(
         Security $security,
         FormationRepository $formationRepository,
-        UserFormationRepository $userFormationRepository,
+        ReservationRepository $reservationRepository,
         SessionRepository $sessionRepository
     ) {
         $this->security = $security;
         $this->formationRepository = $formationRepository;
-        $this->userFormationRepository = $userFormationRepository;
+        $this->reservationRepository = $reservationRepository;
         $this->sessionRepository = $sessionRepository;
     }
 
-    /**
-     * @Route("", name="list", methods={"GET"})
-     */
+    #[Route('', name: 'list', methods: ['GET'])]
     public function list(): JsonResponse
     {
         // Vérifier que l'utilisateur est connecté
@@ -42,34 +39,76 @@ class FormationStudentController extends AbstractController
             return $this->json(['message' => 'Utilisateur non connecté'], 401);
         }
 
-        // Récupérer les formations de l'étudiant
-        $userFormations = $this->userFormationRepository->findByUser($user->getId());
+        // Récupérer les réservations confirmées de l'étudiant
+        $reservations = $this->reservationRepository->createQueryBuilder('r')
+            ->where('r.user = :user')
+            ->andWhere('r.status IN (:statuses)')
+            ->setParameter('user', $user)
+            ->setParameter('statuses', ['confirmed', 'completed'])
+            ->getQuery()
+            ->getResult();
+
+        // Grouper par formation
+        $formationsData = [];
+        foreach ($reservations as $reservation) {
+            $session = $reservation->getSession();
+            if (!$session) continue;
+            
+            $formation = $session->getFormation();
+            if (!$formation || !$formation->isIsActive()) continue;
+
+            $formationId = $formation->getId();
+            
+            if (!isset($formationsData[$formationId])) {
+                $formationsData[$formationId] = [
+                    'formation' => $formation,
+                    'sessions' => [],
+                    'reservations' => []
+                ];
+            }
+            
+            $formationsData[$formationId]['sessions'][] = $session;
+            $formationsData[$formationId]['reservations'][] = $reservation;
+        }
 
         // Formater les données pour le frontend
         $formattedFormations = [];
-        foreach ($userFormations as $userFormation) {
-            $formations = $userFormation->getSessions();
-            foreach ($formations as $formation) {
+        foreach ($formationsData as $data) {
+            $formation = $data['formation'];
+            $sessions = $data['sessions'];
+            $reservations = $data['reservations'];
+            
+            // Calculer la prochaine session
+            $nextSession = $this->getNextSession($sessions);
+            
+            // Calculer le statut
+            $status = $this->getFormationStatusFromReservations($reservations);
+            
             $formattedFormations[] = [
                 'id' => $formation->getId(),
-                //'title' => $formation->getTitle(),
-                //'type' => $formation->getType(),
-//                'progress' => $userFormation->getProgress(),
-//                'startDate' => $userFormation->getStartDate()->format('d/m/Y'),
-//                'endDate' => $userFormation->getEndDate()->format('d/m/Y'),
-//                'instructor' => $userFormation->getInstructor()->getFirstName() . ' ' . $userFormation->getInstructor()->getLastName(),
-                'nextSession' => $this->getNextSessionDate($formation->getId(), $user->getId()),
-                'status' => $this->getFormationStatus($userFormation)
+                'title' => $formation->getTitle(),
+                'type' => $formation->getType(),
+                'description' => $formation->getDescription(),
+                'duration' => $formation->getDuration(),
+                'nextSession' => $nextSession ? [
+                    'id' => $nextSession->getId(),
+                    'startDate' => $nextSession->getStartDate()->format('d/m/Y H:i'),
+                    'endDate' => $nextSession->getEndDate()->format('d/m/Y H:i'),
+                    'location' => $nextSession->getEffectiveLocation()
+                ] : null,
+                'status' => $status,
+                'sessionsCount' => count($sessions),
+                'completedSessions' => $this->countCompletedSessions($reservations)
             ];
-            }
         }
 
-        return $this->json($formattedFormations);
+        return $this->json([
+            'success' => true,
+            'data' => $formattedFormations
+        ]);
     }
 
-    /**
-     * @Route("/{id}", name="get", methods={"GET"})
-     */
+    #[Route('/{id}', name: 'get', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
         // Vérifier que l'utilisateur est connecté
@@ -84,13 +123,20 @@ class FormationStudentController extends AbstractController
             return $this->json(['message' => 'Formation non trouvée'], 404);
         }
 
-        // Vérifier que l'utilisateur est inscrit à cette formation
-        $userFormation = $this->userFormationRepository->findOneBy([
-            'user' => $user->getId(),
-            'formation' => $id
-        ]);
+        // Vérifier que l'utilisateur a des réservations confirmées pour cette formation
+        $userReservations = $this->reservationRepository->createQueryBuilder('r')
+            ->join('r.session', 's')
+            ->join('s.formation', 'f')
+            ->where('r.user = :user')
+            ->andWhere('f.id = :formationId')
+            ->andWhere('r.status IN (:statuses)')
+            ->setParameter('user', $user)
+            ->setParameter('formationId', $id)
+            ->setParameter('statuses', ['confirmed', 'completed'])
+            ->getQuery()
+            ->getResult();
         
-        if (!$userFormation) {
+        if (empty($userReservations)) {
             return $this->json(['message' => 'Vous n\'êtes pas inscrit à cette formation'], 403);
         }
 
@@ -98,15 +144,20 @@ class FormationStudentController extends AbstractController
         $modules = $formation->getModules();
         $formattedModules = [];
         foreach ($modules as $module) {
-            $moduleProgress = $this->getModuleProgress($module->getId(), $user->getId());
-            $moduleStatus = $this->getModuleStatus($moduleProgress);
+            $points = [];
+            foreach ($module->getPoints() as $point) {
+                $points[] = [
+                    'id' => $point->getId(),
+                    'content' => $point->getContent()
+                ];
+            }
             
             $formattedModules[] = [
                 'id' => $module->getId(),
                 'title' => $module->getTitle(),
-                'description' => $module->getDescription(),
-                'status' => $moduleStatus,
-                'progress' => $moduleProgress
+                'duration' => $module->getDuration(),
+                'position' => $module->getPosition(),
+                'points' => $points
             ];
         }
 
@@ -118,27 +169,43 @@ class FormationStudentController extends AbstractController
                 'id' => $document->getId(),
                 'title' => $document->getTitle(),
                 'type' => $document->getType(),
-                'date' => $document->getCreatedAt()->format('d/m/Y'),
-                'downloadUrl' => '/documents/' . $document->getId()
+                'fileName' => $document->getFileName(),
+                'updatedAt' => $document->getUpdatedAt() ? $document->getUpdatedAt()->format('d/m/Y') : null,
+                'downloadUrl' => '/student/documents/' . $document->getId() . '/download'
             ];
         }
 
-        // Récupérer les prochaines sessions
-        $upcomingSessions = $this->sessionRepository->findUpcomingSessionsForFormationAndStudent(
-            $id,
-            $user->getId()
-        );
-        
-        $formattedSessions = [];
-        foreach ($upcomingSessions as $session) {
-            $formattedSessions[] = [
+        // Récupérer les sessions de l'utilisateur pour cette formation
+        $userSessions = [];
+        foreach ($userReservations as $reservation) {
+            $session = $reservation->getSession();
+            $userSessions[] = [
                 'id' => $session->getId(),
-                'date' => $session->getDate()->format('d/m/Y'),
-                'time' => $session->getStartTime()->format('H:i'),
-                'location' => $session->getLocation(),
-                'topic' => $session->getTopic()
+                'startDate' => $session->getStartDate()->format('d/m/Y H:i'),
+                'endDate' => $session->getEndDate()->format('d/m/Y H:i'),
+                'location' => $session->getEffectiveLocation(),
+                'status' => $session->getStatus(),
+                'reservationStatus' => $reservation->getStatus(),
+                'instructors' => array_map(function($instructor) {
+                    return $instructor->getFirstName() . ' ' . $instructor->getLastName();
+                }, $session->getInstructors()->toArray())
             ];
         }
+
+        // Récupérer les prérequis de la formation
+        $prerequisites = $formation->getPrerequisites();
+        $formattedPrerequisites = [];
+        foreach ($prerequisites as $prerequisite) {
+            $formattedPrerequisites[] = [
+                'id' => $prerequisite->getId(),
+                'content' => $prerequisite->getContent()
+            ];
+        }
+
+        // Calculer la progression
+        $completedSessions = $this->countCompletedSessions($userReservations);
+        $totalSessions = count($userReservations);
+        $progress = $totalSessions > 0 ? intval(($completedSessions / $totalSessions) * 100) : 0;
 
         // Formater les données pour le frontend
         $formattedFormation = [
@@ -146,83 +213,90 @@ class FormationStudentController extends AbstractController
             'title' => $formation->getTitle(),
             'description' => $formation->getDescription(),
             'type' => $formation->getType(),
-            'instructor' => $userFormation->getInstructor()->getFirstName() . ' ' . $userFormation->getInstructor()->getLastName(),
-            'startDate' => $userFormation->getStartDate()->format('d/m/Y'),
-            'endDate' => $userFormation->getEndDate()->format('d/m/Y'),
-            'progress' => $userFormation->getProgress(),
+            'duration' => $formation->getDuration(),
+            'progress' => $progress,
+            'prerequisites' => $formattedPrerequisites,
             'modules' => $formattedModules,
             'documents' => $formattedDocuments,
-            'upcomingSessions' => $formattedSessions
+            'sessions' => $userSessions,
+            'totalSessions' => $totalSessions,
+            'completedSessions' => $completedSessions
         ];
 
-        return $this->json($formattedFormation);
+        return $this->json([
+            'success' => true,
+            'data' => $formattedFormation
+        ]);
     }
 
     /**
-     * Récupère la date de la prochaine session pour une formation et un utilisateur
+     * Trouve la prochaine session parmi une liste de sessions
      */
-    private function getNextSessionDate(int $formationId, int $userId): ?string
+    private function getNextSession(array $sessions): ?object
     {
-        $nextSession = $this->sessionRepository->findNextSessionForFormationAndStudent(
-            $formationId,
-            $userId
-        );
+        $now = new \DateTimeImmutable();
+        $upcomingSessions = array_filter($sessions, function($session) use ($now) {
+            return $session->getStartDate() > $now;
+        });
         
-        if ($nextSession) {
-            return $nextSession->getDate()->format('d/m/Y');
+        if (empty($upcomingSessions)) {
+            return null;
         }
         
-        return null;
+        // Trier par date de début
+        usort($upcomingSessions, function($a, $b) {
+            return $a->getStartDate() <=> $b->getStartDate();
+        });
+        
+        return $upcomingSessions[0];
     }
 
     /**
-     * Détermine le statut d'une formation pour un utilisateur
+     * Détermine le statut d'une formation basé sur les réservations
      */
-    private function getFormationStatus($userFormation): string
+    private function getFormationStatusFromReservations(array $reservations): string
     {
-        $now = new \DateTime();
+        $now = new \DateTimeImmutable();
+        $hasCompleted = false;
+        $hasUpcoming = false;
+        $hasActive = false;
         
-        if ($userFormation->getProgress() >= 100) {
+        foreach ($reservations as $reservation) {
+            $session = $reservation->getSession();
+            
+            if ($reservation->getStatus() === 'completed') {
+                $hasCompleted = true;
+            }
+            
+            if ($session->getStartDate() > $now) {
+                $hasUpcoming = true;
+            } elseif ($session->getStartDate() <= $now && $session->getEndDate() >= $now) {
+                $hasActive = true;
+            }
+        }
+        
+        if ($hasActive) {
+            return 'active';
+        }
+        
+        if ($hasCompleted && !$hasUpcoming) {
             return 'completed';
         }
         
-        if ($userFormation->getStartDate() > $now) {
-            return 'pending';
-        }
-        
-        return 'active';
-    }
-
-    /**
-     * Récupère la progression d'un module pour un utilisateur
-     */
-    private function getModuleProgress(int $moduleId, int $userId): int
-    {
-        // À implémenter selon votre structure de données
-        // Exemple fictif
-        $progressValues = [
-            1 => 100, // Module 1: 100% complété
-            2 => 100, // Module 2: 100% complété
-            3 => 60,  // Module 3: 60% complété
-            4 => 0    // Module 4: 0% complété
-        ];
-        
-        return $progressValues[$moduleId] ?? 0;
-    }
-
-    /**
-     * Détermine le statut d'un module en fonction de sa progression
-     */
-    private function getModuleStatus(int $progress): string
-    {
-        if ($progress >= 100) {
-            return 'completed';
-        }
-        
-        if ($progress > 0) {
-            return 'in_progress';
+        if ($hasUpcoming) {
+            return 'upcoming';
         }
         
         return 'pending';
+    }
+
+    /**
+     * Compte les sessions complétées
+     */
+    private function countCompletedSessions(array $reservations): int
+    {
+        return count(array_filter($reservations, function($reservation) {
+            return $reservation->getStatus() === 'completed';
+        }));
     }
 }

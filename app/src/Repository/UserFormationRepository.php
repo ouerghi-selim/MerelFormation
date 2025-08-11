@@ -29,10 +29,12 @@ class UserFormationRepository
             ->select('f', 'MIN(s.startDate) as HIDDEN nextSessionDate')
             ->from('App\Entity\Formation', 'f')
             ->join('f.sessions', 's')
-            ->join('s.participants', 'p')  // Cette ligne suppose que 'participants' est bien le nom de la relation
-            ->where('p.id = :userId')
+            ->join('s.reservations', 'r')  // Utiliser reservations au lieu de participants
+            ->where('r.user = :userId')   // r.user au lieu de p.id
+            ->andWhere('r.status IN (:confirmedStatuses)')  // Seulement les réservations confirmées
             ->andWhere('f.isActive = :active')
             ->setParameter('userId', $userId)
+            ->setParameter('confirmedStatuses', ['confirmed', 'completed'])
             ->setParameter('active', true)
             ->groupBy('f.id')
             ->orderBy('nextSessionDate', 'ASC')
