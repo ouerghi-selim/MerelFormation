@@ -1,12 +1,12 @@
 // src/pages/admin/VehiclesAdmin.tsx (version refactorisée)
 import React, { useState } from 'react';
 import { Car, Plus, Edit, Trash2, AlertTriangle, Check } from 'lucide-react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
+import AdminLayout from '../../components/layout/AdminLayout';
 import DataTable from '../../components/common/DataTable';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Alert from '../../components/common/Alert';
+import ActionMenu from '../../components/common/ActionMenu';
 import { useNotification } from '../../contexts/NotificationContext';
 import useDataFetching from '../../hooks/useDataFetching';
 import { adminVehiclesApi } from '../../services/api';
@@ -242,29 +242,29 @@ const VehiclesAdmin: React.FC = () => {
           {formatStatus(row.status)}
         </span>
             ),
-            sortable: false
+            sortable: false,
+            cellClassName: 'text-center'
         }
     ];
 
-    // Rendu des actions pour chaque ligne
-    const renderActions = (vehicle: Vehicle) => (
-        <div className="flex justify-end space-x-2">
-            <button
-                onClick={() => openEditModal(vehicle)}
-                className="text-blue-700 hover:text-blue-900"
-                title="Modifier"
-            >
-                <Edit className="h-5 w-5" />
-            </button>
-            <button
-                onClick={() => openDeleteModal(vehicle)}
-                className="text-red-600 hover:text-red-900"
-                title="Supprimer"
-            >
-                <Trash2 className="h-5 w-5" />
-            </button>
-        </div>
-    );
+    // Rendu des actions pour chaque ligne avec menu dropdown
+    const renderActions = (vehicle: Vehicle) => {
+        const actions = [
+            {
+                label: 'Modifier',
+                icon: <Edit className="h-4 w-4" />,
+                onClick: () => openEditModal(vehicle)
+            },
+            {
+                label: 'Supprimer',
+                icon: <Trash2 className="h-4 w-4" />,
+                onClick: () => openDeleteModal(vehicle),
+                variant: 'danger' as const
+            }
+        ];
+
+        return <ActionMenu actions={actions} className="flex justify-end" />;
+    };
 
     // Rendu du formulaire de véhicule (utilisé dans les modals d'ajout et d'édition)
     const renderVehicleForm = (vehicle: Omit<Vehicle, 'id'>, setVehicle: React.Dispatch<React.SetStateAction<any>>) => (
@@ -409,18 +409,13 @@ const VehiclesAdmin: React.FC = () => {
     const maintenanceVehicles = vehiclesArray.filter(v => v.isActive && v.status === 'maintenance').length;
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <AdminSidebar />
-            <div className="flex-1">
-                <AdminHeader
-                    title="Gestion des véhicules"
-                    breadcrumbItems={[
-                        { label: 'Admin', path: '/admin' },
-                        { label: 'Véhicules' }
-                    ]}
-                />
-
-                <div className="p-6">
+        <AdminLayout
+            title="Gestion des véhicules"
+            breadcrumbItems={[
+                { label: 'Admin', path: '/admin' },
+                { label: 'Véhicules' }
+            ]}
+        >
                     {error && (
                         <Alert
                             type="error"
@@ -446,6 +441,8 @@ const VehiclesAdmin: React.FC = () => {
                         actions={renderActions}
                         searchFields={['model', 'plate']}
                         emptyMessage="Aucun véhicule trouvé"
+                        title="Liste des véhicules"
+                        searchPlaceholder="Rechercher par modèle ou plaque..."
                     />
 
                     {/* Statistiques des véhicules */}
@@ -506,8 +503,6 @@ const VehiclesAdmin: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
             {/* Modal d'ajout de véhicule */}
             <Modal
@@ -595,7 +590,7 @@ const VehiclesAdmin: React.FC = () => {
                     Cette action est irréversible.
                 </p>
             </Modal>
-        </div>
+        </AdminLayout>
     );
 };
 

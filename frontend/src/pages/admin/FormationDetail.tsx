@@ -24,8 +24,7 @@ import {
   BookOpen,
   X
 } from 'lucide-react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
+import AdminLayout from '../../components/layout/AdminLayout';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Alert from '../../components/common/Alert';
@@ -627,25 +626,17 @@ const FormationDetail: React.FC = () => {
 
   if (loading) {
     return (
-        <div className="flex min-h-screen bg-gray-50">
-          <AdminSidebar />
-          <div className="flex-1">
-            <AdminHeader title="Chargement..." />
+        <AdminLayout title="Chargement...">
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900"></div>
             </div>
-          </div>
-        </div>
+        </AdminLayout>
     );
   }
 
   if (error || !formation) {
     return (
-        <div className="flex min-h-screen bg-gray-50">
-          <AdminSidebar />
-          <div className="flex-1">
-            <AdminHeader title="Erreur" />
-            <div className="p-6">
+        <AdminLayout title="Erreur">
               <Alert type="error" message={error || "Formation non trouvée"} />
               <Button
                   variant="outline"
@@ -655,9 +646,7 @@ const FormationDetail: React.FC = () => {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Retour à la liste
               </Button>
-            </div>
-          </div>
-        </div>
+        </AdminLayout>
     );
   }
 
@@ -671,12 +660,7 @@ const FormationDetail: React.FC = () => {
   ];
 
   return (
-      <div className="flex min-h-screen bg-gray-50">
-        <AdminSidebar />
-        <div className="flex-1">
-          <AdminHeader title={`Formation: ${formation.title}`} />
-
-          <div className="p-6">
+      <AdminLayout title={`Formation: ${formation.title}`}>
             {/* En-tête avec actions */}
             <div className="flex justify-between items-center mb-6">
               <Button
@@ -1415,8 +1399,6 @@ const FormationDetail: React.FC = () => {
                 )}
               </div>
             </div>
-          </div>
-        </div>
 
         {/* Modal Module */}
         <Modal
@@ -1647,7 +1629,7 @@ const FormationDetail: React.FC = () => {
           />
         )}
 
-      </div>
+      </AdminLayout>
   );
 };
 

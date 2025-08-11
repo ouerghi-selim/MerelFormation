@@ -25,8 +25,7 @@ import {
     Edit2,
     Check
 } from 'lucide-react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
+import AdminLayout from '../../components/layout/AdminLayout';
 import Button from '../../components/common/Button';
 import { adminReservationsApi, vehicleRentalDocumentsApi, vehicleRentalsApi } from '../../services/api';
 import Alert from '../../components/common/Alert';
@@ -587,27 +586,17 @@ const VehicleReservationDetail: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex min-h-screen bg-gray-50">
-                <AdminSidebar />
-                <div className="flex-1">
-                    <AdminHeader title="Chargement..." />
-                    <div className="p-6">
+            <AdminLayout title="Chargement...">
                         <div className="flex justify-center items-center h-64">
                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900"></div>
                         </div>
-                    </div>
-                </div>
-            </div>
+            </AdminLayout>
         );
     }
 
     if (error) {
         return (
-            <div className="flex min-h-screen bg-gray-50">
-                <AdminSidebar />
-                <div className="flex-1">
-                    <AdminHeader title="Erreur" />
-                    <div className="p-6">
+            <AdminLayout title="Erreur">
                         <Alert type="error" message={error} />
                         <div className="mt-4">
                             <Button onClick={() => navigate('/admin/reservations')} variant="outline">
@@ -615,19 +604,13 @@ const VehicleReservationDetail: React.FC = () => {
                                 Retour aux réservations
                             </Button>
                         </div>
-                    </div>
-                </div>
-            </div>
+            </AdminLayout>
         );
     }
 
     if (!reservation) {
         return (
-            <div className="flex min-h-screen bg-gray-50">
-                <AdminSidebar />
-                <div className="flex-1">
-                    <AdminHeader title="Réservation introuvable" />
-                    <div className="p-6">
+            <AdminLayout title="Réservation introuvable">
                         <Alert type="error" message="Cette réservation n'existe pas ou a été supprimée." />
                         <div className="mt-4">
                             <Button onClick={() => navigate('/admin/reservations')} variant="outline">
@@ -635,19 +618,12 @@ const VehicleReservationDetail: React.FC = () => {
                                 Retour aux réservations
                             </Button>
                         </div>
-                    </div>
-                </div>
-            </div>
+            </AdminLayout>
         );
     }
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <AdminSidebar />
-            <div className="flex-1">
-                <AdminHeader title={`Réservation véhicule #${reservation.id}`} />
-                
-                <div className="p-6">
+        <AdminLayout title={`Réservation véhicule #${reservation.id}`}>
                     {/* Messages de succès et d'erreur */}
                     {successMessage && (
                         <Alert type="success" message={successMessage} onClose={() => setSuccessMessage(null)} />
@@ -1575,8 +1551,6 @@ const VehicleReservationDetail: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
             {/* Modal de confirmation pour changement de statut */}
             {showStatusConfirmModal && pendingStatusChange && (
@@ -1706,7 +1680,7 @@ const VehicleReservationDetail: React.FC = () => {
                     isInvoice={uploadingInvoice}
                 />
             )}
-        </div>
+        </AdminLayout>
     );
 };
 

@@ -14,7 +14,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
   breadcrumbItems = []
 }) => {
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50" >
       <AdminSidebar />
       <div className="flex-1">
         <AdminHeader title={title} breadcrumbItems={breadcrumbItems} />

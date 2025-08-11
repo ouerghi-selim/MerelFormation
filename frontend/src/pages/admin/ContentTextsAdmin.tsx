@@ -203,6 +203,7 @@ const ContentTextsAdmin: React.FC = () => {
 
   return (
     <AdminLayout title="Gestion du contenu du site">
+      <div className="space-y-6">
           {error && (
             <Alert
               type="error"
@@ -218,8 +219,6 @@ const ContentTextsAdmin: React.FC = () => {
               onClose={() => setSuccessMessage(null)}
             />
           )}
-
-          <div className="space-y-6">
             {/* Header */}
             <div className="flex justify-between items-center">
               <div>
@@ -250,17 +249,19 @@ const ContentTextsAdmin: React.FC = () => {
             </div>
 
             {/* Organisation par pages */}
-            <div className="space-y-4">
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="overflow-x-auto">
+                <div className="w-full table table-fixed">
+                  <div className="divide-y divide-gray-200 table-row-group">
               {Object.entries(groupedContent).map(([page, sections]) => {
                 const isPageExpanded = expandedPages[page];
                 
                 return (
-                  <div key={page} className="bg-white rounded-lg shadow-sm border overflow-hidden">
+                  <div key={page} className="table-row w-full">
                     {/* En-tête de page */}
                     <button
                       onClick={() => togglePage(page)}
-                      className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                    >
+                      className="w-full px-6 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors border-l-4 border-blue-500">
                       <div className="flex items-center space-x-3">
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900 text-left">
@@ -273,7 +274,9 @@ const ContentTextsAdmin: React.FC = () => {
                           </p>
                         </div>
                       </div>
-                      {isPageExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                      <div className="flex-shrink-0 ml-4">
+                        {isPageExpanded ? <ChevronUp size={24} className="text-blue-600" /> : <ChevronDown size={24} className="text-gray-400" />}
+                      </div>
                     </button>
 
                     {/* Contenu de la page */}
@@ -281,38 +284,42 @@ const ContentTextsAdmin: React.FC = () => {
                       <div className="border-t">
                         {Object.entries(sections).map(([section, contents]) => {
                           const sectionKey = `${page}-${section}`;
-                          const isSectionExpanded = expandedSections[sectionKey] !== false; // Ouvert par défaut
+                          const isSectionExpanded = expandedSections[sectionKey]; // Ouvert par défaut
 
                           return (
                             <div key={section} className="border-b last:border-b-0">
                               {/* En-tête de section */}
                               <button
                                 onClick={() => toggleSection(sectionKey)}
-                                className="w-full px-8 py-3 flex items-center justify-between hover:bg-gray-25 transition-colors"
+                                className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors bg-gray-25 border-l-2 border-gray-300"
                               >
-                                <div className="flex items-center space-x-2">
-                                  <span className="font-medium text-gray-700">{section}</span>
-                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                                    {contents.length} texte(s)
-                                  </span>
+                                <div className="flex items-center justify-between w-full mr-4">
+                                  <div className="flex items-center space-x-4">
+                                    <span className="font-semibold text-gray-800 text-base">{section}</span>
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                                      {contents.length} texte{contents.length > 1 ? 's' : ''}
+                                    </span>
+                                  </div>
                                 </div>
-                                {isSectionExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                <div className="flex-shrink-0 ml-4">
+                                  {isSectionExpanded ? <ChevronUp size={20} className="text-blue-500" /> : <ChevronDown size={20} className="text-gray-400" />}
+                                </div>
                               </button>
 
                               {/* Contenus de la section */}
                               {isSectionExpanded && (
-                                <div className="px-8 pb-4">
-                                  <div className="space-y-3">
+                                <div className="px-6 pb-6">
+                                  <div className="space-y-4">
                                     {contents.map((content) => {
                                       const desc = getContentDescription(content.identifier);
                                       
                                       return (
-                                        <div key={content.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                          <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                              <div className="flex items-center space-x-2 mb-2">
-                                                <h4 className="font-medium text-gray-900">{desc.label}</h4>
-                                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                        <div key={content.id} className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                                          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+                                            <div className="lg:col-span-4 space-y-4">
+                                              <div className="flex items-center space-x-3 mb-3">
+                                                <h4 className="font-semibold text-gray-900 text-base">{desc.label}</h4>
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                                                   content.isActive 
                                                     ? 'bg-green-100 text-green-800' 
                                                     : 'bg-red-100 text-red-800'
@@ -320,39 +327,41 @@ const ContentTextsAdmin: React.FC = () => {
                                                   {content.isActive ? 'Actif' : 'Inactif'}
                                                 </span>
                                               </div>
-                                              <p className="text-sm text-gray-600 mb-2">{desc.description}</p>
-                                              <div className="bg-white p-3 rounded border text-sm text-gray-700">
-                                                {content.content.length > 100 
-                                                  ? content.content.substring(0, 100) + '...'
-                                                  : content.content
-                                                }
+                                              <p className="text-sm text-gray-600 leading-relaxed">{desc.description}</p>
+                                              <div className="bg-white p-4 rounded-lg border text-sm text-gray-700">
+                                                <div className="whitespace-pre-wrap break-words">
+                                                  {content.content.length > 200 
+                                                    ? content.content.substring(0, 200) + '...'
+                                                    : content.content
+                                                  }
+                                                </div>
                                               </div>
-                                              <div className="mt-2 text-xs text-gray-500">
-                                                ID technique: {content.identifier}
+                                              <div className="text-xs text-gray-500 font-mono bg-gray-100 px-3 py-2 rounded inline-block">
+                                                ID: {content.identifier}
                                               </div>
                                             </div>
                                             
-                                            <div className="flex items-center space-x-2 ml-4">
+                                            <div className="lg:col-span-1 flex lg:flex-col flex-row lg:justify-start justify-end space-x-2 lg:space-x-0 lg:space-y-2">
                                               <button
                                                 onClick={() => window.open(getPreviewUrl(content.identifier), '_blank')}
-                                                className="text-green-600 hover:text-green-800 p-1"
+                                                className="text-green-600 hover:text-green-800 p-2 rounded hover:bg-green-50 transition-colors"
                                                 title="Voir sur le site"
                                               >
-                                                <ExternalLink size={16} />
+                                                <ExternalLink size={18} />
                                               </button>
                                               <button
                                                 onClick={() => openEditModal(content)}
-                                                className="text-blue-600 hover:text-blue-800 p-1"
+                                                className="text-blue-600 hover:text-blue-800 p-2 rounded hover:bg-blue-50 transition-colors"
                                                 title="Modifier"
                                               >
-                                                <Edit size={16} />
+                                                <Edit size={18} />
                                               </button>
                                               <button
                                                 onClick={() => handleDelete(content.id)}
-                                                className="text-red-600 hover:text-red-800 p-1"
+                                                className="text-red-600 hover:text-red-800 p-2 rounded hover:bg-red-50 transition-colors"
                                                 title="Supprimer"
                                               >
-                                                <Trash2 size={16} />
+                                                <Trash2 size={18} />
                                               </button>
                                             </div>
                                           </div>
@@ -592,7 +601,11 @@ const ContentTextsAdmin: React.FC = () => {
                 </div>
               </div>
             )}
-          </div>
+                  </div>
+                </div>
+              </div>
+
+      </div>
     </AdminLayout>
   );
 };

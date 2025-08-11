@@ -449,25 +449,25 @@ const ReservationsAdmin: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-                      <div className="relative w-full md:w-64">
+                      <div className="relative w-full md:flex-1 md:max-w-xs">
                         <Search className="absolute left-3 top-3 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Rechercher un client..."
+                            placeholder="Rechercher..."
                             className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                       </div>
 
-                      <div className="relative w-full md:w-48">
+                      <div className="relative w-full md:w-36">
                         <Filter className="absolute left-3 top-3 text-gray-400" />
                         <select
                             className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg appearance-none bg-white w-full"
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
                         >
-                          <option value="">Tous les statuts</option>
+                          <option value="">Statuts</option>
                           {getStatusOptions().map((status) => (
                             <option key={status.value} value={status.value}>
                               {status.label}
@@ -477,7 +477,7 @@ const ReservationsAdmin: React.FC = () => {
                         <ChevronDown className="absolute right-3 top-3 text-gray-400" />
                       </div>
 
-                      <div className="relative w-full md:w-48">
+                      <div className="relative w-full md:w-36">
                         <Calendar className="absolute left-3 top-3 text-gray-400" />
                         <input
                             type="date"
@@ -501,28 +501,28 @@ const ReservationsAdmin: React.FC = () => {
                   ) : (
                       <div className="bg-white rounded-lg shadow overflow-hidden">
                         <div className="overflow-x-auto">
-                          <table className="min-w-full divide-y divide-gray-200">
+                          <table className="w-full divide-y divide-gray-200 table-fixed">
                             <thead className="bg-gray-50">
                             <tr>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '20%'}}>
                                 Client
                               </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Date d'examen
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '14%'}}>
+                                Date
                               </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '16%'}}>
                                 Centre
                               </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '14%'}}>
                                 Formule
                               </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '16%'}}>
                                 Véhicule
                               </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '12%'}}>
                                 Statut
                               </th>
-                              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '8%'}}>
                                 Actions
                               </th>
                             </tr>
@@ -530,25 +530,25 @@ const ReservationsAdmin: React.FC = () => {
                             <tbody className="bg-white divide-y divide-gray-200">
                             {vehicleReservations.map((reservation) => (
                                 <tr key={reservation.id}>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm font-medium text-gray-900">{reservation.user.fullName}</div>
-                                    <div className="text-xs text-gray-500">{reservation.user.email}</div>
+                                  <td className="px-3 py-4">
+                                    <div className="text-sm font-medium text-gray-900 truncate" title="{reservation.user.fullName}">{reservation.user.fullName}</div>
+                                    <div className="text-xs text-gray-500 truncate" title="{reservation.user.email}">{reservation.user.email}</div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
+                                  <td className="px-3 py-4">
                                     <div className="text-sm text-gray-900">{reservation.date}</div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">{reservation.examCenter}</div>
+                                  <td className="px-3 py-4">
+                                    <div className="text-sm text-gray-900 truncate" title="{reservation.examCenter}">{reservation.examCenter}</div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">{reservation.formula}</div>
+                                  <td className="px-3 py-4">
+                                    <div className="text-sm text-gray-900 truncate" title="{reservation.formula}">{reservation.formula}</div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">
+                                  <td className="px-3 py-4">
+                                    <div className="text-sm text-gray-900 truncate" title="{reservation.vehicleAssigned || 'Non assigné'}">
                                       {reservation.vehicleAssigned || 'Non assigné'}
                                     </div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
+                                  <td className="px-3 py-4">
                                     <div className="relative">
                                       <button
                                         onClick={() => toggleStatusDropdown(reservation.id)}
@@ -559,7 +559,7 @@ const ReservationsAdmin: React.FC = () => {
                                       </button>
                                       
                                       {showStatusDropdown[reservation.id] && (
-                                        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-48">
+                                        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-32">
                                           <div className="py-1 max-h-64 overflow-y-auto">
                                             {getStatusOptions().map((status) => (
                                               <button
@@ -608,25 +608,25 @@ const ReservationsAdmin: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-                      <div className="relative w-full md:w-64">
+                      <div className="relative w-full md:flex-1 md:max-w-xs">
                         <Search className="absolute left-3 top-3 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Rechercher un élève..."
+                            placeholder="Rechercher..."
                             className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full"
                             value={sessionSearchTerm}
                             onChange={(e) => setSessionSearchTerm(e.target.value)}
                         />
                       </div>
 
-                      <div className="relative w-full md:w-48">
+                      <div className="relative w-full md:w-36">
                         <Filter className="absolute left-3 top-3 text-gray-400" />
                         <select
                             className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg appearance-none bg-white w-full"
                             value={sessionStatusFilter}
                             onChange={(e) => setSessionStatusFilter(e.target.value)}
                         >
-                          <option value="">Tous les statuts</option>
+                          <option value="">Statuts</option>
                           {getStatusOptions().map((status) => (
                             <option key={status.value} value={status.value}>
                               {status.label}
@@ -650,25 +650,25 @@ const ReservationsAdmin: React.FC = () => {
                   ) : (
                       <div className="bg-white rounded-lg shadow overflow-hidden">
                         <div className="overflow-x-auto">
-                          <table className="min-w-full divide-y divide-gray-200">
+                          <table className="w-full divide-y divide-gray-200 table-fixed">
                             <thead className="bg-gray-50">
                             <tr>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '25%'}}>
                                 Élève
                               </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '30%'}}>
                                 Formation
                               </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Date de début
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '15%'}}>
+                                Début
                               </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Date de demande
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '15%'}}>
+                                Demande
                               </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '10%'}}>
                                 Statut
                               </th>
-                              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '5%'}}>
                                 Actions
                               </th>
                             </tr>
@@ -676,28 +676,28 @@ const ReservationsAdmin: React.FC = () => {
                             <tbody className="bg-white divide-y divide-gray-200">
                             {sessionReservations.map((reservation) => (
                                 <tr key={reservation.id}>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm font-medium text-gray-900">
+                                  <td className="px-3 py-4">
+                                    <div className="text-sm font-medium text-gray-900 truncate" title="{`${reservation.user.firstName} ${reservation.user.lastName}`}">
                                       {reservation.user.firstName} {reservation.user.lastName}
                                     </div>
-                                    <div className="text-xs text-gray-500">{reservation.user.email}</div>
+                                    <div className="text-xs text-gray-500 truncate" title="{reservation.user.email}">{reservation.user.email}</div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">
+                                  <td className="px-3 py-4">
+                                    <div className="text-sm text-gray-900 truncate" title="{reservation.session.formation.title}">
                                       {reservation.session.formation.title}
                                     </div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
+                                  <td className="px-3 py-4">
                                     <div className="text-sm text-gray-900">
                                       {formatDate(reservation.session.startDate)}
                                     </div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
+                                  <td className="px-3 py-4">
                                     <div className="text-sm text-gray-900">
                                       {formatDate(reservation.createdAt)}
                                     </div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
+                                  <td className="px-3 py-4">
                                     <div className="relative">
                                       <button
                                         onClick={() => toggleStatusDropdown(reservation.id)}
@@ -708,7 +708,7 @@ const ReservationsAdmin: React.FC = () => {
                                       </button>
                                       
                                       {showStatusDropdown[reservation.id] && (
-                                        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-48">
+                                        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-32">
                                           <div className="py-1 max-h-64 overflow-y-auto">
                                             {getStatusOptions().map((status) => (
                                               <button

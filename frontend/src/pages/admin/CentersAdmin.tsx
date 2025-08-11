@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../../components/layout/AdminLayout';
+import ActionMenu from '../../components/common/ActionMenu';
+import DataTable from '../../components/common/DataTable';
 import { useNotification } from '../../contexts/NotificationContext';
 import { adminCentersApi } from '../../services/api';
 import { Center, CenterType, CENTER_TYPES } from '../../types/center';
@@ -205,6 +207,127 @@ const CentersAdmin: React.FC = () => {
 
     const stats = getTypeStats();
 
+    // Configuration des colonnes pour le DataTable
+    const columns = [
+        {
+            title: 'Centre',
+            field: (row: CenterInterface) => (
+                <div>
+                    <div className="text-sm font-medium text-gray-900 truncate" title={row.name}>
+                        {row.name}
+                    </div>
+                    <div className="text-sm text-gray-500 flex items-center truncate">
+                        <Hash className="h-4 w-4 mr-1 flex-shrink-0" />
+                        <span className="truncate" title={row.code}>{row.code}</span>
+                    </div>
+                </div>
+            ),
+            sortable: true,
+            width: 'w-1/4'
+        },
+        {
+            title: 'Type',
+            field: (row: CenterInterface) => (
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    row.type === 'formation' 
+                        ? 'bg-blue-100 text-blue-800'
+                        : row.type === 'exam'
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-green-100 text-green-800'
+                }`}>
+                    {row.type === 'formation' ? 'Formation' : 
+                     row.type === 'exam' ? 'Examen' : 
+                     'Formation & Examen'}
+                </span>
+            ),
+            sortable: true,
+            width: 'w-1/8',
+            cellClassName: 'text-center'
+        },
+        {
+            title: 'Localisation',
+            field: (row: CenterInterface) => (
+                <div>
+                    <div className="text-sm text-gray-900 flex items-center">
+                        <MapPin className="h-4 w-4 mr-1 text-gray-400 flex-shrink-0" />
+                        <span className="truncate" title={`${row.city} (${row.departmentCode})`}>
+                            {row.city} ({row.departmentCode})
+                        </span>
+                    </div>
+                    {row.address && (
+                        <div className="text-xs text-gray-500 mt-1 truncate" title={row.address}>
+                            {row.address}
+                        </div>
+                    )}
+                </div>
+            ),
+            sortable: true,
+            width: 'w-1/4'
+        },
+        {
+            title: 'Formules',
+            field: (row: CenterInterface) => (
+                <div className="text-center">
+                    <div className="text-sm text-gray-900">
+                        {row.formulas.length} formule{row.formulas.length > 1 ? 's' : ''}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                        {row.formulas.filter(f => f.isActive).length} active{row.formulas.filter(f => f.isActive).length > 1 ? 's' : ''}
+                    </div>
+                </div>
+            ),
+            sortable: false,
+            width: 'w-1/8',
+            cellClassName: 'text-center'
+        },
+        {
+            title: 'Statut',
+            field: (row: CenterInterface) => (
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    row.isActive
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                }`}>
+                    {row.isActive ? (
+                        <>
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Actif
+                        </>
+                    ) : (
+                        <>
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Inactif
+                        </>
+                    )}
+                </span>
+            ),
+            sortable: true,
+            width: 'w-1/8',
+            cellClassName: 'text-center'
+        }
+    ];
+
+    // Fonction pour générer les actions
+    const generateActions = (center: CenterInterface) => [
+        {
+            label: 'Voir les détails',
+            icon: <Eye className="h-4 w-4" />,
+            onClick: () => handleViewDetails(center)
+        },
+        {
+            label: 'Modifier',
+            icon: <Edit className="h-4 w-4" />,
+            onClick: () => handleEdit(center)
+        },
+        {
+            label: 'Supprimer',
+            icon: <Trash2 className="h-4 w-4" />,
+            onClick: () => handleDelete(center),
+            variant: 'danger' as const,
+            disabled: center.formulas.length > 0
+        }
+    ];
+
     if (loading) {
         return (
             <AdminLayout title="Chargement...">
@@ -357,133 +480,18 @@ const CentersAdmin: React.FC = () => {
                 </div>
 
                 {/* Centers List */}
-                <div className="bg-white shadow rounded-lg overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200">
-                        <h3 className="text-lg font-medium text-gray-900">
-                            Liste des centres ({filteredCenters.length})
-                        </h3>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Centre
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Type
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Localisation
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Formules
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Statut
-                                </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions
-                                </th>
-                            </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredCenters.map((center) => (
-                                <tr key={center.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div>
-                                            <div className="text-sm font-medium text-gray-900">
-                                                {center.name}
-                                            </div>
-                                            <div className="text-sm text-gray-500 flex items-center">
-                                                <Hash className="h-4 w-4 mr-1" />
-                                                {center.code}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                            center.type === 'formation' 
-                                                ? 'bg-blue-100 text-blue-800'
-                                                : center.type === 'exam'
-                                                ? 'bg-purple-100 text-purple-800'
-                                                : 'bg-green-100 text-green-800'
-                                        }`}>
-                                            {center.type === 'formation' ? 'Formation' : 
-                                             center.type === 'exam' ? 'Examen' : 
-                                             'Formation & Examen'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-gray-900 flex items-center">
-                                            <MapPin className="h-4 w-4 mr-1 text-gray-400" />
-                                            {center.city} ({center.departmentCode})
-                                        </div>
-                                        {center.address && (
-                                            <div className="text-xs text-gray-500 mt-1">
-                                                {center.address}
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-gray-900">
-                                            {center.formulas.length} formule{center.formulas.length > 1 ? 's' : ''}
-                                        </div>
-                                        <div className="text-xs text-gray-500">
-                                            {center.formulas.filter(f => f.isActive).length} active{center.formulas.filter(f => f.isActive).length > 1 ? 's' : ''}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                center.isActive
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-red-100 text-red-800'
-                                            }`}>
-                                                {center.isActive ? (
-                                                    <>
-                                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                                        Actif
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <XCircle className="h-3 w-3 mr-1" />
-                                                        Inactif
-                                                    </>
-                                                )}
-                                            </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <div className="flex justify-end space-x-2">
-                                            <button
-                                                onClick={() => handleViewDetails(center)}
-                                                className="text-blue-600 hover:text-blue-900"
-                                                title="Voir les détails"
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleEdit(center)}
-                                                className="text-indigo-600 hover:text-indigo-900"
-                                                title="Modifier"
-                                            >
-                                                <Edit className="h-4 w-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(center)}
-                                                className="text-red-600 hover:text-red-900"
-                                                title="Supprimer"
-                                                disabled={center.formulas.length > 0}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                <DataTable<CenterInterface>
+                    data={filteredCenters}
+                    columns={columns}
+                    keyField="id"
+                    loading={loading}
+                    actions={generateActions}
+                    searchFields={['name', 'city', 'code']}
+                    emptyMessage="Aucun centre trouvé"
+                    title="Liste des centres"
+                    searchPlaceholder="Rechercher par nom, ville ou code..."
+                    showSearch={false} // On utilise les filtres personnalisés au-dessus
+                />
 
                 {/* Create/Edit Modal */}
                 {showModal && (

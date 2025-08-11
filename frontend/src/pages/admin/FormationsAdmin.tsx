@@ -6,6 +6,7 @@ import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
+import ActionMenu from '../../components/common/ActionMenu';
 import { useNotification } from '../../contexts/NotificationContext';
 import useDataFetching from '../../hooks/useDataFetching';
 import { adminFormationsApi } from '../../services/api';
@@ -160,7 +161,7 @@ const FormationsAdmin: React.FC = () => {
       await adminFormationsApi.delete(selectedFormation.id);
 
       // Mettre à jour la liste des formations
-      setFormations({ ...formations, data: formations.data.filter(f => f.id !== selectedFormation.id) });
+      setFormations(formations.filter(f => f.id !== selectedFormation.id));
       setShowDeleteModal(false);
       addToast('Formation supprimée avec succès', 'success');
     } catch (err) {
@@ -299,20 +300,24 @@ const FormationsAdmin: React.FC = () => {
     }
   ];
 
-  // Rendu des actions pour chaque ligne
-  const renderActions = (formation: Formation) => (
-      <div className="flex justify-end space-x-2">
-        <Link to={`/admin/formations/${formation.id}`}>
-          <Eye className="h-5 w-5 text-indigo-600 hover:text-indigo-900" />
-        </Link>
-        <button
-            onClick={() => openDeleteModal(formation)}
-            className="text-red-600 hover:text-red-900"
-        >
-          <Trash2 className="h-5 w-5" />
-        </button>
-      </div>
-  );
+  // Rendu des actions pour chaque ligne avec menu dropdown
+  const renderActions = (formation: Formation) => {
+    const actions = [
+      {
+        label: 'Voir les détails',
+        icon: <Eye className="h-4 w-4" />,
+        onClick: () => window.location.href = `/admin/formations/${formation.id}`
+      },
+      {
+        label: 'Supprimer',
+        icon: <Trash2 className="h-4 w-4" />,
+        onClick: () => openDeleteModal(formation),
+        variant: 'danger' as const
+      }
+    ];
+
+    return <ActionMenu actions={actions} className="flex justify-end" />;
+  };
 
   // Rendu du pied de page pour les modals
   const editModalFooter = (
@@ -375,7 +380,7 @@ const FormationsAdmin: React.FC = () => {
             </div>
 
             <DataTable<Formation>
-                data={formations.data || []}
+                data={formations || []}
                 columns={columns}
                 keyField="id"
                 loading={loading}

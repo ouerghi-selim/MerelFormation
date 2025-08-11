@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft } from 'lucide-react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
+import AdminLayout from '../../components/layout/AdminLayout';
 import { adminEmailTemplatesApi } from '../../services/api';
 import Alert from '../../components/common/Alert';
 import WysiwygEditor from '../../components/common/WysiwygEditor';
@@ -116,12 +115,7 @@ const EmailTemplateEdit: React.FC = () => {
     };
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <AdminSidebar />
-            <div className="flex-1">
-                <AdminHeader title="Modification du template d'email" />
-
-                <div className="p-6">
+        <AdminLayout title="Modification du template d'email">
                     {error && (
                         <Alert
                             type="error"
@@ -284,9 +278,7 @@ const EmailTemplateEdit: React.FC = () => {
                             </form>
                         </div>
                     )}
-                </div>
-            </div>
-        </div>
+        </AdminLayout>
     );
 };
 

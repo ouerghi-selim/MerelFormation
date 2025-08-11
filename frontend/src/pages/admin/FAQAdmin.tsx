@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search, Star, StarOff, Eye, EyeOff, ArrowUp, ArrowDown, Hash } from 'lucide-react';
 import { adminFaqApi } from '@/services/api.ts';
 import { FAQ, FAQFilters, FAQ_CATEGORIES } from '@/types/cms.ts';
-import AdminSidebar from "@/components/admin/AdminSidebar.tsx";
-import AdminHeader from "@/components/admin/AdminHeader.tsx";
+import AdminLayout from '@/components/layout/AdminLayout.tsx';
 import Alert from "@/components/common/Alert.tsx";
+import DataTable from '@/components/common/DataTable.tsx';
+import ActionMenu from '@/components/common/ActionMenu.tsx';
 
 const FAQAdmin: React.FC = () => {
   const [faqs, setFaqs] = useState<FAQ[]>([]);
@@ -233,6 +234,131 @@ const FAQAdmin: React.FC = () => {
 
   const allCategories = [...new Set([...FAQ_CATEGORIES, ...categories])];
 
+  // Configuration des colonnes pour le DataTable
+  const columns = [
+    {
+      title: 'Question',
+      field: (row: FAQ) => (
+        <div className="max-w-xs">
+          <div className="text-sm font-medium text-gray-900 truncate" title={row.question}>
+            {row.question}
+          </div>
+          <div className="text-xs text-gray-500 mt-1 truncate" title={row.answer}>
+            {row.answer}
+          </div>
+        </div>
+      ),
+      sortable: true,
+      width: 'w-2/5'
+    },
+    {
+      title: 'Catégorie',
+      field: (row: FAQ) => (
+        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs" title={row.category}>
+          {row.category}
+        </span>
+      ),
+      sortable: true,
+      width: 'w-1/6',
+      cellClassName: 'text-center'
+    },
+    {
+      title: 'Ordre',
+      field: (row: FAQ) => (
+        <div className="flex items-center justify-center space-x-2">
+          <span className="text-sm font-medium">{row.sortOrder}</span>
+          <div className="flex flex-col space-y-1">
+            <button
+              onClick={() => handleReorder(row.id, 'up')}
+              className="text-gray-400 hover:text-gray-600"
+              title="Monter"
+            >
+              <ArrowUp className="h-3 w-3" />
+            </button>
+            <button
+              onClick={() => handleReorder(row.id, 'down')}
+              className="text-gray-400 hover:text-gray-600"
+              title="Descendre"
+            >
+              <ArrowDown className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+      ),
+      sortable: true,
+      width: 'w-1/8',
+      cellClassName: 'text-center'
+    },
+    {
+      title: 'Tags',
+      field: (row: FAQ) => (
+        <div className="flex flex-wrap gap-1">
+          {(row.tags || []).slice(0, 2).map((tag, index) => (
+            <span key={index} className="bg-gray-100 text-gray-800 px-1 py-0.5 rounded text-xs">
+              {tag}
+            </span>
+          ))}
+          {(row.tags || []).length > 2 && (
+            <span className="text-gray-500 text-xs">+{(row.tags || []).length - 2}</span>
+          )}
+        </div>
+      ),
+      sortable: false,
+      width: 'w-1/8'
+    },
+    {
+      title: 'Statut',
+      field: (row: FAQ) => (
+        <div className="flex flex-col space-y-1">
+          <span className={`px-2 py-1 rounded-full text-xs ${
+            row.isActive 
+              ? 'bg-green-100 text-green-800' 
+              : 'bg-red-100 text-red-800'
+          }`}>
+            {row.isActive ? 'Actif' : 'Inactif'}
+          </span>
+          {row.isFeatured && (
+            <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">
+              En vedette
+            </span>
+          )}
+        </div>
+      ),
+      sortable: false,
+      width: 'w-1/8',
+      cellClassName: 'text-center'
+    }
+  ];
+
+  // Fonction pour générer les actions
+  const generateActions = (faq: FAQ) => {
+    const actions = [
+      {
+        label: faq.isFeatured ? 'Retirer de la vedette' : 'Mettre en vedette',
+        icon: faq.isFeatured ? <StarOff className="h-4 w-4" /> : <Star className="h-4 w-4" />,
+        onClick: () => handleToggleFeatured(faq.id)
+      },
+      {
+        label: faq.isActive ? 'Désactiver' : 'Activer',
+        icon: faq.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />,
+        onClick: () => handleToggleActive(faq.id)
+      },
+      {
+        label: 'Modifier',
+        icon: <Edit className="h-4 w-4" />,
+        onClick: () => openEditModal(faq)
+      },
+      {
+        label: 'Supprimer',
+        icon: <Trash2 className="h-4 w-4" />,
+        onClick: () => handleDelete(faq.id),
+        variant: 'danger' as const
+      }
+    ];
+
+    return <ActionMenu actions={actions} />;
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -242,12 +368,7 @@ const FAQAdmin: React.FC = () => {
   }
 
   return (
-      <div className="flex min-h-screen bg-gray-50">
-        <AdminSidebar />
-        <div className="flex-1">
-          <AdminHeader title="Gestion des réservations" />
-
-          <div className="p-6">
+      <AdminLayout title="Gestion des FAQ">
             {error && (
                 <Alert
                     type="error"
@@ -326,141 +447,18 @@ const FAQAdmin: React.FC = () => {
       </div>
 
       {/* Tableau */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ordre
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Question
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Catégorie
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Vues
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Statut
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {faqs.map((faq) => (
-                <tr key={faq.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div className="flex items-center space-x-1">
-                      <span className="font-medium">{faq.sortOrder}</span>
-                      <div className="flex flex-col">
-                        <button
-                          onClick={() => handleReorder(faq.id, 'up')}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <ArrowUp size={12} />
-                        </button>
-                        <button
-                          onClick={() => handleReorder(faq.id, 'down')}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <ArrowDown size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900 max-w-xs">
-                      <div className="font-medium truncate">{faq.question}</div>
-                      <div className="text-gray-500 truncate">{faq.answer}</div>
-                      {faq.tags && faq.tags.length > 0 && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {faq.tags.slice(0, 3).map((tag) => (
-                            <span key={tag} className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
-                              {tag}
-                            </span>
-                          ))}
-                          {faq.tags.length > 3 && (
-                            <span className="text-gray-400 text-xs">+{faq.tags.length - 3}</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                      {faq.category}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <Eye size={16} className="text-gray-400 mr-1" />
-                      {faq.viewCount}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-col space-y-1">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        faq.isActive 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {faq.isActive ? 'Actif' : 'Inactif'}
-                      </span>
-                      {faq.isFeatured && (
-                        <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">
-                          En vedette
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleToggleFeatured(faq.id)}
-                        className={`${
-                          faq.isFeatured 
-                            ? 'text-yellow-600 hover:text-yellow-900' 
-                            : 'text-gray-400 hover:text-gray-600'
-                        }`}
-                        title={faq.isFeatured ? 'Retirer de la vedette' : 'Mettre en vedette'}
-                      >
-                        <Star size={16} className={faq.isFeatured ? 'fill-current' : ''} />
-                      </button>
-                      <button
-                        onClick={() => handleToggleActive(faq.id)}
-                        className={`${
-                          faq.isActive 
-                            ? 'text-green-600 hover:text-green-900' 
-                            : 'text-red-600 hover:text-red-900'
-                        }`}
-                        title={faq.isActive ? 'Désactiver' : 'Activer'}
-                      >
-                        {faq.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
-                      </button>
-                      <button
-                        onClick={() => openEditModal(faq)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(faq.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <DataTable<FAQ>
+        data={faqs}
+        columns={columns}
+        keyField="id"
+        loading={loading}
+        actions={generateActions}
+        searchFields={['question', 'answer', 'category']}
+        emptyMessage="Aucune FAQ trouvée"
+        title="Liste des FAQ"
+        searchPlaceholder="Rechercher par question, réponse ou catégorie..."
+        showSearch={false} // On utilise les filtres personnalisés au-dessus
+      />
 
         {/* Pagination */}
         {totalPages > 1 && (
@@ -486,7 +484,6 @@ const FAQAdmin: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
 
       {/* Modal Création */}
       {showCreateModal && (
@@ -794,9 +791,7 @@ const FAQAdmin: React.FC = () => {
         </div>
       )}
     </div>
-          </div>
-        </div>
-      </div>
+      </AdminLayout>
   );
 };
 

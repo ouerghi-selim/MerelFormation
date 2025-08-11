@@ -2,8 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
+import AdminLayout from '../../components/layout/AdminLayout';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -51,19 +50,14 @@ const SessionNew: React.FC = () => {
     };
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <AdminSidebar />
-            <div className="flex-1">
-                <AdminHeader
-                    title="Création d'une nouvelle session"
-                    breadcrumbItems={[
-                        { label: 'Admin', path: '/admin' },
-                        { label: 'Sessions', path: '/admin/sessions' },
-                        { label: 'Nouvelle session' }
-                    ]}
-                />
-
-                <div className="p-6">
+        <AdminLayout
+            title="Création d'une nouvelle session"
+            breadcrumbItems={[
+                { label: 'Admin', path: '/admin' },
+                { label: 'Sessions', path: '/admin/sessions' },
+                { label: 'Nouvelle session' }
+            ]}
+        >
                     {error && (
                         <Alert
                             type="error"
@@ -88,9 +82,7 @@ const SessionNew: React.FC = () => {
                         onCancel={handleCancel}
                         isOpen={showForm}
                     />
-                </div>
-            </div>
-        </div>
+        </AdminLayout>
     );
 };
 

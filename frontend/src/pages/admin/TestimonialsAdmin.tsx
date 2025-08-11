@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search, Star, StarOff, Eye, EyeOff } from 'lucide-react';
 import { adminTestimonialApi } from '@/services/api.ts';
-import { Testimonial, TestimonialFilters } from '../../types/cms';
+import { Testimonial, TestimonialFilters } from '@/types/cms.ts';
 import AdminLayout from '@/components/layout/AdminLayout.tsx';
 import Alert from "@/components/common/Alert.tsx";
+import DataTable from '@/components/common/DataTable.tsx';
+import ActionMenu from '@/components/common/ActionMenu.tsx';
 
 const TestimonialsAdmin: React.FC = () => {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
@@ -216,6 +218,114 @@ const TestimonialsAdmin: React.FC = () => {
     );
   };
 
+  // Configuration des colonnes pour le DataTable
+  const columns = [
+    {
+      title: 'Client',
+      field: (row: Testimonial) => (
+        <div>
+          <div className="text-sm font-medium text-gray-900 truncate" title={row.clientName}>
+            {row.clientName}
+          </div>
+          <div className="text-sm text-gray-500 truncate" title={
+            row.clientJob && row.clientCompany
+              ? `${row.clientJob} chez ${row.clientCompany}`
+              : row.clientJob || row.clientCompany || ''
+          }>
+            {row.clientJob && row.clientCompany
+              ? `${row.clientJob} chez ${row.clientCompany}`
+              : row.clientJob || row.clientCompany || ''}
+          </div>
+        </div>
+      ),
+      sortable: true,
+      width: 'w-1/5'
+    },
+    {
+      title: 'Contenu',
+      field: (row: Testimonial) => (
+        <div className="text-sm text-gray-900 truncate" title={row.content}>
+          {row.content}
+        </div>
+      ),
+      sortable: false,
+      width: 'w-1/3'
+    },
+    {
+      title: 'Formation',
+      field: (row: Testimonial) => (
+        row.formation ? (
+          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs" title={row.formation}>
+            {row.formation}
+          </span>
+        ) : (
+          <span className="text-gray-400">-</span>
+        )
+      ),
+      sortable: true,
+      width: 'w-1/8',
+      cellClassName: 'text-center'
+    },
+    {
+      title: 'Note',
+      field: (row: Testimonial) => renderStars(row.rating),
+      sortable: true,
+      width: 'w-1/8',
+      cellClassName: 'text-center'
+    },
+    {
+      title: 'Statut',
+      field: (row: Testimonial) => (
+        <div className="flex flex-col space-y-1">
+          <span className={`px-2 py-1 rounded-full text-xs ${
+            row.isActive 
+              ? 'bg-green-100 text-green-800' 
+              : 'bg-red-100 text-red-800'
+          }`}>
+            {row.isActive ? 'Actif' : 'Inactif'}
+          </span>
+          {row.isFeatured && (
+            <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">
+              En vedette
+            </span>
+          )}
+        </div>
+      ),
+      sortable: false,
+      width: 'w-1/8',
+      cellClassName: 'text-center'
+    }
+  ];
+
+  // Fonction pour générer les actions
+  const generateActions = (testimonial: Testimonial) => {
+    const actions = [
+      {
+        label: testimonial.isFeatured ? 'Retirer de la vedette' : 'Mettre en vedette',
+        icon: testimonial.isFeatured ? <StarOff className="h-4 w-4" /> : <Star className="h-4 w-4" />,
+        onClick: () => handleToggleFeatured(testimonial.id)
+      },
+      {
+        label: testimonial.isActive ? 'Désactiver' : 'Activer',
+        icon: testimonial.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />,
+        onClick: () => handleToggleActive(testimonial.id)
+      },
+      {
+        label: 'Modifier',
+        icon: <Edit className="h-4 w-4" />,
+        onClick: () => openEditModal(testimonial)
+      },
+      {
+        label: 'Supprimer',
+        icon: <Trash2 className="h-4 w-4" />,
+        onClick: () => handleDelete(testimonial.id),
+        variant: 'danger' as const
+      }
+    ];
+
+    return <ActionMenu actions={actions} />;
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -317,122 +427,18 @@ const TestimonialsAdmin: React.FC = () => {
       </div>
 
       {/* Tableau */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Client
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contenu
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Formation
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Note
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Statut
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {testimonials.map((testimonial) => (
-                <tr key={testimonial.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {testimonial.clientName}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {testimonial.clientJob && testimonial.clientCompany
-                          ? `${testimonial.clientJob} chez ${testimonial.clientCompany}`
-                          : testimonial.clientJob || testimonial.clientCompany || ''}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900 max-w-xs truncate">
-                      {testimonial.content}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {testimonial.formation ? (
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                        {testimonial.formation}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {renderStars(testimonial.rating)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-col space-y-1">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        testimonial.isActive 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {testimonial.isActive ? 'Actif' : 'Inactif'}
-                      </span>
-                      {testimonial.isFeatured && (
-                        <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">
-                          En vedette
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleToggleFeatured(testimonial.id)}
-                        className={`${
-                          testimonial.isFeatured 
-                            ? 'text-yellow-600 hover:text-yellow-900' 
-                            : 'text-gray-400 hover:text-gray-600'
-                        }`}
-                        title={testimonial.isFeatured ? 'Retirer de la vedette' : 'Mettre en vedette'}
-                      >
-                        <Star size={16} className={testimonial.isFeatured ? 'fill-current' : ''} />
-                      </button>
-                      <button
-                        onClick={() => handleToggleActive(testimonial.id)}
-                        className={`${
-                          testimonial.isActive 
-                            ? 'text-green-600 hover:text-green-900' 
-                            : 'text-red-600 hover:text-red-900'
-                        }`}
-                        title={testimonial.isActive ? 'Désactiver' : 'Activer'}
-                      >
-                        {testimonial.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
-                      </button>
-                      <button
-                        onClick={() => openEditModal(testimonial)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(testimonial.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <DataTable<Testimonial>
+        data={testimonials}
+        columns={columns}
+        keyField="id"
+        loading={loading}
+        actions={generateActions}
+        searchFields={['clientName', 'content', 'formation']}
+        emptyMessage="Aucun témoignage trouvé"
+        title="Liste des témoignages"
+        searchPlaceholder="Rechercher par client, contenu ou formation..."
+        showSearch={false} // On utilise les filtres personnalisés au-dessus
+      />
 
         {/* Pagination */}
         {totalPages > 1 && (
@@ -793,7 +799,6 @@ const TestimonialsAdmin: React.FC = () => {
           </button>
         </div>
       )}
-    </div>
       </AdminLayout>
   );
 };

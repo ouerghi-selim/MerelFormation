@@ -7,6 +7,7 @@ import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
+import ActionMenu from '../../components/common/ActionMenu';
 import { useNotification } from '../../contexts/NotificationContext';
 import { adminSessionsApi, adminFormationsApi, documentsApi } from '@/services/api.ts';
 import SessionForm from '../../components/admin/SessionForm';
@@ -357,58 +358,79 @@ const SessionsAdmin: React.FC = () => {
             year: 'numeric'
         });
     };
-    // Configuration des colonnes pour le DataTable
+    // Configuration des colonnes pour le DataTable avec répartition équilibrée
     const columns = [
         {
             title: 'Formation',
-            field: (row: Session) => row.formation.title,
-            sortable: true
+            field: (row: Session) => (
+                <div className="text-sm font-medium text-gray-900 truncate" title={row.formation.title}>
+                    {row.formation.title}
+                </div>
+            ),
+            sortable: true,
+            width: 'w-1/5' // Augmenté de 16.7% à 20%
         },
         {
             title: 'Dates',
             field: (row: Session) => (
                 <div className="text-sm text-gray-900">
-                    Du {formatDate(row.startDate)}
-                    <br />
-                    Au {formatDate(row.endDate)}
+                    <div className="truncate">{formatDate(row.startDate)}</div>
+                    <div className="truncate text-gray-500">au {formatDate(row.endDate)}</div>
                 </div>
             ),
-            sortable: false
+            sortable: false,
+            width: 'w-1/6' // Reste à 16.7%
         },
         {
             title: 'Lieu',
-            field: 'location' as keyof Session,
-            sortable: true
+            field: (row: Session) => (
+                <div className="text-sm text-gray-900 truncate" title={row.location}>
+                    {row.location}
+                </div>
+            ),
+            sortable: true,
+            width: 'w-1/6' // Augmenté de 12.5% à 16.7%
         },
         {
             title: 'Formateur(s)',
             field: (row: Session) => {
                 // Priorité aux nouveaux instructeurs multiples
                 if (row.instructors && row.instructors.length > 0) {
+                    const instructorNames = row.instructors.map(inst => `${inst.firstName} ${inst.lastName}`);
+                    const displayText = instructorNames.join(', ');
                     return (
                         <div className="text-sm text-gray-900">
-                            {row.instructors.map(inst => `${inst.firstName} ${inst.lastName}`).join(', ')}
-                            {row.instructors.length > 1 && (
-                                <span className="text-xs text-blue-600 ml-1">({row.instructors.length})</span>
-                            )}
+                            <div className="truncate" title={displayText}>
+                                {instructorNames[0]}
+                                {row.instructors.length > 1 && (
+                                    <span className="text-xs text-blue-600 ml-1">+{row.instructors.length - 1}</span>
+                                )}
+                            </div>
                         </div>
                     );
                 }
                 // Fallback sur l'ancien système
-                return row.instructor ? 
+                const instructorName = row.instructor ? 
                     `${row.instructor.firstName} ${row.instructor.lastName}` : 
                     'Non assigné';
+                return (
+                    <div className="text-sm text-gray-900 truncate" title={instructorName}>
+                        {instructorName}
+                    </div>
+                );
             },
-            sortable: true
+            sortable: true,
+            width: 'w-1/6' // Augmenté de 12.5% à 16.7%
         },
         {
             title: 'Participants',
             field: (row: Session) => (
-                <div className="text-sm text-gray-900">
+                <div className="text-sm text-gray-900 text-center">
                     {row.participants ? row.participants.length : 0} / {row.maxParticipants}
                 </div>
             ),
-            sortable: false
+            sortable: false,
+            width: 'w-1/10' // Augmenté de 8.3% à 10%
         },
         {
             title: 'Statut',
@@ -417,34 +439,34 @@ const SessionsAdmin: React.FC = () => {
                     {formatStatus(row.status)}
                 </span>
             ),
-            sortable: false
+            sortable: false,
+            width: 'w-1/8' // Réduit de 16.7% à 12.5%
         }
     ];
 
-    // Rendu des actions pour chaque ligne
-    const renderActions = (session: Session) => (
-        <div className="flex justify-end space-x-2">
-            <button
-                onClick={() => openInspectModal(session)}
-                className="text-indigo-600 hover:text-indigo-900"
-                title="Voir les détails"
-            >
-                <Eye className="h-5 w-5" />
-            </button>
-            <button
-                onClick={() => openEditModal(session)}
-                className="text-blue-700 hover:text-blue-900"
-            >
-                <Edit className="h-5 w-5" />
-            </button>
-            <button
-                onClick={() => confirmDelete(session)}
-                className="text-red-600 hover:text-red-900"
-            >
-                <Trash2 className="h-5 w-5" />
-            </button>
-        </div>
-    );
+    // Rendu des actions pour chaque ligne avec menu dropdown
+    const renderActions = (session: Session) => {
+        const actions = [
+            {
+                label: 'Voir les détails',
+                icon: <Eye className="h-4 w-4" />,
+                onClick: () => openInspectModal(session)
+            },
+            {
+                label: 'Modifier',
+                icon: <Edit className="h-4 w-4" />,
+                onClick: () => openEditModal(session)
+            },
+            {
+                label: 'Supprimer',
+                icon: <Trash2 className="h-4 w-4" />,
+                onClick: () => confirmDelete(session),
+                variant: 'danger' as const
+            }
+        ];
+
+        return <ActionMenu actions={actions} className="flex justify-end" />;
+    };
 
     // Calcul des statistiques
 

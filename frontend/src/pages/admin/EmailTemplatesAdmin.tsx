@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Copy } from 'lucide-react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
+import ActionMenu from '../../components/common/ActionMenu';
 import { useNotification } from '../../contexts/NotificationContext';
 import useDataFetching from '../../hooks/useDataFetching';
 import { adminEmailTemplatesApi } from '@/services/api.ts';
@@ -164,7 +165,7 @@ const EmailTemplatesAdmin: React.FC = () => {
             await adminEmailTemplatesApi.delete(selectedTemplate.id);
 
             // Mettre à jour la liste des templates
-            setTemplates({ ...templates, data: templates.data.filter(t => t.id !== selectedTemplate.id) });
+            setTemplates({ ...templates, data: templates.filter(t => t.id !== selectedTemplate.id) });
             addToast('Template supprimé avec succès', 'success');
             setShowDeleteModal(false);
         } catch (err) {
@@ -233,56 +234,38 @@ const EmailTemplatesAdmin: React.FC = () => {
 
         return eventTypes[eventType] || eventType;
     };
-    // Rendu des actions pour chaque ligne
-    const renderActions = (template: EmailTemplate) => (
-        <div className="flex justify-end space-x-2">
-            <button
-                onClick={() => openPreviewModal(template)}
-                className="text-purple-700 hover:text-purple-900"
-                title="Prévisualiser"
-            >
-                <Eye className="h-5 w-5" />
-            </button>
-            <Link
-                to={`/admin/email-templates/${template.id}/edit`}
-                className="text-blue-700 hover:text-blue-900"
-                title="Modifier"
-            >
-                <Edit className="h-5 w-5" />
-            </Link>
-            {!template.isSystem && (
-                <>
-                    <button
-                        onClick={() => handleDuplicate(template)}
-                        className="text-green-600 hover:text-green-900"
-                        title="Dupliquer"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                    </button>
-                    <button
-                        onClick={() => openDeleteModal(template)}
-                        className="text-red-600 hover:text-red-900"
-                        title="Supprimer"
-                    >
-                        <Trash2 className="h-5 w-5" />
-                    </button>
-                </>
-            )}
-            {template.isSystem && (
-                <button
-                    onClick={() => handleDuplicate(template)}
-                    className="text-green-600 hover:text-green-900"
-                    title="Dupliquer (les templates système ne peuvent pas être supprimés)"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                </button>
-            )}
-        </div>
-    );
+    // Fonction pour générer les actions avec ActionMenu
+    const generateActions = (template: EmailTemplate) => {
+        const actions = [
+            {
+                label: 'Prévisualiser',
+                icon: <Eye className="h-4 w-4" />,
+                onClick: () => openPreviewModal(template)
+            },
+            {
+                label: 'Modifier',
+                icon: <Edit className="h-4 w-4" />,
+                onClick: () => window.location.href = `/admin/email-templates/${template.id}/edit`
+            },
+            {
+                label: 'Dupliquer',
+                icon: <Copy className="h-4 w-4" />,
+                onClick: () => handleDuplicate(template)
+            }
+        ];
+
+        // Ajouter l'action de suppression seulement si ce n'est pas un template système
+        if (!template.isSystem) {
+            actions.push({
+                label: 'Supprimer',
+                icon: <Trash2 className="h-4 w-4" />,
+                onClick: () => openDeleteModal(template),
+                variant: 'danger' as const
+            });
+        }
+
+        return <ActionMenu actions={actions} />;
+    };
 
     return (
         <AdminLayout
@@ -311,13 +294,15 @@ const EmailTemplatesAdmin: React.FC = () => {
                     </div>
 
                     <DataTable<EmailTemplate>
-                        data={templates.data || []}
+                        data={templates || []}
                         columns={columns}
                         keyField="id"
                         loading={loading}
-                        actions={renderActions}
+                        actions={generateActions}
                         searchFields={['name', 'subject']}
                         emptyMessage="Aucun template d'email trouvé"
+                        title="Liste des templates d'emails"
+                        searchPlaceholder="Rechercher par nom ou sujet..."
                     />
 
             {/* Modal de prévisualisation */}

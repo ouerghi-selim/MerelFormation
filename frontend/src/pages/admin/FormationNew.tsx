@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, Plus, Trash2 } from 'lucide-react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
+import AdminLayout from '../../components/layout/AdminLayout';
 import { adminFormationsApi } from '../../services/api';
 
 interface ModuleInput {
@@ -148,12 +147,7 @@ const FormationNew: React.FC = () => {
     };
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <AdminSidebar />
-            <div className="flex-1">
-                <AdminHeader title="Création d'une nouvelle formation" />
-
-                <div className="p-6">
+        <AdminLayout title="Création d'une nouvelle formation">
                     {error && (
                         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
                             <p>{error}</p>
@@ -466,9 +460,7 @@ const FormationNew: React.FC = () => {
                             </div>
                         </form>
                     </div>
-                </div>
-            </div>
-        </div>
+        </AdminLayout>
     );
 };
 

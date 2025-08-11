@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../../components/layout/AdminLayout';
+import ActionMenu from '../../components/common/ActionMenu';
 import { useNotification } from '../../contexts/NotificationContext';
 import { adminFormulasApi, adminCentersApi } from '@/services/api';
 
@@ -326,22 +327,22 @@ const FormulasAdmin: React.FC = () => {
                         </h3>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
+                        <table className="w-full divide-y divide-gray-200 table-fixed">
                             <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">
                                     Formule
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
                                     Centre d'examen
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
                                     Type / Prix
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
                                     Statut
                                 </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                                     Actions
                                 </th>
                             </tr>
@@ -351,20 +352,22 @@ const FormulasAdmin: React.FC = () => {
                                 <tr key={formula.id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4">
                                         <div>
-                                            <div className="text-sm font-medium text-gray-900">
+                                            <div className="text-sm font-medium text-gray-900 truncate" title={formula.name}>
                                                 {formula.name}
                                             </div>
-                                            <div className="text-sm text-gray-500 max-w-xs truncate">
+                                            <div className="text-sm text-gray-500 truncate" title={formula.description}>
                                                 {formula.description}
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-6 py-4">
                                         <div className="text-sm text-gray-900 flex items-center">
-                                            <Building className="h-4 w-4 mr-1 text-gray-400" />
-                                            {formula.examCenter.name}
+                                            <Building className="h-4 w-4 mr-1 text-gray-400 flex-shrink-0" />
+                                            <span className="truncate" title={formula.examCenter.name}>
+                                                {formula.examCenter.name}
+                                            </span>
                                         </div>
-                                        <div className="text-xs text-gray-500">
+                                        <div className="text-xs text-gray-500 truncate" title={formula.examCenter.city}>
                                             {formula.examCenter.city}
                                         </div>
                                     </td>
@@ -407,23 +410,23 @@ const FormulasAdmin: React.FC = () => {
                                                 )}
                                             </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <div className="flex justify-end space-x-2">
-                                            <button
-                                                onClick={() => handleEdit(formula)}
-                                                className="text-indigo-600 hover:text-indigo-900"
-                                                title="Modifier"
-                                            >
-                                                <Edit className="h-4 w-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(formula)}
-                                                className="text-red-600 hover:text-red-900"
-                                                title="Supprimer"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
-                                        </div>
+                                    <td className="px-6 py-4 text-right text-sm font-medium">
+                                        <ActionMenu
+                                            actions={[
+                                                {
+                                                    label: 'Modifier',
+                                                    icon: <Edit className="h-4 w-4" />,
+                                                    onClick: () => handleEdit(formula)
+                                                },
+                                                {
+                                                    label: 'Supprimer',
+                                                    icon: <Trash2 className="h-4 w-4" />,
+                                                    onClick: () => handleDelete(formula),
+                                                    variant: 'danger' as const
+                                                }
+                                            ]}
+                                            className="flex justify-end"
+                                        />
                                     </td>
                                 </tr>
                             ))}

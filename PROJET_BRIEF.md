@@ -6,7 +6,7 @@
 **Repository :** https://github.com/ouerghi-selim/MerelFormation  
 **Type :** Application de gestion de formations taxi + location de véhicules  
 **Status :** ✅ 100% FONCTIONNEL - Projet complet avec système d'inscription par étapes + Affichage documents d'inscription + Système d'entreprise/employeur + Validation documents avec emails + **🆕 Système de statuts de réservation professionnel (19 statuts formations + 12 statuts véhicules) avec emails automatiques + Workflow complet d'inscription + 🆕 Système de visualisation adaptative des documents par type de fichier**  
-**Dernière mise à jour :** 07 Août 2025 - Système de visualisation intelligente des documents (PDF, images, Word, Excel) avec composants réutilisables
+**Dernière mise à jour :** 11 Août 2025 - Uniformisation complète interface admin avec DataTable avancé et ActionMenu space-efficient
 
 ## 🖗️ Architecture Technique
 

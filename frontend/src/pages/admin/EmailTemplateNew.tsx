@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft } from 'lucide-react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
+import AdminLayout from '../../components/layout/AdminLayout';
 import { adminEmailTemplatesApi } from '../../services/api';
 import WysiwygEditor from '../../components/common/WysiwygEditor';
 import EmailTemplatePreview from '../../components/admin/EmailTemplatePreview';
@@ -107,12 +106,7 @@ const EmailTemplateNew: React.FC = () => {
     };
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <AdminSidebar />
-            <div className="flex-1">
-                <AdminHeader title="Création d'un nouveau template d'email" />
-
-                <div className="p-6">
+        <AdminLayout title="Création d'un nouveau template d'email">
                     {error && (
                         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
                             <p>{error}</p>
@@ -284,9 +278,7 @@ const EmailTemplateNew: React.FC = () => {
                             </div>
                         </form>
                     </div>
-                </div>
-            </div>
-        </div>
+        </AdminLayout>
     );
 };
 
