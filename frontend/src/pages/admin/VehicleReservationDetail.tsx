@@ -525,7 +525,6 @@ const VehicleReservationDetail: React.FC = () => {
             case 'completed': return <CheckCircle className="w-4 h-4" />;
             case 'cancelled': return <XCircle className="w-4 h-4" />;
             case 'refunded': return <CreditCard className="w-4 h-4" />;
-            case 'submitted': return <AlertCircle className="w-4 h-4" />;
             default: return <AlertCircle className="w-4 h-4" />;
         }
     };

@@ -1494,7 +1494,7 @@ class NotificationService
                 'newStatus' => $newStatus,
                 'statusChangeDate' => (new \DateTime())->format('d/m/Y à H:i'),
                 'studentPortalUrl' => $this->baseUrl . '/student/dashboard',
-                'trackingUrl' => $this->baseUrl . '/track-rental/' . $rental->getTrackingToken(),
+                'trackingUrl' => $this->baseUrl . '/track/' . $rental->getTrackingToken(),
                 'loginUrl' => $this->baseUrl . '/login',
                 'customMessage' => $customMessage ?: '',
                 'message' => $customMessage ?: ''

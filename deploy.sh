@@ -99,9 +99,13 @@ if [ ! -f "app/public/build/index.html" ]; then
   exit 1
 fi
 
-# ✅ NOUVEAU : Reconstruction forcée de l'image PHP pour appliquer les corrections
-echo "🏗️ Reconstruction de l'image PHP avec les corrections anti-502..."
-docker-compose -f docker-compose.prod.yml build --no-cache php
+# ✅ OPTIMISÉ : Éviter rebuild si pas nécessaire (variable d'environnement)
+if [ "$FORCE_REBUILD" = "true" ]; then
+    echo "🏗️ Reconstruction forcée de l'image PHP..."
+    docker-compose -f docker-compose.prod.yml build --no-cache php
+else
+    echo "⚡ Skip rebuild PHP (utilise FORCE_REBUILD=true pour forcer)"
+fi
 
 # Vérifier que l'index.html fait référence aux bons fichiers
 echo "🔍 Vérification des références dans index.html..."
@@ -175,9 +179,9 @@ fi
 
 echo "📦 Installation des dépendances..."
 
-# Installer les dépendances Symfony
+# Installer les dépendances Symfony (SANS auto-scripts pour éviter blocages)
 echo "📦 Installation des dépendances Composer..."
-docker-compose -f docker-compose.prod.yml exec php composer install --no-dev --optimize-autoloader
+docker-compose -f docker-compose.prod.yml exec php composer install --no-dev --optimize-autoloader --no-scripts
 
 # Correction des permissions AVANT le cache
 echo "🔧 Correction des permissions..."
@@ -197,9 +201,10 @@ docker-compose -f docker-compose.prod.yml exec php bash -c "
     chmod -R 755 /var/www/public/uploads
 "
 
-# Vider le cache Symfony
-echo "🗑️ Vidage du cache..."
-docker-compose -f docker-compose.prod.yml exec php php bin/console cache:clear --env=prod --no-debug
+# Vider le cache Symfony (MÉTHODE MANUELLE pour éviter blocages)
+echo "🗑️ Vidage manuel du cache (plus sûr)..."
+docker-compose -f docker-compose.prod.yml exec php rm -rf /var/www/var/cache/prod/* || true
+docker-compose -f docker-compose.prod.yml exec php php bin/console cache:warmup --env=prod --no-optional-warmers
 
 # Re-correction des permissions après cache
 echo "🔧 Re-correction des permissions après cache..."
@@ -263,6 +268,12 @@ echo ""
 echo "💾 Données MySQL: $(du -sh data/mysql 2>/dev/null | cut -f1 || echo 'Première installation')"
 echo ""
 if [ "$DEPLOY_ENV" = "dev" ]; then
-    echo "ℹ️ Mode développement - Utilisez les variables d'environnement pour la production:"
+    echo "ℹ️ Mode développement - Variables d'environnement disponibles:"
     echo "   DEPLOY_ENV=prod API_HOST=votre-domaine.com ./deploy.sh"
+    echo "   FORCE_REBUILD=true ./deploy.sh  # Force rebuild PHP si problèmes"
 fi
+
+echo ""
+echo "🆘 En cas de problème cache bloqué:"
+echo "   docker-compose -f docker-compose.prod.yml exec php rm -rf /var/www/var/cache/prod/*"
+echo "   docker-compose -f docker-compose.prod.yml restart php"

@@ -104,7 +104,6 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({
     'pageTitle': 'Titre de la page',
     'sectionTitle': 'Titre de la section',
     'companyName': 'Nom de l\'entreprise',
-    'contactEmail': 'Email de contact',
     'contactPhone': 'Téléphone de contact',
     'siteUrl': 'URL du site web'
   };
