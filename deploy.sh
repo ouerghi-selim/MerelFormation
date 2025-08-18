@@ -201,10 +201,17 @@ docker-compose -f docker-compose.prod.yml exec php bash -c "
     chmod -R 755 /var/www/public/uploads
 "
 
-# Vider le cache Symfony (MÉTHODE MANUELLE pour éviter blocages)
-echo "🗑️ Vidage manuel du cache (plus sûr)..."
-docker-compose -f docker-compose.prod.yml exec php rm -rf /var/www/var/cache/prod/* || true
-docker-compose -f docker-compose.prod.yml exec php php bin/console cache:warmup --env=prod --no-optional-warmers
+# Vider le cache Symfony (MÉTHODE HYBRIDE pour éviter blocages)
+echo "🗑️ Vidage du cache Symfony..."
+echo "⚠️ Si ça bloque, tapez Ctrl+C et relancez manuellement"
+timeout 120 docker-compose -f docker-compose.prod.yml exec php php bin/console cache:clear --env=prod --no-debug || {
+    echo "⚠️ cache:clear a échoué ou pris trop de temps"
+    echo "🛠️ Utilisation de la méthode de fallback..."
+    docker-compose -f docker-compose.prod.yml exec php rm -rf /var/www/var/cache/prod/* || true
+    docker-compose -f docker-compose.prod.yml exec php php bin/console cache:warmup --env=prod --no-optional-warmers || true
+    echo "⚠️ IMPORTANT: Vous devrez peut-être lancer manuellement:"
+    echo "   docker-compose -f docker-compose.prod.yml exec php php bin/console cache:clear --env=prod"
+}
 
 # Re-correction des permissions après cache
 echo "🔧 Re-correction des permissions après cache..."
