@@ -1,6 +1,6 @@
 // src/pages/admin/ReservationsAdmin.tsx
 import React, { useState, useEffect } from 'react';
-import { Calendar, Search, Filter, ChevronDown, Eye, Check, X, User, Car, BookOpen } from 'lucide-react';
+import { Calendar, Search, Filter, ChevronDown, Eye, Check, X, User, Car } from 'lucide-react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { adminReservationsApi } from '@/services/api.ts';
 import Alert from '../../components/common/Alert';
@@ -46,8 +46,7 @@ interface SessionReservation {
 }
 
 const ReservationsAdmin: React.FC = () => {
-  // État pour le type de réservation actif (onglet)
-  const [activeTab, setActiveTab] = useState<'vehicle' | 'session'>('vehicle');
+  // Suppression de l'onglet session - maintenant uniquement véhicules
 
   // États pour les réservations de véhicules
   const [vehicleReservations, setVehicleReservations] = useState<VehicleReservation[]>([]);
@@ -58,17 +57,12 @@ const ReservationsAdmin: React.FC = () => {
   const [dateFilter, setDateFilter] = useState('');
   const [selectedVehicleReservation, setSelectedVehicleReservation] = useState<VehicleReservation | null>(null);
 
-  // États pour les réservations de sessions
-  const [sessionReservations, setSessionReservations] = useState<SessionReservation[]>([]);
-  const [loadingSessionReservations, setLoadingSessionReservations] = useState(true);
-  const [sessionSearchTerm, setSessionSearchTerm] = useState('');
-  const [sessionStatusFilter, setSessionStatusFilter] = useState('');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
 
   // États pour le modal de détail
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedReservationType, setSelectedReservationType] = useState<'vehicle' | 'session'>('vehicle');
+  const selectedReservationType = 'vehicle'; // Toujours véhicule maintenant
   const [selectedReservationId, setSelectedReservationId] = useState<number | null>(null);
 
   // États pour la modification de statut
@@ -86,9 +80,9 @@ const ReservationsAdmin: React.FC = () => {
   } | null>(null);
   const [customMessage, setCustomMessage] = useState('');
 
-  // Fonction helper pour les labels de statuts
+  // Fonction helper pour les labels de statuts (toujours véhicule)
   const getStatusLabelForType = (status: string) => {
-    return activeTab === 'vehicle' ? getStatusLabel(status, 'vehicle') : getStatusLabel(status, 'formation');
+    return getStatusLabel(status, 'vehicle');
   };
 
   // Effet pour fermer les dropdowns quand on clique ailleurs
@@ -110,12 +104,10 @@ const ReservationsAdmin: React.FC = () => {
   // Effet pour charger les réservations de véhicules
   useEffect(() => {
     const fetchReservations = async () => {
-      if (activeTab !== 'vehicle') return;
-
       try {
         setLoading(true);
 
-        // ✅ CORRECTION : Ajouter les paramètres de filtrage
+        // Paramètres de filtrage
         const params = new URLSearchParams();
         if (searchTerm) params.append('search', searchTerm);
         if (statusFilter) params.append('status', statusFilter);
@@ -132,49 +124,11 @@ const ReservationsAdmin: React.FC = () => {
     };
 
     fetchReservations();
-  }, [activeTab, searchTerm, statusFilter, dateFilter]);
+  }, [searchTerm, statusFilter, dateFilter]);
 
-  // Effet pour charger les réservations de sessions
-  useEffect(() => {
-    const fetchSessionReservations = async () => {
-      if (activeTab !== 'session') return;
 
-      try {
-        setLoadingSessionReservations(true);
-
-        // Paramètres de recherche/filtrage
-        const params = new URLSearchParams();
-        if (sessionSearchTerm) params.append('search', sessionSearchTerm);
-        if (sessionStatusFilter) params.append('status', sessionStatusFilter);
-
-        // Appel API
-        const response = await adminReservationsApi.getSessionReservations(params.toString());
-        setSessionReservations(response.data);
-        setLoadingSessionReservations(false);
-      } catch (err) {
-        console.error('Error fetching session reservations:', err);
-        setError('Erreur lors du chargement des réservations de sessions');
-        setLoadingSessionReservations(false);
-
-        // Données de test
-        // setSessionReservations([
-        //   // Vos mêmes données de mock...
-        // ]);
-      }
-    };
-
-    fetchSessionReservations();
-  }, [activeTab, sessionSearchTerm, sessionStatusFilter]);
-
-  // Fonctions pour ouvrir les modals de détails
+  // Fonction pour ouvrir le modal de détails
   const handleViewVehicleDetails = (reservation: VehicleReservation) => {
-    setSelectedReservationType('vehicle');
-    setSelectedReservationId(reservation.id);
-    setShowDetailModal(true);
-  };
-
-  const handleViewSessionDetails = (reservation: SessionReservation) => {
-    setSelectedReservationType('session');
     setSelectedReservationId(reservation.id);
     setShowDetailModal(true);
   };
@@ -214,28 +168,6 @@ const ReservationsAdmin: React.FC = () => {
     setShowDetailModal(false);
   };
 
-  const handleSessionStatusChange = async (reservationId: number, newStatus: string) => {
-    try {
-      // Appel API à créer
-      await adminReservationsApi.updateSessionReservationStatus(reservationId, newStatus);
-
-      // Mise à jour de l'état local
-      setSessionReservations(sessionReservations.map(r =>
-          r.id === reservationId ? { ...r, status: newStatus } : r
-      ));
-
-      setSuccessMessage(`Statut de la réservation mis à jour avec succès`);
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err) {
-      console.error('Error updating session reservation status:', err);
-      setError('Erreur lors de la mise à jour du statut');
-
-      // Mise à jour de l'état local même en cas d'erreur (pour le développement)
-      setSessionReservations(sessionReservations.map(r =>
-          r.id === reservationId ? { ...r, status: newStatus } : r
-      ));
-    }
-  };
 
   // Fonction utilitaire pour formater les dates
   const formatDate = (dateString: string): string => {
@@ -256,32 +188,18 @@ const ReservationsAdmin: React.FC = () => {
   };
 
   // Fonction pour préparer le changement de statut (ouvre le modal de confirmation)
-  const handleStatusChangeRequest = (reservationId: number, newStatus: string, reservationType: 'vehicle' | 'session') => {
-    // Trouver la réservation pour obtenir les informations
-    let currentStatus = '';
-    let studentName = '';
-    
-    if (reservationType === 'vehicle') {
-      const reservation = vehicleReservations.find(r => r.id === reservationId);
-      if (reservation) {
-        currentStatus = reservation.status;
-        studentName = reservation.user.fullName;
-      }
-    } else {
-      const reservation = sessionReservations.find(r => r.id === reservationId);
-      if (reservation) {
-        currentStatus = reservation.status;
-        studentName = `${reservation.user.firstName} ${reservation.user.lastName}`;
-      }
-    }
+  const handleStatusChangeRequest = (reservationId: number, newStatus: string) => {
+    // Trouver la réservation véhicule pour obtenir les informations
+    const reservation = vehicleReservations.find(r => r.id === reservationId);
+    if (!reservation) return;
 
     // Préparer les données pour le modal de confirmation
     setPendingStatusChange({
       reservationId,
       newStatus,
-      reservationType,
-      currentStatus,
-      studentName
+      reservationType: 'vehicle',
+      currentStatus: reservation.status,
+      studentName: reservation.user.fullName
     });
     
     // Fermer la liste déroulante et ouvrir le modal
@@ -293,20 +211,13 @@ const ReservationsAdmin: React.FC = () => {
   const confirmStatusChange = async () => {
     if (!pendingStatusChange) return;
 
-    const { reservationId, newStatus, reservationType } = pendingStatusChange;
+    const { reservationId, newStatus } = pendingStatusChange;
     
     try {
-      if (reservationType === 'vehicle') {
-        await adminReservationsApi.updateStatus(reservationId, newStatus, customMessage || undefined);
-        setVehicleReservations(vehicleReservations.map(r =>
-          r.id === reservationId ? { ...r, status: newStatus } : r
-        ));
-      } else {
-        await adminReservationsApi.updateSessionReservationStatus(reservationId, newStatus, customMessage || undefined);
-        setSessionReservations(sessionReservations.map(r =>
-          r.id === reservationId ? { ...r, status: newStatus } : r
-        ));
-      }
+      await adminReservationsApi.updateStatus(reservationId, newStatus, customMessage || undefined);
+      setVehicleReservations(vehicleReservations.map(r =>
+        r.id === reservationId ? { ...r, status: newStatus } : r
+      ));
 
       const messageText = customMessage ? ' avec message personnalisé' : '';
       setSuccessMessage(`Statut mis à jour vers: ${getStatusLabelForType(newStatus)} - Email envoyé${messageText}`);
@@ -369,7 +280,7 @@ const ReservationsAdmin: React.FC = () => {
     return emailDescriptions[status] || 'Email de notification de changement de statut';
   };
 
-  // Fonction pour obtenir les statuts selon le type actif
+  // Fonction pour obtenir les statuts véhicules
   const getStatusOptions = () => {
     const vehicleStatuses = [
       'submitted', 'under_review', 'awaiting_documents', 'documents_pending', 
@@ -377,19 +288,9 @@ const ReservationsAdmin: React.FC = () => {
       'in_progress', 'completed', 'cancelled', 'refunded'
     ];
     
-    const formationStatuses = [
-      'submitted', 'under_review', 'awaiting_documents', 'documents_pending', 
-      'documents_rejected', 'awaiting_prerequisites', 'awaiting_funding', 
-      'funding_approved', 'awaiting_payment', 'payment_pending', 'confirmed', 
-      'awaiting_start', 'in_progress', 'attendance_issues', 'suspended', 
-      'completed', 'failed', 'cancelled', 'refunded'
-    ];
-
-    const statuses = activeTab === 'vehicle' ? vehicleStatuses : formationStatuses;
-    
-    return statuses.map(status => ({
+    return vehicleStatuses.map(status => ({
       value: status,
-      label: getStatusLabel(status, activeTab === 'vehicle' ? 'vehicle' : 'formation'),
+      label: getStatusLabel(status, 'vehicle'),
       phase: '',
       color: 'gray',
       allowedTransitions: []
@@ -397,7 +298,7 @@ const ReservationsAdmin: React.FC = () => {
   };
 
   return (
-    <AdminLayout title="Gestion des réservations">
+    <AdminLayout title="Réservations de véhicules">
             {error && (
                 <Alert
                     type="error"
@@ -414,34 +315,7 @@ const ReservationsAdmin: React.FC = () => {
                 />
             )}
 
-            {/* Onglets de navigation */}
-            <div className="flex mb-6 border-b">
-              <button
-                  className={`py-2 px-4 font-medium text-sm ${
-                      activeTab === 'vehicle'
-                          ? 'text-blue-900 border-b-2 border-blue-900'
-                          : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                  onClick={() => setActiveTab('vehicle')}
-              >
-                <Car className="inline-block h-4 w-4 mr-1" />
-                Réservations de véhicules
-              </button>
-              <button
-                  className={`py-2 px-4 font-medium text-sm ${
-                      activeTab === 'session'
-                          ? 'text-blue-900 border-b-2 border-blue-900'
-                          : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                  onClick={() => setActiveTab('session')}
-              >
-                <BookOpen className="inline-block h-4 w-4 mr-1" />
-                Réservations de formations
-              </button>
-            </div>
-
-            {/* Contenu de l'onglet "Réservations de véhicules" */}
-            {activeTab === 'vehicle' && (
+            {/* Contenu des réservations de véhicules */}
                 <>
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <div className="text-xl font-bold text-gray-800">
@@ -564,7 +438,7 @@ const ReservationsAdmin: React.FC = () => {
                                             {getStatusOptions().map((status) => (
                                               <button
                                                 key={status.value}
-                                                onClick={() => handleStatusChangeRequest(reservation.id, status.value, 'vehicle')}
+                                                onClick={() => handleStatusChangeRequest(reservation.id, status.value)}
                                                 className={`block w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${
                                                   reservation.status === status.value ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                                                 }`}
@@ -597,156 +471,6 @@ const ReservationsAdmin: React.FC = () => {
                       </div>
                   )}
                 </>
-            )}
-
-            {/* Contenu de l'onglet "Réservations de sessions" */}
-            {activeTab === 'session' && (
-                <>
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                    <div className="text-xl font-bold text-gray-800">
-                      Demandes d'inscription aux formations
-                    </div>
-
-                    <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-                      <div className="relative w-full md:flex-1 md:max-w-xs">
-                        <Search className="absolute left-3 top-3 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Rechercher..."
-                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full"
-                            value={sessionSearchTerm}
-                            onChange={(e) => setSessionSearchTerm(e.target.value)}
-                        />
-                      </div>
-
-                      <div className="relative w-full md:w-36">
-                        <Filter className="absolute left-3 top-3 text-gray-400" />
-                        <select
-                            className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg appearance-none bg-white w-full"
-                            value={sessionStatusFilter}
-                            onChange={(e) => setSessionStatusFilter(e.target.value)}
-                        >
-                          <option value="">Statuts</option>
-                          {getStatusOptions().map((status) => (
-                            <option key={status.value} value={status.value}>
-                              {status.label}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-3 text-gray-400" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {loadingSessionReservations ? (
-                      <div className="bg-white p-8 rounded-lg shadow text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900 mx-auto"></div>
-                        <p className="mt-4 text-gray-700">Chargement des inscriptions...</p>
-                      </div>
-                  ) : sessionReservations.length === 0 ? (
-                      <div className="bg-white p-8 rounded-lg shadow text-center">
-                        <p className="text-gray-700">Aucune inscription trouvée</p>
-                      </div>
-                  ) : (
-                      <div className="bg-white rounded-lg shadow overflow-hidden">
-                        <div className="overflow-x-auto">
-                          <table className="w-full divide-y divide-gray-200 table-fixed">
-                            <thead className="bg-gray-50">
-                            <tr>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '25%'}}>
-                                Élève
-                              </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '30%'}}>
-                                Formation
-                              </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '15%'}}>
-                                Début
-                              </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '15%'}}>
-                                Demande
-                              </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '10%'}}>
-                                Statut
-                              </th>
-                              <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '5%'}}>
-                                Actions
-                              </th>
-                            </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                            {sessionReservations.map((reservation) => (
-                                <tr key={reservation.id}>
-                                  <td className="px-3 py-4">
-                                    <div className="text-sm font-medium text-gray-900 truncate" title="{`${reservation.user.firstName} ${reservation.user.lastName}`}">
-                                      {reservation.user.firstName} {reservation.user.lastName}
-                                    </div>
-                                    <div className="text-xs text-gray-500 truncate" title="{reservation.user.email}">{reservation.user.email}</div>
-                                  </td>
-                                  <td className="px-3 py-4">
-                                    <div className="text-sm text-gray-900 truncate" title="{reservation.session.formation.title}">
-                                      {reservation.session.formation.title}
-                                    </div>
-                                  </td>
-                                  <td className="px-3 py-4">
-                                    <div className="text-sm text-gray-900">
-                                      {formatDate(reservation.session.startDate)}
-                                    </div>
-                                  </td>
-                                  <td className="px-3 py-4">
-                                    <div className="text-sm text-gray-900">
-                                      {formatDate(reservation.createdAt)}
-                                    </div>
-                                  </td>
-                                  <td className="px-3 py-4">
-                                    <div className="relative">
-                                      <button
-                                        onClick={() => toggleStatusDropdown(reservation.id)}
-                                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer hover:opacity-80 ${getStatusBadgeClass(reservation.status)}`}
-                                      >
-                                        {getStatusLabelForType(reservation.status)}
-                                        <ChevronDown className="ml-1 h-3 w-3" />
-                                      </button>
-                                      
-                                      {showStatusDropdown[reservation.id] && (
-                                        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-32">
-                                          <div className="py-1 max-h-64 overflow-y-auto">
-                                            {getStatusOptions().map((status) => (
-                                              <button
-                                                key={status.value}
-                                                onClick={() => handleStatusChangeRequest(reservation.id, status.value, 'session')}
-                                                className={`block w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${
-                                                  reservation.status === status.value ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                                                }`}
-                                              >
-                                                <span className={`inline-block w-3 h-3 rounded-full mr-2 ${getStatusBadgeClass(status.value).split(' ')[0]}`}></span>
-                                                {status.label}
-                                              </button>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <div className="flex justify-end space-x-2">
-                                      <button
-                                          onClick={() => handleViewSessionDetails(reservation)}
-                                          className="text-blue-700 hover:text-blue-900"
-                                          title="Voir détails"
-                                      >
-                                        <Eye className="h-5 w-5" />
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                  )}
-                </>
-            )}
 
         {/* Modal de confirmation pour changement de statut */}
         {showConfirmModal && pendingStatusChange && (

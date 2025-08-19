@@ -205,6 +205,7 @@ export const adminUsersApi = {
     get: (id: number) => api.get(`/admin/users/${id}`),
     create: (userData: any) => api.post('/admin/users', userData),
     update: (id: number, userData: any) => api.put(`/admin/users/${id}`, userData),
+    updateStatus: (id: number, isActive: boolean) => api.put(`/admin/users/${id}/status`, { isActive }),
     delete: (id: number) => api.delete(`/admin/users/${id}`),
     restore: (id: number) => api.post(`/admin/users/${id}/restore`),
     getFormations: (userId: number) => api.get(`/admin/users/${userId}/formations`),

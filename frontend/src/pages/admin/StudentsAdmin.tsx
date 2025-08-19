@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { UserPlus, Edit, Trash2, Eye, GraduationCap, Check, X, Users, Archive, FileText, Download, Building2, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
+import { UserPlus, Edit, Trash2, Eye, GraduationCap, Check, X, Users, Archive, FileText, Download, Building2, CheckCircle, XCircle, Clock, AlertTriangle, ChevronDown, Calendar, User, Briefcase } from 'lucide-react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
@@ -8,7 +8,8 @@ import Alert from '../../components/common/Alert';
 import DeletedUsersTable from '../../components/admin/DeletedUsersTable';
 import { useNotification } from '../../contexts/NotificationContext';
 import useDataFetching from '../../hooks/useDataFetching';
-import { adminUsersApi, studentDocumentsApi, documentsApi } from '../../services/api';
+import { adminUsersApi, studentDocumentsApi, documentsApi, adminReservationsApi } from '../../services/api';
+import { getStatusBadgeClass, getStatusLabel } from '../../utils/reservationStatuses';
 import { useLocation } from 'react-router-dom';
 
 
@@ -65,6 +66,27 @@ interface Document {
     rejectionReason?: string;
 }
 
+interface SessionReservation {
+    id: number;
+    user: {
+        id: number;
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone: string;
+    };
+    session: {
+        id: number;
+        startDate: string;
+        formation: {
+            id: number;
+            title: string;
+        }
+    };
+    status: string;
+    createdAt: string;
+}
+
 const StudentsAdmin: React.FC = () => {
     const { addToast } = useNotification();
     const [activeTab, setActiveTab] = useState<'active' | 'deleted'>('active');
@@ -76,6 +98,8 @@ const StudentsAdmin: React.FC = () => {
     const [loadingFormations, setLoadingFormations] = useState(false);
     const [userDocuments, setUserDocuments] = useState<Document[]>([]);
     const [loadingDocuments, setLoadingDocuments] = useState(false);
+    const [userReservations, setUserReservations] = useState<SessionReservation[]>([]);
+    const [loadingReservations, setLoadingReservations] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
@@ -88,6 +112,26 @@ const StudentsAdmin: React.FC = () => {
     const [validationAction, setValidationAction] = useState<'validate' | 'reject' | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [validationProcessing, setValidationProcessing] = useState(false);
+
+    // States pour la gestion des statuts de réservations
+    const [showStatusDropdown, setShowStatusDropdown] = useState<Record<number, boolean>>({});
+    const [showStatusConfirmModal, setShowStatusConfirmModal] = useState(false);
+    const [pendingStatusChange, setPendingStatusChange] = useState<{
+        reservationId: number;
+        newStatus: string;
+        currentStatus: string;
+        studentName: string;
+    } | null>(null);
+    const [customMessage, setCustomMessage] = useState('');
+    const [statusProcessing, setStatusProcessing] = useState(false);
+
+    // État pour les onglets du modal de détails
+    const [activeDetailTab, setActiveDetailTab] = useState<'info' | 'company' | 'reservations' | 'documents'>('info');
+
+    // États pour la gestion du statut étudiant
+    const [showStatusChangeModal, setShowStatusChangeModal] = useState(false);
+    const [studentToChangeStatus, setStudentToChangeStatus] = useState<User | null>(null);
+    const [statusProcessingStudent, setStatusProcessingStudent] = useState(false);
 
     // Nouvel étudiant form state
     const [newStudent, setNewStudent] = useState<Omit<User, 'id'>>({
@@ -123,6 +167,52 @@ const StudentsAdmin: React.FC = () => {
             setShowAddModal(true);
         }
     }, [location]);
+
+    // Effet pour fermer les dropdowns de statut quand on clique ailleurs
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (!target.closest('.relative')) {
+                setShowStatusDropdown({});
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+        };
+    }, []);
+
+    // Raccourcis clavier pour naviguer entre les onglets du modal
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (showDetailsModal && (event.metaKey || event.ctrlKey)) {
+                switch (event.key) {
+                    case '1':
+                        event.preventDefault();
+                        setActiveDetailTab('info');
+                        break;
+                    case '2':
+                        event.preventDefault();
+                        setActiveDetailTab('company');
+                        break;
+                    case '3':
+                        event.preventDefault();
+                        setActiveDetailTab('reservations');
+                        break;
+                    case '4':
+                        event.preventDefault();
+                        setActiveDetailTab('documents');
+                        break;
+                }
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [showDetailsModal]);
     // Validation du formulaire (ajout et édition)
     const validateStudentForm = (student: Omit<User, 'id'> | User) => {
         const errors: {[key: string]: string} = {};
@@ -147,6 +237,7 @@ const StudentsAdmin: React.FC = () => {
 
     const viewDetails = async (user: User) => {
         setSelectedStudent(user);
+        setActiveDetailTab('info'); // Réinitialiser à l'onglet informations
         setShowDetailsModal(true);
 
         // Charger les formations de l'étudiant
@@ -171,6 +262,18 @@ const StudentsAdmin: React.FC = () => {
             addToast('Erreur lors du chargement des documents d\'inscription', 'error');
         } finally {
             setLoadingDocuments(false);
+        }
+
+        // Charger les réservations de l'étudiant
+        try {
+            setLoadingReservations(true);
+            const reservationsResponse = await adminReservationsApi.getSessionReservations(`userId=${user.id}`);
+            setUserReservations(reservationsResponse.data);
+        } catch (err) {
+            console.error('Error fetching user reservations:', err);
+            addToast('Erreur lors du chargement des réservations de l\'élève', 'error');
+        } finally {
+            setLoadingReservations(false);
         }
     };
 
@@ -354,6 +457,133 @@ const StudentsAdmin: React.FC = () => {
         }
     };
 
+    // Fonctions pour la gestion des statuts de réservations
+    const toggleStatusDropdown = (reservationId: number) => {
+        setShowStatusDropdown(prev => ({
+            ...prev,
+            [reservationId]: !prev[reservationId]
+        }));
+    };
+
+    const handleStatusChangeRequest = (reservationId: number, newStatus: string) => {
+        const reservation = userReservations.find(r => r.id === reservationId);
+        if (!reservation) return;
+
+        setPendingStatusChange({
+            reservationId,
+            newStatus,
+            currentStatus: reservation.status,
+            studentName: `${reservation.user.firstName} ${reservation.user.lastName}`
+        });
+        
+        setShowStatusDropdown(prev => ({ ...prev, [reservationId]: false }));
+        setShowStatusConfirmModal(true);
+    };
+
+    const confirmStatusChange = async () => {
+        if (!pendingStatusChange) return;
+
+        try {
+            setStatusProcessing(true);
+            const { reservationId, newStatus } = pendingStatusChange;
+            
+            await adminReservationsApi.updateSessionReservationStatus(reservationId, newStatus, customMessage || undefined);
+            
+            // Mettre à jour la liste des réservations
+            setUserReservations(userReservations.map(r =>
+                r.id === reservationId ? { ...r, status: newStatus } : r
+            ));
+
+            addToast(`Statut mis à jour vers: ${getStatusLabel(newStatus, 'formation')}`, 'success');
+            
+            setShowStatusConfirmModal(false);
+            setPendingStatusChange(null);
+            setCustomMessage('');
+        } catch (err) {
+            console.error('Error updating status:', err);
+            addToast('Erreur lors de la mise à jour du statut', 'error');
+        } finally {
+            setStatusProcessing(false);
+        }
+    };
+
+    const cancelStatusChange = () => {
+        setShowStatusConfirmModal(false);
+        setPendingStatusChange(null);
+        setCustomMessage('');
+    };
+
+    const getStatusOptions = () => {
+        const formationStatuses = [
+            'submitted', 'under_review', 'awaiting_documents', 'documents_pending', 
+            'documents_rejected', 'awaiting_prerequisites', 'awaiting_funding', 
+            'funding_approved', 'awaiting_payment', 'payment_pending', 'confirmed', 
+            'awaiting_start', 'in_progress', 'attendance_issues', 'suspended', 
+            'completed', 'failed', 'cancelled', 'refunded'
+        ];
+
+        return formationStatuses.map(status => ({
+            value: status,
+            label: getStatusLabel(status, 'formation')
+        }));
+    };
+
+    const formatDate = (dateString: string): string => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    };
+
+    // Fonctions pour la gestion du statut étudiant
+    const handleStudentStatusChangeRequest = (student: User) => {
+        setStudentToChangeStatus(student);
+        setShowStatusChangeModal(true);
+    };
+
+    const confirmStudentStatusChange = async () => {
+        if (!studentToChangeStatus) return;
+
+        try {
+            setStatusProcessingStudent(true);
+            const newStatus = !studentToChangeStatus.isActive;
+            
+            await adminUsersApi.updateStatus(studentToChangeStatus.id, newStatus);
+            
+            // Mettre à jour la liste locale
+            setStudents(students.map(s => 
+                s.id === studentToChangeStatus.id 
+                    ? { ...s, isActive: newStatus }
+                    : s
+            ));
+
+            // Mettre à jour l'étudiant sélectionné dans le modal s'il correspond
+            if (selectedStudent && selectedStudent.id === studentToChangeStatus.id) {
+                setSelectedStudent({ ...selectedStudent, isActive: newStatus });
+            }
+
+            addToast(
+                `Statut ${newStatus ? 'activé' : 'désactivé'} pour ${studentToChangeStatus.firstName} ${studentToChangeStatus.lastName}`, 
+                'success'
+            );
+            
+            setShowStatusChangeModal(false);
+            setStudentToChangeStatus(null);
+        } catch (err) {
+            console.error('Error updating student status:', err);
+            addToast('Erreur lors de la mise à jour du statut', 'error');
+        } finally {
+            setStatusProcessingStudent(false);
+        }
+    };
+
+    const cancelStudentStatusChange = () => {
+        setShowStatusChangeModal(false);
+        setStudentToChangeStatus(null);
+    };
+
     // Configuration des colonnes pour le DataTable
     const columns = [
         {
@@ -381,11 +611,15 @@ const StudentsAdmin: React.FC = () => {
         {
             title: 'Statut',
             field: (row: User) => (
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    row.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
+                <button
+                    onClick={() => handleStudentStatusChangeRequest(row)}
+                    className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer hover:opacity-80 transition-opacity ${
+                        row.isActive ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-red-100 text-red-800 hover:bg-red-200'
+                    }`}
+                    title={`Cliquer pour ${row.isActive ? 'désactiver' : 'activer'} l'étudiant`}
+                >
                     {row.isActive ? 'Actif' : 'Inactif'}
-                </span>
+                </button>
             ),
             sortable: false
         },
@@ -711,32 +945,97 @@ const StudentsAdmin: React.FC = () => {
             <Modal
                 isOpen={showDetailsModal}
                 onClose={() => setShowDetailsModal(false)}
-                title="Détails de l'élève"
-                maxWidth="max-w-2xl"
+                title={`${selectedStudent ? `${selectedStudent.firstName} ${selectedStudent.lastName}` : 'Détails de l\'élève'}`}
+                maxWidth="max-w-4xl"
                 footer={
-                    <div className="flex justify-end space-x-3">
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowDetailsModal(false)}
-                        >
-                            Fermer
-                        </Button>
-                        {selectedStudent && (
+                    <div className="flex justify-between items-center">
+                        <div className="text-xs text-gray-400 hidden sm:block">
+                            Raccourcis : Cmd/Ctrl + 1-4 pour naviguer entre les onglets
+                        </div>
+                        <div className="flex space-x-3">
                             <Button
-                                onClick={() => {
-                                    setShowDetailsModal(false);
-                                    openEditModal(selectedStudent);
-                                }}
+                                variant="outline"
+                                onClick={() => setShowDetailsModal(false)}
                             >
-                                Modifier
+                                Fermer
                             </Button>
-                        )}
+                            {selectedStudent && (
+                                <Button
+                                    onClick={() => {
+                                        setShowDetailsModal(false);
+                                        openEditModal(selectedStudent);
+                                    }}
+                                >
+                                    Modifier
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 }
             >
                 {selectedStudent && (
                     <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Navigation par onglets */}
+                        <div className="border-b border-gray-200 mb-6">
+                            <nav className="-mb-px flex flex-wrap gap-2 sm:gap-8">
+                                <button
+                                    onClick={() => setActiveDetailTab('info')}
+                                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                                        activeDetailTab === 'info'
+                                            ? 'border-blue-500 text-blue-600'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                                >
+                                    <User className="h-4 w-4 inline-block mr-2" />
+                                    Informations
+                                </button>
+                                
+                                <button
+                                    onClick={() => setActiveDetailTab('company')}
+                                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                                        activeDetailTab === 'company'
+                                            ? 'border-blue-500 text-blue-600'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                                >
+                                    <Briefcase className="h-4 w-4 inline-block mr-2" />
+                                    Entreprise
+                                    {selectedStudent.company && (
+                                        <span className="ml-2 inline-flex items-center justify-center w-2 h-2 bg-green-500 rounded-full"></span>
+                                    )}
+                                </button>
+                                
+                                <button
+                                    onClick={() => setActiveDetailTab('reservations')}
+                                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                                        activeDetailTab === 'reservations'
+                                            ? 'border-blue-500 text-blue-600'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                                >
+                                    <Calendar className="h-4 w-4 inline-block mr-2" />
+                                    Réservations ({userReservations.length})
+                                </button>
+                                
+                                <button
+                                    onClick={() => setActiveDetailTab('documents')}
+                                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                                        activeDetailTab === 'documents'
+                                            ? 'border-blue-500 text-blue-600'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                                >
+                                    <FileText className="h-4 w-4 inline-block mr-2" />
+                                    Documents ({userDocuments.length})
+                                </button>
+                            </nav>
+                        </div>
+
+                        {/* Contenu selon l'onglet actif */}
+                        <div className="min-h-[400px]">
+                            {activeDetailTab === 'info' && (
+                                <div className="animate-fadeIn">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <h4 className="text-sm font-medium text-gray-500 mb-1">Nom complet</h4>
                                 <p className="text-base font-medium">{selectedStudent.firstName} {selectedStudent.lastName}</p>
@@ -754,22 +1053,28 @@ const StudentsAdmin: React.FC = () => {
 
                             <div>
                                 <h4 className="text-sm font-medium text-gray-500 mb-1">Statut</h4>
-                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                    selectedStudent.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                }`}>
+                                <button
+                                    onClick={() => handleStudentStatusChangeRequest(selectedStudent)}
+                                    className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer hover:opacity-80 transition-opacity ${
+                                        selectedStudent.isActive ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-red-100 text-red-800 hover:bg-red-200'
+                                    }`}
+                                    title={`Cliquer pour ${selectedStudent.isActive ? 'désactiver' : 'activer'} l'étudiant`}
+                                >
                                     {selectedStudent.isActive ? 'Actif' : 'Inactif'}
-                                </span>
+                                </button>
                             </div>
 
                             <div>
                                 <h4 className="text-sm font-medium text-gray-500 mb-1">Dernière connexion</h4>
                                 <p className="text-base">{selectedStudent.lastLogin || 'Jamais'}</p>
                             </div>
-                        </div>
+                                    </div>
+                                </div>
+                            )}
 
-                        {/* Section Entreprise */}
-                        {selectedStudent.company && (
-                            <div className="border-t border-gray-200 mt-6 pt-6">
+                            {/* Onglet Entreprise */}
+                            {activeDetailTab === 'company' && selectedStudent.company && (
+                                <div className="animate-fadeIn">
                                 <h4 className="font-medium mb-4 flex items-center">
                                     <Building2 className="h-5 w-5 mr-2 text-blue-600" />
                                     Entreprise / Employeur
@@ -799,11 +1104,26 @@ const StudentsAdmin: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                                </div>
+                            )}
 
-                        <div className="border-t border-gray-200 mt-6 pt-6">
-                            <h4 className="font-medium mb-4">Formations inscrites</h4>
+                            {/* Message si pas d'entreprise dans l'onglet company */}
+                            {activeDetailTab === 'company' && !selectedStudent.company && (
+                                <div className="animate-fadeIn text-center py-8">
+                                <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                                <p className="text-gray-500 italic">Aucune entreprise renseignée</p>
+                            </div>
+                            )}
+
+                            {/* Onglet Réservations */}
+                            {activeDetailTab === 'reservations' && (
+                                <div className="animate-fadeIn space-y-6">
+                                {/* Section Formations inscrites */}
+                                <div>
+                                    <h4 className="font-medium mb-4 flex items-center">
+                                        <GraduationCap className="h-5 w-5 mr-2 text-blue-600" />
+                                        Formations inscrites
+                                    </h4>
                             {loadingFormations ? (
                                 <div className="flex justify-center">
                                     <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-900"></div>
@@ -861,14 +1181,103 @@ const StudentsAdmin: React.FC = () => {
                             ) : (
                                 <p className="text-gray-500 italic">Aucune formation trouvée</p>
                             )}
-                        </div>
+                                </div>
 
-                        {/* Section Documents d'inscription */}
-                        <div className="border-t border-gray-200 mt-6 pt-6">
-                            <h4 className="font-medium mb-4 flex items-center">
-                                <FileText className="h-5 w-5 mr-2 text-blue-600" />
-                                Documents d'inscription
-                            </h4>
+                                {/* Section Réservations dans le même onglet */}
+                                <div>
+                                    <h4 className="font-medium mb-4 flex items-center">
+                                        <Calendar className="h-5 w-5 mr-2 text-green-600" />
+                                        Réservations de formations
+                                    </h4>
+                            {loadingReservations ? (
+                                <div className="flex justify-center">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-900"></div>
+                                    <span className="ml-2">Chargement des réservations...</span>
+                                </div>
+                            ) : userReservations && userReservations.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Formation
+                                                </th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Date début
+                                                </th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Demande
+                                                </th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Statut
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {userReservations.map((reservation) => (
+                                                <tr key={reservation.id}>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                        {reservation.session.formation.title}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {formatDate(reservation.session.startDate)}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {formatDate(reservation.createdAt)}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="relative">
+                                                            <button
+                                                                onClick={() => toggleStatusDropdown(reservation.id)}
+                                                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer hover:opacity-80 ${getStatusBadgeClass(reservation.status)}`}
+                                                            >
+                                                                {getStatusLabel(reservation.status, 'formation')}
+                                                                <ChevronDown className="ml-1 h-3 w-3" />
+                                                            </button>
+                                                            
+                                                            {showStatusDropdown[reservation.id] && (
+                                                                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-48">
+                                                                    <div className="py-1 max-h-64 overflow-y-auto">
+                                                                        {getStatusOptions().map((status) => (
+                                                                            <button
+                                                                                key={status.value}
+                                                                                onClick={() => handleStatusChangeRequest(reservation.id, status.value)}
+                                                                                className={`block w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${
+                                                                                    reservation.status === status.value ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                                                                                }`}
+                                                                            >
+                                                                                <span className={`inline-block w-3 h-3 rounded-full mr-2 ${getStatusBadgeClass(status.value).split(' ')[0]}`}></span>
+                                                                                {status.label}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="text-center py-6">
+                                    <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                                    <p className="text-gray-500 italic">Aucune réservation trouvée</p>
+                                    <p className="text-sm text-gray-400 mt-1">L'élève n'a pas encore effectué de réservation de formation</p>
+                                </div>
+                            )}
+                                </div>
+                                </div>
+                            )}
+
+                            {/* Onglet Documents */}
+                            {activeDetailTab === 'documents' && (
+                                <div className="animate-fadeIn">
+                                <h4 className="font-medium mb-4 flex items-center">
+                                    <FileText className="h-5 w-5 mr-2 text-purple-600" />
+                                    Documents d'inscription
+                                </h4>
                             {loadingDocuments ? (
                                 <div className="flex justify-center">
                                     <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-900"></div>
@@ -958,6 +1367,8 @@ const StudentsAdmin: React.FC = () => {
                                     <p className="text-sm text-gray-400 mt-1">L'élève n'a pas encore fourni de documents lors de sa finalisation d'inscription</p>
                                 </div>
                             )}
+                                </div>
+                            )}
                         </div>
                     </>
                 )}
@@ -1045,6 +1456,195 @@ const StudentsAdmin: React.FC = () => {
                             >
                                 {validationAction === 'validate' ? 'Valider le document' : 'Rejeter le document'}
                             </Button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
+            {/* Modal de confirmation pour changement de statut */}
+            {showStatusConfirmModal && pendingStatusChange && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                    <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 xl:w-2/5 shadow-lg rounded-md bg-white">
+                        <div className="mt-3">
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-medium text-gray-900">
+                                    Confirmation de changement de statut
+                                </h3>
+                                <button
+                                    onClick={cancelStatusChange}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <X className="h-6 w-6" />
+                                </button>
+                            </div>
+
+                            {/* Contenu */}
+                            <div className="mb-6 space-y-4">
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                    <div className="flex items-center">
+                                        <div className="flex-shrink-0">
+                                            <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div className="ml-3">
+                                            <h4 className="text-sm font-medium text-yellow-800">
+                                                Attention : Un email sera automatiquement envoyé
+                                            </h4>
+                                            <p className="mt-1 text-sm text-yellow-700">
+                                                Cette action déclenchera l'envoi d'un email automatique à l'étudiant.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Étudiant concerné :</label>
+                                        <p className="text-base font-semibold text-gray-900">{pendingStatusChange.studentName}</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-700">Statut actuel :</label>
+                                            <div className="mt-1">
+                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(pendingStatusChange.currentStatus)}`}>
+                                                    {getStatusLabel(pendingStatusChange.currentStatus, 'formation')}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-700">Nouveau statut :</label>
+                                            <div className="mt-1">
+                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(pendingStatusChange.newStatus)}`}>
+                                                    {getStatusLabel(pendingStatusChange.newStatus, 'formation')}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Message personnalisé (optionnel) :</label>
+                                        <div className="mt-1">
+                                            <textarea
+                                                rows={3}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                                placeholder="Ajoutez un message personnalisé qui sera inclus dans l'email..."
+                                                value={customMessage}
+                                                onChange={(e) => setCustomMessage(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Boutons */}
+                            <div className="flex justify-end space-x-3">
+                                <button
+                                    onClick={cancelStatusChange}
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    onClick={confirmStatusChange}
+                                    disabled={statusProcessing}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                                >
+                                    {statusProcessing ? 'Traitement...' : 'Confirmer et envoyer l\'email'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de confirmation pour changement de statut étudiant */}
+            <Modal
+                isOpen={showStatusChangeModal}
+                onClose={cancelStudentStatusChange}
+                title="Confirmation de changement de statut"
+                size="md"
+                footer={
+                    <div className="flex justify-end space-x-3">
+                        <Button
+                            variant="outline"
+                            onClick={cancelStudentStatusChange}
+                            disabled={statusProcessingStudent}
+                        >
+                            Annuler
+                        </Button>
+                        <Button
+                            variant={studentToChangeStatus?.isActive ? "danger" : "primary"}
+                            onClick={confirmStudentStatusChange}
+                            loading={statusProcessingStudent}
+                        >
+                            {studentToChangeStatus?.isActive ? 'Désactiver' : 'Activer'}
+                        </Button>
+                    </div>
+                }
+            >
+                {studentToChangeStatus && (
+                    <div className="space-y-4">
+                        <div className="flex items-center space-x-3">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                studentToChangeStatus.isActive ? 'bg-red-100' : 'bg-green-100'
+                            }`}>
+                                {studentToChangeStatus.isActive ? (
+                                    <X className="h-6 w-6 text-red-600" />
+                                ) : (
+                                    <Check className="h-6 w-6 text-green-600" />
+                                )}
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-medium text-gray-900">
+                                    {studentToChangeStatus.isActive ? 'Désactiver' : 'Activer'} l'étudiant
+                                </h3>
+                                <p className="text-sm text-gray-500">
+                                    {studentToChangeStatus.firstName} {studentToChangeStatus.lastName}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className={`p-4 rounded-lg ${
+                            studentToChangeStatus.isActive ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'
+                        }`}>
+                            <p className={`text-sm ${
+                                studentToChangeStatus.isActive ? 'text-red-700' : 'text-green-700'
+                            }`}>
+                                {studentToChangeStatus.isActive ? (
+                                    <>
+                                        <strong>Attention :</strong> Désactiver cet étudiant l'empêchera de se connecter 
+                                        et d'accéder à ses formations. Ses réservations existantes ne seront pas affectées.
+                                    </>
+                                ) : (
+                                    <>
+                                        <strong>Activation :</strong> Cet étudiant pourra de nouveau se connecter 
+                                        et accéder à toutes ses formations.
+                                    </>
+                                )}
+                            </p>
+                        </div>
+
+                        <div className="bg-gray-50 p-3 rounded">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Statut actuel :</span>
+                                <span className={`font-medium ${
+                                    studentToChangeStatus.isActive ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                    {studentToChangeStatus.isActive ? 'Actif' : 'Inactif'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between text-sm mt-1">
+                                <span className="text-gray-600">Nouveau statut :</span>
+                                <span className={`font-medium ${
+                                    !studentToChangeStatus.isActive ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                    {!studentToChangeStatus.isActive ? 'Actif' : 'Inactif'}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 )}
