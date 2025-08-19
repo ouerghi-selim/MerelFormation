@@ -378,7 +378,7 @@ const DashboardAdmin: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 gap-6 mb-8">
               <div className="bg-white p-6 rounded-lg shadow">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-bold text-gray-800">Réservations de formations récentes</h2>
@@ -685,6 +685,8 @@ const DashboardAdmin: React.FC = () => {
                 </div>
             )}
 
+            {/* Graphiques temporairement masqués */}
+            {/* 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-lg shadow">
                 <h2 className="text-xl font-bold text-gray-800 mb-6">Revenus mensuels</h2>
@@ -702,6 +704,7 @@ const DashboardAdmin: React.FC = () => {
                 />
               </div>
             </div>
+            */}
     </AdminLayout>
   );
 };

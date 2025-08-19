@@ -14,6 +14,7 @@ import { usePlanningData } from './usePlanningData';
 import { messages, eventStyleGetter, statusColors } from './calendarConfig';
 import { CalendarEvent } from './types';
 import SessionForm from '../../components/admin/SessionForm';
+import ReservationDetailModal from '../../components/admin/ReservationDetailModal';
 import { adminSessionsApi } from '../../services/api';
 
 
@@ -38,6 +39,7 @@ const PlanningCalendar: React.FC = () => {
     } = usePlanningData();
 
     const [showEventModal, setShowEventModal] = useState(false);
+    const [showReservationModal, setShowReservationModal] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
     const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
     const [submitForm, setSubmitForm] = useState<() => boolean>(() => () => false);
@@ -48,7 +50,14 @@ const PlanningCalendar: React.FC = () => {
     // Gestion des événements
     const handleEventClick = (event: any) => {
         setSelectedEvent(event);
-        setShowEventModal(true);
+        
+        // Si c'est un examen, afficher le modal de réservation de véhicule
+        if (event.type === 'exam') {
+            setShowReservationModal(true);
+        } else {
+            // Sinon, afficher le modal de session classique
+            setShowEventModal(true);
+        }
     };
 
     const handleAddEvent = () => {
@@ -94,10 +103,10 @@ const PlanningCalendar: React.FC = () => {
         }
     };
 
-    // Modal footer pour l'édition d'événements
+    // Modal footer pour l'édition d'événements de formation
     const renderModalFooter = () => (
         <div className="flex justify-between">
-            {selectedEvent && !isExamEvent && (
+            {selectedEvent && (
                 <Button
                     variant="danger"
                     onClick={() => handleDeleteEvent(selectedEvent.id)}
@@ -107,34 +116,24 @@ const PlanningCalendar: React.FC = () => {
                 </Button>
             )}
 
-            {/* ✅ Message pour les examens */}
-            {isExamEvent && (
-                <div className="text-sm text-gray-500 italic">
-                    Les examens doivent être gérés depuis la section "Réservations"
-                </div>
-            )}
-
             <div className="flex space-x-3">
                 <Button
                     variant="outline"
                     onClick={() => setShowEventModal(false)}
                 >
-                    {isExamEvent ? 'Fermer' : 'Annuler'}
+                    Annuler
                 </Button>
 
-                {/* ✅ Masquer le bouton de sauvegarde pour les examens */}
-                {!isExamEvent && (
-                    <Button
-                        onClick={() => {
-                            if (submitForm()) {
-                                // Ne rien faire ici, la fonction submitForm s'occupe de tout
-                            }
-                        }}
-                        loading={isProcessing}
-                    >
-                        {selectedEvent ? 'Mettre à jour' : 'Créer'}
-                    </Button>
-                )}
+                <Button
+                    onClick={() => {
+                        if (submitForm()) {
+                            // Ne rien faire ici, la fonction submitForm s'occupe de tout
+                        }
+                    }}
+                    loading={isProcessing}
+                >
+                    {selectedEvent ? 'Mettre à jour' : 'Créer'}
+                </Button>
             </div>
         </div>
     );
@@ -291,11 +290,9 @@ const PlanningCalendar: React.FC = () => {
                 isOpen={showEventModal}
                 onClose={() => setShowEventModal(false)}
                 title={
-                    isExamEvent
-                        ? "Détails de l'examen"
-                        : selectedEvent
-                            ? "Modifier la session"
-                            : "Ajouter une session"
+                    selectedEvent
+                        ? "Modifier la session"
+                        : "Ajouter une session"
                 }
                 footer={renderModalFooter()}
                 maxWidth="max-w-2xl"
@@ -306,9 +303,25 @@ const PlanningCalendar: React.FC = () => {
                     onSave={handleSaveEvent}
                     onCancel={() => setShowEventModal(false)}
                     isOpen={showEventModal}
-                    isExamEvent={isExamEvent}
+                    isExamEvent={false}
                 />
             </Modal>
+
+            {/* Modal de détails de réservation de véhicule pour les examens */}
+            <ReservationDetailModal
+                isOpen={showReservationModal}
+                onClose={() => setShowReservationModal(false)}
+                reservationType="vehicle"
+                reservationId={selectedEvent?.type === 'exam' && typeof selectedEvent.id === 'string' 
+                    ? parseInt(selectedEvent.id.replace('exam-', '')) 
+                    : null}
+                onSuccess={() => {
+                    setShowReservationModal(false);
+                    setSelectedEvent(null);
+                    // Optionnel: recharger les données
+                    window.location.reload();
+                }}
+            />
         </div>
     );
 };

@@ -485,7 +485,9 @@ const CentersAdmin: React.FC = () => {
                     columns={columns}
                     keyField="id"
                     loading={loading}
-                    actions={generateActions}
+                    actions={(center) => (
+                        <ActionMenu actions={generateActions(center)} />
+                    )}
                     searchFields={['name', 'city', 'code']}
                     emptyMessage="Aucun centre trouvé"
                     title="Liste des centres"
