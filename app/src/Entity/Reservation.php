@@ -79,6 +79,14 @@ class Reservation
     #[Groups(['reservation:read'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    #[Groups(['reservation:read'])]
+    private ?\DateTimeInterface $archivedAt = null;
+
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
+    #[Groups(['reservation:read'])]
+    private ?string $archiveReason = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -179,6 +187,31 @@ class Reservation
     public function setUpdatedAt(?\DateTimeImmutable $updatedAt): void
     {
         $this->updatedAt = $updatedAt;
+    }
+
+    public function getArchivedAt(): ?\DateTimeInterface
+    {
+        return $this->archivedAt;
+    }
+
+    public function setArchivedAt(?\DateTimeInterface $archivedAt): void
+    {
+        $this->archivedAt = $archivedAt;
+    }
+
+    public function getArchiveReason(): ?string
+    {
+        return $this->archiveReason;
+    }
+
+    public function setArchiveReason(?string $archiveReason): void
+    {
+        $this->archiveReason = $archiveReason;
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archivedAt !== null;
     }
 
 }

@@ -41,6 +41,25 @@ class ReservationRepository extends ServiceEntityRepository
     }
 
     /**
+     * Find user's ACTIVE (non-archived) reservations
+     */
+    public function findUserActiveReservations(int $userId): array
+    {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.user = :userId')
+            ->andWhere('r.archivedAt IS NULL') // ✅ SEULEMENT LES RÉSERVATIONS ACTIVES
+            ->leftJoin('r.session', 's')
+            ->leftJoin('s.formation', 'f')
+            ->leftJoin('r.payment', 'p')
+            ->leftJoin('r.invoice', 'i')
+            ->addSelect('s', 'f', 'p', 'i')
+            ->setParameter('userId', $userId)
+            ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Find all reservations for a specific session
      */
     public function findBySession(int $sessionId): array
@@ -275,7 +294,9 @@ class ReservationRepository extends ServiceEntityRepository
             ->leftJoin('r.session', 's')
             ->leftJoin('s.formation', 'f')
             ->addSelect('u', 's', 'f')
-            ->andWhere('s.id IS NOT NULL'); // Assurez-vous qu'il s'agit d'une réservation de session
+            ->andWhere('s.id IS NOT NULL') // Assurez-vous qu'il s'agit d'une réservation de session
+            ->andWhere('r.archivedAt IS NULL') // ✅ EXCLURE LES RÉSERVATIONS ARCHIVÉES
+            ->andWhere('u.deletedAt IS NULL'); // ✅ EXCLURE LES UTILISATEURS SUPPRIMÉS
 
         // Filtrage par recherche (nom ou email)
         if ($search) {

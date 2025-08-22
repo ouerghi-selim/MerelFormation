@@ -213,6 +213,17 @@ export const adminUsersApi = {
     getDeleted: () => api.get('/admin/users/deleted'),
     getSessions: (userId: number) => api.get(`/admin/users/${userId}/sessions`),
     getDocuments: (userId: number) => api.get(`/admin/users/${userId}/documents`),
+    // Nouvelles méthodes pour la gestion complète depuis le modal
+    createCompany: (userId: number, companyData: any) => api.post(`/admin/users/${userId}/company`, companyData),
+    updateCompany: (userId: number, companyData: any) => api.put(`/admin/users/${userId}/company`, companyData),
+    uploadDocument: (formData: FormData) => {
+        return api.post('/admin/direct-documents/send', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+    },
+    deleteDocument: (documentId: number) => api.delete(`/admin/direct-documents/${documentId}`),
 };
 
 export const adminPlanningApi = {

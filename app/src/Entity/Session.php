@@ -185,7 +185,7 @@ class Session
     }
 
     /**
-     * Get participants with confirmed reservations
+     * Get participants with confirmed reservations (EXCLUDING archived reservations and deleted users)
      *
      * @return Collection<int, User>
      */
@@ -194,7 +194,12 @@ class Session
     {
         $participants = new ArrayCollection();
         foreach ($this->reservations as $reservation) {
-            if ($reservation->getStatus() === 'confirmed' || $reservation->getStatus() === 'completed') {
+            // ✅ VÉRIFICATIONS D'ARCHIVAGE
+            $isReservationActive = !$reservation->isArchived(); // Réservation non archivée
+            $isUserActive = $reservation->getUser()->getDeletedAt() === null; // Utilisateur non supprimé
+            $isConfirmed = ($reservation->getStatus() === 'confirmed' || $reservation->getStatus() === 'completed');
+            
+            if ($isConfirmed && $isReservationActive && $isUserActive) {
                 if (!$participants->contains($reservation->getUser())) {
                     $participants->add($reservation->getUser());
                 }
@@ -204,7 +209,7 @@ class Session
     }
 
     /**
-     * Check if a user is a participant (has confirmed reservation)
+     * Check if a user is a participant (has confirmed reservation AND is not archived)
      *
      * @param User $user
      * @return bool
@@ -212,8 +217,12 @@ class Session
     public function hasParticipant(User $user): bool
     {
         foreach ($this->reservations as $reservation) {
-            if ($reservation->getUser() === $user &&
-                ($reservation->getStatus() === 'confirmed' || $reservation->getStatus() === 'completed')) {
+            // ✅ VÉRIFICATIONS D'ARCHIVAGE
+            $isReservationActive = !$reservation->isArchived();
+            $isUserActive = $reservation->getUser()->getDeletedAt() === null;
+            $isConfirmed = ($reservation->getStatus() === 'confirmed' || $reservation->getStatus() === 'completed');
+            
+            if ($reservation->getUser() === $user && $isConfirmed && $isReservationActive && $isUserActive) {
                 return true;
             }
         }

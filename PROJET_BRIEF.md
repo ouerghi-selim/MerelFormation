@@ -6,7 +6,7 @@
 **Repository :** https://github.com/ouerghi-selim/MerelFormation  
 **Type :** Application de gestion de formations taxi + location de véhicules  
 **Status :** ✅ 100% FONCTIONNEL - Projet complet avec système d'inscription par étapes + Affichage documents d'inscription + Système d'entreprise/employeur + Validation documents avec emails + **🆕 Système de statuts de réservation professionnel (19 statuts formations + 12 statuts véhicules) avec emails automatiques + Workflow complet d'inscription + 🆕 Système de visualisation adaptative des documents par type de fichier**  
-**Dernière mise à jour :** 11 Août 2025 - Uniformisation complète interface admin avec DataTable avancé et ActionMenu space-efficient + Résolution problème largeur ContentTextsAdmin
+**Dernière mise à jour :** 21 Août 2025 - Optimisation code et modal étudiant réutilisable + Gestion statuts réservations complète
 
 ## 🖗️ Architecture Technique
 
@@ -1644,3 +1644,163 @@ Cette uniformisation transforme MerelFormation d'une **interface admin incohére
 - **`/pages/admin/EmailTemplatesAdmin.tsx`** - Conversion complète vers DataTable
 - **`/pages/admin/ContentTextsAdmin.tsx`** - Correction structure CSS problématique
 - **`/components/layout/AdminLayout.tsx`** - Container max-w-7xl standardisé
+
+---
+
+## 🚀 **MISE À JOUR 21 AOÛT 2025 - Optimisation Code & Modal Étudiant Réutilisable**
+
+### 🎯 **Objectifs Accomplis**
+
+#### **1. Création Composant StudentDetailModal Réutilisable**
+- **Extraction complète** du modal étudiant complexe en composant indépendant
+- **Réutilisation** entre `StudentsAdmin.tsx` et `FormationReservationsAdmin.tsx`
+- **Élimination** de ~800 lignes de code dupliqué
+- **Architecture modulaire** avec props configurables
+
+#### **2. Gestion Complète Statuts Réservations**
+- **Dropdown interactif** pour changement de statut dans le modal étudiant
+- **Modal de confirmation** avec email automatique et message personnalisé
+- **19 statuts formations** disponibles avec workflow complet
+- **Mise à jour temps réel** de l'interface après changement
+- **Gestion d'erreurs** robuste avec notifications toast
+
+#### **3. Optimisation Architecture Frontend**
+- **Single Source of Truth** : Une seule implémentation du modal étudiant
+- **Maintenabilité accrue** : Modifications centralisées
+- **Cohérence UX** : Expérience identique sur toutes les pages
+- **Performance** : Réduction significative du bundle JavaScript
+
+### 🔧 **Détails Techniques Implémentés**
+
+#### **StudentDetailModal.tsx (Nouveau Composant)**
+```typescript
+interface StudentDetailModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  student: User | null;
+  activeTab?: 'info' | 'company' | 'reservations' | 'documents';
+}
+
+// 4 onglets complets :
+// - Informations personnelles + statut actif/inactif
+// - Entreprise/employeur (si renseigné)
+// - Réservations avec changement de statut interactif
+// - Documents d'inscription avec validation/rejet
+```
+
+#### **Fonctionnalités Modal Étudiant**
+- **Onglet Informations** : Données personnelles + changement statut étudiant
+- **Onglet Entreprise** : Informations employeur complètes
+- **Onglet Réservations** : Liste + modification statuts avec dropdown
+- **Onglet Documents** : Gestion documents avec validation/rejet admin
+
+#### **Gestion Statuts Réservations Intégrée**
+```typescript
+// États gestion statuts
+const [showStatusDropdown, setShowStatusDropdown] = useState<Record<number, boolean>>({});
+const [showStatusConfirmModal, setShowStatusConfirmModal] = useState(false);
+
+// Fonctions principales
+const toggleStatusDropdown = (reservationId: number) => { /* ... */ };
+const handleStatusChangeRequest = (reservationId: number, newStatus: string) => { /* ... */ };
+const confirmStatusChange = async () => { /* ... */ };
+
+// 19 statuts formations disponibles
+const formationStatuses = [
+  'submitted', 'under_review', 'awaiting_documents', 'documents_pending',
+  'documents_rejected', 'awaiting_prerequisites', 'awaiting_funding',
+  'funding_approved', 'awaiting_payment', 'payment_pending', 'confirmed',
+  'awaiting_start', 'in_progress', 'attendance_issues', 'suspended',
+  'completed', 'failed', 'cancelled', 'refunded'
+];
+```
+
+#### **Interface Utilisateur Améliorée**
+- **Dropdown statuts** : Badge cliquable avec icône ChevronDown
+- **Z-index optimisé** : Dropdown s'affiche au-dessus de tous éléments
+- **Modal confirmation** : Avertissement email + message personnalisé
+- **Feedback temps réel** : Notifications toast pour succès/erreurs
+
+### 📊 **Métriques d'Optimisation**
+
+#### **Réduction Code**
+- **StudentsAdmin.tsx** : 1605 lignes → 814 lignes (-49%)
+- **Code dupliqué éliminé** : ~800 lignes de modal complexe
+- **Imports simplifiés** : Suppression icônes/utilitaires inutilisés
+- **États supprimés** : 15+ variables d'état consolidées
+
+#### **Architecture Améliorée**
+- **Composant réutilisable** : StudentDetailModal utilisé par 2+ pages
+- **Props configurables** : activeTab personnalisable selon contexte
+- **Separation of Concerns** : Logique modal séparée de la gestion liste
+- **Type Safety** : Interfaces TypeScript complètes
+
+#### **UX/UI Cohérente**
+- **Expérience identique** : Modal étudiant identique partout
+- **Workflow unifié** : Changement statuts même interface
+- **Performance** : Chargement données optimisé
+- **Responsive** : Mobile-friendly avec navigation tabs
+
+### 🎯 **Impact Business & Technique**
+
+#### **Maintenabilité**
+- **Modifications futures** : Une seule implémentation à maintenir
+- **Évolutivité** : Nouvelles pages réutiliseront composant automatiquement
+- **Debug facilité** : Code centralisé = debugging plus simple
+- **Tests** : Surface d'attaque réduite pour tests unitaires
+
+#### **Expérience Administrateur**
+- **Cohérence** : Interface identique sur StudentsAdmin et FormationReservationsAdmin
+- **Efficacité** : Changement statuts réservations directement depuis modal
+- **Workflow fluide** : Pas besoin de naviguer entre pages
+- **Feedback clair** : Confirmations et notifications appropriées
+
+#### **Architecture Technique**
+- **Code Quality** : Élimination duplication = maintenance réduite
+- **Bundle Size** : Réduction JavaScript côté client
+- **Memory Usage** : Moins de composants dupliqués en mémoire
+- **Development Speed** : Nouvelles fonctionnalités plus rapides à implémenter
+
+### ✅ **Résultats Finaux**
+
+#### **Avant (Problématique)**
+```
+❌ Modal étudiant dupliqué entre StudentsAdmin et FormationReservationsAdmin
+❌ ~800 lignes de code identique maintenues en double
+❌ Incohérences potentielles entre implémentations
+❌ Modifications nécessaires sur 2+ fichiers
+❌ Statuts réservations non modifiables dans modal étudiant StudentsAdmin
+```
+
+#### **Après (Solution Optimisée)**
+```
+✅ StudentDetailModal.tsx composant réutilisable unique
+✅ Code consolidé = maintenance centralisée
+✅ Expérience utilisateur parfaitement cohérente
+✅ Modifications sur 1 seul fichier = efficacité développement
+✅ Changement statuts réservations disponible partout
+✅ Architecture modulaire extensible
+```
+
+### 🏆 **Transformation Architecture**
+
+Cette optimisation transforme MerelFormation d'une **architecture avec duplication de code** vers une **architecture modulaire professionnelle** :
+
+- **Pattern réutilisabilité** : Composants extraits et configurables
+- **Single Responsibility** : Chaque composant a une responsabilité claire
+- **Maintenance efficiency** : Modifications centralisées
+- **Scalability** : Nouvelles pages bénéficient automatiquement des améliorations
+
+**Fichiers Impactés :**
+- **🆕 `/components/admin/StudentDetailModal.tsx`** - Nouveau composant réutilisable avec gestion statuts
+- **📝 `/pages/admin/StudentsAdmin.tsx`** - Refactorisé pour utiliser composant réutilisable (-49% lignes)
+- **📝 `/pages/admin/FormationReservationsAdmin.tsx`** - Utilise déjà le composant réutilisable
+- **📝 `/components/common/Modal.tsx`** - Correction propriété maxWidth vs size
+
+### 🚀 **Vision Future**²
+
+Cette architecture modulaire prépare MerelFormation pour :
+- **Extensibilité** : Nouveaux modals suivront le même pattern
+- **Maintenance** : Code centralisé = évolutions facilitées  
+- **Cohérence** : Interface uniforme garantie sur toute l'application
+- **Performance** : Bundle optimisé et réutilisation composants

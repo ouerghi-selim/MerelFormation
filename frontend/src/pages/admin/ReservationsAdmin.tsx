@@ -1,6 +1,6 @@
 // src/pages/admin/ReservationsAdmin.tsx
 import React, { useState, useEffect } from 'react';
-import { Calendar, Search, Filter, ChevronDown, Eye, Check, X, User, Car } from 'lucide-react';
+import { Calendar, Search, Filter, ChevronDown, Eye, Check, X, User, Car, GraduationCap } from 'lucide-react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { adminReservationsApi } from '@/services/api.ts';
 import Alert from '../../components/common/Alert';
@@ -314,6 +314,25 @@ const ReservationsAdmin: React.FC = () => {
                     onClose={() => setSuccessMessage(null)}
                 />
             )}
+
+            {/* Navigation vers les réservations de formations */}
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-lg font-medium text-blue-900">Réservations de formations</h3>
+                        <p className="text-sm text-blue-700">
+                            Gérez toutes les réservations de formations avec changement de statut et détails étudiants.
+                        </p>
+                    </div>
+                    <a
+                        href="/admin/reservations/formations"
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                        <GraduationCap className="h-5 w-5 mr-2" />
+                        Voir les formations
+                    </a>
+                </div>
+            </div>
 
             {/* Contenu des réservations de véhicules */}
                 <>

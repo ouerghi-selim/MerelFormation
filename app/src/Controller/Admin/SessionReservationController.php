@@ -39,9 +39,15 @@ class SessionReservationController extends AbstractController
         $status = $request->query->get('status');
         $limit = $request->query->get('limit', null);
         $sort = $request->query->get('sort', null);
+        $userId = $request->query->get('userId', null);
 
-        // Utilisation du repository pour récupérer les réservations
-        $reservations = $this->reservationRepository->findSessionReservations($search, $status, $limit, $sort);
+        // Si un userId est fourni, utiliser la méthode spécifique pour cet utilisateur
+        if ($userId) {
+            $reservations = $this->reservationRepository->findUserReservations((int) $userId);
+        } else {
+            // Utilisation du repository pour récupérer toutes les réservations
+            $reservations = $this->reservationRepository->findSessionReservations($search, $status, $limit, $sort);
+        }
 
         // Format de la réponse pour correspondre à ce qu'attend le frontend
         $formattedData = array_map(function ($reservation) {

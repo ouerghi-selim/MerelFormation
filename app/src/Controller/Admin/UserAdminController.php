@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use App\Repository\UserRepository;
+use App\Repository\ReservationRepository;
 use App\Entity\User;
 use App\Entity\Session;
 use Doctrine\ORM\EntityManagerInterface;
@@ -28,6 +29,7 @@ class UserAdminController extends AbstractController
     private $sessionRepository;
     private $notificationService;
     private $documentRepository;
+    private $reservationRepository;
 
     public function __construct(
         Security $security,
@@ -36,7 +38,8 @@ class UserAdminController extends AbstractController
         UserPasswordHasherInterface $passwordHasher,
         SessionRepository $sessionRepository,
         NotificationService $notificationService,
-        DocumentRepository $documentRepository
+        DocumentRepository $documentRepository,
+        ReservationRepository $reservationRepository
 
     ) {
         $this->security = $security;
@@ -46,6 +49,7 @@ class UserAdminController extends AbstractController
         $this->sessionRepository = $sessionRepository;
         $this->notificationService = $notificationService;
         $this->documentRepository = $documentRepository;
+        $this->reservationRepository = $reservationRepository;
     }
 
     /**
@@ -416,8 +420,11 @@ class UserAdminController extends AbstractController
             // ✅ GARDER TOUTES LES DONNÉES INTACTES (niveau 1)
             // Pas d'anonymisation - données restaurables
 
+            // ✅ ARCHIVER TOUTES LES RÉSERVATIONS DE L'UTILISATEUR
+            $this->archiveUserReservations($user, 'user_deleted');
+
             // ✅ GARDER TOUTES LES RELATIONS POUR L'AUDIT ET L'HISTORIQUE
-            // Les réservations, documents, factures, locations restent intacts
+            // Les réservations sont archivées mais conservées, documents, factures, locations restent intacts
 
             // Sauvegarder les modifications
             $this->entityManager->flush();
@@ -463,6 +470,9 @@ class UserAdminController extends AbstractController
             $user->setIsActive(true);
             $user->setDeletedAt(null);
             $user->setDeletionLevel(null);
+            
+            // ✅ RESTAURER LES RÉSERVATIONS ARCHIVÉES POUR CET UTILISATEUR
+            $this->restoreUserReservations($user);
             
             // Restaurer les données originales si disponibles
             if ($user->getOriginalEmail()) {
@@ -675,5 +685,40 @@ class UserAdminController extends AbstractController
         
         // Par défaut, retourner ROLE_STUDENT
         return 'ROLE_STUDENT';
+    }
+
+    /**
+     * Archiver toutes les réservations d'un utilisateur
+     */
+    private function archiveUserReservations(User $user, string $reason): void
+    {
+        $reservations = $this->reservationRepository->findUserReservations($user->getId());
+        
+        foreach ($reservations as $reservation) {
+            if (!$reservation->isArchived()) {
+                $reservation->setArchivedAt(new \DateTime());
+                $reservation->setArchiveReason($reason);
+            }
+        }
+    }
+
+    /**
+     * Restaurer toutes les réservations archivées d'un utilisateur (si archivées pour raison user_deleted)
+     */
+    private function restoreUserReservations(User $user): void
+    {
+        $archivedReservations = $this->reservationRepository->createQueryBuilder('r')
+            ->andWhere('r.user = :user')
+            ->andWhere('r.archivedAt IS NOT NULL')
+            ->andWhere('r.archiveReason = :reason')
+            ->setParameter('user', $user)
+            ->setParameter('reason', 'user_deleted')
+            ->getQuery()
+            ->getResult();
+        
+        foreach ($archivedReservations as $reservation) {
+            $reservation->setArchivedAt(null);
+            $reservation->setArchiveReason(null);
+        }
     }
 }
