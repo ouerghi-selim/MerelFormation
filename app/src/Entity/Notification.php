@@ -7,6 +7,8 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Put;
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Mapping\Annotation as Gedmo;
+use Gedmo\SoftDeleteable\Traits\SoftDeleteableEntity;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity]
@@ -21,8 +23,11 @@ use Symfony\Component\Serializer\Annotation\Groups;
     ],
     order: ['createdAt' => 'DESC']
 )]
+#[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false, hardDelete: true)]
 class Notification
 {
+    use SoftDeleteableEntity; // ✅ Trait Gedmo
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

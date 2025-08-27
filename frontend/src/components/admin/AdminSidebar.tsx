@@ -105,6 +105,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: <FileText size={20} />,
       path: '/admin/direct-documents'
     },
+    {
+      title: 'Documents d\'inscription',
+      icon: <FileText size={20} />,
+      path: '/admin/inscription-documents'
+    },
     // {
     //   title: 'Notifications',
     //   icon: <Bell size={20} />,

@@ -276,10 +276,9 @@ class AuthController extends AbstractController
 
             // Gérer les fichiers uploadés comme entités Document (optionnels)
             $documentTitles = [
-                'driverLicense' => 'Permis de conduire',
+                'driverLicenseRecto' => 'Permis de conduire (recto)',
+                'driverLicenseVerso' => 'Permis de conduire (verso)',
                 'professionalCard' => 'Carte professionnelle',
-                'registrationFile' => 'Dossier d\'inscription',
-                'attestationInscription' => 'Attestation d\'inscription',
                 'convocation' => 'Convocation'
             ];
 

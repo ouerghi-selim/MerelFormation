@@ -39,12 +39,13 @@ class FormationStudentController extends AbstractController
             return $this->json(['message' => 'Utilisateur non connecté'], 401);
         }
 
-        // Récupérer les réservations confirmées de l'étudiant
+        // ✅ Récupérer toutes les réservations de l'étudiant quel que soit le statut
         $reservations = $this->reservationRepository->createQueryBuilder('r')
             ->where('r.user = :user')
-            ->andWhere('r.status IN (:statuses)')
+            // ✅ Supprimé le filtrage par statut pour afficher toutes les réservations
+            // ->andWhere('r.status IN (:statuses)')
             ->setParameter('user', $user)
-            ->setParameter('statuses', ['confirmed', 'completed'])
+            // ->setParameter('statuses', ['confirmed', 'completed'])  // Ancienne logique limitée
             ->getQuery()
             ->getResult();
 
@@ -81,6 +82,17 @@ class FormationStudentController extends AbstractController
             // Calculer la prochaine session
             $nextSession = $this->getNextSession($sessions);
             
+            // Trouver la réservation correspondante à la prochaine session
+            $nextSessionReservation = null;
+            if ($nextSession) {
+                foreach ($reservations as $reservation) {
+                    if ($reservation->getSession()->getId() === $nextSession->getId()) {
+                        $nextSessionReservation = $reservation;
+                        break;
+                    }
+                }
+            }
+            
             // Calculer le statut
             $status = $this->getFormationStatusFromReservations($reservations);
             
@@ -94,7 +106,9 @@ class FormationStudentController extends AbstractController
                     'id' => $nextSession->getId(),
                     'startDate' => $nextSession->getStartDate()->format('d/m/Y H:i'),
                     'endDate' => $nextSession->getEndDate()->format('d/m/Y H:i'),
-                    'location' => $nextSession->getEffectiveLocation()
+                    'location' => $nextSession->getEffectiveLocation(),
+                    'reservationStatus' => $nextSessionReservation ? $nextSessionReservation->getStatus() : 'submitted',
+                    'sessionStartDateTime' => $nextSession->getStartDate()->format('c')
                 ] : null,
                 'status' => $status,
                 'sessionsCount' => count($sessions),
@@ -123,16 +137,17 @@ class FormationStudentController extends AbstractController
             return $this->json(['message' => 'Formation non trouvée'], 404);
         }
 
-        // Vérifier que l'utilisateur a des réservations confirmées pour cette formation
+        // Vérifier que l'utilisateur a des réservations pour cette formation (quel que soit le statut)
         $userReservations = $this->reservationRepository->createQueryBuilder('r')
             ->join('r.session', 's')
             ->join('s.formation', 'f')
             ->where('r.user = :user')
             ->andWhere('f.id = :formationId')
-            ->andWhere('r.status IN (:statuses)')
+            // ✅ Supprimé le filtre de statut pour permettre l'accès avec tout statut
+            // ->andWhere('r.status IN (:statuses)')
             ->setParameter('user', $user)
             ->setParameter('formationId', $id)
-            ->setParameter('statuses', ['confirmed', 'completed'])
+            // ->setParameter('statuses', ['confirmed', 'completed'])  // Plus nécessaire
             ->getQuery()
             ->getResult();
         
@@ -230,25 +245,21 @@ class FormationStudentController extends AbstractController
     }
 
     /**
-     * Trouve la prochaine session parmi une liste de sessions
+     * Trouve la prochaine session parmi une liste de sessions (toutes sessions pour affichage status)
      */
     private function getNextSession(array $sessions): ?object
     {
-        $now = new \DateTimeImmutable();
-        $upcomingSessions = array_filter($sessions, function($session) use ($now) {
-            return $session->getStartDate() > $now;
-        });
-        
-        if (empty($upcomingSessions)) {
+        if (empty($sessions)) {
             return null;
         }
         
-        // Trier par date de début
-        usort($upcomingSessions, function($a, $b) {
+        // ✅ Pour l'affichage du status, on retourne toujours la première session
+        // (même passée) pour que l'étudiant puisse voir le statut de son inscription
+        usort($sessions, function($a, $b) {
             return $a->getStartDate() <=> $b->getStartDate();
         });
         
-        return $upcomingSessions[0];
+        return $sessions[0];
     }
 
     /**

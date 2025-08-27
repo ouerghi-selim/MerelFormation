@@ -216,6 +216,8 @@ export const adminUsersApi = {
     // Nouvelles méthodes pour la gestion complète depuis le modal
     createCompany: (userId: number, companyData: any) => api.post(`/admin/users/${userId}/company`, companyData),
     updateCompany: (userId: number, companyData: any) => api.put(`/admin/users/${userId}/company`, companyData),
+    // Gestion des documents d'inscription
+    getInscriptionDocuments: (queryParams = '') => api.get(`/admin/users/inscription-documents${queryParams ? '?' + queryParams : ''}`),
     uploadDocument: (formData: FormData) => {
         return api.post('/admin/direct-documents/send', formData, {
             headers: {

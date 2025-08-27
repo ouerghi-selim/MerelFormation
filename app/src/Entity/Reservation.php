@@ -10,6 +10,8 @@ use ApiPlatform\Metadata\Put;
 use App\Repository\ReservationRepository;
 use App\Enum\ReservationStatus;
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Mapping\Annotation as Gedmo;
+use Gedmo\SoftDeleteable\Traits\SoftDeleteableEntity;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -35,8 +37,11 @@ use Symfony\Component\Validator\Constraints as Assert;
     ],
     order: ['createdAt' => 'DESC']
 )]
+#[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false, hardDelete: true)]
 class Reservation
 {
+    use SoftDeleteableEntity; // ✅ Trait Gedmo SoftDelete (remplace archivedAt)
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -79,13 +84,12 @@ class Reservation
     #[Groups(['reservation:read'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    #[ORM\Column(type: 'datetime', nullable: true)]
-    #[Groups(['reservation:read'])]
-    private ?\DateTimeInterface $archivedAt = null;
-
+    // ✅ SUPPRIMÉ : archivedAt et archiveReason - remplacés par Gedmo SoftDelete
+    // Le trait SoftDeleteableEntity ajoute automatiquement le champ deletedAt
+    
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
     #[Groups(['reservation:read'])]
-    private ?string $archiveReason = null;
+    private ?string $originalStatus = null; // ✅ Statut original avant archivage utilisateur
 
     public function __construct()
     {
@@ -189,29 +193,27 @@ class Reservation
         $this->updatedAt = $updatedAt;
     }
 
-    public function getArchivedAt(): ?\DateTimeInterface
-    {
-        return $this->archivedAt;
-    }
-
-    public function setArchivedAt(?\DateTimeInterface $archivedAt): void
-    {
-        $this->archivedAt = $archivedAt;
-    }
-
-    public function getArchiveReason(): ?string
-    {
-        return $this->archiveReason;
-    }
-
-    public function setArchiveReason(?string $archiveReason): void
-    {
-        $this->archiveReason = $archiveReason;
-    }
-
+    // ✅ MÉTHODES GEDMO : Le trait SoftDeleteableEntity fournit automatiquement
+    // - getDeletedAt() : ?\DateTimeInterface
+    // - setDeletedAt(?\DateTimeInterface $deletedAt)
+    // - isDeleted() : bool
+    
+    /**
+     * Compatibility method - remplace isArchived()
+     */
     public function isArchived(): bool
     {
-        return $this->archivedAt !== null;
+        return $this->isDeleted(); // Gedmo method
+    }
+
+    public function getOriginalStatus(): ?string
+    {
+        return $this->originalStatus;
+    }
+
+    public function setOriginalStatus(?string $originalStatus): void
+    {
+        $this->originalStatus = $originalStatus;
     }
 
 }

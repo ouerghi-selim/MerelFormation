@@ -223,20 +223,19 @@ class FormationRepository extends ServiceEntityRepository
      */
     public function countActiveFormationsForStudent(int $userId): int
     {
-        $now = new \DateTimeImmutable();
-
         return $this->createQueryBuilder('f')
             ->select('COUNT(DISTINCT f.id)')
             ->join('f.sessions', 's')
             ->join('s.reservations', 'r')  // Utiliser reservations au lieu de participants
             ->where('r.user = :userId')   // r.user au lieu de p.id
-            ->andWhere('r.status IN (:confirmedStatuses)')  // Seulement les réservations confirmées
+            // ✅ Afficher toutes les réservations quel que soit leur statut
+            // ->andWhere('r.status IN (:confirmedStatuses)')  // Ancienne logique limitée
             ->andWhere('f.isActive = :active')
-            ->andWhere('s.endDate > :now OR (s.startDate <= :now AND s.endDate >= :now)')
+            // ✅ Supprimé le filtre de date pour compter toutes les formations
+            // ->andWhere('s.endDate > :now OR (s.startDate <= :now AND s.endDate >= :now)')
             ->setParameter('userId', $userId)
-            ->setParameter('confirmedStatuses', ['confirmed', 'completed'])
             ->setParameter('active', true)
-            ->setParameter('now', $now)
+            // ->setParameter('now', $now)  // Plus nécessaire
             ->getQuery()
             ->getSingleScalarResult();
     }

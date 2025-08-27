@@ -12,6 +12,8 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Mapping\Annotation as Gedmo;
+use Gedmo\SoftDeleteable\Traits\SoftDeleteableEntity;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -26,11 +28,14 @@ use Symfony\Component\Validator\Constraints as Assert;
     ],
     order: ['createdAt' => 'DESC']
 )]
+#[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false, hardDelete: true)]
 #[ORM\Table]
 #[ORM\Index(columns: ['title'], name: 'formation_title_idx')]
 #[ORM\Index(columns: ['type'], name: 'formation_type_idx')]
 class Formation
 {
+    use SoftDeleteableEntity; // ✅ Trait Gedmo SoftDelete
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

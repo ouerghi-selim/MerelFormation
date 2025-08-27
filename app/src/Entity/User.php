@@ -12,6 +12,8 @@ use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Mapping\Annotation as Gedmo;
+use Gedmo\SoftDeleteable\Traits\SoftDeleteableEntity;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasher;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -47,11 +49,14 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
     normalizationContext: ['groups' => ['user:read']],
     denormalizationContext: ['groups' => ['user:write']]
 )]
+#[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false, hardDelete: true)]
 #[UniqueEntity(fields: ['email'], message: 'Cet email est déjà utilisé')]
 #[ORM\Index(columns: ['email'], name: 'user_email_idx')]
 #[ORM\UniqueConstraint(name: 'user_email_unique', columns: ['email'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
+    use SoftDeleteableEntity; // ✅ Trait Gedmo SoftDelete (remplace deletedAt custom)
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -91,18 +96,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $phone = null;
 
     #[ORM\Column(type: 'date', nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
     private ?\DateTimeInterface $birthDate = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
     private ?string $birthPlace = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
     private ?string $address = null;
 
     #[ORM\Column(type: 'string', length: 20, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
     private ?string $postalCode = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
     private ?string $city = null;
 
 
@@ -138,10 +148,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'user:write'])]
     private ?string $specialization = null;
 
-    #[ORM\Column(type: 'datetime', nullable: true)]
-    #[Groups(['user:read'])]
-    private ?\DateTimeInterface $deletedAt = null;
-
+    // ✅ GEDMO remplace deletedAt automatiquement via le trait SoftDeleteableEntity
+    
+    // ✅ CONSERVÉ pour compatibilité et audit avancé
     #[ORM\Column(type: 'datetime', nullable: true)]
     #[Groups(['user:read'])]
     private ?\DateTimeInterface $anonymizedAt = null;
@@ -214,8 +223,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getRoles(): array
     {
-        // ✅ SOFT DELETE : Si l'utilisateur est supprimé, retirer tous les rôles
-        if ($this->deletedAt !== null) {
+        // ✅ GEDMO SOFT DELETE : Si l'utilisateur est supprimé, retirer tous les rôles
+        if ($this->isDeleted()) {
             return []; // Aucun rôle = pas d'accès
         }
         

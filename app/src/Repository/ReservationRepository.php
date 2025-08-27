@@ -41,13 +41,14 @@ class ReservationRepository extends ServiceEntityRepository
     }
 
     /**
-     * Find user's ACTIVE (non-archived) reservations
+     * Find user's ACTIVE (non-deleted) reservations
+     * ✅ GEDMO : Plus besoin de filtrer archivedAt, fait automatiquement !
      */
     public function findUserActiveReservations(int $userId): array
     {
         return $this->createQueryBuilder('r')
             ->andWhere('r.user = :userId')
-            ->andWhere('r.archivedAt IS NULL') // ✅ SEULEMENT LES RÉSERVATIONS ACTIVES
+            // ✅ GEDMO MAGIC : Plus besoin de ->andWhere('r.archivedAt IS NULL')
             ->leftJoin('r.session', 's')
             ->leftJoin('s.formation', 'f')
             ->leftJoin('r.payment', 'p')
@@ -294,9 +295,10 @@ class ReservationRepository extends ServiceEntityRepository
             ->leftJoin('r.session', 's')
             ->leftJoin('s.formation', 'f')
             ->addSelect('u', 's', 'f')
-            ->andWhere('s.id IS NOT NULL') // Assurez-vous qu'il s'agit d'une réservation de session
-            ->andWhere('r.archivedAt IS NULL') // ✅ EXCLURE LES RÉSERVATIONS ARCHIVÉES
-            ->andWhere('u.deletedAt IS NULL'); // ✅ EXCLURE LES UTILISATEURS SUPPRIMÉS
+            ->andWhere('s.id IS NOT NULL'); // Assurez-vous qu'il s'agit d'une réservation de session
+            
+        // ✅ GEDMO MAGIC : Plus besoin de filtrer manuellement !
+        // Gedmo exclut automatiquement les réservations et utilisateurs soft-deleted
 
         // Filtrage par recherche (nom ou email)
         if ($search) {

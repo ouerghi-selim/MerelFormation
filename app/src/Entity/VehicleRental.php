@@ -12,11 +12,14 @@ use App\Enum\ReservationStatus;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Mapping\Annotation as Gedmo;
+use Gedmo\SoftDeleteable\Traits\SoftDeleteableEntity;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: VehicleRentalRepository::class)]
 #[ORM\HasLifecycleCallbacks]
+#[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false, hardDelete: true)]
 #[ApiResource(
     operations: [
         new Get(
@@ -42,6 +45,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Index(columns: ['status'], name: 'rental_status_idx')]
 class VehicleRental
 {
+    use SoftDeleteableEntity; // ✅ Trait Gedmo SoftDelete
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

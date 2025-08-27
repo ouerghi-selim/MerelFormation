@@ -34,6 +34,9 @@ class ReservationStatus
     public const FAILED = 'failed';
     public const CANCELLED = 'cancelled';
     public const REFUNDED = 'refunded';
+    
+    // ✅ Statuts spéciaux pour archivage utilisateur
+    public const USER_ARCHIVED = 'user_archived'; // Formation terminée mais utilisateur archivé
 
     /**
      * Retourne tous les statuts disponibles
@@ -71,6 +74,7 @@ class ReservationStatus
             self::FAILED,
             self::CANCELLED,
             self::REFUNDED,
+            self::USER_ARCHIVED,
         ];
     }
 
@@ -110,6 +114,7 @@ class ReservationStatus
                 self::FAILED => 'Échec de formation',
                 self::CANCELLED => 'Inscription annulée',
                 self::REFUNDED => 'Remboursement effectué',
+                self::USER_ARCHIVED => 'Utilisateur archivé',
             ],
         ];
     }
@@ -139,6 +144,7 @@ class ReservationStatus
             self::FAILED => 'Échec de formation',
             self::CANCELLED => 'Inscription annulée',
             self::REFUNDED => 'Remboursement effectué',
+            self::USER_ARCHIVED => 'Utilisateur archivé',
         ];
 
         return $labels[$status] ?? $status;
@@ -160,6 +166,7 @@ class ReservationStatus
             self::COMPLETED => 'green',
             self::FAILED, self::CANCELLED => 'red',
             self::REFUNDED => 'gray',
+            self::USER_ARCHIVED => 'purple',
             default => 'gray'
         };
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, CheckCircle, ChevronDown, BookOpen } from 'lucide-react';
 import StudentHeader from '../../components/student/StudentHeader';
+import ReservationStatusProgress from '../../components/student/ReservationStatusProgress';
 import { studentFormationsApi } from '@/services/api.ts';
 
 interface FormationDetail {
@@ -163,52 +164,85 @@ const FormationDetailStudent: React.FC = () => {
           </Link>
         </div>
         
+        {/* En-tête de la session de formation */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
           <div className="bg-blue-700 px-6 py-4 text-white">
-            <h1 className="text-2xl font-bold">{formation.title}</h1>
+            <h1 className="text-2xl font-bold">Ma Session : {formation.title}</h1>
             <div className="text-blue-100 mt-1">{getFormationType(formation.type)}</div>
+            {formation.sessions && formation.sessions.length > 0 && (
+              <div className="text-blue-100 mt-2 text-sm">
+                Session du {formation.sessions[0].startDate} au {formation.sessions[0].endDate}
+              </div>
+            )}
           </div>
-          
+        </div>
+
+        {/* Statut de l'inscription - Composant principal */}
+        {formation.sessions && formation.sessions.length > 0 && (
+          <div className="mb-8">
+            <ReservationStatusProgress 
+              reservationStatus={formation.sessions[0].reservationStatus}
+              sessionStartDate={formation.sessions[0].startDate}
+              showNextSteps={true}
+              compact={false}
+            />
+          </div>
+        )}
+
+        {/* Informations détaillées de la session */}
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
           <div className="p-6">
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-6">Détails de ma session</h2>
+            <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <div className="mb-4">
-                  <h2 className="text-gray-500 text-sm font-medium mb-1">Progression</h2>
-                  <div className="w-full bg-gray-200 rounded-full h-4">
-                    <div 
-                      className="bg-blue-700 h-4 rounded-full flex items-center justify-center text-xs text-white font-medium" 
-                      style={{ width: `${formation.progress}%` }}
-                    >
-                      {formation.progress}%
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex items-center">
-                    <Calendar className="h-5 w-5 text-blue-700 mr-2" />
+                    <Calendar className="h-5 w-5 text-blue-700 mr-3" />
                     <div>
-                      <div className="text-sm text-gray-500">Période de formation</div>
-                      <div>Durée: {formation.duration ? formation.duration + 'h' : 'Non définie'}</div>
+                      <div className="text-sm text-gray-500">Durée de la formation</div>
+                      <div className="font-medium">{formation.duration ? formation.duration + 'h' : 'Non définie'}</div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center">
-                    <User className="h-5 w-5 text-blue-700 mr-2" />
-                    <div>
-                      <div className="text-sm text-gray-500">Progression</div>
-                      <div>Sessions: {formation.completedSessions}/{formation.totalSessions}</div>
-                    </div>
-                  </div>
+                  {formation.sessions && formation.sessions.length > 0 && (
+                    <>
+                      <div className="flex items-center">
+                        <Calendar className="h-5 w-5 text-green-700 mr-3" />
+                        <div>
+                          <div className="text-sm text-gray-500">Dates de session</div>
+                          <div className="font-medium">{formation.sessions[0].startDate} au {formation.sessions[0].endDate}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <User className="h-5 w-5 text-purple-700 mr-3" />
+                        <div>
+                          <div className="text-sm text-gray-500">Lieu</div>
+                          <div className="font-medium">{formation.sessions[0].location}</div>
+                        </div>
+                      </div>
+
+                      {formation.sessions[0].instructors && formation.sessions[0].instructors.length > 0 && (
+                        <div className="flex items-center">
+                          <User className="h-5 w-5 text-orange-700 mr-3" />
+                          <div>
+                            <div className="text-sm text-gray-500">Instructeurs</div>
+                            <div className="font-medium">{formation.sessions[0].instructors.join(', ')}</div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
               
-              <div>
-                <p className="text-gray-700">{formation.description}</p>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-sm text-gray-500 mb-1">Description</div>
+                  <p className="text-gray-700">{formation.description}</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
         
         <div className="grid md:grid-cols-3 gap-8">
           <div className="md:col-span-2">
@@ -299,60 +333,9 @@ const FormationDetailStudent: React.FC = () => {
               </div>
             </div>
             
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-800">Prochaines sessions</h2>
-              </div>
-              
-              <div className="p-6">
-                {formation.sessions && formation.sessions.length > 0 ? (
-                  <div className="space-y-4">
-                    {formation.sessions.map(session => (
-                      <div key={session.id} className="flex items-start p-4 border border-gray-200 rounded-lg">
-                        <div className="bg-blue-100 p-3 rounded-lg mr-4">
-                          <Calendar className="h-5 w-5 text-blue-700" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">Session de formation</div>
-                          <div className="text-sm text-gray-600 mt-1">
-                            Du {session.startDate} au {session.endDate}
-                          </div>
-                          <div className="text-sm text-gray-500 mt-1">
-                            Lieu: {session.location || 'Non défini'}
-                          </div>
-                          <div className="text-sm text-gray-500 mt-1">
-                            Statut: {session.reservationStatus}
-                          </div>
-                          {session.instructors && session.instructors.length > 0 && (
-                            <div className="text-sm text-gray-500 mt-1">
-                              Instructeurs: {session.instructors.join(', ')}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-gray-500">
-                    Aucune session programmée
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       </main>
-    </div>)}
-          {/*<div>*/}
-          {/*  <div className="bg-white rounded-lg shadow">*/}
-          {/*    <div className="px-6 py-4 border-b border-gray-200">*/}
-          {/*      <h2 className="text-xl font-bold text-gray-800">Documents</h2>*/}
-          {/*    </div>*/}
-          {/*    */}
-          {/*    <div className="p-6">*/}
-          {/*      {formation.documents && formation.documents.length > 0 ? (*/}
-          {/*        <div className="space-y-4">*/}
-          {/*          {formation.documents.map(document => (*/}
-          {/*            <div key={document.id} className="flex items-start p-4 border border-gray-200 rounded-lg hover:border-blue-400 transition-colors">*/}
-          {/*              <div className="bg-blue-100 p-3 rounded-lg mr<response clipped><NOTE>To save on context only part of this file has been shown to you. You should retry this tool after you have searched inside the file with `grep -n` in order to find the line numbers of what you are looking for.</NOTE>*/}
+    </div>
+  );};
 export default FormationDetailStudent;

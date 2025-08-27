@@ -48,7 +48,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     {
         return $this->createQueryBuilder('u')
             ->andWhere('u.isActive = :active')
-            ->andWhere('u.deletedAt IS NULL')  // ✅ Exclure les utilisateurs supprimés
+            // ✅ GEDMO MAGIC : Plus besoin de ->andWhere('u.deletedAt IS NULL')
             ->setParameter('active', true)
             ->getQuery()
             ->getResult();
@@ -113,8 +113,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     {
         $qb = $this->createQueryBuilder('u');
 
-        // ✅ SOFT DELETE : Exclure automatiquement les utilisateurs supprimés
-        $qb->andWhere('u.deletedAt IS NULL');
+        // ✅ GEDMO MAGIC : Exclure automatiquement les utilisateurs soft-deleted
 
         // Recherche par email
         if (isset($criteria['email'])) {
@@ -158,7 +157,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return $this->createQueryBuilder('u')
             ->select('COUNT(u.id)')
             ->andWhere('u.isActive = :active')
-            ->andWhere('u.deletedAt IS NULL')  // ✅ Exclure les utilisateurs supprimés
+            // ✅ GEDMO MAGIC : Plus besoin de filtrer deletedAt
             ->andWhere('u.roles LIKE :role')
             ->setParameter('active', true)
             ->setParameter('role', '%"ROLE_STUDENT"%')

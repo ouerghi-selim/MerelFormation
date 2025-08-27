@@ -67,8 +67,8 @@ interface Document {
     date: string; // Format d/m/Y
     uploadedAt: string; // Format Y-m-d H:i:s
     fileName: string;
-    fileSize: string; // Formaté (ex: "1.2 MB")
-    fileType: string;
+    fileSize?: string; // Formaté (ex: "1.2 MB") - optionnel car pas toujours fourni par l'API
+    fileType?: string; // Optionnel, peut être déduit du type
     downloadUrl: string;
     senderRole?: string; // Pour les documents directs
     validationStatus?: string;
@@ -105,6 +105,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     const [loadingDocuments, setLoadingDocuments] = useState(false);
     const [userReservations, setUserReservations] = useState<SessionReservation[]>([]);
     const [loadingReservations, setLoadingReservations] = useState(false);
+    // 🆕 État pour les informations complètes de l'utilisateur
+    const [fullUserInfo, setFullUserInfo] = useState<any>(null);
+    const [loadingUserInfo, setLoadingUserInfo] = useState(false);
 
     // États pour la gestion des statuts de réservations
     const [showStatusDropdown, setShowStatusDropdown] = useState<Record<number, boolean>>({});
@@ -189,57 +192,67 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         };
     }, []);
 
-    // Fonction pour récupérer tous les documents d'un utilisateur (incluant documents directs)
+    // Effet pour mettre à jour editedStudent quand fullUserInfo devient disponible pendant l'édition
+    useEffect(() => {
+        if (fullUserInfo && student && editModes.info && !loadingUserInfo) {
+            setEditedStudent(prev => {
+                // Seulement mettre à jour si on n'a pas déjà les informations complètes
+                if (!prev || !prev.birthDate) {
+                    return {
+                        ...student,
+                        ...fullUserInfo,
+                        // S'assurer que les champs obligatoires sont présents
+                        firstName: fullUserInfo.firstName || student.firstName,
+                        lastName: fullUserInfo.lastName || student.lastName,
+                        email: fullUserInfo.email || student.email
+                    };
+                }
+                return prev;
+            });
+        }
+    }, [fullUserInfo, student, editModes.info, loadingUserInfo]);
+
+    // Fonction pour récupérer tous les documents d'un utilisateur (inscription + directs)
     const fetchAllUserDocuments = async (userId: number) => {
         try {
             setLoadingDocuments(true);
             
-            // Récupérer les documents utilisateur standards
-            const [userDocsResponse, allDirectDocsResponse] = await Promise.all([
-                adminUsersApi.getDocuments(userId),
-                adminDirectDocumentsApi.getSentDocuments()
-            ]);
+            // 🎯 Un seul appel API qui récupère TOUS les documents (inscription + directs)
+            const userDocsResponse = await adminUsersApi.getDocuments(userId);
             
-            // Filtrer les documents directs pour cet utilisateur
-            const directDocuments = allDirectDocsResponse.data.filter((doc: any) => 
-                doc.student && doc.student.id === userId
-            ).map((doc: any) => ({
-                id: doc.id,
-                title: doc.title,
-                type: doc.type || 'document',
-                source: 'direct',
-                sourceTitle: 'Document direct',
-                sourceId: null,
-                date: new Date(doc.uploadedAt).toLocaleDateString('fr-FR'),
-                uploadedAt: doc.uploadedAt,
-                fileName: doc.fileName,
-                fileSize: '', // Pas disponible dans les documents directs
-                fileType: doc.fileName?.split('.').pop() || '',
-                downloadUrl: '', // À construire côté backend
-                senderRole: doc.uploadedBy?.firstName + ' ' + doc.uploadedBy?.lastName,
-                validationStatus: undefined,
-                validatedAt: undefined,
-                validatedBy: undefined,
-                rejectionReason: undefined
-            }));
-            
-            // Combiner tous les documents
-            const allDocuments = [
-                ...userDocsResponse.data,
-                ...directDocuments
-            ];
+            // L'API backend retourne maintenant tous les documents formatés correctement
+            const allDocuments = userDocsResponse.data || [];
             
             setUserDocuments(allDocuments);
         } catch (err) {
             console.error('Error fetching user documents:', err);
             addToast('Erreur lors du chargement des documents de l\'élève', 'error');
+            // Même en cas d'erreur, initialiser avec un tableau vide pour éviter les erreurs de rendu
+            setUserDocuments([]);
         } finally {
             setLoadingDocuments(false);
         }
     };
 
+    // 🆕 Fonction pour récupérer les informations complètes de l'utilisateur
+    const fetchFullUserInfo = async (userId: number) => {
+        try {
+            setLoadingUserInfo(true);
+            const userResponse = await adminUsersApi.get(userId);
+            setFullUserInfo(userResponse.data);
+        } catch (err) {
+            console.error('Error fetching full user info:', err);
+            addToast('Erreur lors du chargement des informations utilisateur', 'error');
+        } finally {
+            setLoadingUserInfo(false);
+        }
+    };
+
     // Fonction pour charger toutes les données de l'étudiant
     const loadStudentData = async (user: User) => {
+        // 🆕 Charger les informations complètes de l'utilisateur
+        await fetchFullUserInfo(user.id);
+        
         // Charger les formations de l'étudiant
         try {
             setLoadingFormations(true);
@@ -350,11 +363,31 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
 
     // Fonctions de gestion des modes d'édition
     const toggleEditMode = (section: 'info' | 'company' | 'documents') => {
+        const isEnteringEditMode = !editModes[section];
+        
         setEditModes(prev => ({ ...prev, [section]: !prev[section] }));
-        if (editModes[section]) {
-            // Si on sort du mode édition, réinitialiser les données
+        
+        if (isEnteringEditMode) {
+            // Si on entre en mode édition, initialiser les données
             if (section === 'info' && student) {
-                setEditedStudent({...student});
+                if (fullUserInfo) {
+                    // 🆕 Utiliser les informations complètes pour l'édition
+                    setEditedStudent({
+                        ...student,
+                        ...fullUserInfo,
+                        // S'assurer que les champs obligatoires sont présents
+                        firstName: fullUserInfo.firstName || student.firstName,
+                        lastName: fullUserInfo.lastName || student.lastName,
+                        email: fullUserInfo.email || student.email
+                    });
+                } else {
+                    // Fallback: utiliser les données de base de student
+                    setEditedStudent({...student});
+                    // Charger les informations complètes en arrière-plan si pas encore disponibles
+                    if (!loadingUserInfo) {
+                        fetchFullUserInfo(student.id);
+                    }
+                }
             } else if (section === 'company' && student) {
                 setEditedCompany(student.company ? {...student.company} : {
                     name: '',
@@ -405,6 +438,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
             // Mettre à jour les données locales
             Object.assign(student, editedStudent);
             
+            // 🆕 Mettre à jour aussi fullUserInfo pour que l'affichage se rafraîchisse
+            setFullUserInfo(prev => prev ? { ...prev, ...editedStudent } : editedStudent);
+            
             addToast('Informations de l\'étudiant mises à jour avec succès', 'success');
             setEditModes(prev => ({ ...prev, info: false }));
         } catch (err) {
@@ -431,6 +467,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                 const response = await adminUsersApi.createCompany(student.id, editedCompany);
                 student.company = response.data;
             }
+            
+            // 🆕 Mettre à jour fullUserInfo avec les informations de l'entreprise
+            setFullUserInfo(prev => prev ? { ...prev, company: student.company } : null);
             
             addToast('Informations de l\'entreprise mises à jour avec succès', 'success');
             setEditModes(prev => ({ ...prev, company: false }));
@@ -779,6 +818,88 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                                             />
                                         </div>
 
+                                        {/* 🆕 Informations personnelles */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Date de naissance
+                                            </label>
+                                            <input
+                                                type="date"
+                                                value={editedStudent?.birthDate || ''}
+                                                onChange={(e) => setEditedStudent(prev => prev ? {...prev, birthDate: e.target.value} : null)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Lieu de naissance
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={editedStudent?.birthPlace || ''}
+                                                onChange={(e) => setEditedStudent(prev => prev ? {...prev, birthPlace: e.target.value} : null)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="Entrez le lieu de naissance"
+                                            />
+                                        </div>
+
+                                        {/* 🆕 Adresse */}
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Adresse
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={editedStudent?.address || ''}
+                                                onChange={(e) => setEditedStudent(prev => prev ? {...prev, address: e.target.value} : null)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="Entrez l'adresse complète"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Code postal
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={editedStudent?.postalCode || ''}
+                                                onChange={(e) => setEditedStudent(prev => prev ? {...prev, postalCode: e.target.value} : null)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="Code postal"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Ville
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={editedStudent?.city || ''}
+                                                onChange={(e) => setEditedStudent(prev => prev ? {...prev, city: e.target.value} : null)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="Entrez la ville"
+                                            />
+                                        </div>
+
+                                        {/* 🆕 Spécialisation (si instructeur) */}
+                                        {fullUserInfo?.role === 'ROLE_INSTRUCTOR' && (
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Spécialisation
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={editedStudent?.specialization || ''}
+                                                    onChange={(e) => setEditedStudent(prev => prev ? {...prev, specialization: e.target.value} : null)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    placeholder="Spécialisation de l'instructeur"
+                                                />
+                                            </div>
+                                        )}
+
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                 Statut du compte
@@ -823,53 +944,109 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                                 </div>
                             ) : (
                                 /* Mode lecture */
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-gray-50 p-4 rounded-lg">
-                                        <h5 className="font-medium text-gray-900 mb-3">Informations personnelles</h5>
-                                        <div className="space-y-3">
-                                            <div>
-                                                <label className="text-sm font-medium text-gray-500">Nom complet</label>
-                                                <p className="text-sm text-gray-900">{student.firstName} {student.lastName}</p>
-                                            </div>
-                                            <div>
-                                                <label className="text-sm font-medium text-gray-500">Email</label>
-                                                <p className="text-sm text-gray-900">{student.email}</p>
-                                            </div>
-                                            <div>
-                                                <label className="text-sm font-medium text-gray-500">Téléphone</label>
-                                                <p className="text-sm text-gray-900">{student.phone || 'Non renseigné'}</p>
-                                            </div>
-                                            <div>
-                                                <label className="text-sm font-medium text-gray-500">Rôle</label>
-                                                <p className="text-sm text-gray-900">Étudiant</p>
-                                            </div>
-                                        </div>
+                                loadingUserInfo ? (
+                                    <div className="flex justify-center py-8">
+                                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-900"></div>
+                                        <span className="ml-2">Chargement des informations...</span>
                                     </div>
-
-                                    <div className="bg-gray-50 p-4 rounded-lg">
-                                        <h5 className="font-medium text-gray-900 mb-3">Statut du compte</h5>
-                                        <div className="space-y-3">
-                                            <div>
-                                                <label className="text-sm font-medium text-gray-500">Statut</label>
-                                                <div className="mt-1">
-                                                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                        student.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                                    }`}>
-                                                        {student.isActive ? 'Actif' : 'Inactif'}
-                                                    </span>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <h5 className="font-medium text-gray-900 mb-3">Informations personnelles</h5>
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500">Nom complet</label>
+                                                    <p className="text-sm text-gray-900">
+                                                        {fullUserInfo?.firstName || student.firstName} {fullUserInfo?.lastName || student.lastName}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500">Email</label>
+                                                    <p className="text-sm text-gray-900">{fullUserInfo?.email || student.email}</p>
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500">Téléphone</label>
+                                                    <p className="text-sm text-gray-900">{fullUserInfo?.phone || student.phone || 'Non renseigné'}</p>
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500">Date de naissance</label>
+                                                    <p className="text-sm text-gray-900">
+                                                        {fullUserInfo?.birthDate ? new Date(fullUserInfo.birthDate).toLocaleDateString('fr-FR') : 'Non renseigné'}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500">Lieu de naissance</label>
+                                                    <p className="text-sm text-gray-900">{fullUserInfo?.birthPlace || 'Non renseigné'}</p>
                                                 </div>
                                             </div>
-                                            <div>
-                                                <label className="text-sm font-medium text-gray-500">Dernière connexion</label>
-                                                <p className="text-sm text-gray-900">{student.lastLogin || 'Jamais connecté'}</p>
+                                        </div>
+
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <h5 className="font-medium text-gray-900 mb-3">Adresse</h5>
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500">Adresse</label>
+                                                    <p className="text-sm text-gray-900">{fullUserInfo?.address || 'Non renseigné'}</p>
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500">Code postal</label>
+                                                    <p className="text-sm text-gray-900">{fullUserInfo?.postalCode || 'Non renseigné'}</p>
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500">Ville</label>
+                                                    <p className="text-sm text-gray-900">{fullUserInfo?.city || 'Non renseigné'}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <h5 className="font-medium text-gray-900 mb-3">Informations du compte</h5>
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500">Rôle</label>
+                                                    <p className="text-sm text-gray-900">
+                                                        {fullUserInfo?.role === 'ROLE_ADMIN' ? 'Administrateur' : 
+                                                         fullUserInfo?.role === 'ROLE_INSTRUCTOR' ? 'Instructeur' : 'Étudiant'}
+                                                    </p>
+                                                </div>
+                                                {fullUserInfo?.specialization && (
+                                                    <div>
+                                                        <label className="text-sm font-medium text-gray-500">Spécialisation</label>
+                                                        <p className="text-sm text-gray-900">{fullUserInfo.specialization}</p>
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500">Date d'inscription</label>
+                                                    <p className="text-sm text-gray-900">
+                                                        {fullUserInfo?.createdAt || 'Non disponible'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <h5 className="font-medium text-gray-900 mb-3">Statut du compte</h5>
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500">Statut</label>
+                                                    <div className="mt-1">
+                                                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                            (fullUserInfo?.isActive ?? student.isActive) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                                        }`}>
+                                                            {(fullUserInfo?.isActive ?? student.isActive) ? 'Actif' : 'Inactif'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-500">Dernière connexion</label>
+                                                    <p className="text-sm text-gray-900">{fullUserInfo?.lastLogin || 'Jamais connecté'}</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
 
+                                ))}
+                        </div>)}
                     {/* Onglet Entreprise */}
                     {activeDetailTab === 'company' && (
                         <div className="animate-fadeIn space-y-6">
@@ -1298,20 +1475,26 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                                     <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-900"></div>
                                     <span className="ml-2">Chargement des documents...</span>
                                 </div>
-                            ) : userDocuments && userDocuments.length > 0 ? (
+                            ) : (userDocuments && Array.isArray(userDocuments) && userDocuments.length > 0) ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {userDocuments.map((document) => (
                                         <div key={document.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
                                             <div className="flex items-start justify-between">
                                                 <div className="flex-1">
                                                     <h5 className="font-medium text-gray-900 mb-1">{document.title}</h5>
-                                                    <p className="text-sm text-gray-500 mb-1">{document.fileName}</p>
+                                                    <p className="text-sm text-gray-500 mb-1">
+                                                        {document.fileName} 
+                                                        <span className="ml-1 text-xs text-gray-400">
+                                                            ({document.type?.toUpperCase()})
+                                                        </span>
+                                                    </p>
                                                     <p className="text-xs text-gray-500 mb-1">
                                                         Source: {document.sourceTitle || document.source}
                                                         {document.senderRole && <span className="ml-1">({document.senderRole})</span>}
                                                     </p>
                                                     <p className="text-xs text-gray-400">
                                                         Ajouté le {document.date || new Date(document.uploadedAt).toLocaleDateString('fr-FR')}
+                                                        {document.fileSize && <span className="ml-2">• {document.fileSize}</span>}
                                                     </p>
                                                     <div className="mt-2">
                                                         {document.validationStatus === 'valide' && (

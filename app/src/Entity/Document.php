@@ -8,6 +8,8 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use App\Repository\DocumentRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Mapping\Annotation as Gedmo;
+use Gedmo\SoftDeleteable\Traits\SoftDeleteableEntity;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -23,12 +25,15 @@ use Vich\UploaderBundle\Mapping\Annotation as Vich;
     ],
     order: ['uploadedAt' => 'DESC']
 )]
+#[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false, hardDelete: true)]
 #[Vich\Uploadable]
 #[ORM\Table]
 #[ORM\Index(columns: ['type', 'category'], name: 'document_type_category_idx')]
 #[ORM\Index(columns: ['uploaded_at'], name: 'document_upload_idx')]
 class Document
 {
+    use SoftDeleteableEntity; // ✅ Trait Gedmo qui ajoute automatiquement deletedAt
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

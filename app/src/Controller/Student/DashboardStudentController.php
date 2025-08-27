@@ -61,16 +61,18 @@ class DashboardStudentController extends AbstractController
 
             $pendingPayments = 0; // À implémenter selon votre logique métier
 
-            // Récupérer les prochaines sessions via les réservations
+            // ✅ Récupérer les réservations avec sessions actives et futures
             $upcomingReservations = $this->reservationRepository->createQueryBuilder('r')
                 ->join('r.session', 's')
                 ->where('r.user = :user')
-                ->andWhere('r.status IN (:statuses)')
-                ->andWhere('s.startDate > :now')
+                // ✅ Supprimé le filtrage par statut pour afficher toutes les sessions
+                // ->andWhere('r.status IN (:statuses)')
+                // ✅ Sessions en cours ou futures (pas complètement terminées)
+               // ->andWhere('s.endDate >= :now')
                 ->setParameter('user', $user)
-                ->setParameter('statuses', ['confirmed', 'completed'])
-                ->setParameter('now', new \DateTimeImmutable())
-                ->orderBy('s.startDate', 'ASC')
+                // ->setParameter('statuses', ['confirmed', 'completed'])  // Ancienne logique limitée
+               // ->setParameter('now', new \DateTimeImmutable())
+                ->orderBy('s.startDate', 'ASC') // Prochaines en premier
                 ->setMaxResults(3)
                 ->getQuery()
                 ->getResult();
@@ -83,7 +85,9 @@ class DashboardStudentController extends AbstractController
                     'formationTitle' => $session->getFormation()->getTitle(),
                     'startDate' => $session->getStartDate()->format('d/m/Y'),
                     'startTime' => $session->getStartDate()->format('H:i'),
-                    'location' => $session->getEffectiveLocation()
+                    'location' => $session->getEffectiveLocation(),
+                    'reservationStatus' => $reservation->getStatus(),
+                    'sessionStartDateTime' => $session->getStartDate()->format('c')
                 ];
             }
 

@@ -61,6 +61,24 @@ class ReservationAdminController extends AbstractController
         $formattedReservations = [];
         foreach ($reservations as $reservation) {
             $client = $reservation->getUser();
+            
+            // ✅ Vérifier si l'utilisateur est archivé (null à cause de Gedmo SoftDelete)
+            $userData = $client ? [
+                'id' => $client->getId(),
+                'firstName' => $client->getFirstName(),
+                'lastName' => $client->getLastName(),
+                'email' => $client->getEmail(),
+                'phone' => $client->getPhone(),
+                'fullName' => $client->getFirstName() . ' ' . $client->getLastName()
+            ] : [
+                'id' => null,
+                'firstName' => '[Utilisateur archivé]',
+                'lastName' => '',
+                'email' => '[Archivé]',
+                'phone' => '[Archivé]',
+                'fullName' => '[Utilisateur archivé]'
+            ];
+            
             $formattedReservations[] = [
                 'id' => $reservation->getId(),
                 'date' => $reservation->getstartDate()->format('d/m/Y'),
@@ -68,15 +86,7 @@ class ReservationAdminController extends AbstractController
                 'formula' => $reservation->getFormula(),
                 'status' => $reservation->getStatus(),
                 'vehicleAssigned' => $reservation->getVehicle() ? $reservation->getVehicle()->getModel() : null,
-                // Centraliser toutes les données client dans l'objet user
-                'user' => [
-                    'id' => $client->getId(),
-                    'firstName' => $client->getFirstName(),
-                    'lastName' => $client->getLastName(),
-                    'email' => $client->getEmail(),
-                    'phone' => $client->getPhone(),
-                    'fullName' => $client->getFirstName() . ' ' . $client->getLastName()
-                ]
+                'user' => $userData
             ];
         }
 
@@ -102,6 +112,37 @@ class ReservationAdminController extends AbstractController
 
         $client = $reservation->getUser();
         
+        // ✅ Vérifier si l'utilisateur est archivé (null à cause de Gedmo SoftDelete)
+        $userData = $client ? [
+            'id' => $client->getId(),
+            'firstName' => $client->getFirstName(),
+            'lastName' => $client->getLastName(),
+            'email' => $client->getEmail(),
+            'phone' => $client->getPhone(),
+            'fullName' => $client->getFirstName() . ' ' . $client->getLastName(),
+            'birthDate' => $client->getBirthDate() ? $client->getBirthDate()->format('Y-m-d') : null,
+            'birthPlace' => $client->getBirthPlace(),
+            'address' => $client->getAddress(),
+            'postalCode' => $client->getPostalCode(),
+            'city' => $client->getCity(),
+            'driverLicenseFrontFile' => $client->getDriverLicenseFrontFile(),
+            'driverLicenseBackFile' => $client->getDriverLicenseBackFile()
+        ] : [
+            'id' => null,
+            'firstName' => '[Utilisateur archivé]',
+            'lastName' => '',
+            'email' => '[Archivé]',
+            'phone' => '[Archivé]',
+            'fullName' => '[Utilisateur archivé]',
+            'birthDate' => null,
+            'birthPlace' => '[Archivé]',
+            'address' => '[Archivé]',
+            'postalCode' => '[Archivé]',
+            'city' => '[Archivé]',
+            'driverLicenseFrontFile' => null,
+            'driverLicenseBackFile' => null
+        ];
+        
         // Formater les données pour le frontend
         $formattedReservation = [
             'id' => $reservation->getId(),
@@ -124,22 +165,7 @@ class ReservationAdminController extends AbstractController
             'documents' => $reservation->getDocuments(),
             'invoice' => $reservation->getInvoice(),
             'vehicleAssigned' => $reservation->getVehicle() ? $reservation->getVehicle()->getModel() : null,
-            // Centraliser toutes les données client dans l'objet user
-            'user' => [
-                'id' => $client->getId(),
-                'firstName' => $client->getFirstName(),
-                'lastName' => $client->getLastName(),
-                'email' => $client->getEmail(),
-                'phone' => $client->getPhone(),
-                'fullName' => $client->getFirstName() . ' ' . $client->getLastName(),
-                'birthDate' => $client->getBirthDate() ? $client->getBirthDate()->format('Y-m-d') : null,
-                'birthPlace' => $client->getBirthPlace(),
-                'address' => $client->getAddress(),
-                'postalCode' => $client->getPostalCode(),
-                'city' => $client->getCity(),
-                'driverLicenseFrontFile' => $client->getDriverLicenseFrontFile(),
-                'driverLicenseBackFile' => $client->getDriverLicenseBackFile()
-            ]
+            'user' => $userData
         ];
 
         return $this->json($formattedReservation);

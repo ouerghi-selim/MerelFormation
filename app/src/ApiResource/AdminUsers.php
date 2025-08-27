@@ -58,6 +58,18 @@ use App\Controller\Admin\UserAdminController;
             uriTemplate: '/admin/users/{id}/restore',
             controller: UserAdminController::class . '::restore',
         ),
+        new Post(
+            uriTemplate: '/admin/users/{id}/company',
+            controller: UserAdminController::class . '::createCompany',
+        ),
+        new Put(
+            uriTemplate: '/admin/users/{id}/company',
+            controller: UserAdminController::class . '::updateCompany',
+        ),
+        new GetCollection(
+            uriTemplate: '/admin/users/inscription-documents',
+            controller: UserAdminController::class . '::getAllInscriptionDocuments',
+        ),
     ]
 )]
 class AdminUsers

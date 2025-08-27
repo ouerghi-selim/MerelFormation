@@ -11,9 +11,10 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use App\Repository\UserRepository;
-use App\Repository\ReservationRepository;
+use App\Repository\CompanyRepository;
 use App\Entity\User;
 use App\Entity\Session;
+use App\Entity\Company;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Service\NotificationService;
 
@@ -24,32 +25,32 @@ class UserAdminController extends AbstractController
 {
     private $security;
     private $userRepository;
+    private $companyRepository;
     private $entityManager;
     private $passwordHasher;
     private $sessionRepository;
     private $notificationService;
     private $documentRepository;
-    private $reservationRepository;
 
     public function __construct(
         Security $security,
         UserRepository $userRepository,
+        CompanyRepository $companyRepository,
         EntityManagerInterface $entityManager,
         UserPasswordHasherInterface $passwordHasher,
         SessionRepository $sessionRepository,
         NotificationService $notificationService,
-        DocumentRepository $documentRepository,
-        ReservationRepository $reservationRepository
+        DocumentRepository $documentRepository
 
     ) {
         $this->security = $security;
         $this->userRepository = $userRepository;
+        $this->companyRepository = $companyRepository;
         $this->entityManager = $entityManager;
         $this->passwordHasher = $passwordHasher;
         $this->sessionRepository = $sessionRepository;
         $this->notificationService = $notificationService;
         $this->documentRepository = $documentRepository;
-        $this->reservationRepository = $reservationRepository;
     }
 
     /**
@@ -223,17 +224,25 @@ class UserAdminController extends AbstractController
             return $this->json(['message' => 'Utilisateur non trouvé'], 404);
         }
 
-        // Formater les données pour le frontend
+        // Formater les données complètes pour le frontend
         $formattedUser = [
             'id' => $user->getId(),
             'firstName' => $user->getFirstName(),
             'lastName' => $user->getLastName(),
             'email' => $user->getEmail(),
             'role' => $user->getRoles()[0] ?? 'ROLE_STUDENT',
+            'roles' => $user->getRoles(),
             'isActive' => $user->isIsActive(),  // Utiliser isIsActive() au lieu de isActive()
             'phone' => $user->getPhone(),
             'specialization' => $user->getSpecialization(),
             'createdAt' => $user->getCreatedAt() ? $user->getCreatedAt()->format('d/m/Y') : null,
+            'createdAtFull' => $user->getCreatedAt() ? $user->getCreatedAt()->format('Y-m-d\TH:i:s') : null,
+            // 🆕 Informations personnelles complètes
+            'birthDate' => $user->getBirthDate() ? $user->getBirthDate()->format('Y-m-d') : null,
+            'birthPlace' => $user->getBirthPlace(),
+            'address' => $user->getAddress(),
+            'postalCode' => $user->getPostalCode(),
+            'city' => $user->getCity(),
             'lastLogin' => null  // À implémenter si vous ajoutez ce champ à l'entité
         ];
 
@@ -414,17 +423,15 @@ class UserAdminController extends AbstractController
 
             // Désactiver l'utilisateur et marquer comme supprimé (niveau 1)
             $user->setIsActive(false);
-            $user->setDeletedAt(new \DateTime());
+            $user->setDeletedAt(new \DateTime()); // ✅ GEDMO : Utilise maintenant le champ Gedmo
             $user->setDeletionLevel('deactivated');
 
             // ✅ GARDER TOUTES LES DONNÉES INTACTES (niveau 1)
             // Pas d'anonymisation - données restaurables
 
-            // ✅ ARCHIVER TOUTES LES RÉSERVATIONS DE L'UTILISATEUR
-            $this->archiveUserReservations($user, 'user_deleted');
-
-            // ✅ GARDER TOUTES LES RELATIONS POUR L'AUDIT ET L'HISTORIQUE
-            // Les réservations sont archivées mais conservées, documents, factures, locations restent intacts
+            // ✅ ARCHIVAGE AUTOMATIQUE EN CASCADE
+            // L'EventListener SoftDeleteCascadeListener s'occupe automatiquement
+            // d'archiver toutes les relations (Reservations, Documents, etc.)
 
             // Sauvegarder les modifications
             $this->entityManager->flush();
@@ -453,8 +460,23 @@ class UserAdminController extends AbstractController
             return $this->json(['message' => 'Accès refusé'], 403);
         }
 
-        // Récupérer l'utilisateur (même supprimé)
-        $user = $this->userRepository->find($id);
+        // ✅ DÉSACTIVER LE FILTRE GEDMO pour récupérer l'utilisateur archivé
+        $filters = $this->entityManager->getFilters();
+        $softDeleteableWasEnabled = $filters->isEnabled('softdeleteable');
+        
+        if ($softDeleteableWasEnabled) {
+            $filters->disable('softdeleteable');
+        }
+
+        try {
+            // Récupérer l'utilisateur (même supprimé)
+            $user = $this->userRepository->find($id);
+        } finally {
+            // ✅ RÉACTIVER LE FILTRE GEDMO
+            if ($softDeleteableWasEnabled) {
+                $filters->enable('softdeleteable');
+            }
+        }
 
         if (!$user) {
             return $this->json(['message' => 'Utilisateur non trouvé'], 404);
@@ -471,8 +493,9 @@ class UserAdminController extends AbstractController
             $user->setDeletedAt(null);
             $user->setDeletionLevel(null);
             
-            // ✅ RESTAURER LES RÉSERVATIONS ARCHIVÉES POUR CET UTILISATEUR
-            $this->restoreUserReservations($user);
+            // ✅ RESTAURATION AUTOMATIQUE EN CASCADE
+            // L'EventListener SoftDeleteCascadeListener s'occupe automatiquement
+            // de restaurer toutes les relations archivées
             
             // Restaurer les données originales si disponibles
             if ($user->getOriginalEmail()) {
@@ -515,12 +538,29 @@ class UserAdminController extends AbstractController
             return $this->json(['message' => 'Accès refusé'], 403);
         }
 
-        // Récupérer tous les utilisateurs supprimés (tous niveaux)
-        $deletedUsers = $this->userRepository->createQueryBuilder('u')
-            ->andWhere('u.deletedAt IS NOT NULL')
-            ->orderBy('u.deletedAt', 'DESC')
-            ->getQuery()
-            ->getResult();
+        // ✅ DÉSACTIVER TEMPORAIREMENT LE FILTRE GEDMO pour récupérer les utilisateurs archivés
+        $filters = $this->entityManager->getFilters();
+        $softDeleteableWasEnabled = $filters->isEnabled('softdeleteable');
+        
+        if ($softDeleteableWasEnabled) {
+            $filters->disable('softdeleteable');
+        }
+
+        try {
+            // Récupérer tous les utilisateurs supprimés (tous niveaux)
+            $deletedUsers = $this->userRepository->createQueryBuilder('u')
+                ->andWhere('u.deletedAt IS NOT NULL')
+                ->orderBy('u.deletedAt', 'DESC')
+                ->getQuery()
+                ->getResult();
+            
+            
+        } finally {
+            // ✅ RÉACTIVER LE FILTRE GEDMO après la requête
+            if ($softDeleteableWasEnabled) {
+                $filters->enable('softdeleteable');
+            }
+        }
 
         $formattedUsers = [];
         $now = new \DateTime();
@@ -616,7 +656,7 @@ class UserAdminController extends AbstractController
     }
 
     /**
-     * Récupérer les documents d'inscription d'un utilisateur
+     * Récupérer tous les documents d'un utilisateur (inscription + directs)
      * @Route("/{id}/documents", name="get_user_documents", methods={"GET"})
      */
     public function getUserDocuments(Request $request): JsonResponse
@@ -628,45 +668,344 @@ class UserAdminController extends AbstractController
                 return new JsonResponse(['message' => 'Utilisateur non trouvé'], 404);
             }
 
-            // Récupérer les documents d'inscription de l'utilisateur
-            // Critères : category='attestation', user=$user, uploadedBy=$user (documents uploadés par l'utilisateur lui-même)
-            $documents = $this->documentRepository->findBy([
-                'user' => $user,
-                'category' => 'attestation',
-                'uploadedBy' => $user
-            ], ['uploadedAt' => 'DESC']);
+            // 🔧 Désactiver temporairement le filtre Gedmo pour accéder aux documents avec uploadedBy soft-deleted
+            $filters = $this->entityManager->getFilters();
+            $filterWasEnabled = false;
+            
+            if ($filters->has('softdeleteable') && $filters->isEnabled('softdeleteable')) {
+                $filters->disable('softdeleteable');
+                $filterWasEnabled = true;
+            }
+
+            try {
+                // 1. Récupérer les documents d'inscription de l'utilisateur
+                // Critères : category='attestation', user=$user, uploadedBy=$user (documents uploadés par l'utilisateur lui-même)
+                $inscriptionDocuments = $this->documentRepository->findBy([
+                    'user' => $user,
+                    'category' => 'attestation',
+                    'uploadedBy' => $user
+                ], ['uploadedAt' => 'DESC']);
+
+                // 2. Récupérer les documents directs envoyés À cet utilisateur
+                // Critères : category='direct', user=$user (peu importe qui les a uploadés)
+                $directDocuments = $this->documentRepository->findBy([
+                    'user' => $user,
+                    'category' => 'direct'
+                ], ['uploadedAt' => 'DESC']);
+
+                // 3. Combiner tous les documents
+                $allDocuments = array_merge($inscriptionDocuments, $directDocuments);
+                
+                // 4. Trier par date d'upload décroissante
+                usort($allDocuments, function($a, $b) {
+                    return $b->getUploadedAt() <=> $a->getUploadedAt();
+                });
+
+                $documentsData = [];
+                foreach ($allDocuments as $document) {
+                    // Déterminer la source et sourceTitle selon la catégorie
+                    $source = ($document->getCategory() === 'direct') ? 'direct' : 'inscription';
+                    $sourceTitle = ($document->getCategory() === 'direct') ? 'Document direct' : 'Document d\'inscription';
+                    
+                    // Gérer l'uploadedBy de façon sécurisée (peut être soft-deleted)
+                    $uploadedBy = $document->getUploadedBy();
+                    
+                    $documentsData[] = [
+                        'id' => $document->getId(),
+                        'title' => $document->getTitle(),
+                        'type' => $document->getType(),
+                        'category' => $document->getCategory(),
+                        'source' => $source,
+                        'sourceTitle' => $sourceTitle,
+                        'sourceId' => null,
+                        'date' => $document->getUploadedAt()->format('d/m/Y'),
+                        'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
+                        'fileName' => $document->getFileName(),
+                        'downloadUrl' => '/uploads/documents/' . $document->getFileName(),
+                        // 🆕 Ajouter info sur qui a uploadé (pour les documents directs)
+                        'uploadedBy' => $uploadedBy ? [
+                            'id' => $uploadedBy->getId(),
+                            'firstName' => $uploadedBy->getFirstName(),
+                            'lastName' => $uploadedBy->getLastName(),
+                            'fullName' => $uploadedBy->getFirstName() . ' ' . $uploadedBy->getLastName()
+                        ] : null,
+                        // Champs de validation
+                        'validationStatus' => $document->getValidationStatus(),
+                        'validatedAt' => $document->getValidatedAt() ? $document->getValidatedAt()->format('Y-m-d H:i:s') : null,
+                        'validatedBy' => $document->getValidatedBy() ? [
+                            'id' => $document->getValidatedBy()->getId(),
+                            'firstName' => $document->getValidatedBy()->getFirstName(),
+                            'lastName' => $document->getValidatedBy()->getLastName()
+                        ] : null,
+                        'rejectionReason' => $document->getRejectionReason()
+                    ];
+                }
+
+                return new JsonResponse($documentsData);
+                
+            } finally {
+                // 🔧 Réactiver le filtre Gedmo si il était activé
+                if ($filterWasEnabled && $filters->has('softdeleteable')) {
+                    $filters->enable('softdeleteable');
+                }
+            }
+            
+        } catch (\Exception $e) {
+            return new JsonResponse(['message' => 'Erreur lors de la récupération des documents'], 500);
+        }
+    }
+
+    /**
+     * Créer une entreprise pour un utilisateur
+     */
+    public function createCompany(int $id, Request $request): JsonResponse
+    {
+        // Vérifier que l'utilisateur est admin
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
+
+        // Récupérer l'utilisateur
+        $user = $this->userRepository->find($id);
+        if (!$user) {
+            return $this->json(['message' => 'Utilisateur non trouvé'], 404);
+        }
+
+        // Vérifier que l'utilisateur n'a pas déjà d'entreprise
+        if ($user->getCompany()) {
+            return $this->json(['message' => 'Cet utilisateur a déjà une entreprise'], 400);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        try {
+            // Créer la nouvelle entreprise
+            $company = new Company();
+            $company->setName($data['name'] ?? '');
+            $company->setAddress($data['address'] ?? '');
+            $company->setPostalCode($data['postalCode'] ?? '');
+            $company->setCity($data['city'] ?? '');
+            $company->setSiret($data['siret'] ?? '');
+            $company->setResponsableName($data['responsableName'] ?? '');
+            $company->setEmail($data['email'] ?? '');
+            $company->setPhone($data['phone'] ?? '');
+
+            // Associer l'entreprise à l'utilisateur
+            $user->setCompany($company);
+
+            // Sauvegarder
+            $this->entityManager->persist($company);
+            $this->entityManager->flush();
+
+            return $this->json([
+                'id' => $company->getId(),
+                'name' => $company->getName(),
+                'address' => $company->getAddress(),
+                'postalCode' => $company->getPostalCode(),
+                'city' => $company->getCity(),
+                'siret' => $company->getSiret(),
+                'responsableName' => $company->getResponsableName(),
+                'email' => $company->getEmail(),
+                'phone' => $company->getPhone()
+            ], 201);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'message' => 'Erreur lors de la création de l\'entreprise',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Mettre à jour l'entreprise d'un utilisateur
+     */
+    public function updateCompany(int $id, Request $request): JsonResponse
+    {
+        // Vérifier que l'utilisateur est admin
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
+
+        // Récupérer l'utilisateur
+        $user = $this->userRepository->find($id);
+        if (!$user) {
+            return $this->json(['message' => 'Utilisateur non trouvé'], 404);
+        }
+
+        // Vérifier que l'utilisateur a une entreprise
+        $company = $user->getCompany();
+        if (!$company) {
+            return $this->json(['message' => 'Cet utilisateur n\'a pas d\'entreprise'], 404);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        try {
+            // Mettre à jour l'entreprise
+            $company->setName($data['name'] ?? $company->getName());
+            $company->setAddress($data['address'] ?? $company->getAddress());
+            $company->setPostalCode($data['postalCode'] ?? $company->getPostalCode());
+            $company->setCity($data['city'] ?? $company->getCity());
+            $company->setSiret($data['siret'] ?? $company->getSiret());
+            $company->setResponsableName($data['responsableName'] ?? $company->getResponsableName());
+            $company->setEmail($data['email'] ?? $company->getEmail());
+            $company->setPhone($data['phone'] ?? $company->getPhone());
+
+            // Sauvegarder
+            $this->entityManager->flush();
+
+            return $this->json([
+                'id' => $company->getId(),
+                'name' => $company->getName(),
+                'address' => $company->getAddress(),
+                'postalCode' => $company->getPostalCode(),
+                'city' => $company->getCity(),
+                'siret' => $company->getSiret(),
+                'responsableName' => $company->getResponsableName(),
+                'email' => $company->getEmail(),
+                'phone' => $company->getPhone()
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'message' => 'Erreur lors de la mise à jour de l\'entreprise',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Récupérer tous les documents d'inscription pour l'admin
+     */
+    public function getAllInscriptionDocuments(Request $request): JsonResponse
+    {
+        // Vérifier que l'utilisateur est admin
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
+
+        try {
+            // 🔧 Désactiver temporairement le filtre Gedmo SoftDelete pour accéder aux utilisateurs archivés
+            $filters = $this->entityManager->getFilters();
+            $filterWasEnabled = $filters->isEnabled('softdeleteable');
+            if ($filterWasEnabled) {
+                $filters->disable('softdeleteable');
+            }
+
+            try {
+                $status = $request->query->get('status', null);
+                $limit = $request->query->get('limit', null);
+                $page = $request->query->get('page', 1);
+
+                // Récupérer tous les documents d'inscription
+                // Les documents d'inscription utilisent les catégories: support, contract, attestation, facture
+                $queryBuilder = $this->documentRepository->createQueryBuilder('d')
+                    ->leftJoin('d.user', 'u')
+                    ->leftJoin('d.validatedBy', 'vb')
+                    ->where('d.category IN (:categories)')
+                    ->setParameter('categories', ['support', 'contract', 'attestation', 'facture'])
+                    ->andWhere('d.user IS NOT NULL')
+                    ->andWhere('d.formation IS NULL')
+                    ->andWhere('d.session IS NULL')
+                    ->orderBy('d.uploadedAt', 'DESC');
+
+            // Filtrer par statut de validation si spécifié
+            if ($status) {
+                if ($status === 'pending') {
+                    $queryBuilder->andWhere('d.validationStatus IS NULL OR d.validationStatus = :status')
+                        ->setParameter('status', 'en_attente');
+                } elseif ($status === 'approved') {
+                    $queryBuilder->andWhere('d.validationStatus = :status')
+                        ->setParameter('status', 'valide');
+                } elseif ($status === 'rejected') {
+                    $queryBuilder->andWhere('d.validationStatus = :status')
+                        ->setParameter('status', 'rejete');
+                }
+            }
+
+            // Pagination si spécifiée
+            if ($limit) {
+                $offset = ($page - 1) * $limit;
+                $queryBuilder->setFirstResult($offset)->setMaxResults($limit);
+            }
+
+            $documents = $queryBuilder->getQuery()->getResult();
 
             $documentsData = [];
             foreach ($documents as $document) {
+                $user = $document->getUser();
+                $validatedBy = $document->getValidatedBy();
+
                 $documentsData[] = [
                     'id' => $document->getId(),
                     'title' => $document->getTitle(),
                     'type' => $document->getType(),
                     'category' => $document->getCategory(),
-                    'source' => 'inscription',
-                    'sourceTitle' => 'Document d\'inscription',
-                    'sourceId' => null,
-                    'date' => $document->getUploadedAt()->format('d/m/Y'),
                     'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
+                    'uploadedAtFormatted' => $document->getUploadedAt()->format('d/m/Y à H:i'),
                     'fileName' => $document->getFileName(),
                     'downloadUrl' => '/uploads/documents/' . $document->getFileName(),
-                    // Ajouter les champs de validation
-                    'validationStatus' => $document->getValidationStatus(),
+                    'validationStatus' => $this->mapValidationStatus($document->getValidationStatus()),
                     'validatedAt' => $document->getValidatedAt() ? $document->getValidatedAt()->format('Y-m-d H:i:s') : null,
-                    'validatedBy' => $document->getValidatedBy() ? [
-                        'id' => $document->getValidatedBy()->getId(),
-                        'firstName' => $document->getValidatedBy()->getFirstName(),
-                        'lastName' => $document->getValidatedBy()->getLastName()
-                    ] : null,
-                    'rejectionReason' => $document->getRejectionReason()
+                    'validatedAtFormatted' => $document->getValidatedAt() ? $document->getValidatedAt()->format('d/m/Y à H:i') : null,
+                    'rejectionReason' => $document->getRejectionReason(),
+                    'user' => $user ? [
+                        'id' => $user->getId(),
+                        'firstName' => $user->getFirstName(),
+                        'lastName' => $user->getLastName(),
+                        'email' => $user->getEmail(),
+                        'fullName' => $user->getFirstName() . ' ' . $user->getLastName()
+                    ] : [
+                        'id' => null,
+                        'firstName' => '[Utilisateur archivé]',
+                        'lastName' => '',
+                        'email' => '[Archivé]',
+                        'fullName' => '[Utilisateur archivé]'
+                    ],
+                    'validatedBy' => $validatedBy ? [
+                        'id' => $validatedBy->getId(),
+                        'firstName' => $validatedBy->getFirstName(),
+                        'lastName' => $validatedBy->getLastName(),
+                        'fullName' => $validatedBy->getFirstName() . ' ' . $validatedBy->getLastName()
+                    ] : null
                 ];
             }
 
-            return new JsonResponse($documentsData);
-            
+                return $this->json([
+                    'documents' => $documentsData,
+                    'total' => count($documentsData),
+                    'page' => (int)$page,
+                    'limit' => $limit ? (int)$limit : null
+                ]);
+                
+            } finally {
+                // 🔧 Réactiver le filtre Gedmo si il était activé
+                if ($filterWasEnabled && $filters->has('softdeleteable')) {
+                    $filters->enable('softdeleteable');
+                }
+            }
+
         } catch (\Exception $e) {
-            return new JsonResponse(['message' => 'Erreur lors de la récupération des documents'], 500);
+            return $this->json([
+                'message' => 'Erreur lors de la récupération des documents d\'inscription',
+                'error' => $e->getMessage()
+            ], 500);
         }
+    }
+
+    /**
+     * Mapper les statuts de validation entre backend et frontend
+     */
+    private function mapValidationStatus(?string $status): string
+    {
+        return match($status) {
+            'en_attente' => 'pending',
+            'valide' => 'approved',
+            'rejete' => 'rejected',
+            null => 'pending',
+            default => 'pending'
+        };
     }
 
     /**
@@ -687,38 +1026,7 @@ class UserAdminController extends AbstractController
         return 'ROLE_STUDENT';
     }
 
-    /**
-     * Archiver toutes les réservations d'un utilisateur
-     */
-    private function archiveUserReservations(User $user, string $reason): void
-    {
-        $reservations = $this->reservationRepository->findUserReservations($user->getId());
-        
-        foreach ($reservations as $reservation) {
-            if (!$reservation->isArchived()) {
-                $reservation->setArchivedAt(new \DateTime());
-                $reservation->setArchiveReason($reason);
-            }
-        }
-    }
-
-    /**
-     * Restaurer toutes les réservations archivées d'un utilisateur (si archivées pour raison user_deleted)
-     */
-    private function restoreUserReservations(User $user): void
-    {
-        $archivedReservations = $this->reservationRepository->createQueryBuilder('r')
-            ->andWhere('r.user = :user')
-            ->andWhere('r.archivedAt IS NOT NULL')
-            ->andWhere('r.archiveReason = :reason')
-            ->setParameter('user', $user)
-            ->setParameter('reason', 'user_deleted')
-            ->getQuery()
-            ->getResult();
-        
-        foreach ($archivedReservations as $reservation) {
-            $reservation->setArchivedAt(null);
-            $reservation->setArchiveReason(null);
-        }
-    }
+    // ✅ MÉTHODES D'ARCHIVAGE MANUEL SUPPRIMÉES
+    // Remplacées par l'EventListener SoftDeleteCascadeListener
+    // qui gère automatiquement l'archivage/restauration en cascade
 }

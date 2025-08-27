@@ -51,23 +51,48 @@ class SessionReservationController extends AbstractController
 
         // Format de la réponse pour correspondre à ce qu'attend le frontend
         $formattedData = array_map(function ($reservation) {
+            $user = $reservation->getUser();
+            $session = $reservation->getSession();
+            
+            // ✅ Vérifier si l'utilisateur est archivé (null à cause de Gedmo SoftDelete)
+            $userData = $user ? [
+                'id' => $user->getId(),
+                'firstName' => $user->getFirstName(),
+                'lastName' => $user->getLastName(),
+                'email' => $user->getEmail(),
+                'phone' => $user->getPhone()
+            ] : [
+                'id' => null,
+                'firstName' => '[Utilisateur archivé]',
+                'lastName' => '',
+                'email' => '[Archivé]',
+                'phone' => '[Archivé]'
+            ];
+            
+            // ✅ Vérifier si la session/formation est archivée
+            $sessionData = $session ? [
+                'id' => $session->getId(),
+                'startDate' => $session->getStartDate()->format('Y-m-d\TH:i:s'),
+                'formation' => $session->getFormation() ? [
+                    'id' => $session->getFormation()->getId(),
+                    'title' => $session->getFormation()->getTitle()
+                ] : [
+                    'id' => null,
+                    'title' => '[Formation archivée]'
+                ]
+            ] : [
+                'id' => null,
+                'startDate' => null,
+                'formation' => [
+                    'id' => null,
+                    'title' => '[Session archivée]'
+                ]
+            ];
+            
             return [
                 'id' => $reservation->getId(),
-                'user' => [
-                    'id' => $reservation->getUser()->getId(),
-                    'firstName' => $reservation->getUser()->getFirstName(),
-                    'lastName' => $reservation->getUser()->getLastName(),
-                    'email' => $reservation->getUser()->getEmail(),
-                    'phone' => $reservation->getUser()->getPhone()
-                ],
-                'session' => [
-                    'id' => $reservation->getSession()->getId(),
-                    'startDate' => $reservation->getSession()->getStartDate()->format('Y-m-d\TH:i:s'),
-                    'formation' => [
-                        'id' => $reservation->getSession()->getFormation()->getId(),
-                        'title' => $reservation->getSession()->getFormation()->getTitle()
-                    ]
-                ],
+                'user' => $userData,
+                'session' => $sessionData,
                 'status' => $reservation->getStatus(),
                 'createdAt' => $reservation->getCreatedAt()->format('Y-m-d\TH:i:s')
             ];
@@ -84,24 +109,49 @@ class SessionReservationController extends AbstractController
             return $this->json(['message' => 'Réservation non trouvée'], Response::HTTP_NOT_FOUND);
         }
 
+        $user = $reservation->getUser();
+        $session = $reservation->getSession();
+        
+        // ✅ Vérifier si l'utilisateur est archivé (null à cause de Gedmo SoftDelete)
+        $userData = $user ? [
+            'id' => $user->getId(),
+            'firstName' => $user->getFirstName(),
+            'lastName' => $user->getLastName(),
+            'email' => $user->getEmail(),
+            'phone' => $user->getPhone()
+        ] : [
+            'id' => null,
+            'firstName' => '[Utilisateur archivé]',
+            'lastName' => '',
+            'email' => '[Archivé]',
+            'phone' => '[Archivé]'
+        ];
+        
+        // ✅ Vérifier si la session/formation est archivée
+        $sessionData = $session ? [
+            'id' => $session->getId(),
+            'startDate' => $session->getStartDate()->format('Y-m-d\TH:i:s'),
+            'formation' => $session->getFormation() ? [
+                'id' => $session->getFormation()->getId(),
+                'title' => $session->getFormation()->getTitle()
+            ] : [
+                'id' => null,
+                'title' => '[Formation archivée]'
+            ]
+        ] : [
+            'id' => null,
+            'startDate' => null,
+            'formation' => [
+                'id' => null,
+                'title' => '[Session archivée]'
+            ]
+        ];
+        
         // Format de la réponse pour correspondre à ce qu'attend le frontend
         $formattedData = [
             'id' => $reservation->getId(),
-            'user' => [
-                'id' => $reservation->getUser()->getId(),
-                'firstName' => $reservation->getUser()->getFirstName(),
-                'lastName' => $reservation->getUser()->getLastName(),
-                'email' => $reservation->getUser()->getEmail(),
-                'phone' => $reservation->getUser()->getPhone()
-            ],
-            'session' => [
-                'id' => $reservation->getSession()->getId(),
-                'startDate' => $reservation->getSession()->getStartDate()->format('Y-m-d\TH:i:s'),
-                'formation' => [
-                    'id' => $reservation->getSession()->getFormation()->getId(),
-                    'title' => $reservation->getSession()->getFormation()->getTitle()
-                ]
-            ],
+            'user' => $userData,
+            'session' => $sessionData,
             'status' => $reservation->getStatus(),
             'createdAt' => $reservation->getCreatedAt()->format('Y-m-d\TH:i:s')
         ];

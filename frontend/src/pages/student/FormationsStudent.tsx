@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Search, Filter, ChevronDown, CheckCircle } from 'lucide-react';
 import StudentHeader from '../../components/student/StudentHeader';
+import ReservationStatusProgress from '../../components/student/ReservationStatusProgress';
 import { studentFormationsApi } from '@/services/api.ts';
 interface Formation {
   id: number;
@@ -14,6 +15,8 @@ interface Formation {
     startDate: string;
     endDate: string;
     location: string;
+    reservationStatus: string;
+    sessionStartDateTime: string;
   } | null;
   status: 'active' | 'completed' | 'pending' | 'upcoming' | 'scheduled' | 'ongoing' | 'cancelled';
   sessionsCount: number;
@@ -51,13 +54,50 @@ const FormationsStudent: React.FC = () => {
     fetchFormations();
   }, []);
 
+  // Fonction pour obtenir la phase basée sur le statut de réservation
+  const getPhaseFromReservationStatus = (reservationStatus: string): string => {
+    const phaseMap: { [key: string]: string } = {
+      // Phase 1: Demande Initiale
+      'submitted': 'phase1',
+      'under_review': 'phase1',
+      // Phase 2: Vérifications
+      'awaiting_documents': 'phase2',
+      'documents_pending': 'phase2',
+      'documents_rejected': 'phase2',
+      'awaiting_prerequisites': 'phase2',
+      // Phase 3: Financement
+      'awaiting_funding': 'phase3',
+      'funding_approved': 'phase3',
+      'awaiting_payment': 'phase3',
+      'payment_pending': 'phase3',
+      // Phase 4: Confirmation
+      'confirmed': 'phase4',
+      'awaiting_start': 'phase4',
+      // Phase 5: Formation
+      'in_progress': 'phase5',
+      'attendance_issues': 'phase5',
+      'suspended': 'phase5',
+      // Phase 6: Finalisation
+      'completed': 'phase6',
+      'failed': 'phase6',
+      'cancelled': 'phase6',
+      'refunded': 'phase6',
+      'user_archived': 'phase6'
+    };
+    return phaseMap[reservationStatus] || 'phase1';
+  };
+
   useEffect(() => {
     // Apply filters when status filter or search query changes
     let filtered = formations;
     
-    // Apply status filter
+    // Apply status filter based on reservation phase
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(formation => formation.status === statusFilter);
+      filtered = filtered.filter(formation => {
+        if (!formation.nextSession) return false;
+        const phase = getPhaseFromReservationStatus(formation.nextSession.reservationStatus);
+        return phase === statusFilter;
+      });
     }
     
     // Apply search query
@@ -72,35 +112,6 @@ const FormationsStudent: React.FC = () => {
     setFilteredFormations(filtered);
   }, [statusFilter, searchQuery, formations]);
 
-  const getStatusLabel = (status: string): string => {
-    switch (status) {
-      // Statuts de sessions
-      case 'scheduled': return 'Programmée';
-      case 'ongoing': return 'En cours';
-      case 'completed': return 'Terminée';
-      case 'cancelled': return 'Annulée';
-      // Statuts de formations (calculés)
-      case 'active': return 'En cours';
-      case 'pending': return 'En attente';
-      case 'upcoming': return 'À venir';
-      default: return status;
-    }
-  };
-
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      // Statuts de sessions
-      case 'scheduled': return 'bg-blue-100 text-blue-800';
-      case 'ongoing': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      // Statuts de formations (calculés)
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'upcoming': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   const getFormationType = (type: string): string => {
     switch (type) {
@@ -151,10 +162,13 @@ const FormationsStudent: React.FC = () => {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <option value="all">Tous les statuts</option>
-                <option value="active">En cours</option>
-                <option value="completed">Terminées</option>
-                <option value="pending">À venir</option>
+                <option value="all">Toutes les phases</option>
+                <option value="phase1">📝 Demande initiale</option>
+                <option value="phase2">📋 Vérifications</option>
+                <option value="phase3">💳 Financement</option>
+                <option value="phase4">✅ Confirmation</option>
+                <option value="phase5">🎓 Formation</option>
+                <option value="phase6">🏁 Finalisation</option>
               </select>
               <ChevronDown className="absolute right-3 top-3 text-gray-400" />
             </div>
@@ -193,29 +207,25 @@ const FormationsStudent: React.FC = () => {
               <div key={formation.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
                 <div className="border-t-4 border-blue-700"></div>
                 <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
+                  <div className="mb-4">
                     <h2 className="text-xl font-bold text-gray-800">{formation.title}</h2>
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(formation.status)}`}>
-                      {getStatusLabel(formation.status)}
-                    </span>
                   </div>
                   
                   <p className="text-gray-600 mb-4">{getFormationType(formation.type)}</p>
                   
-                  <div className="mb-4">
-                    <div className="text-sm text-gray-600 mb-1">Progression</div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div 
-                        className="bg-blue-700 h-2.5 rounded-full" 
-                        style={{ width: `${formation.sessionsCount > 0 ? (formation.completedSessions / formation.sessionsCount) * 100 : 0}%` }}
-                      ></div>
+                  {/* Status progress component remplace l'ancienne barre de progression */}
+                  {formation.nextSession && (
+                    <div className="mb-4">
+                      <ReservationStatusProgress 
+                        reservationStatus={formation.nextSession.reservationStatus}
+                        sessionStartDate={formation.nextSession.sessionStartDateTime}
+                        showNextSteps={false}
+                        compact={true}
+                      />
                     </div>
-                    <div className="text-right text-sm text-gray-600 mt-1">
-                      {formation.sessionsCount > 0 ? Math.round((formation.completedSessions / formation.sessionsCount) * 100) : 0}%
-                    </div>
-                  </div>
+                  )}
                   
-                  <div className="space-y-2 mb-6">
+                  <div className="space-y-2 mb-4">
                     <div className="flex items-center text-gray-600">
                       <span>Sessions: {formation.completedSessions}/{formation.sessionsCount}</span>
                     </div>
@@ -226,10 +236,11 @@ const FormationsStudent: React.FC = () => {
                     )}
                     {formation.nextSession && (
                       <div className="flex items-center text-gray-600">
-                        <span>Prochaine session: {new Date(formation.nextSession.startDate).toLocaleDateString('fr-FR')}</span>
+                        <span>Prochaine session: {formation.nextSession.startDate}</span>
                       </div>
                     )}
                   </div>
+
                   
                   <Link 
                     to={`/student/formations/${formation.id}`}

@@ -25,7 +25,8 @@ interface SetupFormData {
     companyEmail?: string;
     companyPhone?: string;
     // Documents optionnels
-    driverLicense?: File | null;
+    driverLicenseRecto?: File | null;
+    driverLicenseVerso?: File | null;
     professionalCard?: File | null;
     registrationFile?: File | null;
     attestationInscription?: File | null;
@@ -62,7 +63,8 @@ const SetupPasswordPage: React.FC = () => {
         companyResponsableName: '',
         companyEmail: '',
         companyPhone: '',
-        driverLicense: null,
+        driverLicenseRecto: null,
+        driverLicenseVerso: null,
         professionalCard: null,
         registrationFile: null,
         attestationInscription: null,
@@ -331,8 +333,11 @@ const SetupPasswordPage: React.FC = () => {
             
             // Documents optionnels (si étape 2)
             if (step === 2) {
-                if (formData.driverLicense) {
-                    formDataToSend.append('driverLicense', formData.driverLicense);
+                if (formData.driverLicenseRecto) {
+                    formDataToSend.append('driverLicenseRecto', formData.driverLicenseRecto);
+                }
+                if (formData.driverLicenseVerso) {
+                    formDataToSend.append('driverLicenseVerso', formData.driverLicenseVerso);
                 }
                 if (formData.professionalCard) {
                     formDataToSend.append('professionalCard', formData.professionalCard);
@@ -369,16 +374,13 @@ const SetupPasswordPage: React.FC = () => {
     const getRequiredDocuments = () => {
         if (formationType === 'initiale') {
             return [
-                { key: 'driverLicense', label: 'Permis de conduire (recto/verso)', required: false },
-                { key: 'registrationFile', label: 'Dossier d\'inscription', required: false },
-                { key: 'attestationInscription', label: 'Attestation d\'inscription', required: false },
+                { key: 'driverLicenseRecto', label: 'Permis de conduire (recto)', required: false },
+                { key: 'driverLicenseVerso', label: 'Permis de conduire (verso)', required: false },
                 { key: 'convocation', label: 'Convocation', required: false }
             ];
         } else if (formationType === 'mobilite' || formationType === 'continue') {
             return [
                 { key: 'professionalCard', label: 'Carte professionnelle', required: false },
-                { key: 'registrationFile', label: 'Dossier d\'inscription', required: false },
-                { key: 'attestationInscription', label: 'Attestation d\'inscription', required: false },
                 { key: 'convocation', label: 'Convocation', required: false }
             ];
         }

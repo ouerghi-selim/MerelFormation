@@ -28,10 +28,9 @@ interface Document {
 
 // Documents obligatoires définis comme dans le système d'inscription
 const REQUIRED_DOCUMENTS = [
-  { key: 'driverLicense', title: 'Permis de conduire', description: 'Votre permis de conduire en cours de validité' },
+  { key: 'driverLicenseRecto', title: 'Permis de conduire (recto)', description: 'Recto de votre permis de conduire en cours de validité' },
+  { key: 'driverLicenseVerso', title: 'Permis de conduire (verso)', description: 'Verso de votre permis de conduire en cours de validité' },
   { key: 'professionalCard', title: 'Carte professionnelle', description: 'Carte professionnelle VTC ou taxi' },
-  { key: 'registrationFile', title: 'Dossier d\'inscription', description: 'Dossier complet d\'inscription' },
-  { key: 'attestationInscription', title: 'Attestation d\'inscription', description: 'Attestation d\'inscription officielle' },
   { key: 'convocation', title: 'Convocation', description: 'Convocation à l\'examen ou formation' }
 ];
 

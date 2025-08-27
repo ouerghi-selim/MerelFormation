@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {BookOpen, FileText, Bell, Calendar, CreditCard, Download, Building2, User} from 'lucide-react';
 import StudentLayout from '../../components/layout/StudentLayout';
+import ReservationStatusProgress from '../../components/student/ReservationStatusProgress';
 import { studentDashboardApi, studentDocumentsApi } from '@/services/api.ts';
 
 interface Company {
@@ -33,9 +34,11 @@ interface DashboardData {
 interface Session {
   id: number;
   formationTitle: string;
-  date: string;
-  time: string;
+  startDate: string;
+  startTime: string;
   location: string;
+  reservationStatus: string;
+  sessionStartDateTime: string;
 }
 
 interface Document {
@@ -198,17 +201,25 @@ const DashboardStudent: React.FC = () => {
             </div>
             
             {dashboardData?.upcomingSessions && dashboardData.upcomingSessions.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {dashboardData.upcomingSessions.map((session) => (
-                  <div key={session.id} className="flex items-start p-4 border border-gray-200 rounded-lg hover:border-blue-400 transition-colors">
-                    <div className="bg-blue-100 p-3 rounded-full mr-4">
-                      <Calendar className="h-5 w-5 text-blue-700" />
+                  <div key={session.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-400 transition-colors">
+                    <div className="flex items-start mb-4">
+                      <div className="bg-blue-100 p-3 rounded-full mr-4">
+                        <Calendar className="h-5 w-5 text-blue-700" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">{session.formationTitle}</h3>
+                        <p className="text-gray-600 text-sm mt-1">{session.startDate} à {session.startTime}</p>
+                        <p className="text-gray-500 text-sm mt-1">Lieu: {session.location}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900">{session.formationTitle}</h3>
-                      <p className="text-gray-600 text-sm mt-1">{session.date} à {session.time}</p>
-                      <p className="text-gray-500 text-sm mt-1">Lieu: {session.location}</p>
-                    </div>
+                    <ReservationStatusProgress 
+                      reservationStatus={session.reservationStatus}
+                      sessionStartDate={session.sessionStartDateTime}
+                      showNextSteps={false}
+                      compact={true}
+                    />
                   </div>
                 ))}
               </div>
