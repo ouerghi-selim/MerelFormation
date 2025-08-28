@@ -163,7 +163,10 @@ export const CONTENT_TYPES = [
   'service_description',
   'button_text',
   'advantage_title',
-  'advantage_description'
+  'advantage_description',
+  'image_url',
+  'image_alt',
+  'image_upload'
 ] as const;
 
 export const FAQ_CATEGORIES = [
@@ -259,6 +262,24 @@ export const CONTENT_DESCRIPTIONS: { [key: string]: { label: string; description
     page: '🏠 Page d\'accueil',
     section: '🎯 Section principale'
   },
+  'home_hero_image_url': {
+    label: 'Image principale - URL',
+    description: 'URL de l\'image d\'illustration de la section principale',
+    page: '🏠 Page d\'accueil',
+    section: '🎯 Section principale'
+  },
+  'home_hero_image_alt': {
+    label: 'Image principale - Alt',
+    description: 'Texte alternatif de l\'image d\'illustration (pour l\'accessibilité)',
+    page: '🏠 Page d\'accueil',
+    section: '🎯 Section principale'
+  },
+  'home_hero_image': {
+    label: 'Image principale',
+    description: 'Image d\'illustration de la section principale avec upload intégré',
+    page: '🏠 Page d\'accueil',
+    section: '🎯 Section principale'
+  },
 
   // Page d'accueil - Services
   'home_services_title': {
@@ -306,6 +327,70 @@ export const CONTENT_DESCRIPTIONS: { [key: string]: { label: string; description
   'service_planning_description': {
     label: 'Description planning',
     description: 'Description du service de planning des cours',
+    page: '🏠 Page d\'accueil',
+    section: '🏢 Nos services'
+  },
+
+  // Page d'accueil - Services - Fonctionnalités
+  'service_formation_feature_1': {
+    label: 'Formation - Caractéristique 1',
+    description: 'Première caractéristique du service de formation (ex: Formation initiale de 140h)',
+    page: '🏠 Page d\'accueil',
+    section: '🏢 Nos services'
+  },
+  'service_formation_feature_2': {
+    label: 'Formation - Caractéristique 2', 
+    description: 'Deuxième caractéristique du service de formation (ex: Formation continue)',
+    page: '🏠 Page d\'accueil',
+    section: '🏢 Nos services'
+  },
+  'service_formation_feature_3': {
+    label: 'Formation - Caractéristique 3',
+    description: 'Troisième caractéristique du service de formation (ex: Certification officielle)',
+    page: '🏠 Page d\'accueil',
+    section: '🏢 Nos services'
+  },
+  'service_location_feature_1': {
+    label: 'Location - Caractéristique 1',
+    description: 'Première caractéristique du service de location (ex: Entretien inclus)',
+    page: '🏠 Page d\'accueil',
+    section: '🏢 Nos services'
+  },
+  'service_location_feature_2': {
+    label: 'Location - Caractéristique 2',
+    description: 'Deuxième caractéristique du service de location (ex: Assurance professionnelle)',
+    page: '🏠 Page d\'accueil',
+    section: '🏢 Nos services'
+  },
+  'service_planning_feature_1': {
+    label: 'Planning - Caractéristique 1',
+    description: 'Première caractéristique du service de planning (ex: Horaires adaptés)',
+    page: '🏠 Page d\'accueil',
+    section: '🏢 Nos services'
+  },
+  'service_planning_feature_2': {
+    label: 'Planning - Caractéristique 2',
+    description: 'Deuxième caractéristique du service de planning (ex: Support personnalisé)',
+    page: '🏠 Page d\'accueil',
+    section: '🏢 Nos services'
+  },
+
+  // Page d'accueil - Services - Liens d'action
+  'service_formation_link_text': {
+    label: 'Formation - Texte du lien',
+    description: 'Texte du lien d\'action pour le service formation (ex: En savoir plus)',
+    page: '🏠 Page d\'accueil',
+    section: '🏢 Nos services'
+  },
+  'service_location_link_text': {
+    label: 'Location - Texte du lien',
+    description: 'Texte du lien d\'action pour le service location (ex: Découvrir les véhicules)',
+    page: '🏠 Page d\'accueil',
+    section: '🏢 Nos services'
+  },
+  'service_planning_link_text': {
+    label: 'Planning - Texte du lien',
+    description: 'Texte du lien d\'action pour le service planning (ex: Voir le planning)',
     page: '🏠 Page d\'accueil',
     section: '🏢 Nos services'
   },

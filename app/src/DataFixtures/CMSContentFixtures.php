@@ -71,6 +71,22 @@ class CMSContentFixtures extends Fixture
                 'title' => 'Texte Communauté',
                 'content' => 'Rejoignez plus de 500 chauffeurs formés',
                 'sortOrder' => 5
+            ],
+            [
+                'section' => 'home_hero',
+                'type' => 'image_url',
+                'identifier' => 'home_hero_image_url',
+                'title' => 'Image Principale - URL',
+                'content' => '/assets/images/hero/classroom.jpg',
+                'sortOrder' => 6
+            ],
+            [
+                'section' => 'home_hero',
+                'type' => 'image_alt',
+                'identifier' => 'home_hero_image_alt',
+                'title' => 'Image Principale - Alt',
+                'content' => 'Formation taxi professionnelle - Salle de classe avec étudiants',
+                'sortOrder' => 7
             ]
         ];
 
@@ -156,6 +172,88 @@ class CMSContentFixtures extends Fixture
                 'title' => 'Description Service Planning',
                 'content' => 'Des sessions de formation adaptées à vos disponibilités.',
                 'sortOrder' => 8
+            ],
+            // Nouvelles fonctionnalités des services
+            [
+                'section' => 'home_services',
+                'type' => 'text',
+                'identifier' => 'service_formation_feature_1',
+                'title' => 'Formation - Caractéristique 1',
+                'content' => 'Formation initiale de 140h',
+                'sortOrder' => 9
+            ],
+            [
+                'section' => 'home_services',
+                'type' => 'text',
+                'identifier' => 'service_formation_feature_2',
+                'title' => 'Formation - Caractéristique 2',
+                'content' => 'Formation continue',
+                'sortOrder' => 10
+            ],
+            [
+                'section' => 'home_services',
+                'type' => 'text',
+                'identifier' => 'service_formation_feature_3',
+                'title' => 'Formation - Caractéristique 3',
+                'content' => 'Certification officielle',
+                'sortOrder' => 11
+            ],
+            [
+                'section' => 'home_services',
+                'type' => 'text',
+                'identifier' => 'service_location_feature_1',
+                'title' => 'Location - Caractéristique 1',
+                'content' => 'Entretien inclus',
+                'sortOrder' => 12
+            ],
+            [
+                'section' => 'home_services',
+                'type' => 'text',
+                'identifier' => 'service_location_feature_2',
+                'title' => 'Location - Caractéristique 2',
+                'content' => 'Assurance professionnelle',
+                'sortOrder' => 13
+            ],
+            [
+                'section' => 'home_services',
+                'type' => 'text',
+                'identifier' => 'service_planning_feature_1',
+                'title' => 'Planning - Caractéristique 1',
+                'content' => 'Horaires adaptés',
+                'sortOrder' => 14
+            ],
+            [
+                'section' => 'home_services',
+                'type' => 'text',
+                'identifier' => 'service_planning_feature_2',
+                'title' => 'Planning - Caractéristique 2',
+                'content' => 'Support personnalisé',
+                'sortOrder' => 15
+            ],
+            // Nouveaux liens d'action des services
+            [
+                'section' => 'home_services',
+                'type' => 'button_text',
+                'identifier' => 'service_formation_link_text',
+                'title' => 'Formation - Texte du lien',
+                'content' => 'En savoir plus',
+                'sortOrder' => 16
+            ],
+            [
+                'section' => 'home_services',
+                'type' => 'button_text',
+                'identifier' => 'service_location_link_text',
+                'title' => 'Location - Texte du lien',
+                'content' => 'Découvrir les véhicules',
+                'sortOrder' => 17
+            ],
+            [
+                'section' => 'home_services',
+                'type' => 'button_text',
+                'identifier' => 'service_planning_link_text',
+                'title' => 'Planning - Texte du lien',
+                'content' => 'Voir le planning',
+                'sortOrder' => 18
             ]
         ];
 

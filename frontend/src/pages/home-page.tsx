@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Star, Calendar, Car, Book, CheckCircle, ArrowRight } from 'lucide-react';
-import { adminContentTextApi, adminTestimonialApi } from '../services/api';
+import { adminContentTextApi, publicTestimonialsApi } from '../services/api';
 import heroImage from '@assets/images/hero/classroom.jpg';
 import PageContainer from '../components/layout/PageContainer';
 
@@ -25,10 +25,10 @@ interface CMSContent {
 
 interface Testimonial {
   id: number;
-  name: string;
+  clientName: string;
   content: string;
   rating: number;
-  formationName: string;
+  formation: string;
 }
 
 const Loader = () => (
@@ -134,7 +134,7 @@ const HomePage = () => {
       setCmsContent(contentMap);
 
       // Récupérer les témoignages en vedette
-      const testimonialsResponse = await adminTestimonialApi.getFeatured();
+      const testimonialsResponse = await publicTestimonialsApi.getFeatured();
       if (testimonialsResponse.data?.data) {
         setTestimonials(testimonialsResponse.data.data);
       }
@@ -224,8 +224,8 @@ const HomePage = () => {
               </div>
                 <div className="md:w-1/2 md:pl-8 animate-slideInRight">
                 <img
-                    src={heroImage}
-                    alt="Formation taxi professionnelle"
+                    src={getContent('home_hero_image_url', heroImage)}
+                    alt={getContent('home_hero_image_alt', 'Formation taxi professionnelle')}
                     className="rounded-lg shadow-xl hover:shadow-2xl transition-shadow duration-300 object-cover w-full"
                 />
               </div>
@@ -249,12 +249,12 @@ const HomePage = () => {
                   title={getContent('service_formation_title', 'Formation Taxi')}
                   description={getContent('service_formation_description', 'Formation initiale et continue pour les chauffeurs de taxi. Programme complet et certifiant.')}
                   items={[
-                    "Formation initiale de 140h",
-                    "Formation continue",
-                    "Certification officielle"
+                    getContent('service_formation_feature_1', 'Formation initiale de 140h'),
+                    getContent('service_formation_feature_2', 'Formation continue'),
+                    getContent('service_formation_feature_3', 'Certification officielle')
                   ]}
                   linkTo="/formations"
-                  linkText="En savoir plus"
+                  linkText={getContent('service_formation_link_text', 'En savoir plus')}
               />
 
               <ServiceCard
@@ -263,11 +263,11 @@ const HomePage = () => {
                   description={getContent('service_location_description', 'Location de véhicules équipés et adaptés pour l\'activité de taxi.')}
                   items={[
                     vehicleStats ? `${vehicleStats.totalVehicles} véhicules disponibles` : 'Véhicules récents',
-                    "Entretien inclus",
-                    "Assurance professionnelle"
+                    getContent('service_location_feature_1', 'Entretien inclus'),
+                    getContent('service_location_feature_2', 'Assurance professionnelle')
                   ]}
                   linkTo="/location"
-                  linkText="Découvrir les véhicules"
+                  linkText={getContent('service_location_link_text', 'Découvrir les véhicules')}
               />
 
               <ServiceCard
@@ -276,11 +276,11 @@ const HomePage = () => {
                   description={getContent('service_planning_description', 'Des sessions de formation adaptées à vos disponibilités.')}
                   items={[
                     formationStats ? `${formationStats.upcomingSessions} sessions à venir` : 'Sessions régulières',
-                    "Horaires adaptés",
-                    "Support personnalisé"
+                    getContent('service_planning_feature_1', 'Horaires adaptés'),
+                    getContent('service_planning_feature_2', 'Support personnalisé')
                   ]}
                   linkTo="/planning"
-                  linkText="Voir le planning"
+                  linkText={getContent('service_planning_link_text', 'Voir le planning')}
               />
             </div>
           </PageContainer>
@@ -323,8 +323,8 @@ const HomePage = () => {
                     key={testimonial.id}
                     stars={testimonial.rating}
                     content={testimonial.content}
-                    name={testimonial.name}
-                    info={testimonial.formationName}
+                    name={testimonial.clientName}
+                    info={testimonial.formation}
                   />
                 ))
               ) : (

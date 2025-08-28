@@ -527,6 +527,15 @@ export const contactApi = {
     }) => api.post('/contact', contactData)
 };
 
+// Services API pour les témoignages (public)
+export const publicTestimonialsApi = {
+    // Récupérer les témoignages en vedette
+    getFeatured: () => api.get('/testimonials/featured'),
+    
+    // Récupérer tous les témoignages actifs
+    getAll: () => api.get('/testimonials')
+};
+
 // Services API pour la gestion des documents (nouveau système)
 export const documentsApi = {
     // Upload temporaire de document
@@ -569,6 +578,19 @@ export const imageUploadApi = {
     // Supprimer une image
     delete: (filename: string) =>
         api.delete(`/admin/images/${encodeURIComponent(filename)}`)
+};
+
+// Services API pour l'upload d'images CMS
+export const adminImageUploadApi = {
+    // Upload d'image CMS
+    uploadCms: (formData: FormData) =>
+        api.post('/admin/images/upload-cms', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+    
+    // Supprimer une image CMS
+    deleteCms: (filename: string) =>
+        api.delete(`/admin/images/cms/${encodeURIComponent(filename)}`)
 };
 
 // Services API pour les documents de réservation de véhicules

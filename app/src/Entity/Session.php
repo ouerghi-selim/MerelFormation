@@ -194,15 +194,28 @@ class Session
     {
         $participants = new ArrayCollection();
         foreach ($this->reservations as $reservation) {
-            // ✅ VÉRIFICATIONS D'ARCHIVAGE
-            $isReservationActive = !$reservation->isArchived(); // Réservation non archivée
-            $isUserActive = $reservation->getUser()->getDeletedAt() === null; // Utilisateur non supprimé
-            $isConfirmed = ($reservation->getStatus() === 'confirmed' || $reservation->getStatus() === 'completed');
-            
-            if ($isConfirmed && $isReservationActive && $isUserActive) {
-                if (!$participants->contains($reservation->getUser())) {
-                    $participants->add($reservation->getUser());
+            try {
+                // ✅ VÉRIFICATIONS D'ARCHIVAGE SÉCURISÉES
+                $isReservationActive = !$reservation->isArchived(); // Réservation non archivée
+                
+                // ✅ PROTECTION CONTRE LES UTILISATEURS SOFT DELETED
+                $user = $reservation->getUser();
+                if (!$user) {
+                    continue; // Utilisateur manquant, skip
                 }
+                
+                $isUserActive = $user->getDeletedAt() === null; // Utilisateur non supprimé
+                $isConfirmed = ($reservation->getStatus() === 'confirmed' || $reservation->getStatus() === 'completed');
+                
+                if ($isConfirmed && $isReservationActive && $isUserActive) {
+                    if (!$participants->contains($user)) {
+                        $participants->add($user);
+                    }
+                }
+            } catch (\Exception $e) {
+                // ✅ GESTION DES ERREURS SOFT DELETE : Skip les utilisateurs supprimés
+                error_log("Erreur accès utilisateur soft deleted dans Session::getParticipants(): " . $e->getMessage());
+                continue;
             }
         }
         return $participants;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Search, Eye, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
-import { adminContentTextApi } from '../../services/api.ts';
+import { Plus, Edit, Trash2, Search, Eye, ChevronDown, ChevronUp, ExternalLink, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { adminContentTextApi, adminImageUploadApi } from '../../services/api.ts';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { 
   ContentText, 
@@ -38,6 +38,10 @@ const ContentTextsAdmin: React.FC = () => {
     type: '',
     isActive: true
   });
+
+  // États pour l'upload d'images
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     fetchContentTexts();
@@ -167,6 +171,14 @@ const ContentTextsAdmin: React.FC = () => {
       type: contentText.type,
       isActive: contentText.isActive
     });
+    
+    // Si c'est un type image_upload et qu'il y a une URL, l'afficher en preview
+    if (contentText.type === 'image_upload' && contentText.content) {
+      setImagePreview(contentText.content);
+    } else {
+      setImagePreview(null);
+    }
+    
     setShowEditModal(true);
   };
 
@@ -179,6 +191,7 @@ const ContentTextsAdmin: React.FC = () => {
       type: '',
       isActive: true
     });
+    setImagePreview(null);
   };
 
   const getPreviewUrl = (identifier: string) => {
@@ -189,6 +202,136 @@ const ContentTextsAdmin: React.FC = () => {
       return '/formations?preview=' + identifier;
     }
     return '/';
+  };
+
+  // Fonctions pour l'upload d'images
+  const handleImageUpload = async (file: File) => {
+    if (!file) return;
+
+    // Validation côté client
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Format de fichier non autorisé. Formats acceptés: JPG, PNG, GIF, WebP');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) { // 2MB max pour CMS
+      setError('Fichier trop volumineux. Taille maximale: 2MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await adminImageUploadApi.uploadCms(formData);
+      
+      if (response.data.success) {
+        const imageUrl = response.data.url;
+        setFormData(prev => ({ ...prev, content: imageUrl }));
+        setImagePreview(imageUrl);
+        setSuccessMessage('Image uploadée avec succès!');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Erreur lors de l\'upload de l\'image';
+      setError(errorMessage);
+      console.error(err);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleImageDelete = async () => {
+    if (!formData.content || !formData.content.startsWith('/uploads/cms/')) {
+      setImagePreview(null);
+      setFormData(prev => ({ ...prev, content: '' }));
+      return;
+    }
+
+    const filename = formData.content.split('/').pop();
+    if (!filename) return;
+
+    try {
+      await adminImageUploadApi.deleteCms(filename);
+      setImagePreview(null);
+      setFormData(prev => ({ ...prev, content: '' }));
+      setSuccessMessage('Image supprimée avec succès!');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Erreur lors de la suppression de l\'image';
+      setError(errorMessage);
+      console.error(err);
+    }
+  };
+
+  // Composant ImageUploadInterface
+  const ImageUploadInterface: React.FC<{ disabled?: boolean }> = ({ disabled = false }) => {
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        handleImageUpload(file);
+      }
+    };
+
+    return (
+      <div className="space-y-4">
+        {imagePreview ? (
+          <div className="relative">
+            <img
+              src={imagePreview}
+              alt="Aperçu"
+              className="w-full max-w-md h-48 object-cover rounded-lg border"
+            />
+            <button
+              type="button"
+              onClick={handleImageDelete}
+              disabled={disabled || uploadingImage}
+              className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full hover:bg-red-700 disabled:opacity-50"
+              title="Supprimer l'image"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        ) : (
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <ImageIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <div className="space-y-2">
+              <p className="text-sm text-gray-600">
+                Aucune image sélectionnée
+              </p>
+              <p className="text-xs text-gray-500">
+                Formats acceptés: JPG, PNG, GIF, WebP - Taille max: 2MB
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-center">
+          <label className="cursor-pointer">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              onChange={handleFileSelect}
+              disabled={disabled || uploadingImage}
+              className="hidden"
+            />
+            <div className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 disabled:opacity-50">
+              {uploadingImage ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  Upload en cours...
+                </>
+              ) : (
+                <>
+                  <Upload size={16} />
+                  {imagePreview ? 'Changer l\'image' : 'Choisir une image'}
+                </>
+              )}
+            </div>
+          </label>
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -329,12 +472,36 @@ const ContentTextsAdmin: React.FC = () => {
                                               </div>
                                               <p className="text-sm text-gray-600 leading-relaxed">{desc.description}</p>
                                               <div className="bg-white p-4 rounded-lg border text-sm text-gray-700">
-                                                <div className="whitespace-pre-wrap break-words">
-                                                  {content.content.length > 200 
-                                                    ? content.content.substring(0, 200) + '...'
-                                                    : content.content
-                                                  }
-                                                </div>
+                                                {content.type === 'image_upload' ? (
+                                                  <div className="space-y-2">
+                                                    {content.content ? (
+                                                      <div>
+                                                        <img
+                                                          src={content.content}
+                                                          alt={content.title}
+                                                          className="w-full max-w-sm h-32 object-cover rounded border"
+                                                          onError={(e) => {
+                                                            e.currentTarget.style.display = 'none';
+                                                          }}
+                                                        />
+                                                        <p className="text-xs text-gray-500 mt-1 font-mono break-all">
+                                                          {content.content}
+                                                        </p>
+                                                      </div>
+                                                    ) : (
+                                                      <div className="text-gray-500 italic">
+                                                        Aucune image uploadée
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                ) : (
+                                                  <div className="whitespace-pre-wrap break-words">
+                                                    {content.content.length > 200 
+                                                      ? content.content.substring(0, 200) + '...'
+                                                      : content.content
+                                                    }
+                                                  </div>
+                                                )}
                                               </div>
                                               <div className="text-xs text-gray-500 font-mono bg-gray-100 px-3 py-2 rounded inline-block">
                                                 ID: {content.identifier}
@@ -420,15 +587,19 @@ const ContentTextsAdmin: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Contenu du texte *
+                        {formData.type === 'image_upload' ? 'Image *' : 'Contenu du texte *'}
                       </label>
-                      <WysiwygEditor
-                        value={formData.content}
-                        onChange={(content) => setFormData({...formData, content})}
-                        height={300}
-                        placeholder="Le texte qui sera affiché sur le site..."
-                        eventType="content_management"
-                      />
+                      {formData.type === 'image_upload' ? (
+                        <ImageUploadInterface />
+                      ) : (
+                        <WysiwygEditor
+                          value={formData.content}
+                          onChange={(content) => setFormData({...formData, content})}
+                          height={300}
+                          placeholder="Le texte qui sera affiché sur le site..."
+                          eventType="content_management"
+                        />
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -466,6 +637,7 @@ const ContentTextsAdmin: React.FC = () => {
                           <option value="description">Description</option>
                           <option value="button_text">Texte de bouton</option>
                           <option value="text">Texte simple</option>
+                          <option value="image_upload">Image (avec upload)</option>
                         </select>
                       </div>
                     </div>
@@ -522,15 +694,19 @@ const ContentTextsAdmin: React.FC = () => {
                   <form onSubmit={handleEdit} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Contenu du texte *
+                        {formData.type === 'image_upload' ? 'Image *' : 'Contenu du texte *'}
                       </label>
-                      <WysiwygEditor
-                        value={formData.content}
-                        onChange={(content) => setFormData({...formData, content})}
-                        height={350}
-                        placeholder="Le texte qui sera affiché sur le site..."
-                        eventType="content_management"
-                      />
+                      {formData.type === 'image_upload' ? (
+                        <ImageUploadInterface />
+                      ) : (
+                        <WysiwygEditor
+                          value={formData.content}
+                          onChange={(content) => setFormData({...formData, content})}
+                          height={350}
+                          placeholder="Le texte qui sera affiché sur le site..."
+                          eventType="content_management"
+                        />
+                      )}
                     </div>
 
                     <div>
