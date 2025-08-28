@@ -20,9 +20,10 @@ const LocationPage = () => {
     // Fonction pour récupérer le contenu CMS
     const fetchCMSContent = async () => {
         try {
-            // Récupérer tous les contenus de la page location
+            // Récupérer tous les contenus de la page location avec une limite élevée
             const contentResponse = await adminContentTextApi.getAll({
-                section: ['location_hero', 'location_info', 'location_booking', 'location_vehicles', 'location_cta'].join(',')
+                section: ['location_hero', 'location_info', 'location_booking', 'location_vehicles', 'location_cta'].join(','),
+                limit: 100
             });
             
             // Transformer en objet avec identifiants comme clés
@@ -154,8 +155,8 @@ const LocationPage = () => {
                         <div className="md:flex">
                             <div className="md:w-1/2">
                                 <img
-                                    src={taxiCar}
-                                    alt="Volkswagen Touran équipé taxi"
+                                    src={getContent('location_vehicle_image', taxiCar)}
+                                    alt={getContent('location_vehicle_image_alt', 'Volkswagen Touran équipé taxi').replace(/<[^>]*>/g, '')}
                                     className="w-full h-full object-cover"
                                 />
                             </div>
@@ -163,11 +164,21 @@ const LocationPage = () => {
                                 <h3 className="text-2xl font-bold mb-4"
                                     dangerouslySetInnerHTML={{__html: getContent('location_vehicles_model', 'Volkswagen Touran Taxi Auto-École')}}/>
                                 <div className="space-y-4 mb-6">
-                                    <VehicleFeature>Boîte automatique</VehicleFeature>
-                                    <VehicleFeature>Équipements taxi obligatoires</VehicleFeature>
-                                    <VehicleFeature>Système auto-école (double commande)</VehicleFeature>
-                                    <VehicleFeature>3 rétroviseurs supplémentaires</VehicleFeature>
-                                    <VehicleFeature>Module électrique</VehicleFeature>
+                                    <VehicleFeature>
+                                        <span dangerouslySetInnerHTML={{__html: getContent('location_vehicle_feature_1', 'Boîte automatique')}} />
+                                    </VehicleFeature>
+                                    <VehicleFeature>
+                                        <span dangerouslySetInnerHTML={{__html: getContent('location_vehicle_feature_2', 'Équipements taxi obligatoires')}} />
+                                    </VehicleFeature>
+                                    <VehicleFeature>
+                                        <span dangerouslySetInnerHTML={{__html: getContent('location_vehicle_feature_3', 'Système auto-école (double commande)')}} />
+                                    </VehicleFeature>
+                                    <VehicleFeature>
+                                        <span dangerouslySetInnerHTML={{__html: getContent('location_vehicle_feature_4', '3 rétroviseurs supplémentaires')}} />
+                                    </VehicleFeature>
+                                    <VehicleFeature>
+                                        <span dangerouslySetInnerHTML={{__html: getContent('location_vehicle_feature_5', 'Module électrique')}} />
+                                    </VehicleFeature>
                                 </div>
                                 <p className="text-gray-700 mb-6"
                                     dangerouslySetInnerHTML={{__html: getContent('location_vehicles_pricing', 'Des tarifs différents pour préparer au mieux votre passage d\'examen, avec options de location à l\'heure ou à la journée.')}}/>

@@ -659,6 +659,50 @@ export const CONTENT_DESCRIPTIONS: { [key: string]: { label: string; description
     section: '🚙 Véhicules'
   },
 
+  // Page Location - Caractéristiques véhicule détaillées
+  'location_vehicle_feature_1': {
+    label: 'Caractéristique véhicule 1',
+    description: 'Première caractéristique du véhicule (ex: Boîte automatique)',
+    page: '🚗 Page location',
+    section: '🚙 Caractéristiques véhicule'
+  },
+  'location_vehicle_feature_2': {
+    label: 'Caractéristique véhicule 2',
+    description: 'Deuxième caractéristique du véhicule (ex: Équipements taxi obligatoires)',
+    page: '🚗 Page location',
+    section: '🚙 Caractéristiques véhicule'
+  },
+  'location_vehicle_feature_3': {
+    label: 'Caractéristique véhicule 3',
+    description: 'Troisième caractéristique du véhicule (ex: Système auto-école double commande)',
+    page: '🚗 Page location',
+    section: '🚙 Caractéristiques véhicule'
+  },
+  'location_vehicle_feature_4': {
+    label: 'Caractéristique véhicule 4',
+    description: 'Quatrième caractéristique du véhicule (ex: 3 rétroviseurs supplémentaires)',
+    page: '🚗 Page location',
+    section: '🚙 Caractéristiques véhicule'
+  },
+  'location_vehicle_feature_5': {
+    label: 'Caractéristique véhicule 5',
+    description: 'Cinquième caractéristique du véhicule (ex: Module électrique)',
+    page: '🚗 Page location',
+    section: '🚙 Caractéristiques véhicule'
+  },
+  'location_vehicle_image_alt': {
+    label: 'Image véhicule - Texte alternatif',
+    description: 'Texte alternatif de l\'image du véhicule pour l\'accessibilité',
+    page: '🚗 Page location',
+    section: '🚙 Caractéristiques véhicule'
+  },
+  'location_vehicle_image': {
+    label: 'Image véhicule (Upload)',
+    description: 'Image du véhicule avec possibilité d\'upload direct',
+    page: '🚗 Page location',
+    section: '🚙 Caractéristiques véhicule'
+  },
+
   // Page Location - CTA Final
   'location_cta_title': {
     label: 'Titre appel à l\'action',
