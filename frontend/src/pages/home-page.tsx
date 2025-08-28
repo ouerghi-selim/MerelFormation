@@ -57,7 +57,7 @@ const AnimatedCounter = ({ value, label, suffix = '' }: { value: number | string
   return (
       <div className="text-center transform hover:scale-105 transition-transform duration-300">
         <div className="text-4xl font-bold mb-2 animate-fadeIn">
-          {value}{suffix}
+          <span dangerouslySetInnerHTML={{__html: String(value) + suffix}} />
         </div>
           <div className="text-blue-200" dangerouslySetInnerHTML={{__html: label}} />
       </div>
@@ -77,13 +77,13 @@ const ServiceCard = ({ icon, title, description, items, linkTo, linkText }: any)
           {items.map((item: string, i: number) => (
               <li key={i} className="flex items-center text-gray-600">
                 <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
-                <span>{item}</span>
+                <span dangerouslySetInnerHTML={{__html: item}} />
               </li>
           ))}
         </ul>
         <Link to={linkTo}
               className="text-blue-900 font-medium flex items-center hover:text-blue-700 transition-colors group">
-          {linkText} <ChevronRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+          <span dangerouslySetInnerHTML={{__html: linkText}} /> <ChevronRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
         </Link>
       </div>
   );
@@ -121,7 +121,8 @@ const HomePage = () => {
     try {
       // Récupérer tous les contenus texte
       const contentResponse = await adminContentTextApi.getAll({
-        section: ['home_hero', 'home_services', 'home_cta', 'home_testimonials', 'home_statistics'].join(',')
+        section: ['home_hero', 'home_services', 'home_cta', 'home_testimonials', 'home_statistics'].join(','),
+        limit: 100
       });
       
       // Transformer en objet avec identifiants comme clés
@@ -316,36 +317,54 @@ const HomePage = () => {
           <PageContainer>
             <h2 className="text-3xl font-bold text-center mb-12"
                 dangerouslySetInnerHTML={{__html: getContent('home_testimonials_title', 'Ils nous font confiance')}} />
-            <div className="grid md:grid-cols-3 gap-8">
-              {testimonials.length > 0 ? (
-                testimonials.map((testimonial) => (
-                  <TestimonialCard
-                    key={testimonial.id}
-                    stars={testimonial.rating}
-                    content={testimonial.content}
-                    name={testimonial.clientName}
-                    info={testimonial.formation}
-                  />
-                ))
-              ) : (
-                // Fallback vers les témoignages par défaut si pas de données CMS
-                <>
-                  <TestimonialCard
-                      content="Formation excellente et très professionnelle. Les formateurs sont à l'écoute et le contenu est parfaitement adapté."
-                      name="Sarah M."
-                      info="Chauffeur de taxi depuis 2023"
-                  />
-                  <TestimonialCard
-                      content="Le service de location est impeccable. Véhicules toujours en parfait état et une équipe très réactive."
-                      name="Thomas R."
-                      info="Client depuis 2022"
-                  />
-                  <TestimonialCard
-                      content="Une formation complète qui m'a permis d'obtenir ma certification du premier coup. Je recommande vivement."
-                      name="Michel P."
-                      info="Diplômé en 2024"
-                  />
-                </>
+            
+            {/* Scroll horizontal pour les témoignages */}
+            <div className="relative">
+              <div className="flex overflow-x-auto gap-8 pb-6 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                {testimonials.length > 0 ? (
+                  testimonials.map((testimonial) => (
+                    <div key={testimonial.id} className="flex-none w-full md:w-80 snap-start">
+                      <TestimonialCard
+                        stars={testimonial.rating}
+                        content={testimonial.content}
+                        name={testimonial.clientName}
+                        info={testimonial.formation}
+                      />
+                    </div>
+                  ))
+                ) : (
+                  // Fallback vers les témoignages par défaut si pas de données CMS
+                  <>
+                    <div className="flex-none w-full md:w-80 snap-start">
+                      <TestimonialCard
+                          content="Formation excellente et très professionnelle. Les formateurs sont à l'écoute et le contenu est parfaitement adapté."
+                          name="Sarah M."
+                          info="Chauffeur de taxi depuis 2023"
+                      />
+                    </div>
+                    <div className="flex-none w-full md:w-80 snap-start">
+                      <TestimonialCard
+                          content="Le service de location est impeccable. Véhicules toujours en parfait état et une équipe très réactive."
+                          name="Thomas R."
+                          info="Client depuis 2022"
+                      />
+                    </div>
+                    <div className="flex-none w-full md:w-80 snap-start">
+                      <TestimonialCard
+                          content="Une formation complète qui m'a permis d'obtenir ma certification du premier coup. Je recommande vivement."
+                          name="Michel P."
+                          info="Diplômé en 2024"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              {/* Indicateur de scroll si plus de 3 éléments */}
+              {((testimonials.length > 0 && testimonials.length > 3) || (testimonials.length === 0)) && (
+                <div className="text-center mt-4">
+                  <p className="text-sm text-gray-500">← Faites défiler pour voir plus de témoignages →</p>
+                </div>
               )}
             </div>
           </PageContainer>

@@ -75,7 +75,8 @@ const ContactPage = () => {
         try {
             // Récupérer tous les contenus de la page contact
             const contentResponse = await adminContentTextApi.getAll({
-                section: ['contact_hero', 'contact_info', 'contact_map', 'contact_form', 'contact_legal'].join(',')
+                section: ['contact_hero', 'contact_info', 'contact_map', 'contact_form', 'contact_legal'].join(','),
+                limit: 100
             });
             
             // Transformer en objet avec identifiants comme clés
@@ -222,18 +223,20 @@ const ContactPage = () => {
                        dangerouslySetInnerHTML={{__html: getContent('contact_hero_description', 'Une question sur nos formations ? Besoin d\'informations ? Notre équipe est à votre écoute pour vous accompagner dans votre projet professionnel.')}} />
                     <div className="flex flex-wrap justify-center gap-6 mt-10">
 
-                            <a href="tel:0760861109"
+                            <a href={`tel:${getContent('contact_hero_phone_button', '0760861109').replace(/\s/g, '')}`}
                             className="bg-white text-blue-900 px-6 py-3 rounded-lg flex items-center hover:bg-blue-100 transition-all duration-300"
                             >
                             <Phone className="h-5 w-5 mr-2" />
-                            <span className="font-semibold">07 60 86 11 09</span>
+                            <span className="font-semibold" 
+                                  dangerouslySetInnerHTML={{__html: getContent('contact_hero_phone_button', '07 60 86 11 09')}} />
                         </a>
 
-                        <a href="mailto:contact@merelformation.fr"
+                        <a href={`mailto:${getContent('contact_hero_email_button', 'contact@merelformation.fr')}`}
                         className="bg-transparent text-white border border-white px-6 py-3 rounded-lg flex items-center hover:bg-white hover:text-blue-900 transition-all duration-300"
                         >
                         <Mail className="h-5 w-5 mr-2" />
-                        <span className="font-semibold">contact@merelformation.fr</span>
+                        <span className="font-semibold"
+                              dangerouslySetInnerHTML={{__html: getContent('contact_hero_email_button', 'contact@merelformation.fr')}} />
                         </a>
                     </div>
                 </PageContainer>
@@ -252,7 +255,8 @@ const ContactPage = () => {
                     <p className="text-gray-600 text-center mb-2"
                         dangerouslySetInnerHTML={{__html: getContent('contact_info_director_name', 'Jean-Louis MEREL')}} />
                     <p className="text-blue-900 font-bold text-center text-lg">
-                        <a href="tel:0760861109" className="hover:underline">07 60 86 11 09</a>
+                        <a href={`tel:${getContent('contact_info_phone_number', '0760861109').replace(/\s/g, '')}`} className="hover:underline"
+                           dangerouslySetInnerHTML={{__html: getContent('contact_info_phone_number', '07 60 86 11 09')}} />
                     </p>
                 </div>
 
@@ -306,11 +310,13 @@ const ContactPage = () => {
                                             onCloseClick={handleInfoWindowClose}
                                         >
                                             <div className="p-2 max-w-[200px]">
-                                                <strong>MerelFormation</strong><br />
-                                                <span className="text-sm">Centre de formation Taxi</span><br />
-                                                7 RUE Georges Maillols<br />
-                                                35000 RENNES<br />
-                                                <a href="tel:0760861109" className="text-blue-700 hover:underline">07 60 86 11 09</a>
+                                                <strong dangerouslySetInnerHTML={{__html: getContent('contact_map_company_name', 'MerelFormation')}} /><br />
+                                                <span className="text-sm" 
+                                                      dangerouslySetInnerHTML={{__html: getContent('contact_map_company_type', 'Centre de formation Taxi')}} /><br />
+                                                <span dangerouslySetInnerHTML={{__html: getContent('contact_map_address_street', '7 RUE Georges Maillols')}} /><br />
+                                                <span dangerouslySetInnerHTML={{__html: getContent('contact_map_address_city', '35000 RENNES')}} /><br />
+                                                <a href={`tel:${getContent('contact_map_phone_link', '0760861109').replace(/\s/g, '')}`} className="text-blue-700 hover:underline"
+                                                   dangerouslySetInnerHTML={{__html: getContent('contact_map_phone_link', '07 60 86 11 09')}} />
                                             </div>
                                         </InfoWindow>
                                     )}
@@ -326,9 +332,8 @@ const ContactPage = () => {
                 <div className="mt-6 flex items-start">
                     <MapPinned className="h-6 w-6 text-blue-900 mr-2 flex-shrink-0 mt-1" />
                     <div>
-                        <p className="text-gray-700 text-lg">
-                            <strong>MerelFormation</strong> - 7 RUE Georges Maillols, 35000 RENNES
-                        </p>
+                        <p className="text-gray-700 text-lg"
+                           dangerouslySetInnerHTML={{__html: getContent('contact_hero_company_info', '<strong>MerelFormation</strong> - 7 RUE Georges Maillols, 35000 RENNES')}} />
                         <p className="text-gray-600 mt-2"
                             dangerouslySetInnerHTML={{__html: getContent('contact_map_description', 'Facilement accessible en transports en commun et parking à proximité.')}} />
                     </div>
@@ -581,28 +586,30 @@ const ContactPage = () => {
                 <div className="bg-gray-50 p-6 rounded-lg shadow">
                     <h3 className="text-xl font-bold mb-4 flex items-center text-blue-900">
                         <Info className="h-6 w-6 mr-2" />
-                        Informations légales
+                        <span dangerouslySetInnerHTML={{__html: getContent('contact_legal_title', 'Informations légales')}} />
                     </h3>
                     <div className="space-y-2 text-gray-700">
-                        <p>MEREL TAXI</p>
-                        <p>Siret : 800484222</p>
-                        <p>N° Agrément préfectorale 35: 23-002 23-003</p>
-                        <p>N° Agrément préfectorale 22: 22-2023-04-21-00002</p>
-                        <p>N° Agrément préfectorale 56: 2023/56/02</p>
-                        <p>N° Agrément préfectorale 44: 44/23/002</p>
+                        <p dangerouslySetInnerHTML={{__html: getContent('contact_legal_company_name', 'MEREL TAXI')}} />
+                        <p dangerouslySetInnerHTML={{__html: getContent('contact_legal_siret', 'Siret : 800484222')}} />
+                        <p dangerouslySetInnerHTML={{__html: getContent('contact_legal_agreement_35', 'N° Agrément préfectorale 35: 23-002 23-003')}} />
+                        <p dangerouslySetInnerHTML={{__html: getContent('contact_legal_agreement_22', 'N° Agrément préfectorale 22: 22-2023-04-21-00002')}} />
+                        <p dangerouslySetInnerHTML={{__html: getContent('contact_legal_agreement_56', 'N° Agrément préfectorale 56: 2023/56/02')}} />
+                        <p dangerouslySetInnerHTML={{__html: getContent('contact_legal_agreement_44', 'N° Agrément préfectorale 44: 44/23/002')}} />
                     </div>
                 </div>
 
                 <div className="bg-gray-50 p-6 rounded-lg shadow">
                     <h3 className="text-xl font-bold mb-4 flex items-center text-blue-900">
                         <AlertCircle className="h-6 w-6 mr-2" />
-                        Médiation
+                        <span dangerouslySetInnerHTML={{__html: getContent('contact_legal_mediation_title', 'Médiation')}} />
                     </h3>
                     <div className="space-y-2 text-gray-700">
-                        <p>Centre de la Médiation et de la Consommation des Conciliateurs de Justice (CM2C)</p>
-                        <p>14 rue Saint Jean – 75017 Paris</p>
-                        <p>Email : <a href="mailto:cm2c@cm2c.net" className="text-blue-900 hover:underline">cm2c@cm2c.net</a></p>
-                        <p>Site Internet : <a href="https://cm2c.net" target="_blank" rel="noopener noreferrer" className="text-blue-900 hover:underline">https://cm2c.net</a></p>
+                        <p dangerouslySetInnerHTML={{__html: getContent('contact_mediation_center_name', 'Centre de la Médiation et de la Consommation des Conciliateurs de Justice (CM2C)')}} />
+                        <p dangerouslySetInnerHTML={{__html: getContent('contact_mediation_address', '14 rue Saint Jean – 75017 Paris')}} />
+                        <p>Email : <a href={`mailto:${getContent('contact_mediation_email', 'cm2c@cm2c.net')}`} className="text-blue-900 hover:underline"
+                            dangerouslySetInnerHTML={{__html: getContent('contact_mediation_email', 'cm2c@cm2c.net')}} /></p>
+                        <p>Site Internet : <a href={getContent('contact_mediation_website', 'https://cm2c.net')} target="_blank" rel="noopener noreferrer" className="text-blue-900 hover:underline"
+                            dangerouslySetInnerHTML={{__html: getContent('contact_mediation_website', 'https://cm2c.net')}} /></p>
                     </div>
                 </div>
             </div>

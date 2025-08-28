@@ -53,7 +53,7 @@ const ContentTextsAdmin: React.FC = () => {
     try {
       setLoading(true);
       const response = await adminContentTextApi.getAll({
-        limit: 100 // Récupérer tous les contenus
+        limit: 200 // Récupérer tous les contenus
       });
 
       if (response.data.success && response.data) {

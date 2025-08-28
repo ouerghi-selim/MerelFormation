@@ -151,7 +151,8 @@ export const CONTENT_SECTIONS = [
   'tracking_documents',
   'tracking_invoice',
   'tracking_status',
-  'tracking_footer'
+  'tracking_footer',
+  'footer'
 ] as const;
 
 export const CONTENT_TYPES = [
@@ -226,6 +227,13 @@ export const CMS_PAGES: PageSection[] = [
     description: 'Contenu de la page de suivi des réservations de véhicules',
     icon: '🔍',
     sections: ['tracking_header', 'tracking_progress', 'tracking_history', 'tracking_documents', 'tracking_invoice', 'tracking_status', 'tracking_footer']
+  },
+  {
+    id: 'footer',
+    name: '🦶 Footer (toutes pages)',
+    description: 'Contenu du footer affiché sur toutes les pages',
+    icon: '🦶',
+    sections: ['footer']
   }
 ];
 
@@ -985,6 +993,226 @@ export const CONTENT_DESCRIPTIONS: { [key: string]: { label: string; description
     description: 'Nom de la marque affiché en footer',
     page: '🔍 Page suivi réservation',
     section: '🔻 Pied de page'
+  },
+
+  // Page Contact - Informations légales détaillées
+  'contact_legal_company_name': {
+    label: 'Nom de l\'entreprise',
+    description: 'Nom officiel de l\'entreprise',
+    page: '📞 Page contact',
+    section: '⚖️ Informations légales'
+  },
+  'contact_legal_siret': {
+    label: 'Numéro SIRET',
+    description: 'Numéro SIRET de l\'entreprise',
+    page: '📞 Page contact',
+    section: '⚖️ Informations légales'
+  },
+  'contact_legal_agreement_35': {
+    label: 'Agrément Ille-et-Vilaine (35)',
+    description: 'Numéro d\'agrément préfectoral pour le département 35',
+    page: '📞 Page contact',
+    section: '⚖️ Informations légales'
+  },
+  'contact_legal_agreement_22': {
+    label: 'Agrément Côtes-d\'Armor (22)',
+    description: 'Numéro d\'agrément préfectoral pour le département 22',
+    page: '📞 Page contact',
+    section: '⚖️ Informations légales'
+  },
+  'contact_legal_agreement_56': {
+    label: 'Agrément Morbihan (56)',
+    description: 'Numéro d\'agrément préfectoral pour le département 56',
+    page: '📞 Page contact',
+    section: '⚖️ Informations légales'
+  },
+  'contact_legal_agreement_44': {
+    label: 'Agrément Loire-Atlantique (44)',
+    description: 'Numéro d\'agrément préfectoral pour le département 44',
+    page: '📞 Page contact',
+    section: '⚖️ Informations légales'
+  },
+  'contact_mediation_center_name': {
+    label: 'Nom du centre de médiation',
+    description: 'Nom complet du centre de médiation et arbitrage',
+    page: '📞 Page contact',
+    section: '⚖️ Médiation'
+  },
+  'contact_mediation_address': {
+    label: 'Adresse médiation',
+    description: 'Adresse du centre de médiation',
+    page: '📞 Page contact',
+    section: '⚖️ Médiation'
+  },
+  'contact_mediation_email': {
+    label: 'Email médiation',
+    description: 'Adresse email du centre de médiation',
+    page: '📞 Page contact',
+    section: '⚖️ Médiation'
+  },
+  'contact_mediation_website': {
+    label: 'Site web médiation',
+    description: 'URL du site web du centre de médiation',
+    page: '📞 Page contact',
+    section: '⚖️ Médiation'
+  },
+
+  // Footer - Newsletter
+  'footer_newsletter_title': {
+    label: 'Titre newsletter',
+    description: 'Titre de la section inscription newsletter',
+    page: '🦶 Footer (toutes pages)',
+    section: '📧 Newsletter'
+  },
+  'footer_newsletter_description': {
+    label: 'Description newsletter',
+    description: 'Description de l\'inscription à la newsletter',
+    page: '🦶 Footer (toutes pages)',
+    section: '📧 Newsletter'
+  },
+  'footer_newsletter_placeholder': {
+    label: 'Placeholder email',
+    description: 'Texte d\'exemple dans le champ email',
+    page: '🦶 Footer (toutes pages)',
+    section: '📧 Newsletter'
+  },
+  'footer_agreements': {
+    label: 'Agréments footer',
+    description: 'Liste des agréments préfectoraux affichés',
+    page: '🦶 Footer (toutes pages)',
+    section: '📧 Newsletter'
+  },
+
+  // Footer - Contact
+  'footer_contact_title': {
+    label: 'Titre contact footer',
+    description: 'Titre de la section contact dans le footer',
+    page: '🦶 Footer (toutes pages)',
+    section: '📞 Contact'
+  },
+  'footer_contact_email': {
+    label: 'Email footer',
+    description: 'Adresse email de contact affichée dans le footer',
+    page: '🦶 Footer (toutes pages)',
+    section: '📞 Contact'
+  },
+  'footer_contact_phone': {
+    label: 'Téléphone footer',
+    description: 'Numéro de téléphone affiché dans le footer',
+    page: '🦶 Footer (toutes pages)',
+    section: '📞 Contact'
+  },
+  'footer_contact_address': {
+    label: 'Adresse footer',
+    description: 'Adresse complète affichée dans le footer',
+    page: '🦶 Footer (toutes pages)',
+    section: '📞 Contact'
+  },
+
+  // Footer - Horaires
+  'footer_hours_title': {
+    label: 'Titre horaires footer',
+    description: 'Titre de la section horaires dans le footer',
+    page: '🦶 Footer (toutes pages)',
+    section: '🕐 Horaires'
+  },
+  'footer_hours_days': {
+    label: 'Jours d\'ouverture',
+    description: 'Jours de la semaine d\'ouverture',
+    page: '🦶 Footer (toutes pages)',
+    section: '🕐 Horaires'
+  },
+  'footer_hours_time': {
+    label: 'Heures d\'ouverture',
+    description: 'Plages horaires d\'ouverture détaillées',
+    page: '🦶 Footer (toutes pages)',
+    section: '🕐 Horaires'
+  },
+  'footer_social_title': {
+    label: 'Titre réseaux sociaux',
+    description: 'Titre de la section réseaux sociaux',
+    page: '🦶 Footer (toutes pages)',
+    section: '📱 Réseaux sociaux'
+  },
+
+  // Page Contact - Éléments Hero additionnels
+  'contact_hero_company_info': {
+    label: 'Informations entreprise (Hero)',
+    description: 'Nom et adresse de l\'entreprise affichés dans la section hero',
+    page: '📞 Page contact',
+    section: '🎯 En-tête'
+  },
+  'contact_hero_phone_button': {
+    label: 'Bouton téléphone (Hero)',
+    description: 'Texte du bouton de téléphone dans la section hero',
+    page: '📞 Page contact',
+    section: '🎯 En-tête'
+  },
+  'contact_hero_email_button': {
+    label: 'Bouton email (Hero)',
+    description: 'Texte du bouton email dans la section hero',
+    page: '📞 Page contact',
+    section: '🎯 En-tête'
+  },
+
+  // Page Contact - Informations contact détaillées
+  'contact_info_phone_number': {
+    label: 'Numéro de téléphone affiché',
+    description: 'Numéro de téléphone affiché dans la section informations',
+    page: '📞 Page contact',
+    section: '📋 Informations'
+  },
+
+  // Page Contact - Informations carte
+  'contact_map_company_name': {
+    label: 'Nom entreprise (Carte)',
+    description: 'Nom de l\'entreprise affiché dans la popup de carte',
+    page: '📞 Page contact',
+    section: '🗺️ Localisation'
+  },
+  'contact_map_company_type': {
+    label: 'Type d\'entreprise (Carte)',
+    description: 'Type d\'activité affiché dans la popup de carte',
+    page: '📞 Page contact',
+    section: '🗺️ Localisation'
+  },
+  'contact_map_address_street': {
+    label: 'Adresse rue (Carte)',
+    description: 'Nom de rue affiché dans la popup de carte',
+    page: '📞 Page contact',
+    section: '🗺️ Localisation'
+  },
+  'contact_map_address_city': {
+    label: 'Ville (Carte)',
+    description: 'Code postal et ville affichés dans la popup de carte',
+    page: '📞 Page contact',
+    section: '🗺️ Localisation'
+  },
+  'contact_map_phone_link': {
+    label: 'Téléphone lien (Carte)',
+    description: 'Numéro de téléphone cliquable dans la popup de carte',
+    page: '📞 Page contact',
+    section: '🗺️ Localisation'
+  },
+
+  // Footer - Copyright et mentions légales
+  'footer_copyright_text': {
+    label: 'Texte copyright',
+    description: 'Nom de l\'entreprise et mention droits réservés',
+    page: '🦶 Footer (toutes pages)',
+    section: '⚖️ Copyright'
+  },
+  'footer_legal_siret': {
+    label: 'SIRET footer',
+    description: 'Numéro SIRET affiché dans le footer',
+    page: '🦶 Footer (toutes pages)',
+    section: '⚖️ Copyright'
+  },
+  'footer_legal_agreement': {
+    label: 'Agrément préfectoral footer',
+    description: 'Numéro d\'agrément préfectoral principal affiché',
+    page: '🦶 Footer (toutes pages)',
+    section: '⚖️ Copyright'
   }
 };
 

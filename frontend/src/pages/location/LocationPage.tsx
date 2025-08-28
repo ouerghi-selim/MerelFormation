@@ -114,23 +114,20 @@ const LocationPage = () => {
                             <ReservationStep 
                                 number={1} 
                                 title={getContent('location_booking_step1_title', 'Choisissez votre date')}
-                            >
-                                <p dangerouslySetInnerHTML={{__html: getContent('location_booking_step1_description', 'Sélectionnez la date et l\'heure de votre examen dans notre calendrier en ligne')}}/>
-                            </ReservationStep>
+                                description={getContent('location_booking_step1_description', 'Sélectionnez la date et l\'heure de votre examen dans notre calendrier en ligne')}
+                            />
 
                             <ReservationStep 
                                 number={2} 
                                 title={getContent('location_booking_step2_title', 'Confirmez votre réservation')}
-                            >
-                                <p dangerouslySetInnerHTML={{__html: getContent('location_booking_step2_description', 'Remplissez le formulaire avec vos informations et validez votre demande')}}/>
-                            </ReservationStep>
+                                description={getContent('location_booking_step2_description', 'Remplissez le formulaire avec vos informations et validez votre demande')}
+                            />
 
                             <ReservationStep 
                                 number={3} 
                                 title={getContent('location_booking_step3_title', 'Recevez la confirmation')}
-                            >
-                                <p dangerouslySetInnerHTML={{__html: getContent('location_booking_step3_description', 'Nous vous contactons sous 24h pour confirmer et finaliser votre réservation')}} />
-                            </ReservationStep>
+                                description={getContent('location_booking_step3_description', 'Nous vous contactons sous 24h pour confirmer et finaliser votre réservation')}
+                            />
                         </div>
 
                         <div className="mt-8 text-center">
@@ -228,12 +225,12 @@ const LocationPage = () => {
 };
 
 // Composants auxiliaires
-const ReservationStep = ({ number, title, children }) => (
+const ReservationStep = ({ number, title, description }) => (
     <div className="flex items-start">
         <div className="bg-blue-900 text-white w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mr-4">{number}</div>
         <div>
-            <h3 className="text-xl font-semibold mb-2">{title}</h3>
-            <p className="text-gray-700">{children}</p>
+            <h3 className="text-xl font-semibold mb-2" dangerouslySetInnerHTML={{__html: title}} />
+            <p className="text-gray-700" dangerouslySetInnerHTML={{__html: description}} />
         </div>
     </div>
 );

@@ -1,15 +1,55 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, Facebook, Instagram, Twitter, Send, CheckCircle,
     ChevronDown, HelpCircle, Clock, MessageSquare } from 'lucide-react';
+import { adminContentTextApi } from '@/services/api';
+
+interface CMSContent {
+  [key: string]: string;
+}
 
 const Footer = () => {
     const currentYear = new Date().getFullYear();
     const [email, setEmail] = useState('');
     const [subscribed, setSubscribed] = useState(false);
+    const [cmsContent, setCmsContent] = useState<CMSContent>({});
+    const [loading, setLoading] = useState(true);
 
     // États pour les menus déroulants
     const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
+
+    // Fonction pour récupérer le contenu CMS
+    const fetchCMSContent = async () => {
+        try {
+            const contentResponse = await adminContentTextApi.getAll({
+                section: 'footer',
+                limit: 100
+            });
+            
+            // Transformer en objet avec identifiants comme clés
+            const contentMap: CMSContent = {};
+            if (contentResponse.data?.data) {
+                contentResponse.data.data.forEach((item: any) => {
+                    contentMap[item.identifier] = item.content;
+                });
+            }
+            setCmsContent(contentMap);
+            
+        } catch (err) {
+            console.error('Erreur lors du chargement du contenu CMS Footer:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCMSContent();
+    }, []);
+
+    // Fonction helper pour récupérer du contenu CMS avec fallback
+    const getContent = (identifier: string, fallback: string) => {
+        return cmsContent[identifier] || fallback;
+    };
 
     const handleSubscribe = (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,14 +73,14 @@ const Footer = () => {
                         <div
                             className="flex items-center justify-between cursor-pointer"
                         >
-                            <h4 className="font-bold text-lg text-blue-900">Restez informé</h4>
+                            <h4 className="font-bold text-lg text-blue-900"
+                                dangerouslySetInnerHTML={{__html: getContent('footer_newsletter_title', 'Restez informé')}} />
                         </div>
 
 
                             <div className="mt-3 animate-fadeIn">
-                                <p className="text-gray-600 text-sm mb-3">
-                                    Recevez nos actualités et dates de sessions.
-                                </p>
+                                <p className="text-gray-600 text-sm mb-3"
+                                   dangerouslySetInnerHTML={{__html: getContent('footer_newsletter_description', 'Recevez nos actualités et dates de sessions.')}} />
                                 {subscribed ? (
                                     <div className="bg-green-100 border-l-4 border-green-500 p-2 flex items-center text-sm">
                                         <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
@@ -52,7 +92,7 @@ const Footer = () => {
                                             type="email"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
-                                            placeholder="Votre adresse email"
+                                            placeholder={getContent('footer_newsletter_placeholder', 'Votre adresse email')}
                                             className="flex-grow px-3 py-1 text-sm rounded-l-lg border-gray-300 border focus:ring-2 focus:ring-blue-300 focus:outline-none"
                                             required
                                         />
@@ -67,9 +107,8 @@ const Footer = () => {
                                         <div className="p-1 bg-blue-100 rounded-full mr-1">
                                             <CheckCircle className="h-3 w-3 text-blue-900" />
                                         </div>
-                                        <div className="text-gray-600">
-                                            Agréments préfectoraux: 35, 22, 56, 44
-                                        </div>
+                                        <div className="text-gray-600"
+                                             dangerouslySetInnerHTML={{__html: getContent('footer_agreements', 'Agréments préfectoraux: 35, 22, 56, 44')}} />
                                     </div>
                                 </div>
                             </div>
@@ -78,42 +117,43 @@ const Footer = () => {
 
                     {/* Contact */}
                     <div>
-                        <h4 className="font-bold text-lg mb-3 text-blue-900">Contactez-nous</h4>
+                        <h4 className="font-bold text-lg mb-3 text-blue-900"
+                            dangerouslySetInnerHTML={{__html: getContent('footer_contact_title', 'Contactez-nous')}} />
                         <ul className="text-gray-600 space-y-2 text-sm">
                             <li className="flex items-center">
                                 <Mail className="h-4 w-4 text-blue-900 mr-2" />
-                                <a href="mailto:contact@merelformation.fr" className="hover:text-blue-900 transition-colors">
-                                    contact@merelformation.fr
-                                </a>
+                                <a href={`mailto:${getContent('footer_contact_email', 'contact@merelformation.fr')}`} className="hover:text-blue-900 transition-colors"
+                                   dangerouslySetInnerHTML={{__html: getContent('footer_contact_email', 'contact@merelformation.fr')}} />
                             </li>
                             <li className="flex items-center">
                                 <Phone className="h-4 w-4 text-blue-900 mr-2" />
-                                <a href="tel:0760861109" className="hover:text-blue-900 transition-colors">
-                                    07 60 86 11 09
-                                </a>
+                                <a href={`tel:${getContent('footer_contact_phone', '0760861109').replace(/\s/g, '')}`} className="hover:text-blue-900 transition-colors"
+                                   dangerouslySetInnerHTML={{__html: getContent('footer_contact_phone', '07 60 86 11 09')}} />
                             </li>
                             <li className="flex items-center">
                                 <MapPin className="h-4 w-4 text-blue-900 mr-2" />
-                                <span>7 RUE Georges Maillols, 35000 RENNES</span>
+                                <span dangerouslySetInnerHTML={{__html: getContent('footer_contact_address', '7 RUE Georges Maillols, 35000 RENNES')}} />
                             </li>
                         </ul>
                     </div>
 
                     {/* Hours and Social */}
                     <div>
-                        <h4 className="font-bold text-lg mb-3 text-blue-900">Horaires</h4>
+                        <h4 className="font-bold text-lg mb-3 text-blue-900"
+                            dangerouslySetInnerHTML={{__html: getContent('footer_hours_title', 'Horaires')}} />
                         <div className="text-gray-600 text-sm mb-3">
                             <div className="flex items-center">
                                 <Clock className="h-4 w-4 text-blue-900 mr-2" />
                                 <div>
-                                    <p>Lundi - Vendredi</p>
-                                    <p>8h30 - 12h00 | 13h00 - 16h30</p>
+                                    <p dangerouslySetInnerHTML={{__html: getContent('footer_hours_days', 'Lundi - Vendredi')}} />
+                                    <p dangerouslySetInnerHTML={{__html: getContent('footer_hours_time', '8h30 - 12h00 | 13h00 - 16h30')}} />
                                 </div>
                             </div>
                         </div>
 
                         <div className="mt-3">
-                            <h5 className="font-medium text-sm mb-2">Suivez-nous</h5>
+                            <h5 className="font-medium text-sm mb-2"
+                                dangerouslySetInnerHTML={{__html: getContent('footer_social_title', 'Suivez-nous')}} />
                             <div className="flex space-x-3">
                                 <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="bg-blue-900 text-white p-1 rounded-full hover:bg-blue-700 transition-colors">
                                     <Facebook size={16} />
@@ -251,13 +291,14 @@ const Footer = () => {
                 <div className="border-t border-gray-200 pt-4 text-center text-gray-600 text-xs">
                     <div className="flex flex-col md:flex-row justify-between items-center">
                         <div>
-                            <p>&copy; {currentYear} MerelFormation. Tous droits réservés.</p>
-                            <p className="mt-1">SIRET : 800484222 | N° Agrément préfectorale 35: 23-002 23-003</p>
+                            <p>&copy; {currentYear} <span dangerouslySetInnerHTML={{__html: getContent('footer_copyright_text', 'MerelFormation. Tous droits réservés.')}} /></p>
+                            <p className="mt-1">
+                                <span dangerouslySetInnerHTML={{__html: getContent('footer_legal_siret', 'SIRET : 800484222')}} /> | <span dangerouslySetInnerHTML={{__html: getContent('footer_legal_agreement', 'N° Agrément préfectorale 35: 23-002 23-003')}} />
+                            </p>
                         </div>
                     </div>
                 </div>
             </div>
-
         </footer>
     );
 };

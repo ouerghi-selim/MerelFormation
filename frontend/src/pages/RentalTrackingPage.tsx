@@ -72,7 +72,8 @@ const RentalTrackingPage: React.FC = () => {
     try {
       // Récupérer tous les contenus texte pour les sections de tracking
       const contentResponse = await adminContentTextApi.getAll({
-        section: ['tracking_header', 'tracking_progress', 'tracking_history', 'tracking_documents', 'tracking_invoice', 'tracking_status', 'tracking_footer'].join(',')
+        section: ['tracking_header', 'tracking_progress', 'tracking_history', 'tracking_documents', 'tracking_invoice', 'tracking_status', 'tracking_footer'].join(','),
+        limit: 100
       });
       
       // Transformer en objet avec identifiants comme clés
