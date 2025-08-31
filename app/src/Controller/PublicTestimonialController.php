@@ -22,8 +22,8 @@ class PublicTestimonialController extends AbstractController
             $testimonials = $this->entityManager->getRepository(Testimonial::class)
                 ->findBy(
                     ['isFeatured' => true, 'isActive' => true], 
-                    ['createdAt' => 'DESC'],
-                    6 // Limiter à 6 témoignages max pour la page d'accueil
+                    ['createdAt' => 'DESC']
+                    // Pas de limite - afficher tous les témoignages en vedette
                 );
 
             return new JsonResponse([

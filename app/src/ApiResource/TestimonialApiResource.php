@@ -14,6 +14,18 @@ use App\Controller\Admin\TestimonialAdminController;
 #[ApiResource(
     shortName: 'admin_testimonial',
     operations: [
+        // Routes spécifiques AVANT les routes génériques avec {id}
+        new GetCollection(
+            uriTemplate: '/admin/testimonials/featured',
+            controller: TestimonialAdminController::class . '::getFeatured',
+            name: 'get_featured_testimonials'
+        ),
+        new GetCollection(
+            uriTemplate: '/admin/testimonials/formations',
+            controller: TestimonialAdminController::class . '::getFormations',
+            name: 'get_testimonial_formations'
+        ),
+        // Routes génériques
         new GetCollection(
             uriTemplate: '/admin/testimonials',
             controller: TestimonialAdminController::class . '::index',
@@ -48,16 +60,6 @@ use App\Controller\Admin\TestimonialAdminController;
             uriTemplate: '/admin/testimonials/{id}/toggle-active',
             controller: TestimonialAdminController::class . '::toggleActive',
             name: 'toggle_testimonial_active'
-        ),
-        new GetCollection(
-            uriTemplate: '/admin/testimonials/featured',
-            controller: TestimonialAdminController::class . '::getFeatured',
-            name: 'get_featured_testimonials'
-        ),
-        new GetCollection(
-            uriTemplate: '/admin/testimonials/formations',
-            controller: TestimonialAdminController::class . '::getFormations',
-            name: 'get_testimonial_formations'
         )
     ]
 )]

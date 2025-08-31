@@ -1,7 +1,7 @@
 // src/pages/admin/DashboardAdmin.tsx (version modifiée)
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, BookOpen, Calendar, AlertCircle, X } from 'lucide-react';
+import { Users, BookOpen, Calendar, AlertCircle, X, Eye } from 'lucide-react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import StatCard from '../../components/admin/StatCard';
 import LineChart from '../../components/charts/LineChart';
@@ -10,7 +10,8 @@ import Alert from '../../components/common/Alert';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import ReservationDetailModal from '../../components/admin/ReservationDetailModal';
-import {adminDashboardApi, adminReservationsApi} from '@/services/api.ts';
+import StudentDetailModal from '../../components/admin/StudentDetailModal';
+import {adminDashboardApi, adminReservationsApi, adminUsersApi} from '@/services/api.ts';
 import { getStatusBadgeClass, getStatusLabel, ReservationStatus } from '../../utils/reservationStatuses';
 import { ChevronDown } from 'lucide-react';
 
@@ -52,6 +53,28 @@ interface RecentReservation {
   status: string;
 }
 
+interface User {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  lastLogin: string | null;
+  phone?: string;
+  company?: {
+    id: number;
+    name: string;
+    address: string;
+    postalCode: string;
+    city: string;
+    siret: string;
+    responsableName: string;
+    email: string;
+    phone: string;
+  };
+}
+
 const DashboardAdmin: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats>({
     activeStudents: 0,
@@ -87,6 +110,11 @@ const DashboardAdmin: React.FC = () => {
   const [availableStatuses, setAvailableStatuses] = useState<ReservationStatus[]>([]);
   const [showStatusDropdown, setShowStatusDropdown] = useState<Record<number, boolean>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  
+  // États pour le modal étudiant
+  const [showStudentModal, setShowStudentModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
+  const [loadingStudent, setLoadingStudent] = useState(false);
 
   // Données de graphique (à remplacer par des données réelles)
   const [revenueData, setRevenueData] = useState([]);
@@ -145,6 +173,21 @@ const DashboardAdmin: React.FC = () => {
   const handleReservationUpdated = () => {
     fetchDashboardData();
     setShowDetailModal(false);
+  };
+
+  // Fonction pour voir les détails de l'étudiant
+  const viewStudentDetails = async (userId: number) => {
+    try {
+      setLoadingStudent(true);
+      const response = await adminUsersApi.get(userId);
+      setSelectedStudent(response.data);
+      setShowStudentModal(true);
+    } catch (err) {
+      console.error('Error fetching student details:', err);
+      setError('Erreur lors du chargement des détails de l\'étudiant');
+    } finally {
+      setLoadingStudent(false);
+    }
   };
 
   // Fonction pour basculer l'affichage de la liste déroulante de statut
@@ -454,10 +497,12 @@ const DashboardAdmin: React.FC = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
-                                onClick={() => handleOpenSessionReservation(reservation.id)}
-                                className="text-blue-700 hover:text-blue-900"
+                                onClick={() => viewStudentDetails(reservation.user.id)}
+                                className="text-blue-600 hover:text-blue-900"
+                                title="Voir détails de l'étudiant"
+                                disabled={loadingStudent}
                             >
-                              Détails
+                              <Eye className="h-5 w-5" />
                             </button>
                           </td>
                         </tr>
@@ -562,6 +607,14 @@ const DashboardAdmin: React.FC = () => {
                 reservationType={selectedReservationType}
                 reservationId={selectedReservationId}
                 onSuccess={handleReservationUpdated}
+            />
+
+            {/* Modal détails étudiant */}
+            <StudentDetailModal
+                isOpen={showStudentModal}
+                onClose={() => setShowStudentModal(false)}
+                student={selectedStudent}
+                activeTab="reservations"
             />
 
             {/* Modal de confirmation pour le changement de statut */}

@@ -3,6 +3,7 @@
 namespace App\Controller\Admin;
 
 use App\Entity\Testimonial;
+use App\Entity\Formation;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -242,20 +243,28 @@ class TestimonialAdminController extends AbstractController
 
     public function getFormations(): JsonResponse
     {
-        $formations = $this->entityManager->createQueryBuilder()
-            ->select('DISTINCT t.formation')
-            ->from(Testimonial::class, 't')
-            ->where('t.formation IS NOT NULL')
-            ->orderBy('t.formation', 'ASC')
-            ->getQuery()
-            ->getResult();
+        try {
+            // Récupérer toutes les formations actives depuis l'entité Formation
+            $formations = $this->entityManager->getRepository(Formation::class)
+                ->createQueryBuilder('f')
+                ->where('f.deletedAt IS NULL') // Exclure les formations supprimées
+                ->orderBy('f.title', 'ASC')
+                ->getQuery()
+                ->getResult();
+            
+            // Créer une liste des titres de formations
+            $formationList = array_map(fn($formation) => $formation->getTitle(), $formations);
 
-        $formationList = array_map(fn($formation) => $formation['formation'], $formations);
-
-        return new JsonResponse([
-            'success' => true,
-            'data' => $formationList
-        ]);
+            return new JsonResponse([
+                'success' => true,
+                'data' => $formationList
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des formations: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     private function updateTestimonialFromData(Testimonial $testimonial, array $data): void
