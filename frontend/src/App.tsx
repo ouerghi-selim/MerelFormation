@@ -22,6 +22,7 @@ import FormationNew from './pages/admin/FormationNew';
 import ReservationsAdmin from './pages/admin/ReservationsAdmin';
 import FormationReservationsAdmin from './pages/admin/FormationReservationsAdmin';
 import VehicleReservationDetail from './pages/admin/VehicleReservationDetail';
+import SessionReservationEdit from './pages/admin/SessionReservationEdit';
 import UsersAdmin from './pages/admin/UsersAdmin';
 import StudentsAdmin from './pages/admin/StudentsAdmin';
 import InstructorsAdmin from './pages/admin/InstructorsAdmin';
@@ -133,10 +134,15 @@ const App = () => {
                             <ReservationsAdmin />
                         //   </ProtectedAdminRoute>
                     } />
-                    {/* Nouvelle route pour les réservations de formations */}
+                    {/* Anciennes routes pour réservations (maintenues pour compatibilité) */}
                     <Route path="/admin/reservations/formations" element={<FormationReservationsAdmin />} />
-                    {/* Nouvelle route pour les détails de réservation véhicule */}
+                    {/* Nouvelle route pour les réservations de formations */}
+                    <Route path="/admin/formations/reservation" element={<FormationReservationsAdmin />} />
+                    {/* Nouvelle route pour les réservations d'examens/véhicules */}
+                    <Route path="/admin/examens/reservation" element={<ReservationsAdmin />} />
+                    {/* Routes de détail */}
                     <Route path="/admin/reservations/vehicle/:id" element={<VehicleReservationDetail />} />
+                    <Route path="/admin/reservations/session/:userId/edit" element={<SessionReservationEdit />} />
                     <Route path="/admin/centers" element={<CentersAdmin />} />
                     <Route path="/admin/reservations/formules" element={<FormulasAdmin />} />
 

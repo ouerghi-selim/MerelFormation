@@ -91,7 +91,7 @@ class SessionAdminController extends AbstractController
         // Formater les données pour la réponse
         $formattedSessions = [];
         foreach ($sessions as $session) {
-            $formattedSessions[] = $this->formatSessionData($session, true); // Ajouter true ici
+            $formattedSessions[] = $this->formatSessionData($session, true);
         }
 
         return $this->json($formattedSessions);
@@ -702,79 +702,114 @@ class SessionAdminController extends AbstractController
             'location' => $session->getLocation(),
             'status' => $session->getStatus(),
             'notes' => $session->getNotes(),
-            'participants' => array_map(function($participant) {
-                return [
-                    'id' => $participant->getId(),
-                    'firstName' => $participant->getFirstName(),
-                    'lastName' => $participant->getLastName(),
-                    'email' => $participant->getEmail()
-                ];
-            }, $session->getParticipants()->toArray())
+            'participants' => []
         ];
-        // Ajouter l'instructeur aux données formatées (compatibilité arrière)
-        if ($session->getInstructor()) {
-            $formattedSession['instructor'] = [
-                'id' => $session->getInstructor()->getId(),
-                'firstName' => $session->getInstructor()->getFirstName(),
-                'lastName' => $session->getInstructor()->getLastName()
-            ];
+
+        // Gérer l'instructeur principal (peut être null ou soft-deleted)
+        $instructor = $session->getInstructor();
+        if ($instructor) {
+            try {
+                $formattedSession['instructor'] = [
+                    'id' => $instructor->getId(),
+                    'firstName' => $instructor->getFirstName(),
+                    'lastName' => $instructor->getLastName()
+                ];
+            } catch (\Exception $e) {
+                // Instructeur soft-deleted ou inaccessible
+                $formattedSession['instructor'] = null;
+            }
+        } else {
+            $formattedSession['instructor'] = null;
         }
 
-        // Ajouter les instructeurs multiples
-        $formattedSession['instructors'] = array_map(function($instructor) {
-            return [
-                'id' => $instructor->getId(),
-                'firstName' => $instructor->getFirstName(),
-                'lastName' => $instructor->getLastName(),
-                'email' => $instructor->getEmail(),
-                'specialization' => $instructor->getSpecialization()
-            ];
-        }, $session->getInstructors()->toArray());
-        // Ajouter des détails supplémentaires si demandés
-        if ($detailed) {
-            $participants = [];
-            foreach ($session->getParticipants() as $participant) {
+        // Gérer les instructeurs multiples (peut contenir des entités soft-deleted)
+        $instructors = [];
+        foreach ($session->getInstructors() as $instructor) {
+            try {
+                $instructors[] = [
+                    'id' => $instructor->getId(),
+                    'firstName' => $instructor->getFirstName(),
+                    'lastName' => $instructor->getLastName(),
+                    'email' => $instructor->getEmail(),
+                    'specialization' => $instructor->getSpecialization()
+                ];
+            } catch (\Exception $e) {
+                // Instructeur soft-deleted ou inaccessible, on l'ignore
+                continue;
+            }
+        }
+        $formattedSession['instructors'] = $instructors;
+
+        // Gérer les participants (peut contenir des entités soft-deleted)
+        $participants = [];
+        foreach ($session->getParticipants() as $participant) {
+            try {
                 $participants[] = [
                     'id' => $participant->getId(),
                     'firstName' => $participant->getFirstName(),
                     'lastName' => $participant->getLastName(),
                     'email' => $participant->getEmail()
                 ];
+            } catch (\Exception $e) {
+                // Participant soft-deleted ou inaccessible, on l'ignore
+                continue;
             }
+        }
+        $formattedSession['participants'] = $participants;
 
-            $formattedSession['detailedParticipants'] = $participants;
-
-            // Ajouter les détails des réservations si nécessaire
+        // Ajouter des détails supplémentaires si demandés
+        if ($detailed) {
+            // Ajouter les détails des réservations (gérer les utilisateurs soft-deleted)
             $reservations = [];
             foreach ($session->getReservations() as $reservation) {
-                $reservations[] = [
-                    'id' => $reservation->getId(),
-                    'status' => $reservation->getStatus(),
-                    'user' => [
-                        'id' => $reservation->getUser()->getId(),
-                        'firstName' => $reservation->getUser()->getFirstName(),
-                        'lastName' => $reservation->getUser()->getLastName()
-                    ],
-                    'createdAt' => $reservation->getCreatedAt()->format('Y-m-d\TH:i:s.v\Z')
-                ];
+                try {
+                    $user = $reservation->getUser();
+                    if ($user) {
+                        $reservations[] = [
+                            'id' => $reservation->getId(),
+                            'status' => $reservation->getStatus(),
+                            'user' => [
+                                'id' => $user->getId(),
+                                'firstName' => $user->getFirstName(),
+                                'lastName' => $user->getLastName()
+                            ],
+                            'createdAt' => $reservation->getCreatedAt()->format('Y-m-d\TH:i:s.v\Z')
+                        ];
+                    }
+                } catch (\Exception $e) {
+                    // Utilisateur soft-deleted ou inaccessible, on ignore cette réservation
+                    continue;
+                }
             }
-
             $formattedSession['reservations'] = $reservations;
 
             // Ajouter les documents
             $documents = [];
             foreach ($session->getDocuments() as $document) {
-                $documents[] = [
-                    'id' => $document->getId(),
-                    'title' => $document->getTitle(),
-                    'fileName' => $document->getFileName(),
-                    'type' => $document->getType(),
-                    'category' => $document->getCategory(),
-                    'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
-                    'uploadedBy' => $document->getUploadedBy() ? $document->getUploadedBy()->getEmail() : null
-                ];
+                try {
+                    $uploadedBy = $document->getUploadedBy();
+                    $documents[] = [
+                        'id' => $document->getId(),
+                        'title' => $document->getTitle(),
+                        'fileName' => $document->getFileName(),
+                        'type' => $document->getType(),
+                        'category' => $document->getCategory(),
+                        'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
+                        'uploadedBy' => $uploadedBy ? $uploadedBy->getEmail() : null
+                    ];
+                } catch (\Exception $e) {
+                    // Document ou utilisateur qui a uploadé soft-deleted, on garde le document sans l'utilisateur
+                    $documents[] = [
+                        'id' => $document->getId(),
+                        'title' => $document->getTitle(),
+                        'fileName' => $document->getFileName(),
+                        'type' => $document->getType(),
+                        'category' => $document->getCategory(),
+                        'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
+                        'uploadedBy' => 'Utilisateur supprimé'
+                    ];
+                }
             }
-
             $formattedSession['documents'] = $documents;
         }
 

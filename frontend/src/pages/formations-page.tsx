@@ -6,6 +6,12 @@ import SessionSelectionModal from '../components/front/modals/SessionSelectionMo
 import RegistrationFormModal from '../components/front/modals/RegistrationFormModal';
 import { adminContentTextApi } from '../services/api';
 import PageContainer from '../components/layout/PageContainer';
+import DynamicIcon from '../components/common/DynamicIcon';
+
+interface Badge {
+  icon?: string;
+  text?: string;
+}
 
 interface Formation {
   slug: number;
@@ -18,6 +24,7 @@ interface Formation {
   description: string;
   type: string;
   isActive: boolean;
+  badges?: Badge[];
 }
 
 interface CMSContent {
@@ -321,7 +328,7 @@ const FormationsPage = () => {
                         onMouseLeave={() => setHoveredCard(null)}
                     >
                       <div className="border-b-4 border-blue-900 h-3"></div>
-                      <div className="p-6">
+                      <div className="p-6 flex flex-col h-full">
                         <div className="flex justify-between items-start mb-4">
                           <Link to={`/formations/${formation.slug || formation.id}`} className="group">
                             <h3 className="text-xl font-bold mb-2 text-blue-900 group-hover:text-blue-700 transition-colors">
@@ -334,25 +341,49 @@ const FormationsPage = () => {
                         </div>
 
                         <div className="space-y-3 mb-4">
+                          {/* Badge durée - toujours affiché */}
                           <div className="flex items-center text-gray-600">
                             <Clock className="h-5 w-5 mr-2 text-blue-900"/>
-                            <span>{formation.duration}h de formation</span>
+                            <span>{formation.duration} heures</span>
                           </div>
-                          {formation.startDate && (
+
+                          {/* Badges dynamiques */}
+                          {formation.badges && formation.badges.length > 0 ? (
+                            formation.badges.map((badge, index) => {
+                              // Ne pas afficher les badges vides
+                              if (!badge.text && !badge.icon) return null;
+                              
+                              return (
+                                <div key={index} className="flex items-center text-gray-600">
+                                  {badge.icon && <DynamicIcon iconName={badge.icon} className="h-5 w-5 mr-2 text-blue-900"/>}
+                                  {badge.text && <span>{badge.text}</span>}
+                                </div>
+                              );
+                            })
+                          ) : (
+                            // Fallback si pas de badges dynamiques
+                            <>
+                              {formation.startDate && (
+                                  <div className="flex items-center text-gray-600">
+                                    <Calendar className="h-5 w-5 mr-2 text-blue-900"/>
+                                    <span>Prochaine session: {new Date(formation.startDate).toLocaleDateString()}</span>
+                                  </div>
+                              )}
                               <div className="flex items-center text-gray-600">
-                                <Calendar className="h-5 w-5 mr-2 text-blue-900"/>
-                                <span>Prochaine session: {new Date(formation.startDate).toLocaleDateString()}</span>
+                                <Users className="h-5 w-5 mr-2 text-blue-900"/>
+                                <span>8 à 12 participants par session</span>
                               </div>
+                            </>
                           )}
-                          <div className="flex items-center text-gray-600">
-                            <Users className="h-5 w-5 mr-2 text-blue-900"/>
-                            <span>8 à 12 participants par session</span>
-                          </div>
                         </div>
 
-                        <p className="text-gray-600 mb-6 line-clamp-3">{formation.description}</p>
+                        {/* Description avec flex-grow pour occuper l'espace disponible */}
+                        <div className="flex-grow">
+                          <p className="text-gray-600 line-clamp-3">{formation.description}</p>
+                        </div>
 
-                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
+                        {/* Section prix et boutons - collée en bas */}
+                        <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
                           <span className="text-2xl font-bold text-blue-900">{formation.price}€</span>
                           <div className="flex space-x-2">
                             <Link

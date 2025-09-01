@@ -44,17 +44,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         icon: <Calendar size={20} />
     , path: '/admin/planning' },
 
-    { title: 'Réservations',
-       icon: <PhoneIcon size={20} />,
-      path: '/admin/reservations' },
-
     {
       title: 'Formations',
       icon: <BookOpen size={20} />,
       path: '/admin/formations',
       submenu: [
         { title: 'Liste des formations', path: '/admin/formations' },
-        { title: 'Sessions', path: '/admin/sessions' }
+        { title: 'Sessions', path: '/admin/sessions' },
+        { title: 'Réservations', path: '/admin/formations/reservation' }
       ]
     },
     {
@@ -63,9 +60,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       submenu: [
         { title: 'Véhicules', path: '/admin/vehicles' },
         { title: 'Centers', path: '/admin/centers' },
-        { title: 'Formules', path: '/admin/reservations/formules' }
-
-
+        { title: 'Formules', path: '/admin/reservations/formules' },
+        { title: 'Réservations', path: '/admin/examens/reservation' }
       ]
     },
     {

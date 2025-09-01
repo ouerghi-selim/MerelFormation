@@ -756,6 +756,42 @@ class UserAdminController extends AbstractController
     }
 
     /**
+     * Récupérer l'entreprise d'un utilisateur
+     */
+    public function getCompany(int $id): JsonResponse
+    {
+        // Vérifier que l'utilisateur est admin
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
+
+        // Récupérer l'utilisateur
+        $user = $this->userRepository->find($id);
+        if (!$user) {
+            return $this->json(['message' => 'Utilisateur non trouvé'], 404);
+        }
+
+        // Récupérer l'entreprise
+        $company = $user->getCompany();
+        if (!$company) {
+            return $this->json(['message' => 'Aucune entreprise associée à cet utilisateur'], 404);
+        }
+
+        // Retourner les données de l'entreprise
+        return $this->json([
+            'id' => $company->getId(),
+            'name' => $company->getName(),
+            'address' => $company->getAddress(),
+            'postalCode' => $company->getPostalCode(),
+            'city' => $company->getCity(),
+            'siret' => $company->getSiret(),
+            'responsableName' => $company->getResponsableName(),
+            'email' => $company->getEmail(),
+            'phone' => $company->getPhone(),
+        ]);
+    }
+
+    /**
      * Créer une entreprise pour un utilisateur
      */
     public function createCompany(int $id, Request $request): JsonResponse

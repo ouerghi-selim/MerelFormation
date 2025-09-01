@@ -100,6 +100,7 @@ export const adminReservationsApi = {
     getSessionReservations: (queryParams = '') => api.get(`/admin/session-reservations${queryParams ? '?' + queryParams : ''}`),
     updateSessionReservationStatus: (id: number, status: string, customMessage?: string) => api.put(`/admin/session-reservations/${id}/status`, { status, customMessage }),
     getSessionReservationById: (id: number) => api.get(`/admin/session-reservations/${id}`),
+    deleteSessionReservation: (id: number) => api.delete(`/admin/session-reservations/${id}`),
     // Nouveaux endpoints pour les statuts unifiés
     getReservationStatuses: () => api.get('/admin/reservation-statuses'),
     getReservationTransitions: () => api.get('/admin/reservation-transitions'),
@@ -214,6 +215,7 @@ export const adminUsersApi = {
     getSessions: (userId: number) => api.get(`/admin/users/${userId}/sessions`),
     getDocuments: (userId: number) => api.get(`/admin/users/${userId}/documents`),
     // Nouvelles méthodes pour la gestion complète depuis le modal
+    getCompany: (userId: number) => api.get(`/admin/users/${userId}/company`),
     createCompany: (userId: number, companyData: any) => api.post(`/admin/users/${userId}/company`, companyData),
     updateCompany: (userId: number, companyData: any) => api.put(`/admin/users/${userId}/company`, companyData),
     // Gestion des documents d'inscription

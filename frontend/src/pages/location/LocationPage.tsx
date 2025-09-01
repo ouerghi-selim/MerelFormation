@@ -22,7 +22,7 @@ const LocationPage = () => {
         try {
             // Récupérer tous les contenus de la page location avec une limite élevée
             const contentResponse = await adminContentTextApi.getAll({
-                section: ['location_hero', 'location_info', 'location_booking', 'location_vehicles', 'location_cta'].join(','),
+                section: ['location_hero', 'location_info', 'location_services', 'location_booking', 'location_vehicles', 'location_cta'].join(','),
                 limit: 100
             });
             
@@ -104,6 +104,71 @@ const LocationPage = () => {
                         </div>
                         <p className="text-gray-700 font-medium"
                             dangerouslySetInnerHTML={{__html: getContent('location_info_footer', 'Nous vous proposons la location d\'un véhicule agréé pour l\'examen TAXI VTC à Rennes en Ille et Vilaine')}}/>
+                    </div>
+
+                    {/* Sections des services de location */}
+                    <div className="grid md:grid-cols-2 gap-8 mb-12">
+                        {/* Section Location Simple */}
+                        <div className="bg-white rounded-lg shadow-lg p-8">
+                            <h3 className="text-2xl font-bold mb-4"
+                                dangerouslySetInnerHTML={{__html: getContent('location_simple_title', 'Location')}} />
+                            <p className="text-gray-700 mb-6"
+                               dangerouslySetInnerHTML={{__html: getContent('location_simple_description', 'Louez un véhicule équipé pour vos besoins personnels ou professionnels.')}} />
+                            <div className="space-y-4">
+                                <VehicleFeature>
+                                    <span dangerouslySetInnerHTML={{__html: getContent('location_simple_feature_1', 'Véhicules récents et entretenus')}} />
+                                </VehicleFeature>
+                                <VehicleFeature>
+                                    <span dangerouslySetInnerHTML={{__html: getContent('location_simple_feature_2', 'Assurance tous risques incluse')}} />
+                                </VehicleFeature>
+                                <VehicleFeature>
+                                    <span dangerouslySetInnerHTML={{__html: getContent('location_simple_feature_3', 'Tarifs dégressifs selon la durée')}} />
+                                </VehicleFeature>
+                                <VehicleFeature>
+                                    <span dangerouslySetInnerHTML={{__html: getContent('location_simple_feature_4', 'Service disponible 7j/7')}} />
+                                </VehicleFeature>
+                            </div>
+                            <div className="mt-6">
+                                <Button
+                                    onClick={() => setShowModal(true)}
+                                    variant="primary"
+                                    size="sm"
+                                >
+                                    Réserver maintenant
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Section Location avec préparation à l'examen */}
+                        <div className="bg-white rounded-lg shadow-lg p-8">
+                            <h3 className="text-2xl font-bold mb-4"
+                                dangerouslySetInnerHTML={{__html: getContent('location_exam_prep_title', 'Location avec préparation à l\'examen')}} />
+                            <p className="text-gray-700 mb-6"
+                               dangerouslySetInnerHTML={{__html: getContent('location_exam_prep_description', 'Préparez-vous efficacement à l\'examen avec un véhicule et un accompagnement personnalisé.')}} />
+                            <div className="space-y-4">
+                                <VehicleFeature>
+                                    <span dangerouslySetInnerHTML={{__html: getContent('location_exam_prep_feature_1', 'Véhicule d\'examen équipé double commande')}} />
+                                </VehicleFeature>
+                                <VehicleFeature>
+                                    <span dangerouslySetInnerHTML={{__html: getContent('location_exam_prep_feature_2', 'Accompagnement par un instructeur qualifié')}} />
+                                </VehicleFeature>
+                                <VehicleFeature>
+                                    <span dangerouslySetInnerHTML={{__html: getContent('location_exam_prep_feature_3', 'Simulation des conditions d\'examen')}} />
+                                </VehicleFeature>
+                                <VehicleFeature>
+                                    <span dangerouslySetInnerHTML={{__html: getContent('location_exam_prep_feature_4', 'Support pédagogique inclus')}} />
+                                </VehicleFeature>
+                            </div>
+                            <div className="mt-6">
+                                <Button
+                                    onClick={() => setShowModal(true)}
+                                    variant="primary"
+                                    size="sm"
+                                >
+                                    Réserver avec préparation
+                                </Button>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Étapes de réservation */}

@@ -619,6 +619,12 @@ const ContentTextsAdmin: React.FC = () => {
                           <option value="home_cta">Page d'accueil - Appel à l'action</option>
                           <option value="formations_hero">Page formations - En-tête</option>
                           <option value="formations_advantages">Page formations - Avantages</option>
+                          <option value="location_hero">Page location - En-tête</option>
+                          <option value="location_info">Page location - Informations</option>
+                          <option value="location_services">Page location - Services</option>
+                          <option value="location_booking">Page location - Réservation</option>
+                          <option value="location_vehicles">Page location - Véhicules</option>
+                          <option value="location_cta">Page location - Appel à l'action</option>
                         </select>
                       </div>
 
@@ -635,6 +641,8 @@ const ContentTextsAdmin: React.FC = () => {
                           <option value="">Choisir...</option>
                           <option value="title">Titre</option>
                           <option value="description">Description</option>
+                          <option value="paragraph">Paragraphe</option>
+                          <option value="feature">Caractéristique/Fonctionnalité</option>
                           <option value="button_text">Texte de bouton</option>
                           <option value="text">Texte simple</option>
                           <option value="image_upload">Image (avec upload)</option>

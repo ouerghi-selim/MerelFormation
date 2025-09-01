@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { UserPlus, Trash2, Eye, GraduationCap, Check, X, Users, Archive } from 'lucide-react';
+import { UserPlus, Trash2, Eye, GraduationCap, Check, X, Users, Archive, Edit } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/layout/AdminLayout';
 import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
 import DeletedUsersTable from '../../components/admin/DeletedUsersTable';
-import StudentDetailModal from '../../components/admin/StudentDetailModal';
+import SessionInspectionModal from '../../components/admin/SessionInspectionModal';
 import { useNotification } from '../../contexts/NotificationContext';
 import useDataFetching from '../../hooks/useDataFetching';
 import { adminUsersApi } from '../../services/api';
@@ -40,11 +41,12 @@ interface User {
 
 const StudentsAdmin: React.FC = () => {
     const { addToast } = useNotification();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'active' | 'deleted'>('active');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
-    const [showDetailsModal, setShowDetailsModal] = useState(false);
-    const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
+    const [showSessionInspectionModal, setShowSessionInspectionModal] = useState(false);
+    const [selectedSessionUserId, setSelectedSessionUserId] = useState<number | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
     const [processing, setProcessing] = useState(false);
@@ -112,9 +114,10 @@ const StudentsAdmin: React.FC = () => {
         setShowDeleteModal(true);
     };
 
-    const viewDetails = (user: User) => {
-        setSelectedStudent(user);
-        setShowDetailsModal(true);
+    // Fonction pour ouvrir le modal d'inspection
+    const openSessionInspectionModal = (userId: number) => {
+        setSelectedSessionUserId(userId);
+        setShowSessionInspectionModal(true);
     };
 
     const handleAddStudent = async (e: React.FormEvent) => {
@@ -271,13 +274,25 @@ const StudentsAdmin: React.FC = () => {
     // Rendu des actions pour chaque ligne
     const renderActions = (student: User) => (
         <div className="flex justify-end space-x-2">
+            {/* Bouton Inspection rapide */}
             <button
-                onClick={() => viewDetails(student)}
-                className="text-blue-600 hover:text-blue-900"
-                title="Voir détails - Toute la gestion se fait dans ce modal"
+                onClick={() => openSessionInspectionModal(student.id)}
+                className="text-blue-600 hover:text-blue-900 p-1"
+                title="Inspection rapide"
             >
-                <Eye className="h-5 w-5" />
+                <Eye className="h-4 w-4" />
             </button>
+            
+            {/* Bouton Modifier (Page complète) */}
+            <button
+                onClick={() => navigate(`/admin/reservations/session/${student.id}/edit`)}
+                className="text-green-600 hover:text-green-900 p-1"
+                title="Modifier"
+            >
+                <Edit className="h-4 w-4" />
+            </button>
+            
+            {/* Bouton Supprimer (garder l'existant) */}
             <button
                 onClick={() => confirmDelete(student)}
                 className="text-red-600 hover:text-red-900"
@@ -583,11 +598,14 @@ const StudentsAdmin: React.FC = () => {
             </Modal>
 
             {/* Modal de détails de l'élève avec composant réutilisable */}
-            <StudentDetailModal
-                isOpen={showDetailsModal}
-                onClose={() => setShowDetailsModal(false)}
-                student={selectedStudent}
-                activeTab="info"
+            {/* Modal inspection réservation session */}
+            <SessionInspectionModal
+                isOpen={showSessionInspectionModal}
+                onClose={() => {
+                    setShowSessionInspectionModal(false);
+                    setSelectedSessionUserId(null);
+                }}
+                userId={selectedSessionUserId || 0}
             />
 
             {/* Modal de confirmation pour changement de statut étudiant */}

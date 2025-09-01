@@ -137,6 +137,7 @@ export const CONTENT_SECTIONS = [
   'formations_advantages',
   'location_hero',
   'location_info',
+  'location_services',
   'location_booking',
   'location_vehicles',
   'location_cta',
@@ -212,7 +213,7 @@ export const CMS_PAGES: PageSection[] = [
     name: '🚗 Page location',
     description: 'Contenu de la page de location de véhicules',
     icon: '🚗',
-    sections: ['location_hero', 'location_info', 'location_booking', 'location_vehicles', 'location_cta']
+    sections: ['location_hero', 'location_info', 'location_services', 'location_booking', 'location_vehicles', 'location_cta']
   },
   {
     id: 'contact',
@@ -709,6 +710,80 @@ export const CONTENT_DESCRIPTIONS: { [key: string]: { label: string; description
     description: 'Image du véhicule avec possibilité d\'upload direct',
     page: '🚗 Page location',
     section: '🚙 Caractéristiques véhicule'
+  },
+
+  // Page Location - Services de location (Nouvelles sections)
+  'location_simple_title': {
+    label: 'Titre "Location simple"',
+    description: 'Titre de la section location standard',
+    page: '🚗 Page location',
+    section: '🏢 Services de location'
+  },
+  'location_simple_description': {
+    label: 'Description location simple',
+    description: 'Description du service de location standard',
+    page: '🚗 Page location',
+    section: '🏢 Services de location'
+  },
+  'location_simple_feature_1': {
+    label: 'Location simple - Caractéristique 1',
+    description: 'Première caractéristique de la location simple (ex: Véhicules récents et entretenus)',
+    page: '🚗 Page location',
+    section: '🏢 Services de location'
+  },
+  'location_simple_feature_2': {
+    label: 'Location simple - Caractéristique 2',
+    description: 'Deuxième caractéristique de la location simple (ex: Assurance tous risques incluse)',
+    page: '🚗 Page location',
+    section: '🏢 Services de location'
+  },
+  'location_simple_feature_3': {
+    label: 'Location simple - Caractéristique 3',
+    description: 'Troisième caractéristique de la location simple (ex: Tarifs dégressifs selon la durée)',
+    page: '🚗 Page location',
+    section: '🏢 Services de location'
+  },
+  'location_simple_feature_4': {
+    label: 'Location simple - Caractéristique 4',
+    description: 'Quatrième caractéristique de la location simple (ex: Service disponible 7j/7)',
+    page: '🚗 Page location',
+    section: '🏢 Services de location'
+  },
+  'location_exam_prep_title': {
+    label: 'Titre "Location avec préparation"',
+    description: 'Titre de la section location avec préparation à l\'examen',
+    page: '🚗 Page location',
+    section: '🏢 Services de location'
+  },
+  'location_exam_prep_description': {
+    label: 'Description location avec préparation',
+    description: 'Description du service de location avec préparation à l\'examen',
+    page: '🚗 Page location',
+    section: '🏢 Services de location'
+  },
+  'location_exam_prep_feature_1': {
+    label: 'Location avec préparation - Caractéristique 1',
+    description: 'Première caractéristique de la location avec préparation (ex: Véhicule d\'examen équipé double commande)',
+    page: '🚗 Page location',
+    section: '🏢 Services de location'
+  },
+  'location_exam_prep_feature_2': {
+    label: 'Location avec préparation - Caractéristique 2',
+    description: 'Deuxième caractéristique de la location avec préparation (ex: Accompagnement par un instructeur qualifié)',
+    page: '🚗 Page location',
+    section: '🏢 Services de location'
+  },
+  'location_exam_prep_feature_3': {
+    label: 'Location avec préparation - Caractéristique 3',
+    description: 'Troisième caractéristique de la location avec préparation (ex: Simulation des conditions d\'examen)',
+    page: '🚗 Page location',
+    section: '🏢 Services de location'
+  },
+  'location_exam_prep_feature_4': {
+    label: 'Location avec préparation - Caractéristique 4',
+    description: 'Quatrième caractéristique de la location avec préparation (ex: Support pédagogique inclus)',
+    page: '🚗 Page location',
+    section: '🏢 Services de location'
   },
 
   // Page Location - CTA Final

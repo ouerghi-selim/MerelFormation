@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Search, Filter, ChevronDown, Eye, User, GraduationCap, X } from 'lucide-react';
+import { Calendar, Search, Filter, ChevronDown, Eye, User, GraduationCap, X, Edit, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { adminReservationsApi, adminUsersApi } from '@/services/api.ts';
 import Alert from '../../components/common/Alert';
-import StudentDetailModal from '../../components/admin/StudentDetailModal';
+import SessionInspectionModal from '../../components/admin/SessionInspectionModal';
 import { getStatusBadgeClass, getStatusLabel } from '@/utils/reservationStatuses';
 import { useNotification } from '../../contexts/NotificationContext';
 
@@ -53,6 +54,7 @@ interface User {
 
 const FormationReservationsAdmin: React.FC = () => {
     const { addToast } = useNotification();
+    const navigate = useNavigate();
     
     // États pour les réservations
     const [reservations, setReservations] = useState<SessionReservation[]>([]);
@@ -77,10 +79,13 @@ const FormationReservationsAdmin: React.FC = () => {
     const [customMessage, setCustomMessage] = useState('');
     const [statusProcessing, setStatusProcessing] = useState(false);
     
-    // États pour le modal détails étudiant
-    const [showStudentModal, setShowStudentModal] = useState(false);
-    const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
-    const [loadingStudent, setLoadingStudent] = useState(false);
+    // États pour le modal d'inspection des réservations de session
+    const [showSessionInspectionModal, setShowSessionInspectionModal] = useState(false);
+    const [selectedSessionUserId, setSelectedSessionUserId] = useState<number | null>(null);
+    
+    // États pour la confirmation de suppression
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [reservationToDelete, setReservationToDelete] = useState<SessionReservation | null>(null);
 
     // Charger les réservations
     useEffect(() => {
@@ -176,18 +181,35 @@ const FormationReservationsAdmin: React.FC = () => {
         setCustomMessage('');
     };
 
-    // Fonction pour voir les détails de l'étudiant
-    const viewStudentDetails = async (userId: number) => {
+    // Fonctions pour la gestion des actions sur les réservations
+    const openSessionInspectionModal = (userId: number) => {
+        setSelectedSessionUserId(userId);
+        setShowSessionInspectionModal(true);
+    };
+
+    // Fonction pour confirmer la suppression
+    const handleDeleteReservation = (reservation: SessionReservation) => {
+        setReservationToDelete(reservation);
+        setShowDeleteModal(true);
+    };
+
+    // Fonction pour confirmer la suppression
+    const confirmDeleteReservation = async () => {
+        if (!reservationToDelete) return;
+
         try {
-            setLoadingStudent(true);
-            const response = await adminUsersApi.get(userId);
-            setSelectedStudent(response.data);
-            setShowStudentModal(true);
+            await adminReservationsApi.deleteSessionReservation(reservationToDelete.id);
+            
+            // Recharger les réservations
+            const response = await adminReservationsApi.getSessionReservations('');
+            setReservations(response.data);
+            
+            addToast('Réservation supprimée avec succès', 'success');
+            setShowDeleteModal(false);
+            setReservationToDelete(null);
         } catch (err) {
-            console.error('Error fetching student details:', err);
-            addToast('Erreur lors du chargement des détails de l\'étudiant', 'error');
-        } finally {
-            setLoadingStudent(false);
+            console.error('Error deleting reservation:', err);
+            addToast('Erreur lors de la suppression de la réservation', 'error');
         }
     };
 
@@ -301,7 +323,7 @@ const FormationReservationsAdmin: React.FC = () => {
             ) : (
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="w-full divide-y divide-gray-200">
+                        <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -362,7 +384,7 @@ const FormationReservationsAdmin: React.FC = () => {
                                                 </button>
                                                 
                                                 {showStatusDropdown[reservation.id] && (
-                                                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg min-w-64 max-h-80 overflow-y-auto"
+                                                    <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg w-64 max-h-80 overflow-y-auto"
                                                          style={{ zIndex: 9999 }}>
                                                         <div className="p-2">
                                                             <div className="text-xs text-gray-500 p-2 border-b mb-2">
@@ -394,14 +416,34 @@ const FormationReservationsAdmin: React.FC = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button
-                                                onClick={() => viewStudentDetails(reservation.user.id)}
-                                                className="text-blue-600 hover:text-blue-900"
-                                                title="Voir détails de l'étudiant"
-                                                disabled={loadingStudent}
-                                            >
-                                                <Eye className="h-5 w-5" />
-                                            </button>
+                                            <div className="flex items-center justify-end space-x-2">
+                                                {/* Bouton Inspection rapide */}
+                                                <button
+                                                    onClick={() => openSessionInspectionModal(reservation.user.id)}
+                                                    className="text-blue-600 hover:text-blue-900 p-1"
+                                                    title="Inspection rapide"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </button>
+                                                
+                                                {/* Bouton Modifier (Page complète) */}
+                                                <button
+                                                    onClick={() => navigate(`/admin/reservations/session/${reservation.user.id}/edit`)}
+                                                    className="text-green-600 hover:text-green-900 p-1"
+                                                    title="Modifier"
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </button>
+                                                
+                                                {/* Bouton Supprimer */}
+                                                <button
+                                                    onClick={() => handleDeleteReservation(reservation)}
+                                                    className="text-red-600 hover:text-red-900 p-1"
+                                                    title="Supprimer"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -508,12 +550,74 @@ const FormationReservationsAdmin: React.FC = () => {
                 </div>
             )}
 
-            {/* Modal détails étudiant */}
-            <StudentDetailModal
-                isOpen={showStudentModal}
-                onClose={() => setShowStudentModal(false)}
-                student={selectedStudent}
-                activeTab="reservations"
+            {/* Modal de confirmation pour suppression */}
+            {showDeleteModal && reservationToDelete && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                    <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 xl:w-2/5 shadow-lg rounded-md bg-white">
+                        <div className="mt-3">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-medium text-gray-900">
+                                    Confirmer la suppression
+                                </h3>
+                                <button
+                                    onClick={() => {
+                                        setShowDeleteModal(false);
+                                        setReservationToDelete(null);
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <X className="h-6 w-6" />
+                                </button>
+                            </div>
+
+                            <div className="mb-6 space-y-4">
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                    <div className="flex items-center">
+                                        <div className="flex-shrink-0">
+                                            <Trash2 className="h-5 w-5 text-red-400" />
+                                        </div>
+                                        <div className="ml-3">
+                                            <h4 className="text-sm font-medium text-red-800">
+                                                Attention : Cette action est irréversible
+                                            </h4>
+                                            <p className="mt-1 text-sm text-red-700">
+                                                Êtes-vous sûr de vouloir supprimer la réservation de <strong>{reservationToDelete.user.firstName} {reservationToDelete.user.lastName}</strong> pour la formation <strong>{reservationToDelete.session.formation.title}</strong> ?
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-end space-x-4">
+                                <button
+                                    onClick={() => {
+                                        setShowDeleteModal(false);
+                                        setReservationToDelete(null);
+                                    }}
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    onClick={confirmDeleteReservation}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                >
+                                    Supprimer définitivement
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal inspection réservation session */}
+            <SessionInspectionModal
+                isOpen={showSessionInspectionModal}
+                onClose={() => {
+                    setShowSessionInspectionModal(false);
+                    setSelectedSessionUserId(null);
+                }}
+                userId={selectedSessionUserId || 0}
             />
         </AdminLayout>
     );

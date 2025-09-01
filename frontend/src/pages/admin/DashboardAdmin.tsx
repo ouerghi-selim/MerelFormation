@@ -1,7 +1,7 @@
 // src/pages/admin/DashboardAdmin.tsx (version modifiée)
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Users, BookOpen, Calendar, AlertCircle, X, Eye } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Users, BookOpen, Calendar, AlertCircle, X, Eye, Edit, Trash2 } from 'lucide-react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import StatCard from '../../components/admin/StatCard';
 import LineChart from '../../components/charts/LineChart';
@@ -10,7 +10,7 @@ import Alert from '../../components/common/Alert';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
 import ReservationDetailModal from '../../components/admin/ReservationDetailModal';
-import StudentDetailModal from '../../components/admin/StudentDetailModal';
+import SessionInspectionModal from '../../components/admin/SessionInspectionModal';
 import {adminDashboardApi, adminReservationsApi, adminUsersApi} from '@/services/api.ts';
 import { getStatusBadgeClass, getStatusLabel, ReservationStatus } from '../../utils/reservationStatuses';
 import { ChevronDown } from 'lucide-react';
@@ -76,6 +76,7 @@ interface User {
 }
 
 const DashboardAdmin: React.FC = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     activeStudents: 0,
     activeFormations: 0,
@@ -111,10 +112,18 @@ const DashboardAdmin: React.FC = () => {
   const [showStatusDropdown, setShowStatusDropdown] = useState<Record<number, boolean>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
-  // États pour le modal étudiant
-  const [showStudentModal, setShowStudentModal] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
-  const [loadingStudent, setLoadingStudent] = useState(false);
+  // États pour le modal d'inspection des réservations de session
+  const [showSessionInspectionModal, setShowSessionInspectionModal] = useState(false);
+  const [selectedSessionUserId, setSelectedSessionUserId] = useState<number | null>(null);
+  
+  // États pour la suppression de réservation
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [reservationToDelete, setReservationToDelete] = useState<{
+    id: number;
+    studentName: string;
+    formationTitle: string;
+  } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Données de graphique (à remplacer par des données réelles)
   const [revenueData, setRevenueData] = useState([]);
@@ -175,18 +184,43 @@ const DashboardAdmin: React.FC = () => {
     setShowDetailModal(false);
   };
 
-  // Fonction pour voir les détails de l'étudiant
-  const viewStudentDetails = async (userId: number) => {
+  // Fonction pour ouvrir le modal d'inspection
+  const openSessionInspectionModal = (userId: number) => {
+    setSelectedSessionUserId(userId);
+    setShowSessionInspectionModal(true);
+  };
+
+  // Fonction pour initier la suppression d'une réservation
+  const handleDeleteReservation = (reservation: SessionReservation) => {
+    setReservationToDelete({
+      id: reservation.id,
+      studentName: `${reservation.user.firstName} ${reservation.user.lastName}`,
+      formationTitle: reservation.session.formation.title
+    });
+    setShowDeleteConfirmModal(true);
+  };
+
+  // Fonction pour confirmer la suppression
+  const confirmDeleteReservation = async () => {
+    if (!reservationToDelete) return;
+
     try {
-      setLoadingStudent(true);
-      const response = await adminUsersApi.get(userId);
-      setSelectedStudent(response.data);
-      setShowStudentModal(true);
+      setDeleting(true);
+      await adminReservationsApi.deleteSessionReservation(reservationToDelete.id);
+      
+      // Mettre à jour la liste des réservations
+      setSessionReservations(sessionReservations.filter(r => r.id !== reservationToDelete.id));
+      
+      setSuccessMessage('Réservation supprimée avec succès');
+      setTimeout(() => setSuccessMessage(null), 3000);
+      
+      setShowDeleteConfirmModal(false);
+      setReservationToDelete(null);
     } catch (err) {
-      console.error('Error fetching student details:', err);
-      setError('Erreur lors du chargement des détails de l\'étudiant');
+      console.error('Error deleting reservation:', err);
+      setError('Erreur lors de la suppression de la réservation');
     } finally {
-      setLoadingStudent(false);
+      setDeleting(false);
     }
   };
 
@@ -496,14 +530,34 @@ const DashboardAdmin: React.FC = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button
-                                onClick={() => viewStudentDetails(reservation.user.id)}
-                                className="text-blue-600 hover:text-blue-900"
-                                title="Voir détails de l'étudiant"
-                                disabled={loadingStudent}
-                            >
-                              <Eye className="h-5 w-5" />
-                            </button>
+                            <div className="flex items-center justify-end space-x-2">
+                              {/* Bouton Inspection rapide */}
+                              <button
+                                  onClick={() => openSessionInspectionModal(reservation.user.id)}
+                                  className="text-blue-600 hover:text-blue-900 p-1"
+                                  title="Inspection rapide"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              
+                              {/* Bouton Modifier (Page complète) */}
+                              <button
+                                  onClick={() => navigate(`/admin/reservations/session/${reservation.user.id}/edit`)}
+                                  className="text-green-600 hover:text-green-900 p-1"
+                                  title="Modifier"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              
+                              {/* Bouton Supprimer */}
+                              <button
+                                  onClick={() => handleDeleteReservation(reservation)}
+                                  className="text-red-600 hover:text-red-900 p-1"
+                                  title="Supprimer"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                     ))}
@@ -609,13 +663,108 @@ const DashboardAdmin: React.FC = () => {
                 onSuccess={handleReservationUpdated}
             />
 
-            {/* Modal détails étudiant */}
-            <StudentDetailModal
-                isOpen={showStudentModal}
-                onClose={() => setShowStudentModal(false)}
-                student={selectedStudent}
-                activeTab="reservations"
+            {/* Modal inspection réservation session */}
+            <SessionInspectionModal
+                isOpen={showSessionInspectionModal}
+                onClose={() => {
+                    setShowSessionInspectionModal(false);
+                    setSelectedSessionUserId(null);
+                }}
+                userId={selectedSessionUserId || 0}
             />
+
+            {/* Modal de confirmation de suppression */}
+            {showDeleteConfirmModal && reservationToDelete && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                    <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 xl:w-2/5 shadow-lg rounded-md bg-white">
+                        <div className="mt-3">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                                    <Trash2 className="h-6 w-6 text-red-600 mr-2" />
+                                    Confirmer la suppression
+                                </h3>
+                                <button
+                                    onClick={() => {
+                                        setShowDeleteConfirmModal(false);
+                                        setReservationToDelete(null);
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <X className="h-6 w-6" />
+                                </button>
+                            </div>
+
+                            <div className="mb-6 space-y-4">
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                    <div className="flex items-center">
+                                        <div className="flex-shrink-0">
+                                            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div className="ml-3">
+                                            <h4 className="text-sm font-medium text-red-800">
+                                                Attention : Cette action est irréversible
+                                            </h4>
+                                            <p className="mt-1 text-sm text-red-700">
+                                                La réservation sera définitivement supprimée et ne pourra pas être récupérée.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Étudiant :</label>
+                                        <p className="text-base font-semibold text-gray-900">{reservationToDelete.studentName}</p>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Formation :</label>
+                                        <p className="text-base text-gray-900">{reservationToDelete.formationTitle}</p>
+                                    </div>
+
+                                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                                        <p className="text-sm text-gray-600 font-medium">
+                                            ⚠️ Cette action va supprimer la réservation de l'étudiant pour cette formation.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end space-x-3">
+                                <button
+                                    onClick={() => {
+                                        setShowDeleteConfirmModal(false);
+                                        setReservationToDelete(null);
+                                    }}
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    disabled={deleting}
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    onClick={confirmDeleteReservation}
+                                    disabled={deleting}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                                >
+                                    {deleting ? (
+                                        <span className="flex items-center">
+                                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Suppression...
+                                        </span>
+                                    ) : (
+                                        'Supprimer définitivement'
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modal de confirmation pour le changement de statut */}
             {/* Modal de confirmation pour changement de statut - Style unifié */}

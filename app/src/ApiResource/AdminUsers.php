@@ -58,6 +58,10 @@ use App\Controller\Admin\UserAdminController;
             uriTemplate: '/admin/users/{id}/restore',
             controller: UserAdminController::class . '::restore',
         ),
+        new Get(
+            uriTemplate: '/admin/users/{id}/company',
+            controller: UserAdminController::class . '::getCompany',
+        ),
         new Post(
             uriTemplate: '/admin/users/{id}/company',
             controller: UserAdminController::class . '::createCompany',
