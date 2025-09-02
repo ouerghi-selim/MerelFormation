@@ -321,4 +321,49 @@ class ReservationAdminController extends AbstractController
 
         return $this->json($formattedVehicles);
     }
+
+    /**
+     * Suppression soft d'une réservation véhicule (SoftDelete Gedmo)
+     * @Route("/admin/reservations/{id}", name="reservation_delete", methods={"DELETE"})
+     */
+    public function delete(int $id): JsonResponse
+    {
+        // Vérifier que l'utilisateur est un admin
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
+
+        $reservation = $this->vehicleRentalRepository->find($id);
+
+        if (!$reservation) {
+            return $this->json(['message' => 'Réservation non trouvée'], 404);
+        }
+
+        try {
+            // ✅ SoftDelete Gedmo - La réservation sera marquée comme supprimée (deletedAt)
+            // mais restera en base pour la traçabilité et pourra être restaurée
+            $this->entityManager->remove($reservation);
+            $this->entityManager->flush();
+
+            // ✅ Log de la suppression pour audit
+            $user = $reservation->getUser();
+            $userName = $user ? $user->getFirstName() . ' ' . $user->getLastName() : '[Utilisateur archivé]';
+            $examCenter = $reservation->getExamCenter() ?: '[Centre non défini]';
+            
+            error_log("ADMIN_ACTION: Suppression soft de réservation véhicule ID:{$id} - Utilisateur: {$userName} - Centre: {$examCenter}");
+
+            return $this->json([
+                'message' => 'Réservation supprimée avec succès',
+                'info' => 'La réservation a été archivée et peut être restaurée si nécessaire'
+            ], 200);
+
+        } catch (\Exception $e) {
+            error_log("ERROR: Échec suppression réservation véhicule ID:{$id} - " . $e->getMessage());
+            
+            return $this->json([
+                'message' => 'Erreur lors de la suppression de la réservation',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

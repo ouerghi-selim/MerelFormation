@@ -1,6 +1,7 @@
 // src/pages/admin/ReservationsAdmin.tsx
 import React, { useState, useEffect } from 'react';
-import { Calendar, Search, Filter, ChevronDown, Eye, Check, X, User, Car, GraduationCap } from 'lucide-react';
+import { Calendar, Search, Filter, ChevronDown, Eye, Check, X, User, Car, GraduationCap, Edit, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { adminReservationsApi } from '@/services/api.ts';
 import Alert from '../../components/common/Alert';
@@ -46,6 +47,7 @@ interface SessionReservation {
 }
 
 const ReservationsAdmin: React.FC = () => {
+  const navigate = useNavigate();
   // Suppression de l'onglet session - maintenant uniquement véhicules
 
   // États pour les réservations de véhicules
@@ -79,6 +81,10 @@ const ReservationsAdmin: React.FC = () => {
     studentName: string;
   } | null>(null);
   const [customMessage, setCustomMessage] = useState('');
+
+  // États pour la suppression
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [reservationToDelete, setReservationToDelete] = useState<VehicleReservation | null>(null);
 
   // Fonction helper pour les labels de statuts (toujours véhicule)
   const getStatusLabelForType = (status: string) => {
@@ -131,6 +137,37 @@ const ReservationsAdmin: React.FC = () => {
   const handleViewVehicleDetails = (reservation: VehicleReservation) => {
     setSelectedReservationId(reservation.id);
     setShowDetailModal(true);
+  };
+
+  // Fonction pour naviguer vers la page d'édition
+  const handleEditReservation = (reservation: VehicleReservation) => {
+    navigate(`/admin/reservations/vehicle/${reservation.id}`);
+  };
+
+  // Fonction pour demander la suppression
+  const handleDeleteReservation = (reservation: VehicleReservation) => {
+    setReservationToDelete(reservation);
+    setShowDeleteModal(true);
+  };
+
+  // Fonction pour confirmer la suppression
+  const confirmDeleteReservation = async () => {
+    if (!reservationToDelete) return;
+
+    try {
+      await adminReservationsApi.delete(reservationToDelete.id);
+      
+      // Recharger les réservations
+      const response = await adminReservationsApi.getAll('');
+      setVehicleReservations(response.data);
+      
+      setSuccessMessage('Réservation supprimée avec succès');
+      setShowDeleteModal(false);
+      setReservationToDelete(null);
+    } catch (err) {
+      console.error('Error deleting vehicle reservation:', err);
+      setError('Erreur lors de la suppression de la réservation');
+    }
   };
 
   // Fonction pour mettre à jour le statut d'une réservation
@@ -394,28 +431,28 @@ const ReservationsAdmin: React.FC = () => {
                   ) : (
                       <div className="bg-white rounded-lg shadow overflow-hidden">
                         <div className="overflow-x-auto">
-                          <table className="w-full divide-y divide-gray-200 table-fixed">
+                          <table className="min-w-full divide-y divide-gray-200 table-fixed">
                             <thead className="bg-gray-50">
                             <tr>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '20%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '18%'}}>
                                 Client
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '14%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '12%'}}>
                                 Date
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '16%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '15%'}}>
                                 Centre
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '14%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '13%'}}>
                                 Formule
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '16%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '14%'}}>
                                 Véhicule
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '12%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '16%'}}>
                                 Statut
                               </th>
-                              <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '8%'}}>
+                              <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '12%'}}>
                                 Actions
                               </th>
                             </tr>
@@ -424,20 +461,25 @@ const ReservationsAdmin: React.FC = () => {
                             {vehicleReservations.map((reservation) => (
                                 <tr key={reservation.id}>
                                   <td className="px-3 py-4">
-                                    <div className="text-sm font-medium text-gray-900 truncate" title="{reservation.user.fullName}">{reservation.user.fullName}</div>
-                                    <div className="text-xs text-gray-500 truncate" title="{reservation.user.email}">{reservation.user.email}</div>
+                                    <div className="text-sm font-medium text-gray-900 truncate" title={reservation.user.fullName}>{reservation.user.fullName}</div>
+                                    <div className="text-xs text-gray-500 truncate" title={reservation.user.email}>{reservation.user.email}</div>
                                   </td>
                                   <td className="px-3 py-4">
                                     <div className="text-sm text-gray-900">{reservation.date}</div>
                                   </td>
                                   <td className="px-3 py-4">
-                                    <div className="text-sm text-gray-900 truncate" title="{reservation.examCenter}">{reservation.examCenter}</div>
+                                    <div className="text-sm text-gray-900 truncate" title={reservation.examCenter}>{reservation.examCenter}</div>
                                   </td>
                                   <td className="px-3 py-4">
-                                    <div className="text-sm text-gray-900 truncate" title="{reservation.formula}">{reservation.formula}</div>
+                                    <div className="text-sm text-gray-900 truncate" title={reservation.formula}>
+                                      {reservation.formula && reservation.formula.length > 20 
+                                        ? `${reservation.formula.substring(0, 20)}...`
+                                        : reservation.formula
+                                      }
+                                    </div>
                                   </td>
                                   <td className="px-3 py-4">
-                                    <div className="text-sm text-gray-900 truncate" title="{reservation.vehicleAssigned || 'Non assigné'}">
+                                    <div className="text-sm text-gray-900 truncate" title={reservation.vehicleAssigned || 'Non assigné'}>
                                       {reservation.vehicleAssigned || 'Non assigné'}
                                     </div>
                                   </td>
@@ -445,15 +487,21 @@ const ReservationsAdmin: React.FC = () => {
                                     <div className="relative">
                                       <button
                                         onClick={() => toggleStatusDropdown(reservation.id)}
-                                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer hover:opacity-80 ${getStatusBadgeClass(reservation.status)}`}
+                                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer hover:opacity-80 max-w-full ${getStatusBadgeClass(reservation.status)}`}
+                                        title={getStatusLabelForType(reservation.status)}
                                       >
-                                        {getStatusLabelForType(reservation.status)}
-                                        <ChevronDown className="ml-1 h-3 w-3" />
+                                        <span className="truncate max-w-20">
+                                          {getStatusLabelForType(reservation.status)}
+                                        </span>
+                                        <ChevronDown className="ml-1 h-3 w-3 flex-shrink-0" />
                                       </button>
                                       
                                       {showStatusDropdown[reservation.id] && (
-                                        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-32">
+                                        <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 w-56 max-w-xs">
                                           <div className="py-1 max-h-64 overflow-y-auto">
+                                            <div className="px-3 py-2 text-xs text-gray-500 border-b bg-gray-50">
+                                              Changer le statut
+                                            </div>
                                             {getStatusOptions().map((status) => (
                                               <button
                                                 key={status.value}
@@ -461,9 +509,11 @@ const ReservationsAdmin: React.FC = () => {
                                                 className={`block w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${
                                                   reservation.status === status.value ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                                                 }`}
+                                                title={status.label}
                                               >
                                                 <span className={`inline-block w-3 h-3 rounded-full mr-2 ${getStatusBadgeClass(status.value).split(' ')[0]}`}></span>
-                                                {status.label}
+                                                <span className="truncate">{status.label}</span>
+                                                {reservation.status === status.value && <span className="text-xs opacity-60"> (actuel)</span>}
                                               </button>
                                             ))}
                                           </div>
@@ -473,12 +523,31 @@ const ReservationsAdmin: React.FC = () => {
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div className="flex justify-end space-x-2">
+                                      {/* Bouton Inspection rapide (modal) */}
                                       <button
                                           onClick={() => handleViewVehicleDetails(reservation)}
-                                          className="text-blue-700 hover:text-blue-900"
-                                          title="Voir détails"
+                                          className="text-blue-600 hover:text-blue-900 p-1"
+                                          title="Inspection rapide"
                                       >
-                                        <Eye className="h-5 w-5" />
+                                        <Eye className="h-4 w-4" />
+                                      </button>
+                                      
+                                      {/* Bouton Modifier (page complète) */}
+                                      <button
+                                          onClick={() => handleEditReservation(reservation)}
+                                          className="text-green-600 hover:text-green-900 p-1"
+                                          title="Modifier"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </button>
+                                      
+                                      {/* Bouton Supprimer */}
+                                      <button
+                                          onClick={() => handleDeleteReservation(reservation)}
+                                          className="text-red-600 hover:text-red-900 p-1"
+                                          title="Supprimer"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
                                       </button>
                                     </div>
                                   </td>
@@ -605,6 +674,69 @@ const ReservationsAdmin: React.FC = () => {
                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     Confirmer et envoyer l'email
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de confirmation pour suppression */}
+        {showDeleteModal && reservationToDelete && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 xl:w-2/5 shadow-lg rounded-md bg-white">
+              <div className="mt-3">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Confirmer la suppression
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowDeleteModal(false);
+                      setReservationToDelete(null);
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                <div className="mb-6 space-y-4">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <Trash2 className="h-5 w-5 text-red-400" />
+                      </div>
+                      <div className="ml-3">
+                        <h4 className="text-sm font-medium text-red-800">
+                          Attention : Cette action est réversible
+                        </h4>
+                        <p className="mt-1 text-sm text-red-700">
+                          Êtes-vous sûr de vouloir supprimer la réservation de <strong>{reservationToDelete.user.fullName}</strong> pour le <strong>{new Date(reservationToDelete.date).toLocaleDateString('fr-FR')}</strong> au centre <strong>{reservationToDelete.examCenter}</strong> ?
+                        </p>
+                        <p className="mt-2 text-xs text-red-600">
+                          La réservation sera archivée et pourra être restaurée si nécessaire.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end space-x-4">
+                  <button
+                    onClick={() => {
+                      setShowDeleteModal(false);
+                      setReservationToDelete(null);
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={confirmDeleteReservation}
+                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  >
+                    Supprimer (archiver)
                   </button>
                 </div>
               </div>

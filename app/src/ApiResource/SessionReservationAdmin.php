@@ -3,6 +3,7 @@
 namespace App\ApiResource;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Put;
@@ -23,6 +24,10 @@ use App\Controller\Admin\SessionReservationController;
         new Put(
             uriTemplate: '/admin/session-reservations/{id}/status',
             controller: SessionReservationController::class . '::updateStatus',
+        ),
+        new Delete(
+            uriTemplate: '/admin/session-reservations/{id}',
+            controller: SessionReservationController::class . '::delete',
         ),
     ]
 )]

@@ -3,6 +3,7 @@
 namespace App\ApiResource;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
@@ -31,6 +32,10 @@ use App\Controller\Admin\ReservationAdminController;
         new GetCollection(
             uriTemplate: '/admin/vehicles/available',
             controller: ReservationAdminController::class . '::getAvailableVehicles',
+        ),
+        new Delete(
+            uriTemplate: '/admin/reservations/{id}',
+            controller: ReservationAdminController::class . '::delete',
         ),
     ]
 )]

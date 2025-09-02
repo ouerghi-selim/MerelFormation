@@ -259,4 +259,46 @@ class SessionReservationController extends AbstractController
 
         return $this->json($formattedTransitions);
     }
+
+    /**
+     * Suppression soft d'une réservation (SoftDelete Gedmo)
+     * @Route("/admin/session-reservations/{id}", name="session_reservations_delete", methods={"DELETE"})
+     */
+    public function delete(int $id): JsonResponse
+    {
+        $reservation = $this->reservationRepository->find($id);
+
+        if (!$reservation) {
+            return $this->json(['message' => 'Réservation non trouvée'], Response::HTTP_NOT_FOUND);
+        }
+
+        try {
+            // ✅ SoftDelete Gedmo - La réservation sera marquée comme supprimée (deletedAt)
+            // mais restera en base pour la traçabilité et pourra être restaurée
+            $this->entityManager->remove($reservation);
+            $this->entityManager->flush();
+
+            // ✅ Log de la suppression pour audit
+            $user = $reservation->getUser();
+            $session = $reservation->getSession();
+            
+            $userName = $user ? $user->getFirstName() . ' ' . $user->getLastName() : '[Utilisateur archivé]';
+            $formationTitle = ($session && $session->getFormation()) ? $session->getFormation()->getTitle() : '[Formation archivée]';
+            
+            error_log("ADMIN_ACTION: Suppression soft de réservation ID:{$id} - Utilisateur: {$userName} - Formation: {$formationTitle}");
+
+            return $this->json([
+                'message' => 'Réservation supprimée avec succès',
+                'info' => 'La réservation a été archivée et peut être restaurée si nécessaire'
+            ], Response::HTTP_OK);
+
+        } catch (\Exception $e) {
+            error_log("ERROR: Échec suppression réservation ID:{$id} - " . $e->getMessage());
+            
+            return $this->json([
+                'message' => 'Erreur lors de la suppression de la réservation',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }
