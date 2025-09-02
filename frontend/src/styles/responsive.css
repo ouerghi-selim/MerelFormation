@@ -170,3 +170,169 @@ body {
         @apply text-xs;
     }
 }
+
+/* =================================================
+   9. SYSTÈME ANTI-DÉBORDEMENT GLOBAL
+   ================================================= */
+
+/* Classe pour empêcher tout débordement horizontal */
+.no-overflow-x {
+    overflow-x: hidden;
+    max-width: 100%;
+}
+
+/* Container adaptatif intelligent */
+.adaptive-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding-left: clamp(0.5rem, 2vw, 1.5rem);
+    padding-right: clamp(0.5rem, 2vw, 1.5rem);
+}
+
+/* Wrapper pour contenu avec débordement contrôlé */
+.overflow-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    /* Styling du scrollbar sur navigateurs webkit */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.overflow-wrapper::-webkit-scrollbar {
+    height: 6px;
+}
+
+.overflow-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.overflow-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.5);
+    border-radius: 3px;
+}
+
+.overflow-wrapper::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.7);
+}
+
+/* =================================================
+   10. HELPERS LAYOUT ADMIN
+   ================================================= */
+
+/* Flex intelligent qui s'adapte aux écrans */
+.smart-flex {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .smart-flex {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+}
+
+/* Grid adaptatif pour dashboards */
+.dashboard-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1280px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* =================================================
+   11. CORRECTIONS SPÉCIFIQUES PAGES ADMIN
+   ================================================= */
+
+/* Amélioration des dropdowns pour éviter les débordements */
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0; /* Ancrage à droite pour éviter les débordements */
+    z-index: 50;
+    min-width: 200px;
+    max-width: 300px;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* Boutons d'actions standardisés */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    align-items: center;
+    min-width: fit-content;
+}
+
+/* =================================================
+   12. BREAKPOINTS PERSONNALISÉS
+   ================================================= */
+
+/* Très petits écrans (phones en portrait) */
+@media (max-width: 480px) {
+    .hide-xs {
+        display: none !important;
+    }
+    
+    .text-xs-only {
+        @apply text-xs;
+    }
+    
+    .p-xs {
+        @apply p-2;
+    }
+}
+
+/* Écrans intermédiaires (tablettes en portrait) */
+@media (min-width: 481px) and (max-width: 768px) {
+    .show-sm-only {
+        display: block !important;
+    }
+    
+    .hide-sm-only {
+        display: none !important;
+    }
+}
+
+/* Grands écrans (desktops) */
+@media (min-width: 1200px) {
+    .show-lg-plus {
+        display: block !important;
+    }
+    
+    .container-lg-spacious {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+    }
+}

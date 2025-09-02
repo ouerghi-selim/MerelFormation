@@ -373,7 +373,7 @@ const ReservationsAdmin: React.FC = () => {
 
             {/* Contenu des réservations de véhicules */}
                 <>
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                  <div className="smart-flex mb-6">
                     <div className="text-xl font-bold text-gray-800">
                       Demandes de réservation de véhicules
                     </div>
@@ -429,30 +429,30 @@ const ReservationsAdmin: React.FC = () => {
                         <p className="text-gray-700">Aucune réservation trouvée</p>
                       </div>
                   ) : (
-                      <div className="bg-white rounded-lg shadow overflow-hidden">
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full divide-y divide-gray-200 table-fixed">
+                      <div className="table-container">
+                        <div className="table-wrapper">
+                          <table className="admin-table">
                             <thead className="bg-gray-50">
                             <tr>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '18%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '17%'}}>
                                 Client
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '12%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '11%'}}>
                                 Date
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '15%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '14%'}}>
                                 Centre
                               </th>
                               <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '13%'}}>
                                 Formule
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '14%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '13%'}}>
                                 Véhicule
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '16%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '17%'}}>
                                 Statut
                               </th>
-                              <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '12%'}}>
+                              <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '15%'}}>
                                 Actions
                               </th>
                             </tr>
@@ -521,8 +521,8 @@ const ReservationsAdmin: React.FC = () => {
                                       )}
                                     </div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <div className="flex justify-end space-x-2">
+                                  <td className="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <div className="action-buttons">
                                       {/* Bouton Inspection rapide (modal) */}
                                       <button
                                           onClick={() => handleViewVehicleDetails(reservation)}

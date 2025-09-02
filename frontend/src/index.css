@@ -21,6 +21,83 @@
     @apply container mx-auto px-4 max-w-7xl;
   }
 
+  /* ✅ SYSTÈME LAYOUT ADMIN INTELLIGENT */
+  .admin-content {
+    @apply w-full;
+    /* Padding adaptatif selon la taille d'écran */
+    padding: clamp(1rem, 2.5vw, 1.5rem);
+  }
+
+  .admin-container {
+    @apply w-full mx-auto;
+    /* Largeur maximale adaptative selon le viewport disponible */
+    /* Écran large: plus d'espace, écran petit: plus compact */
+    max-width: min(100%, calc(100vw - 16rem - 3rem)); /* 16rem = sidebar, 3rem = padding total */
+  }
+
+  /* Responsive breakpoints pour le layout admin */
+  @media (max-width: 768px) {
+    .admin-container {
+      /* Sur mobile, la sidebar est cachée donc plus d'espace */
+      max-width: min(100%, calc(100vw - 2rem)); /* 2rem = padding mobile */
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .admin-container {
+      /* Sur très grand écran, limiter pour la lisibilité */
+      max-width: min(1200px, calc(100vw - 16rem - 3rem));
+    }
+  }
+
+  /* ✅ COMPOSANTS STANDARDISÉS ADMIN */
+  .table-container {
+    @apply bg-white rounded-lg shadow overflow-hidden w-full;
+  }
+
+  .table-wrapper {
+    @apply overflow-x-auto;
+    /* Empêcher les tableaux de déborder du conteneur */
+    max-width: 100%;
+  }
+
+  .admin-table {
+    @apply min-w-full divide-y divide-gray-200 table-fixed;
+  }
+
+  .form-container {
+    @apply bg-white rounded-lg shadow p-6 w-full space-y-6;
+  }
+
+  .form-row {
+    @apply flex flex-col md:flex-row gap-4 items-start;
+  }
+
+  .form-row.responsive {
+    @apply flex-col space-y-4 md:space-y-0 md:flex-row md:space-x-4;
+  }
+
+  .card-container {
+    @apply bg-white rounded-lg shadow p-4 md:p-6 w-full;
+  }
+
+  .stats-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
+  }
+
+  /* ✅ CLASSES UTILITAIRES RESPONSIVE */
+  .responsive-text {
+    @apply text-sm md:text-base;
+  }
+
+  .responsive-padding {
+    @apply p-3 md:p-4 lg:p-6;
+  }
+
+  .responsive-margin {
+    @apply m-3 md:m-4 lg:m-6;
+  }
+
   /* Tooltip pour info TVA */
   .tax-info-tooltip {
     @apply relative inline-block cursor-help text-gray-600 hover:text-gray-800 ml-1;

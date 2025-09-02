@@ -263,7 +263,7 @@ const FormationReservationsAdmin: React.FC = () => {
             )}
 
             {/* Filtres */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div className="smart-flex mb-6">
                 <div className="text-xl font-bold text-gray-800">
                     Toutes les réservations de formations
                 </div>
@@ -321,27 +321,27 @@ const FormationReservationsAdmin: React.FC = () => {
                     <p className="text-gray-700">Aucune réservation trouvée</p>
                 </div>
             ) : (
-                <div className="bg-white rounded-lg shadow overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
+                <div className="table-container">
+                    <div className="table-wrapper">
+                        <table className="admin-table">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '25%'}}>
                                         Étudiant
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '20%'}}>
                                         Formation
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '12%'}}>
                                         Date début
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '12%'}}>
                                         Demande
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '19%'}}>
                                         Statut
                                     </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '12%'}}>
                                         Actions
                                     </th>
                                 </tr>
@@ -349,46 +349,52 @@ const FormationReservationsAdmin: React.FC = () => {
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {reservations.map((reservation) => (
                                     <tr key={reservation.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        <td className="px-3 py-4">
                                             <div className="flex items-center">
-                                                <User className="h-5 w-5 text-gray-400 mr-3" />
-                                                <div>
-                                                    <div className="text-sm font-medium text-gray-900">
+                                                <User className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+                                                <div className="min-w-0">
+                                                    <div className="text-sm font-medium text-gray-900 truncate" title={`${reservation.user.firstName} ${reservation.user.lastName}`}>
                                                         {reservation.user.firstName} {reservation.user.lastName}
                                                     </div>
-                                                    <div className="text-sm text-gray-500">
+                                                    <div className="text-xs text-gray-500 truncate" title={reservation.user.email}>
                                                         {reservation.user.email}
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900">
+                                        <td className="px-3 py-4">
+                                            <div className="text-sm text-gray-900 truncate" title={reservation.session.formation.title}>
                                                 {reservation.session.formation.title}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {formatDate(reservation.session.startDate)}
+                                        <td className="px-3 py-4">
+                                            <div className="text-sm text-gray-500">
+                                                {formatDate(reservation.session.startDate)}
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {formatDate(reservation.createdAt)}
+                                        <td className="px-3 py-4">
+                                            <div className="text-sm text-gray-500">
+                                                {formatDate(reservation.createdAt)}
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="relative status-dropdown-container">
+                                        <td className="px-3 py-4">
+                                            <div className="relative">
                                                 <button
                                                     onClick={() => toggleStatusDropdown(reservation.id)}
-                                                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer hover:opacity-80 ${getStatusBadgeClass(reservation.status)}`}
+                                                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer hover:opacity-80 max-w-full ${getStatusBadgeClass(reservation.status)}`}
+                                                    title={getStatusLabel(reservation.status, 'formation')}
                                                 >
-                                                    {getStatusLabel(reservation.status, 'formation')}
-                                                    <ChevronDown className="ml-1 h-3 w-3" />
+                                                    <span className="truncate max-w-28">
+                                                        {getStatusLabel(reservation.status, 'formation')}
+                                                    </span>
+                                                    <ChevronDown className="ml-1 h-3 w-3 flex-shrink-0" />
                                                 </button>
                                                 
                                                 {showStatusDropdown[reservation.id] && (
-                                                    <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg w-64 max-h-80 overflow-y-auto"
-                                                         style={{ zIndex: 9999 }}>
+                                                    <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg w-56 max-h-80 overflow-y-auto z-50">
                                                         <div className="p-2">
                                                             <div className="text-xs text-gray-500 p-2 border-b mb-2">
-                                                                Changer le statut de {reservation.user.firstName} {reservation.user.lastName}
+                                                                Changer le statut
                                                             </div>
                                                             <div className="grid grid-cols-1 gap-1">
                                                                 {getStatusOptions().map((status) => (
@@ -399,12 +405,13 @@ const FormationReservationsAdmin: React.FC = () => {
                                                                             reservation.status === status.value ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
                                                                         }`}
                                                                         disabled={reservation.status === status.value}
+                                                                        title={status.label}
                                                                     >
                                                                         <div className="flex items-center space-x-2">
                                                                             <span className={`inline-block w-3 h-3 rounded-full ${getStatusBadgeClass(status.value).split(' ')[0]}`}></span>
-                                                                            <span>{status.label}</span>
+                                                                            <span className="truncate">{status.label}</span>
                                                                             {reservation.status === status.value && (
-                                                                                <span className="text-xs">(actuel)</span>
+                                                                                <span className="text-xs opacity-60">(actuel)</span>
                                                                             )}
                                                                         </div>
                                                                     </button>
@@ -415,8 +422,8 @@ const FormationReservationsAdmin: React.FC = () => {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex items-center justify-end space-x-2">
+                                        <td className="px-3 py-4 text-right text-sm font-medium">
+                                            <div className="action-buttons">
                                                 {/* Bouton Inspection rapide */}
                                                 <button
                                                     onClick={() => openSessionInspectionModal(reservation.user.id)}
