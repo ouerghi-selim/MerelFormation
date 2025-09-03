@@ -214,29 +214,49 @@ class DirectDocumentController extends AbstractController
 
         $formattedDocuments = [];
         foreach ($documents as $document) {
-            $student = $document->getUser();
-            $sender = $document->getUploadedBy();
-            
-            $formattedDocuments[] = [
-                'id' => $document->getId(),
-                'title' => $document->getTitle(),
-                'fileName' => $document->getFileName(),
-                'type' => $document->getType(),
-                'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
-                'uploadedAtFormatted' => $document->getUploadedAt()->format('d/m/Y H:i'),
-                'student' => $student ? [
-                    'id' => $student->getId(),
-                    'firstName' => $student->getFirstName(),
-                    'lastName' => $student->getLastName(),
-                    'email' => $student->getEmail(),
-                    'fullName' => $student->getFirstName() . ' ' . $student->getLastName()
-                ] : null,
-                'uploadedBy' => $sender ? [
-                    'firstName' => $sender->getFirstName(),
-                    'lastName' => $sender->getLastName(),
-                    'fullName' => $sender->getFirstName() . ' ' . $sender->getLastName()
-                ] : null
-            ];
+            try {
+                $student = $document->getUser();
+                $sender = $document->getUploadedBy();
+                
+                // Vérifier si l'étudiant ou l'expéditeur existent encore (gestion soft delete)
+                if (!$student || !$sender) {
+                    // Skip ce document si l'utilisateur ou l'expéditeur ont été supprimés
+                    continue;
+                }
+                
+                // Tenter d'accéder aux propriétés pour déclencher l'exception si l'entité est soft-deleted
+                $studentFirstName = $student->getFirstName();
+                $studentLastName = $student->getLastName();
+                $senderFirstName = $sender->getFirstName();
+                $senderLastName = $sender->getLastName();
+                
+                $formattedDocuments[] = [
+                    'id' => $document->getId(),
+                    'title' => $document->getTitle(),
+                    'fileName' => $document->getFileName(),
+                    'type' => $document->getType(),
+                    'uploadedAt' => $document->getUploadedAt()->format('Y-m-d H:i:s'),
+                    'uploadedAtFormatted' => $document->getUploadedAt()->format('d/m/Y H:i'),
+                    'student' => [
+                        'id' => $student->getId(),
+                        'firstName' => $studentFirstName,
+                        'lastName' => $studentLastName,
+                        'email' => $student->getEmail(),
+                        'fullName' => $studentFirstName . ' ' . $studentLastName
+                    ],
+                    'uploadedBy' => [
+                        'firstName' => $senderFirstName,
+                        'lastName' => $senderLastName,
+                        'fullName' => $senderFirstName . ' ' . $senderLastName
+                    ]
+                ];
+            } catch (\Doctrine\ORM\EntityNotFoundException $e) {
+                // Skip ce document si l'utilisateur ou l'expéditeur ont été soft-deleted
+                continue;
+            } catch (\Exception $e) {
+                // Skip ce document en cas d'autres erreurs liées aux entités
+                continue;
+            }
         }
 
         return $this->json($formattedDocuments);

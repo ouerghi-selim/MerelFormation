@@ -140,6 +140,13 @@ export const adminDirectDocumentsApi = {
     sendDocument: (formData: FormData) => api.post('/admin/direct-documents/send', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
+    uploadToUser: (studentId: number, formData: FormData) => {
+        // Ajouter l'ID de l'étudiant aux données du formulaire
+        formData.append('studentId', studentId.toString());
+        return api.post('/admin/direct-documents/send', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+    },
     getSentDocuments: () => api.get('/admin/direct-documents/sent'),
     delete: (id: number) => api.delete(`/admin/direct-documents/${id}`)
 };
