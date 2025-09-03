@@ -421,7 +421,8 @@ class NotificationService
                 // Utiliser la nouvelle méthode sendNotification
                 $this->sendNotification($admin, $rental, $adminVariables);
             }
-            $this->sendNotification($student, $rental, $variables);
+            // Supprimé: $this->sendNotification($student, $rental, $variables);
+            // L'étudiant reçoit maintenant son email via le système de statuts unifié
 
             $this->em->flush();
 
