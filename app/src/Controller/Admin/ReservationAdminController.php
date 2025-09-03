@@ -78,6 +78,20 @@ class ReservationAdminController extends AbstractController
                 'phone' => '[Archivé]',
                 'fullName' => '[Utilisateur archivé]'
             ];
+
+            // Récupérer les données d'entreprise si présentes
+            $company = $reservation->getCompany();
+            $companyData = $company ? [
+                'id' => $company->getId(),
+                'name' => $company->getName(),
+                'siret' => $company->getSiret(),
+                'address' => $company->getAddress(),
+                'postalCode' => $company->getPostalCode(),
+                'city' => $company->getCity(),
+                'responsableName' => $company->getResponsableName(),
+                'email' => $company->getEmail(),
+                'phone' => $company->getPhone()
+            ] : null;
             
             $formattedReservations[] = [
                 'id' => $reservation->getId(),
@@ -86,7 +100,8 @@ class ReservationAdminController extends AbstractController
                 'formula' => $reservation->getFormula(),
                 'status' => $reservation->getStatus(),
                 'vehicleAssigned' => $reservation->getVehicle() ? $reservation->getVehicle()->getModel() : null,
-                'user' => $userData
+                'user' => $userData,
+                'company' => $companyData
             ];
         }
 
@@ -142,6 +157,20 @@ class ReservationAdminController extends AbstractController
             'driverLicenseFrontFile' => null,
             'driverLicenseBackFile' => null
         ];
+
+        // Récupérer les données d'entreprise si présentes
+        $company = $reservation->getCompany();
+        $companyData = $company ? [
+            'id' => $company->getId(),
+            'name' => $company->getName(),
+            'siret' => $company->getSiret(),
+            'address' => $company->getAddress(),
+            'postalCode' => $company->getPostalCode(),
+            'city' => $company->getCity(),
+            'responsableName' => $company->getResponsableName(),
+            'email' => $company->getEmail(),
+            'phone' => $company->getPhone()
+        ] : null;
         
         // Formater les données pour le frontend
         $formattedReservation = [
@@ -165,7 +194,8 @@ class ReservationAdminController extends AbstractController
             'documents' => $reservation->getDocuments(),
             'invoice' => $reservation->getInvoice(),
             'vehicleAssigned' => $reservation->getVehicle() ? $reservation->getVehicle()->getModel() : null,
-            'user' => $userData
+            'user' => $userData,
+            'company' => $companyData
         ];
 
         return $this->json($formattedReservation);

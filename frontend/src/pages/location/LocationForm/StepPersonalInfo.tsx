@@ -1,8 +1,9 @@
 // StepPersonalInfo.tsx
 import React from 'react';
-import { User, Calendar, MapPin, Phone, Mail, ChevronRight } from 'lucide-react';
+import { User, Calendar, MapPin, Phone, Mail, ChevronRight, Building2 } from 'lucide-react';
 import { useLocationForm } from './LocationFormContext';
 import Button from '../../../components/common/Button';
+import SiretCompanySelector from '../../../components/common/SiretCompanySelector';
 
 interface StepPersonalInfoProps {
     onNext: () => void;
@@ -20,7 +21,14 @@ const StepPersonalInfo: React.FC<StepPersonalInfoProps> = ({ onNext }) => {
 
     const handleNext = () => {
         // Marquer tous les champs comme touchés pour afficher les erreurs
-        ['name', 'firstName', 'birthDate', 'birthPlace', 'phone', 'email'].forEach(
+        const fieldsToValidate = ['name', 'firstName', 'birthDate', 'birthPlace', 'phone', 'email'];
+        
+        // Ajouter la validation de l'entreprise si activée
+        if (formData.isLinkedToCompany) {
+            fieldsToValidate.push('companyId');
+        }
+
+        fieldsToValidate.forEach(
             field => setFieldTouched(field as keyof typeof formData)
         );
 
@@ -28,6 +36,27 @@ const StepPersonalInfo: React.FC<StepPersonalInfoProps> = ({ onNext }) => {
         if (isStepValid(1)) {
             onNext();
         }
+    };
+
+    const handleCompanyToggle = (isLinked: boolean) => {
+        updateFormData({ 
+            isLinkedToCompany: isLinked,
+            companyId: isLinked ? formData.companyId : null
+        });
+    };
+
+    const handleCompanySelect = (companyId: number | null) => {
+        updateFormData({ companyId });
+    };
+
+    const isCompanyFormValid = () => {
+        if (!formData.isLinkedToCompany) {
+            return true; // Si pas d'entreprise, c'est valide
+        }
+        
+        // Si entreprise cochée, on doit au moins avoir un companyId (entreprise existante)
+        // ou toutes les infos pour créer une nouvelle entreprise
+        return formData.companyId !== null;
     };
 
     return (
@@ -149,12 +178,53 @@ const StepPersonalInfo: React.FC<StepPersonalInfoProps> = ({ onNext }) => {
                 )}
             </div>
 
+            {/* Section Entreprise (optionnel) */}
+            <div className="pt-6 border-t border-gray-200">
+                <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                    <p className="text-sm text-blue-800">
+                        <Building2 className="inline w-4 h-4 mr-1" />
+                        <strong>Information :</strong> Si vous êtes rattaché à une entreprise qui prend en charge vos frais d'examen, 
+                        vous pouvez la renseigner ci-dessous. Cette étape est optionnelle.
+                    </p>
+                </div>
+
+                <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                        <input
+                            type="checkbox"
+                            id="isLinkedToCompany"
+                            checked={formData.isLinkedToCompany}
+                            onChange={(e) => handleCompanyToggle(e.target.checked)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="isLinkedToCompany" className="text-sm font-medium text-gray-700">
+                            Je suis rattaché à une entreprise
+                        </label>
+                    </div>
+
+                    {formData.isLinkedToCompany && (
+                        <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-white">
+                            <SiretCompanySelector
+                                selectedCompanyId={formData.companyId}
+                                onCompanySelect={handleCompanySelect}
+                                label="Entreprise de rattachement"
+                                required={formData.isLinkedToCompany}
+                            />
+                            {errors.companyId && isFieldTouched('companyId' as keyof typeof formData) && (
+                                <p className="text-red-500 text-sm mt-1">{errors.companyId}</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+
             <div className="pt-6">
                 <Button
                     onClick={handleNext}
                     variant="primary"
                     className="w-full flex items-center justify-center"
                     icon={<ChevronRight className="ml-2" />}
+                    disabled={formData.isLinkedToCompany && !formData.companyId}
                 >
                     Continuer
                 </Button>

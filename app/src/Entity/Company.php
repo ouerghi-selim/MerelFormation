@@ -118,11 +118,15 @@ class Company
     #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'company')]
     private Collection $users;
 
+    #[ORM\OneToMany(targetEntity: VehicleRental::class, mappedBy: 'company')]
+    private Collection $vehicleRentals;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
         $this->users = new ArrayCollection();
+        $this->vehicleRentals = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -269,6 +273,36 @@ class Company
             // set the owning side to null (unless already changed)
             if ($user->getCompany() === $this) {
                 $user->setCompany(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, VehicleRental>
+     */
+    public function getVehicleRentals(): Collection
+    {
+        return $this->vehicleRentals;
+    }
+
+    public function addVehicleRental(VehicleRental $vehicleRental): static
+    {
+        if (!$this->vehicleRentals->contains($vehicleRental)) {
+            $this->vehicleRentals->add($vehicleRental);
+            $vehicleRental->setCompany($this);
+        }
+
+        return $this;
+    }
+
+    public function removeVehicleRental(VehicleRental $vehicleRental): static
+    {
+        if ($this->vehicleRentals->removeElement($vehicleRental)) {
+            // set the owning side to null (unless already changed)
+            if ($vehicleRental->getCompany() === $this) {
+                $vehicleRental->setCompany(null);
             }
         }
 

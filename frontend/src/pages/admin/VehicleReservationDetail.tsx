@@ -28,6 +28,7 @@ import {
 import AdminLayout from '../../components/layout/AdminLayout';
 import Button from '../../components/common/Button';
 import { adminReservationsApi, vehicleRentalDocumentsApi, vehicleRentalsApi } from '../../services/api';
+import SiretCompanySelector from '../../components/common/SiretCompanySelector';
 import Alert from '../../components/common/Alert';
 import { getStatusBadgeClass, getStatusLabel as getReservationStatusLabel } from '../../utils/reservationStatuses';
 import { FileDisplay } from '../../components/common/FileDisplay';
@@ -78,6 +79,18 @@ interface VehicleReservationDetail {
         driverLicenseFrontFile?: string;
         driverLicenseBackFile?: string;
     };
+    // Informations entreprise (optionnel)
+    company?: {
+        id: number;
+        name: string;
+        siret: string;
+        address: string;
+        postalCode: string;
+        city: string;
+        responsableName: string;
+        email: string;
+        phone: string;
+    } | null;
 }
 
 const VehicleReservationDetail: React.FC = () => {
@@ -119,6 +132,7 @@ const VehicleReservationDetail: React.FC = () => {
     const [isEditingExam, setIsEditingExam] = useState(false);
     const [isEditingFinance, setIsEditingFinance] = useState(false);
     const [isEditingNotes, setIsEditingNotes] = useState(false);
+    const [isEditingCompany, setIsEditingCompany] = useState(false);
     const [sectionUpdateLoading, setSectionUpdateLoading] = useState<string | null>(null);
 
     // États pour stocker les données éditées
@@ -393,6 +407,9 @@ const VehicleReservationDetail: React.FC = () => {
             birthDate: reservation.user?.birthDate ? reservation.user.birthDate.split('T')[0] : '',
             birthPlace: reservation.user?.birthPlace || '',
             
+            // Entreprise (optionnel)
+            companyId: reservation.company?.id || null,
+            
             // Réservation - Convertir DD/MM/YYYY vers YYYY-MM-DD pour les inputs date
             startDate: reservation.startDate ? reservation.startDate.split('/').reverse().join('-') : '',
             endDate: reservation.endDate ? reservation.endDate.split('/').reverse().join('-') : '',
@@ -429,6 +446,7 @@ const VehicleReservationDetail: React.FC = () => {
             case 'exam': setIsEditingExam(true); break;
             case 'finance': setIsEditingFinance(true); break;
             case 'notes': setIsEditingNotes(true); break;
+            case 'company': setIsEditingCompany(true); break;
         }
     };
 
@@ -439,6 +457,7 @@ const VehicleReservationDetail: React.FC = () => {
             case 'exam': setIsEditingExam(false); break;
             case 'finance': setIsEditingFinance(false); break;
             case 'notes': setIsEditingNotes(false); break;
+            case 'company': setIsEditingCompany(false); break;
         }
         setEditedData({});
     };
@@ -734,6 +753,7 @@ const VehicleReservationDetail: React.FC = () => {
                                                     />
                                                 </div>
                                             </div>
+                                            
                                             <div className="flex justify-end space-x-2 pt-4 border-t">
                                                 <button
                                                     onClick={() => handleCancelEditSection('client')}
@@ -793,6 +813,120 @@ const VehicleReservationDetail: React.FC = () => {
                                                     <p className="text-sm text-gray-900">{reservation.user?.birthPlace || 'Non renseigné'}</p>
                                                 </div>
                                             </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Section Entreprise */}
+                            <div className="bg-white rounded-lg shadow">
+                                <div className="p-6 border-b border-gray-200">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            <Building className="w-5 h-5 text-blue-600 mr-2" />
+                                            <h2 className="text-lg font-semibold text-gray-900">Entreprise rattachée</h2>
+                                        </div>
+                                        {!isEditingCompany && (
+                                            <button
+                                                onClick={() => handleEditSection('company')}
+                                                className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                                            >
+                                                <Edit2 className="w-3 h-3 mr-1" />
+                                                Modifier
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="p-6">
+                                    {isEditingCompany ? (
+                                        <div className="space-y-4">
+                                            <SiretCompanySelector
+                                                selectedCompanyId={editedData.companyId}
+                                                onCompanySelect={(companyId) => updateEditedData('companyId', companyId)}
+                                                onCompanyData={(company) => {
+                                                    // Optionnel : on peut stocker les données complètes si besoin
+                                                }}
+                                                label="Entreprise de rattachement"
+                                                required={false}
+                                                existingCompanyData={reservation.company}
+                                            />
+                                            <div className="flex justify-end space-x-2 pt-4 border-t">
+                                                <button
+                                                    onClick={() => handleCancelEditSection('company')}
+                                                    disabled={sectionUpdateLoading === 'company'}
+                                                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 disabled:opacity-50 flex items-center"
+                                                >
+                                                    <X className="w-3 h-3 mr-1" />
+                                                    Annuler
+                                                </button>
+                                                <button
+                                                    onClick={() => handleSaveSection('company')}
+                                                    disabled={sectionUpdateLoading === 'company'}
+                                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center"
+                                                >
+                                                    {sectionUpdateLoading === 'company' ? (
+                                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                                                    ) : (
+                                                        <Check className="w-3 h-3 mr-1" />
+                                                    )}
+                                                    Valider
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            {reservation.company ? (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="text-sm font-medium text-gray-500">Nom de l'entreprise</label>
+                                                        <div className="mt-1">
+                                                            <p className="text-sm font-semibold text-gray-900">{reservation.company.name}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-sm font-medium text-gray-500">SIRET</label>
+                                                        <div className="mt-1">
+                                                            <p className="text-sm text-gray-900">{reservation.company.siret}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="md:col-span-2">
+                                                        <label className="text-sm font-medium text-gray-500">Adresse</label>
+                                                        <div className="mt-1 flex items-start">
+                                                            <MapPin className="w-4 h-4 text-gray-400 mr-2 mt-0.5" />
+                                                            <div>
+                                                                <p className="text-sm text-gray-900">{reservation.company.address}</p>
+                                                                <p className="text-sm text-gray-600">{reservation.company.postalCode} {reservation.company.city}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-sm font-medium text-gray-500">Responsable</label>
+                                                        <div className="mt-1 flex items-center">
+                                                            <User className="w-4 h-4 text-gray-400 mr-2" />
+                                                            <p className="text-sm text-gray-900">{reservation.company.responsableName}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-sm font-medium text-gray-500">Contact</label>
+                                                        <div className="mt-1 space-y-1">
+                                                            <div className="flex items-center">
+                                                                <Mail className="w-4 h-4 text-gray-400 mr-2" />
+                                                                <p className="text-sm text-gray-900">{reservation.company.email}</p>
+                                                            </div>
+                                                            <div className="flex items-center">
+                                                                <Phone className="w-4 h-4 text-gray-400 mr-2" />
+                                                                <p className="text-sm text-gray-900">{reservation.company.phone}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-8">
+                                                    <Building className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                                                    <p className="text-sm text-gray-500">Aucune entreprise rattachée</p>
+                                                    <p className="text-xs text-gray-400">Cliquez sur "Modifier" pour ajouter une entreprise</p>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>

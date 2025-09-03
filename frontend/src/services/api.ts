@@ -623,4 +623,69 @@ export const vehicleRentalDocumentsApi = {
         `${baseURL}/vehicle-rental-documents/download/${documentId}`
 };
 
+// Services API pour la gestion des entreprises
+export const adminCompaniesApi = {
+    // Récupérer toutes les entreprises
+    getAll: (params?: { 
+        page?: number; 
+        limit?: number; 
+        search?: string;
+        isActive?: boolean;
+    }) => {
+        const queryParams = new URLSearchParams();
+        if (params) {
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    queryParams.append(key, value.toString());
+                }
+            });
+        }
+        const queryString = queryParams.toString();
+        return api.get(`/admin/companies${queryString ? '?' + queryString : ''}`);
+    },
+
+    // Récupérer une entreprise par ID
+    getById: (id: number) => api.get(`/admin/companies/${id}`),
+
+    // Créer une nouvelle entreprise
+    create: (data: {
+        name: string;
+        siret: string;
+        address: string;
+        postalCode: string;
+        city: string;
+        responsableName: string;
+        email: string;
+        phone: string;
+    }) => api.post('/admin/companies', data),
+
+    // Modifier une entreprise
+    update: (id: number, data: {
+        name?: string;
+        siret?: string;
+        address?: string;
+        postalCode?: string;
+        city?: string;
+        responsableName?: string;
+        email?: string;
+        phone?: string;
+        isActive?: boolean;
+    }) => api.put(`/admin/companies/${id}`, data),
+
+    // Supprimer/désactiver une entreprise
+    delete: (id: number) => api.delete(`/admin/companies/${id}`),
+
+    // Récupérer les entreprises actives seulement
+    getActive: () => api.get('/companies?isActive=true'),
+
+    // Vérifier si un SIRET existe déjà
+    checkSiret: (siret: string, excludeId?: number) => {
+        const params = new URLSearchParams({ siret });
+        if (excludeId) {
+            params.append('excludeId', excludeId.toString());
+        }
+        return api.get(`/companies/check-siret?${params.toString()}`);
+    }
+};
+
 export default api;

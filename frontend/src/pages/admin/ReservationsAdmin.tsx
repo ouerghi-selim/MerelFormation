@@ -23,6 +23,17 @@ interface VehicleReservation {
     phone: string;
     fullName: string;
   };
+  company?: {
+    id: number;
+    name: string;
+    siret: string;
+    address: string;
+    postalCode: string;
+    city: string;
+    responsableName: string;
+    email: string;
+    phone: string;
+  } | null;
 }
 
 interface SessionReservation {
@@ -434,22 +445,25 @@ const ReservationsAdmin: React.FC = () => {
                           <table className="admin-table">
                             <thead className="bg-gray-50">
                             <tr>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '17%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '15%'}}>
                                 Client
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '11%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '10%'}}>
                                 Date
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '14%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '12%'}}>
                                 Centre
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '13%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '11%'}}>
                                 Formule
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '13%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '12%'}}>
+                                Entreprise
+                              </th>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '11%'}}>
                                 Véhicule
                               </th>
-                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '17%'}}>
+                              <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '14%'}}>
                                 Statut
                               </th>
                               <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '15%'}}>
@@ -477,6 +491,20 @@ const ReservationsAdmin: React.FC = () => {
                                         : reservation.formula
                                       }
                                     </div>
+                                  </td>
+                                  <td className="px-3 py-4">
+                                    {reservation.company ? (
+                                      <div>
+                                        <div className="text-sm font-medium text-gray-900 truncate" title={reservation.company.name}>
+                                          {reservation.company.name}
+                                        </div>
+                                        <div className="text-xs text-gray-500 truncate" title={reservation.company.siret}>
+                                          {reservation.company.siret}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="text-sm text-gray-400 italic">Particulier</div>
+                                    )}
                                   </td>
                                   <td className="px-3 py-4">
                                     <div className="text-sm text-gray-900 truncate" title={reservation.vehicleAssigned || 'Non assigné'}>

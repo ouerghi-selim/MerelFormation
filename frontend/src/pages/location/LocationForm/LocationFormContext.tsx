@@ -15,6 +15,10 @@ interface FormData {
     city: string;
     facturation: string;
 
+    // Entreprise (optionnel)
+    isLinkedToCompany: boolean;
+    companyId: number | null;
+
     // Examen
     examCenter: string;
     formula: string;
@@ -55,6 +59,8 @@ const defaultFormData: FormData = {
     postalCode: '',
     city: '',
     facturation: '',
+    isLinkedToCompany: false,
+    companyId: null,
     examCenter: '',
     formula: '',
     examDate: '',
@@ -193,6 +199,13 @@ export const LocationFormProvider: React.FC<{ children: ReactNode }> = ({ childr
                     errorMessage = 'Permis verso obligatoire';
                 }
                 break;
+            case 'companyId':
+                // Valider seulement si l'utilisateur est rattaché à une entreprise
+                if (formData.isLinkedToCompany && (!value || value === null)) {
+                    isValid = false;
+                    errorMessage = 'Entreprise obligatoire';
+                }
+                break;
         }
 
         // Mettre à jour l'état des erreurs
@@ -221,6 +234,10 @@ export const LocationFormProvider: React.FC<{ children: ReactNode }> = ({ childr
         switch (step) {
             case 1:
                 fieldsToValidate = ['name', 'firstName', 'birthDate', 'birthPlace', 'phone', 'email'];
+                // Ajouter la validation d'entreprise si rattaché
+                if (formData.isLinkedToCompany) {
+                    fieldsToValidate.push('companyId');
+                }
                 break;
             case 2:
                 fieldsToValidate = ['address', 'postalCode', 'city', 'facturation'];

@@ -61,7 +61,19 @@ class VehicleRentalTrackingController extends AbstractController
             'driverLicense' => [
                 'frontFile' => $user?->getDriverLicenseFrontFile(),
                 'backFile' => $user?->getDriverLicenseBackFile()
-            ]
+            ],
+            // Informations entreprise si présente
+            'company' => $rental->getCompany() ? [
+                'id' => $rental->getCompany()->getId(),
+                'name' => $rental->getCompany()->getName(),
+                'siret' => $rental->getCompany()->getSiret(),
+                'address' => $rental->getCompany()->getAddress(),
+                'postalCode' => $rental->getCompany()->getPostalCode(),
+                'city' => $rental->getCompany()->getCity(),
+                'responsableName' => $rental->getCompany()->getResponsableName(),
+                'email' => $rental->getCompany()->getEmail(),
+                'phone' => $rental->getCompany()->getPhone()
+            ] : null
         ]);
     }
 

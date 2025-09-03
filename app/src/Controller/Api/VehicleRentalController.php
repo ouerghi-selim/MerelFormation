@@ -4,7 +4,9 @@ namespace App\Controller\Api;
 
 use App\Entity\User;
 use App\Entity\VehicleRental;
+use App\Entity\Company;
 use App\Repository\UserRepository;
+use App\Repository\CompanyRepository;
 use App\Service\NotificationService;
 use App\Service\VehicleRentalTrackingService;
 use App\Enum\ReservationStatus;
@@ -22,6 +24,7 @@ class VehicleRentalController extends AbstractController
     public function __construct(
         private EntityManagerInterface $entityManager,
         private UserRepository $userRepository,
+        private CompanyRepository $companyRepository,
         private UserPasswordHasherInterface $passwordHasher,
         private NotificationService $notificationService,
         private VehicleRentalTrackingService $trackingService
@@ -134,6 +137,14 @@ class VehicleRentalController extends AbstractController
         // Créer la réservation de véhicule
         $rental = new VehicleRental();
         $rental->setUser($user);
+
+        // Gérer l'entreprise si spécifiée
+        if ($companyId = $request->request->get('companyId')) {
+            $company = $this->companyRepository->find($companyId);
+            if ($company) {
+                $rental->setCompany($company);
+            }
+        }
         //$rental->setRentalType($request->request->get('rentalType', 'exam'));
         $rental->setStatus($request->request->get('status', ReservationStatus::SUBMITTED));
 
@@ -409,6 +420,19 @@ class VehicleRentalController extends AbstractController
 
         if (isset($data['birthPlace'])) {
             $rental->getUser()->setBirthPlace($data['birthPlace']);
+        }
+
+        // Gérer l'entreprise
+        if (isset($data['companyId'])) {
+            if ($data['companyId']) {
+                $company = $this->companyRepository->find($data['companyId']);
+                if ($company) {
+                    $rental->setCompany($company);
+                }
+            } else {
+                // Supprimer l'association avec l'entreprise si companyId est null
+                $rental->setCompany(null);
+            }
         }
 
         // Adresse

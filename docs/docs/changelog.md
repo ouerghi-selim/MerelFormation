@@ -1,5 +1,13 @@
 # Journal des changements (2025)
 
+## Septembre
+- **Système entreprise complet** : rattachement véhicules d'examen aux entreprises
+- **Reconnaissance SIRET automatique** : API publique `/api/public/companies/check-siret/{siret}`
+- **Interface admin entreprise** : section dédiée avec édition inline (bouton crayon)
+- **Gestion des doublons** : évitement automatique des entreprises en double
+- **Validation SIRET intelligente** : contrôleur custom permettant l'édition sans conflit
+- **UX optimisée** : formulaires pré-remplis, reconnaissance instantanée, gestion d'erreurs
+
 ## Août
 - Progression visuelle des statuts (Espace étudiant)
 - Visualisation adaptative des documents

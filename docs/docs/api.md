@@ -7,14 +7,17 @@
 - `POST /api/contact`
 
 ## Admin / Gestion
-- **Réservations (formations)** :  
+- **Réservations (formations)** :  
   `GET /api/admin/reservation-statuses` · `GET /api/admin/reservation-transitions` · `PUT /api/admin/session-reservations/{id}/status`
-- **Documents** :  
+- **Entreprises** :  
+  `GET /api/admin/companies` · `GET /api/admin/companies/{id}` · `PUT /api/admin/companies/{id}` · `POST /api/admin/companies` · `DELETE /api/admin/companies/{id}`  
+  Public : `GET /api/public/companies/check-siret/{siret}` (reconnaissance SIRET)
+- **Documents** :  
   `POST /admin/formations/{id}/documents` · `DELETE /admin/formations/{id}/documents/{documentId}` · `POST /admin/sessions/{id}/documents`  
   `PUT /api/admin/documents/{id}/validate` · `PUT /api/admin/documents/{id}/reject`  
-  Centralisation : `GET /api/admin/users/inscription-documents`
-- **Utilisateurs supprimés (RGPD)** :  
-  `DELETE /admin/users/{id}` (niveau 1) · `POST /admin/users/{id}/restore` · `GET /admin/users/deleted`
+  Centralisation : `GET /api/admin/users/inscription-documents`
+- **Utilisateurs supprimés (RGPD)** :  
+  `DELETE /admin/users/{id}` (niveau 1) · `POST /admin/users/{id}/restore` · `GET /admin/users/deleted`
 
 ## Étudiant
 - `GET /student/dashboard`

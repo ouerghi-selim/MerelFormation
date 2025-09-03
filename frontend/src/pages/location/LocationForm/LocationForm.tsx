@@ -79,6 +79,11 @@ const LocationForm: React.FC<LocationFormProps> = ({ isOpen, onClose }) => {
             formDataToSend.append('formula', formData.formula);
             formDataToSend.append('examTime', formData.examTime);
 
+            // Entreprise (optionnel)
+            if (formData.isLinkedToCompany && formData.companyId) {
+                formDataToSend.append('companyId', formData.companyId.toString());
+            }
+
             // Paiement
             formDataToSend.append('financing', formData.financing);
             formDataToSend.append('paymentMethod', formData.paymentMethod);

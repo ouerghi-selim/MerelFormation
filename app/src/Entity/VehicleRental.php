@@ -59,6 +59,11 @@ class VehicleRental
     #[Assert\NotNull]
     private ?User $user = null;
 
+    #[ORM\ManyToOne(targetEntity: Company::class, inversedBy: 'vehicleRentals')]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['rental:read', 'rental:write'])]
+    private ?Company $company = null;
+
     #[ORM\ManyToOne(targetEntity: Vehicle::class, inversedBy: 'rentals')]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['rental:read', 'rental:write'])]
@@ -429,6 +434,17 @@ class VehicleRental
     public function setUpdatedAt(\DateTimeImmutable $updatedAt)
     {
         $this->updatedAt = $updatedAt;
+        return $this;
+    }
+
+    public function getCompany(): ?Company
+    {
+        return $this->company;
+    }
+
+    public function setCompany(?Company $company): static
+    {
+        $this->company = $company;
         return $this;
     }
 }

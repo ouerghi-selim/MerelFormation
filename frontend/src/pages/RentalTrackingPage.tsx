@@ -17,7 +17,9 @@ import {
   Upload,
   Download,
   Trash2,
-  X
+  X,
+  Building,
+  MapPin
 } from 'lucide-react';
 import { FileDisplay } from '../components/common/FileDisplay';
 import { 
@@ -588,6 +590,49 @@ const RentalTrackingPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Informations entreprise si présentes */}
+          {rental.company && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <h3 className="text-md font-medium text-gray-900 mb-4 flex items-center">
+                <Building className="mr-2 h-5 w-5 text-blue-600" />
+                Entreprise rattachée
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-start">
+                  <Building className="mr-3 h-5 w-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">Entreprise</label>
+                    <p className="text-gray-900 font-semibold">{rental.company.name}</p>
+                    <p className="text-xs text-gray-500">SIRET: {rental.company.siret}</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <MapPin className="mr-3 h-5 w-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">Adresse</label>
+                    <p className="text-gray-900">{rental.company.address}</p>
+                    <p className="text-gray-600">{rental.company.postalCode} {rental.company.city}</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <User className="mr-3 h-5 w-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">Contact</label>
+                    <p className="text-gray-900">{rental.company.responsableName}</p>
+                    <div className="flex items-center mt-1">
+                      <Mail className="mr-1 h-3 w-3 text-gray-400" />
+                      <p className="text-xs text-gray-600">{rental.company.email}</p>
+                    </div>
+                    <div className="flex items-center">
+                      <Phone className="mr-1 h-3 w-3 text-gray-400" />
+                      <p className="text-xs text-gray-600">{rental.company.phone}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Informations examen */}

@@ -24,6 +24,17 @@ export interface VehicleRentalTracking {
     frontFile?: string;
     backFile?: string;
   };
+  company?: {
+    id: number;
+    name: string;
+    siret: string;
+    address: string;
+    postalCode: string;
+    city: string;
+    responsableName: string;
+    email: string;
+    phone: string;
+  } | null;
 }
 
 export interface StatusHistoryItem {
