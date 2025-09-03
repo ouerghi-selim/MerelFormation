@@ -6,6 +6,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Repository\VehicleRentalRepository;
 use App\Repository\VehicleRepository;
@@ -395,5 +396,52 @@ class ReservationAdminController extends AbstractController
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Télécharger un fichier de permis de conduire
+     * @Route("/admin/users/{userId}/license/{type}/download", name="download_user_license", methods={"GET"})
+     */
+    public function downloadUserLicense(int $userId, string $type): Response
+    {
+        // Vérifier que l'utilisateur est un admin
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
+
+        // Valider le type de fichier
+        if (!in_array($type, ['front', 'back'])) {
+            return $this->json(['message' => 'Type de fichier invalide'], 400);
+        }
+
+        // Récupérer l'utilisateur
+        $userRepository = $this->entityManager->getRepository(\App\Entity\User::class);
+        $user = $userRepository->find($userId);
+
+        if (!$user) {
+            return $this->json(['message' => 'Utilisateur non trouvé'], 404);
+        }
+
+        // Récupérer le nom du fichier selon le type
+        $fileName = null;
+        if ($type === 'front') {
+            $fileName = $user->getDriverLicenseFrontFile();
+        } else {
+            $fileName = $user->getDriverLicenseBackFile();
+        }
+
+        if (!$fileName) {
+            return $this->json(['message' => 'Fichier non trouvé'], 404);
+        }
+
+        // Construire le chemin complet du fichier
+        $filePath = $this->getParameter('kernel.project_dir') . '/public/uploads/licenses/' . $fileName;
+
+        if (!file_exists($filePath)) {
+            return $this->json(['message' => 'Fichier physique non trouvé'], 404);
+        }
+
+        // Retourner le fichier
+        return $this->file($filePath, $fileName);
     }
 }

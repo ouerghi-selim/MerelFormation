@@ -192,13 +192,20 @@ docker-compose -f docker-compose.prod.yml exec php bash -c "
     mkdir -p /var/www/var/log
     mkdir -p /var/www/public/uploads/sessions
     mkdir -p /var/www/public/uploads/formations
+    mkdir -p /var/www/public/uploads/cms
+    mkdir -p /var/www/public/uploads/documents
+    mkdir -p /var/www/public/uploads/images
+    mkdir -p /var/www/public/uploads/licenses
+    mkdir -p /var/www/public/uploads/temp
+    mkdir -p /var/www/public/uploads/user-documents
 
     # Permissions complètes
     chown -R www-data:www-data /var/www/var
     chown -R www-data:www-data /var/www/public/uploads
     chmod -R 777 /var/www/var/cache
     chmod -R 777 /var/www/var/log
-    chmod -R 755 /var/www/public/uploads
+    # Permissions 777 pour tous les dossiers uploads (nécessaire pour écriture serveur web)
+    chmod -R 777 /var/www/public/uploads
 "
 
 # Vider le cache Symfony (MÉTHODE HYBRIDE pour éviter blocages)

@@ -1477,6 +1477,9 @@ const VehicleReservationDetail: React.FC = () => {
                                                                 fileName={reservation.user.driverLicenseFrontFile}
                                                                 baseUrl="/uploads/licenses"
                                                                 title="Permis de conduire - Recto"
+                                                                useApiRoute={true}
+                                                                userId={reservation.user.id}
+                                                                fileType="front"
                                                             />
                                                         </div>
                                                     </div>
@@ -1491,6 +1494,9 @@ const VehicleReservationDetail: React.FC = () => {
                                                                 fileName={reservation.user.driverLicenseBackFile}
                                                                 baseUrl="/uploads/licenses"
                                                                 title="Permis de conduire - Verso"
+                                                                useApiRoute={true}
+                                                                userId={reservation.user.id}
+                                                                fileType="back"
                                                             />
                                                         </div>
                                                     </div>
