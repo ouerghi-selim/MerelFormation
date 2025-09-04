@@ -27,6 +27,7 @@ services:
     working_dir: /var/www
     volumes:
       - ./app:/var/www
+      - ./app/public/uploads:/var/www/public/uploads
     environment:
       - APP_ENV=prod
       - DATABASE_URL=mysql://merel_user:merel_password@mysql:3306/merel_db
