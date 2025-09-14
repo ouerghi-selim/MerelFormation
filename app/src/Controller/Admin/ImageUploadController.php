@@ -235,4 +235,6 @@ class ImageUploadController extends AbstractController
             'message' => 'Fichier non trouvé'
         ], 404);
     }
+
+
 }

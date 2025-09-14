@@ -695,4 +695,38 @@ export const adminCompaniesApi = {
     }
 };
 
+// ✨ NOUVEAU : Services API pour servir les images uploads
+export const uploadsApi = {
+    // Construire l'URL pour une image CMS
+    getCmsImageUrl: (filename: string) => 
+        `${baseURL}/uploads/cms/${encodeURIComponent(filename)}`,
+    
+    // Construire l'URL pour une image générale
+    getImageUrl: (filename: string) => 
+        `${baseURL}/uploads/images/${encodeURIComponent(filename)}`,
+    
+    // Construire l'URL pour un document
+    getDocumentUrl: (filename: string) => 
+        `${baseURL}/uploads/documents/${encodeURIComponent(filename)}`,
+    
+    // Construire l'URL pour n'importe quel type d'upload
+    getUploadUrl: (type: string, filename: string) =>
+        `${baseURL}/uploads/${type}/${encodeURIComponent(filename)}`,
+
+    // Helper pour transformer les URLs relatives en URLs API
+    transformImageUrl: (relativePath: string) => {
+        if (!relativePath || relativePath.startsWith('http') || relativePath.startsWith('/assets/')) {
+            // Déjà une URL absolue ou un asset static - ne pas transformer
+            return relativePath;
+        }
+        
+        if (relativePath.startsWith('/uploads/')) {
+            // Transformer /uploads/type/file.ext en /api/uploads/type/file.ext
+            return `${baseURL}${relativePath}`;
+        }
+        
+        return relativePath;
+    }
+};
+
 export default api;

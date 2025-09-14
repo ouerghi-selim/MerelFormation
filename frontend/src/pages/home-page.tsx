@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Star, Calendar, Car, Book, CheckCircle, ArrowRight } from 'lucide-react';
-import { adminContentTextApi, publicTestimonialsApi } from '../services/api';
+import { adminContentTextApi, publicTestimonialsApi, uploadsApi } from '../services/api';
 import heroImage from '@assets/images/hero/classroom.jpg';
 import PageContainer from '../components/layout/PageContainer';
 
@@ -187,6 +187,16 @@ const HomePage = () => {
     return cmsContent[identifier] || fallback;
   };
 
+  // Fonction helper pour transformer les URLs d'images CMS
+  const getImageUrl = (identifier: string, fallback: string) => {
+    const content = cmsContent[identifier];
+    if (content) {
+      // Transformer l'URL relative en URL API
+      return uploadsApi.transformImageUrl(content);
+    }
+    return fallback;
+  };
+
   if (loading) return <Loader />;
   if (error) return <ErrorDisplay message={error} />;
 
@@ -225,7 +235,7 @@ const HomePage = () => {
               </div>
                 <div className="md:w-1/2 md:pl-8 animate-slideInRight">
                 <img
-                    src={getContent('home_hero_image_url', heroImage)}
+                    src={getImageUrl('home_hero_image_url', heroImage)}
                     alt={getContent('home_hero_image_alt', 'Formation taxi professionnelle')}
                     className="rounded-lg shadow-xl hover:shadow-2xl transition-shadow duration-300 object-cover w-full"
                 />
