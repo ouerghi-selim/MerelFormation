@@ -379,7 +379,10 @@ const FormationsPage = () => {
 
                         {/* Description avec flex-grow pour occuper l'espace disponible */}
                         <div className="flex-grow">
-                          <p className="text-gray-600 line-clamp-3">{formation.description}</p>
+                          <div 
+                            className="text-gray-600 line-clamp-3 prose prose-sm max-w-none"
+                            dangerouslySetInnerHTML={{ __html: formation.description }}
+                          />
                         </div>
 
                         {/* Section prix et boutons - collée en bas */}

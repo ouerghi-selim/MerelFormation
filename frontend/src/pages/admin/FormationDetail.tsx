@@ -824,15 +824,23 @@ const FormationDetail: React.FC = () => {
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Description*
                           </label>
-                          <textarea
-                              rows={4}
-                              className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                                  formErrors.description ? 'border-red-500' : ''
-                              } ${!editMode ? 'bg-gray-50' : ''}`}
-                              value={formation.description || ''}
-                              onChange={(e) => setFormation({...formation, description: e.target.value})}
-                              disabled={!editMode}
-                          />
+                          {editMode ? (
+                            <WysiwygEditor
+                                value={formation.description || ''}
+                                onChange={(content) => setFormation({...formation, description: content})}
+                                height={300}
+                                placeholder="Décrivez la formation en détail avec formatage, listes, liens..."
+                                disabled={false}
+                                className={formErrors.description ? 'border-red-500 rounded-md' : ''}
+                            />
+                          ) : (
+                            <div className="bg-gray-50 border border-gray-300 rounded-md p-3 min-h-[200px]">
+                              <div 
+                                className="prose prose-sm max-w-none text-gray-800"
+                                dangerouslySetInnerHTML={{ __html: formation.description || '<p class="text-gray-500 italic">Aucune description</p>' }}
+                              />
+                            </div>
+                          )}
                           {formErrors.description && (
                               <p className="mt-1 text-sm text-red-500">{formErrors.description}</p>
                           )}

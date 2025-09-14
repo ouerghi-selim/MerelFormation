@@ -151,7 +151,10 @@ const FormationInitialePage = () => {
                     <div className="flex flex-col md:flex-row items-center gap-12">
                         <div className="md:w-1/2">
                             <h1 className="text-4xl md:text-5xl font-bold mb-6">{formation.title}</h1>
-                            <p className="text-xl mb-8 text-blue-100">{formation.description}</p>
+                            <div 
+                                className="text-xl mb-8 text-blue-100 prose prose-xl prose-invert max-w-none"
+                                dangerouslySetInnerHTML={{ __html: formation.description }}
+                            />
                             <div className="flex flex-wrap gap-4">
                                 {/* Badge durée - toujours affiché */}
                                 <div className="flex items-center bg-blue-800 rounded-lg p-3">

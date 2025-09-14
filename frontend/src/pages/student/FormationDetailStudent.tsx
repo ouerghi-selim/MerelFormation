@@ -238,7 +238,10 @@ const FormationDetailStudent: React.FC = () => {
               
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="text-sm text-gray-500 mb-1">Description</div>
-                  <p className="text-gray-700">{formation.description}</p>
+                  <div 
+                    className="text-gray-700 prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: formation.description }}
+                  />
                 </div>
               </div>
             </div>
