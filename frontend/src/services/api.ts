@@ -713,7 +713,7 @@ export const uploadsApi = {
     getUploadUrl: (type: string, filename: string) =>
         `${baseURL}/uploads/${type}/${encodeURIComponent(filename)}`,
 
-    // Helper pour transformer les URLs relatives en URLs API
+    // Helper pour transformer les URLs relatives en URLs directes
     transformImageUrl: (relativePath: string) => {
         if (!relativePath || relativePath.startsWith('http') || relativePath.startsWith('/assets/')) {
             // Déjà une URL absolue ou un asset static - ne pas transformer
@@ -721,8 +721,8 @@ export const uploadsApi = {
         }
         
         if (relativePath.startsWith('/uploads/')) {
-            // Transformer /uploads/type/file.ext en /api/uploads/type/file.ext
-            return `${baseURL}${relativePath}`;
+            // Servir directement via nginx (plus simple et plus performant)
+            return relativePath; // /uploads/cms/image.jpg
         }
         
         return relativePath;
