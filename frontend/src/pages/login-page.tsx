@@ -1,15 +1,20 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { redirectAuthenticatedUser, getRedirectPathForCurrentUser } from "../utils/auth";
+import Header from "../components/layout/Header";
+import Footer from "../components/layout/Footer";
+import LoginForm from "../components/auth/LoginForm";
 
 const LoginPage = () => {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isAuthenticating, setIsAuthenticating] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const navigate = useNavigate();
-// Vérifier si l'utilisateur est déjà connecté au chargement du composant
+    const location = useLocation();
+
+    // Vérifier si l'utilisateur est déjà connecté au chargement du composant
     useEffect(() => {
         const checkAuthentication = async () => {
             const wasRedirected = await redirectAuthenticatedUser(navigate);
@@ -20,10 +25,19 @@ const LoginPage = () => {
 
         checkAuthentication();
     }, [navigate]);
-    const handleLogin = async (event: React.FormEvent) => {
-        event.preventDefault();
+
+    // Récupérer le message de succès depuis l'état de navigation (ex: après reset password)
+    useEffect(() => {
+        if (location.state?.message) {
+            setSuccessMessage(location.state.message);
+            // Nettoyer l'état pour éviter de le conserver en cas de rafraîchissement
+            window.history.replaceState({}, document.title);
+        }
+    }, [location]);
+
+    const handleLogin = async (email: string, password: string) => {
         setError(null);
-        setIsLoading(true);
+        setIsAuthenticating(true);
 
         try {
             // 1. Obtenir le token JWT
@@ -47,53 +61,55 @@ const LoginPage = () => {
                 console.error("Login error:", err);
             }
         } finally {
-            setIsLoading(false);
+            setIsAuthenticating(false);
         }
     };
+
     // Afficher un indicateur de chargement pendant la vérification d'authentification
     if (isLoading && !error) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <div className="text-center">
-                    <p className="text-gray-600">Vérification de la connexion...</p>
+            <>
+                <Header fullWidth={true} />
+                <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+                    <div className="text-center bg-white rounded-2xl p-8 shadow-lg">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900 mx-auto mb-4"></div>
+                        <p className="text-blue-900 font-medium">Vérification de la connexion...</p>
+                    </div>
                 </div>
-            </div>
+            </>
         );
     }
+
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100">
-            <div className="bg-white p-8 rounded-lg shadow-lg w-96">
-                <h2 className="text-2xl font-bold mb-6 text-center">Connexion</h2>
-                {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-                <form onSubmit={handleLogin}>
-                    <div className="mb-4">
-                        <label className="block text-gray-700">Email</label>
-                        <input
-                            type="email"
-                            className="w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-300"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
+        <div className="flex flex-col min-h-screen">
+            {/* Header du site avec largeur complète */}
+            <Header fullWidth={true} />
+            
+            {/* Contenu principal avec background dégradé */}
+            <div className="flex-1 bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 relative">
+                {/* Background décoratif */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl"></div>
+                    <div className="absolute top-3/4 left-1/2 w-64 h-64 bg-blue-400/10 rounded-full blur-2xl"></div>
+                </div>
+                
+                {/* Contenu principal centré */}
+                <div className="flex items-center justify-center min-h-[calc(100vh-200px)] p-4">
+                    <div className="w-full max-w-md z-10 relative">
+                        {/* Formulaire de connexion */}
+                        <LoginForm 
+                            onSubmit={handleLogin}
+                            error={error}
+                            successMessage={successMessage}
+                            isLoading={isAuthenticating}
                         />
                     </div>
-                    <div className="mb-4">
-                        <label className="block text-gray-700">Mot de passe</label>
-                        <input
-                            type="password"
-                            className="w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-300"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-                    >
-                        Se connecter
-                    </button>
-                </form>
+                </div>
             </div>
+
+            {/* Footer du site avec données dynamiques */}
+            <Footer />
         </div>
     );
 };

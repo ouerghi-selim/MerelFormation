@@ -1468,6 +1468,34 @@ class NotificationService
     }
 
     /**
+     * Notify about password reset request
+     */
+    public function notifyPasswordReset(User $user, string $resetToken): void
+    {
+        try {
+            $variables = [
+                'userName' => $user->getFirstName() . ' ' . $user->getLastName(),
+                'userEmail' => $user->getEmail(),
+                'resetToken' => $resetToken,
+                'resetUrl' => $this->baseUrl . '/reset-password?token=' . $resetToken . '&email=' . urlencode($user->getEmail()),
+                'requestedAt' => (new \DateTime())->format('d/m/Y à H:i'),
+                'expirationTime' => '1 heure'
+            ];
+
+            $this->emailService->sendTemplatedEmailByEventAndRole(
+                $user->getEmail(),
+                NotificationEventType::PASSWORD_RESET,
+                'ROLE_STUDENT',
+                $variables
+            );
+
+            $this->logger->info('Email de reset de mot de passe envoyé à: ' . $user->getEmail());
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de l\'envoi de l\'email de reset de mot de passe: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Notifie lors du changement de statut d'une réservation de véhicule
      */
     public function notifyVehicleRentalStatusChange(VehicleRental $rental, string $oldStatus, string $newStatus, ?string $customMessage = null): void

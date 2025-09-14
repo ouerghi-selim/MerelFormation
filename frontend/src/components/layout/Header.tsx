@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import logo from '@assets/images/logo/merel-logo.png';
 
+interface HeaderProps {
+    fullWidth?: boolean;
+}
 
-const Header = () => {
+const Header: React.FC<HeaderProps> = ({ fullWidth = false }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const toggleMenu = () => {
@@ -13,7 +16,7 @@ const Header = () => {
 
     return (
         <header className="bg-blue-900 text-white shadow-lg sticky top-0 z-50">
-            <div className="container mx-auto px-4 py-4">
+            <div className={`${fullWidth ? 'w-full px-6' : 'container mx-auto'} px-4 py-4`}>
                 <div className="flex justify-between items-center">
                     <div className="flex items-center space-x-4">
                         <Link to="/" className="hover:opacity-90 transition-opacity duration-300">

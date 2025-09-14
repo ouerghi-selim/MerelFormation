@@ -12,6 +12,8 @@ import LocationPage from './pages/location/LocationPage.tsx';
 import FormationDetailPage from "./pages/formation-detail-page";
 import ContactPage from "./pages/contact-page";
 import LoginPage from "./pages/login-page";
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import RentalTrackingPage from './pages/RentalTrackingPage';
 import SetupPasswordPage from './pages/SetupPasswordPage';
 
@@ -99,6 +101,8 @@ const App = () => {
                     <Route path="/location" element={<Layout><LocationPage /></Layout>} />
                     <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
                     <Route path="/login" element={<LoginPage />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
                     <Route path="/setup-password" element={<SetupPasswordPage />} />
                     <Route path="/track/:trackingToken" element={<RentalTrackingPage />} />
 
