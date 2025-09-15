@@ -528,6 +528,173 @@ class UserAdminController extends AbstractController
     }
 
     /**
+     * Forcer la suppression définitive d'un utilisateur (bypass délais RGPD)
+     * @Route("/{id}/force-delete", name="force_delete", methods={"POST"})
+     */
+    public function forceDelete(int $id): JsonResponse
+    {
+        // Vérifier que l'utilisateur est un admin
+        if (!$this->security->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé'], 403);
+        }
+
+        // ✅ DÉSACTIVER LE FILTRE GEDMO pour récupérer l'utilisateur même s'il est supprimé
+        $filters = $this->entityManager->getFilters();
+        $softDeleteableWasEnabled = $filters->isEnabled('softdeleteable');
+        
+        if ($softDeleteableWasEnabled) {
+            $filters->disable('softdeleteable');
+        }
+
+        try {
+            // Récupérer l'utilisateur (même supprimé) avec toutes ses relations
+            $user = $this->userRepository->createQueryBuilder('u')
+                ->leftJoin('u.reservations', 'r')
+                ->leftJoin('u.documents', 'd')
+                ->leftJoin('u.vehicleRentals', 'vr')
+                ->leftJoin('u.invoices', 'i')
+                ->leftJoin('u.notifications', 'n')
+                ->addSelect('r', 'd', 'vr', 'i', 'n')
+                ->where('u.id = :id')
+                ->setParameter('id', $id)
+                ->getQuery()
+                ->getOneOrNullResult();
+        } finally {
+            // ✅ RÉACTIVER LE FILTRE GEDMO
+            if ($softDeleteableWasEnabled) {
+                $filters->enable('softdeleteable');
+            }
+        }
+
+        if (!$user) {
+            return $this->json(['message' => 'Utilisateur non trouvé'], 404);
+        }
+
+        // Vérifier que l'utilisateur est bien dans un état supprimé
+        if (!$user->getDeletedAt()) {
+            return $this->json(['message' => 'Cet utilisateur n\'est pas supprimé'], 400);
+        }
+
+        // Vérifier que l'utilisateur n'est pas déjà définitivement supprimé
+        if ($user->getDeletionLevel() === 'permanent') {
+            return $this->json(['message' => 'Cet utilisateur est déjà définitivement supprimé'], 400);
+        }
+
+        try {
+            // SUPPRESSION DÉFINITIVE FORCÉE
+            
+            // Log de sécurité pour audit
+            $adminUser = $this->security->getUser();
+            $adminEmail = $adminUser ? $adminUser->getUserIdentifier() : 'système';
+            
+            error_log(sprintf(
+                '[AUDIT] SUPPRESSION FORCÉE - Admin: %s | User ID: %d | Email: %s | Niveau: %s | Date: %s',
+                $adminEmail,
+                $user->getId(),
+                $user->getEmail(),
+                $user->getDeletionLevel() ?? 'inconnu',
+                (new \DateTime())->format('Y-m-d H:i:s')
+            ));
+
+            // Marquer le niveau comme permanent avant suppression
+            $user->setDeletionLevel('permanent');
+
+            // Désactiver temporairement les contraintes de clés étrangères
+            $connection = $this->entityManager->getConnection();
+            $connection->executeStatement('SET FOREIGN_KEY_CHECKS = 0');
+
+            // NETTOYAGE COMPLET DE TOUTES LES RELATIONS
+            
+            // 0. Gérer les relations inverses où l'utilisateur peut être instructeur
+            // Retirer cet utilisateur de toutes les sessions où il est instructeur
+            $sessions = $this->entityManager->getRepository(\App\Entity\Session::class)
+                ->createQueryBuilder('s')
+                ->join('s.instructors', 'i')
+                ->where('i.id = :userId')
+                ->setParameter('userId', $user->getId())
+                ->getQuery()
+                ->getResult();
+            
+            foreach ($sessions as $session) {
+                $session->getInstructors()->removeElement($user);
+            }
+
+            // Retirer uploadedBy des documents où cet utilisateur était l'uploader
+            $uploadedDocuments = $this->documentRepository->findBy(['uploadedBy' => $user]);
+            foreach ($uploadedDocuments as $document) {
+                $document->setUploadedBy(null); // Anonymiser au lieu de supprimer
+            }
+            
+            // 1. Supprimer toutes les notifications liées
+            foreach ($user->getNotifications() as $notification) {
+                $this->entityManager->remove($notification);
+            }
+
+            // 2. Supprimer toutes les réservations liées
+            foreach ($user->getReservations() as $reservation) {
+                $this->entityManager->remove($reservation);
+            }
+
+            // 3. Supprimer toutes les locations de véhicules
+            foreach ($user->getVehicleRentals() as $vehicleRental) {
+                $this->entityManager->remove($vehicleRental);
+            }
+
+            // 4. Supprimer tous les documents liés (ou les archiver selon la stratégie)
+            foreach ($user->getDocuments() as $document) {
+                // Option 1: Supprimer complètement
+                $this->entityManager->remove($document);
+                // Option 2: Anonymiser (décommenter si préféré)
+                // $document->setUser(null);
+                // $document->setTitle('Document d\'utilisateur supprimé');
+            }
+
+            // 5. Supprimer toutes les factures liées (ou les anonymiser)
+            foreach ($user->getInvoices() as $invoice) {
+                // Option 1: Supprimer complètement
+                $this->entityManager->remove($invoice);
+                // Option 2: Anonymiser (décommenter si préféré)
+                // $invoice->setUser(null);
+            }
+
+            // Persister toutes ces suppressions AVANT de supprimer l'utilisateur
+            $this->entityManager->flush();
+
+            // 6. Supprimer définitivement l'utilisateur de la base de données
+            $this->entityManager->remove($user);
+            $this->entityManager->flush();
+
+            // Réactiver les contraintes de clés étrangères
+            $connection->executeStatement('SET FOREIGN_KEY_CHECKS = 1');
+
+            return $this->json([
+                'message' => 'Utilisateur supprimé définitivement avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            // Réactiver les contraintes en cas d'erreur
+            try {
+                $connection = $this->entityManager->getConnection();
+                $connection->executeStatement('SET FOREIGN_KEY_CHECKS = 1');
+            } catch (\Exception $connectionError) {
+                // Ignorer les erreurs de reconnexion
+            }
+
+            // Log de l'erreur pour debug
+            error_log(sprintf(
+                '[ERREUR] SUPPRESSION FORCÉE ÉCHOUÉE - User ID: %d | Erreur: %s | Date: %s',
+                $user->getId(),
+                $e->getMessage(),
+                (new \DateTime())->format('Y-m-d H:i:s')
+            ));
+
+            return $this->json([
+                'message' => 'Erreur lors de la suppression forcée: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Récupérer les utilisateurs supprimés avec informations de deadline
      * @Route("/deleted", name="get_deleted", methods={"GET"})
      */

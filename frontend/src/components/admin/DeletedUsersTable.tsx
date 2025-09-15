@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { RotateCcw, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
+import { RotateCcw, AlertTriangle, Clock, CheckCircle, Trash2 } from 'lucide-react';
 import DataTable from '../common/DataTable';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
+import ForceDeleteConfirmModal from './ForceDeleteConfirmModal';
 import { useNotification } from '../../contexts/NotificationContext';
 import { adminUsersApi } from '../../services/api';
 
@@ -32,6 +33,10 @@ const DeletedUsersTable: React.FC = () => {
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [userToRestore, setUserToRestore] = useState<DeletedUser | null>(null);
   const [restoring, setRestoring] = useState(false);
+  
+  // États pour la suppression forcée
+  const [showForceDeleteModal, setShowForceDeleteModal] = useState(false);
+  const [userToForceDelete, setUserToForceDelete] = useState<DeletedUser | null>(null);
 
   const loadDeletedUsers = async () => {
     try {
@@ -172,6 +177,27 @@ const DeletedUsersTable: React.FC = () => {
     setShowRestoreModal(true);
   };
 
+  // Gestion de la suppression forcée
+  const handleForceDelete = async (userId: number) => {
+    try {
+      await adminUsersApi.forceDelete(userId);
+      addToast('Utilisateur supprimé définitivement avec succès', 'success');
+      setShowForceDeleteModal(false);
+      setUserToForceDelete(null);
+      loadDeletedUsers(); // Recharger la liste
+    } catch (error: any) {
+      console.error('Error force deleting user:', error);
+      const message = error.response?.data?.message || 'Erreur lors de la suppression forcée';
+      addToast(message, 'error');
+      throw error; // Re-lancer l'erreur pour que le modal puisse la gérer
+    }
+  };
+
+  const openForceDeleteModal = (user: DeletedUser) => {
+    setUserToForceDelete(user);
+    setShowForceDeleteModal(true);
+  };
+
   const columns = [
     {
       title: 'Utilisateur',
@@ -208,10 +234,31 @@ const DeletedUsersTable: React.FC = () => {
           Restaurer
         </Button>
       )}
+      
+      {/* Bouton de suppression forcée - seulement pour les niveaux 1 et 2 */}
+      {user.deletionLevel !== 'permanent' && (
+        <Button
+          size="sm"
+          variant="danger"
+          onClick={() => openForceDeleteModal(user)}
+          className="ml-2"
+        >
+          <Trash2 className="h-4 w-4 mr-1" />
+          Forcer suppression
+        </Button>
+      )}
+      
       {user.isOverdue && (
         <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
           <AlertTriangle className="w-3 h-3 mr-1" />
           En retard
+        </span>
+      )}
+      
+      {user.deletionLevel === 'permanent' && (
+        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Supprimé définitivement
         </span>
       )}
     </div>
@@ -299,6 +346,16 @@ const DeletedUsersTable: React.FC = () => {
           </div>
         )}
       </Modal>
+
+      {/* Modal de confirmation de suppression forcée */}
+      {userToForceDelete && (
+        <ForceDeleteConfirmModal
+          isOpen={showForceDeleteModal}
+          onClose={() => setShowForceDeleteModal(false)}
+          user={userToForceDelete}
+          onConfirm={handleForceDelete}
+        />
+      )}
     </>
   );
 };

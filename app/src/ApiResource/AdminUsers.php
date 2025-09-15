@@ -58,6 +58,10 @@ use App\Controller\Admin\UserAdminController;
             uriTemplate: '/admin/users/{id}/restore',
             controller: UserAdminController::class . '::restore',
         ),
+        new Post(
+            uriTemplate: '/admin/users/{id}/force-delete',
+            controller: UserAdminController::class . '::forceDelete',
+        ),
         new Get(
             uriTemplate: '/admin/users/{id}/company',
             controller: UserAdminController::class . '::getCompany',

@@ -217,6 +217,7 @@ export const adminUsersApi = {
     updateStatus: (id: number, isActive: boolean) => api.put(`/admin/users/${id}/status`, { isActive }),
     delete: (id: number) => api.delete(`/admin/users/${id}`),
     restore: (id: number) => api.post(`/admin/users/${id}/restore`),
+    forceDelete: (id: number) => api.post(`/admin/users/${id}/force-delete`),
     getFormations: (userId: number) => api.get(`/admin/users/${userId}/formations`),
     getStudents: (queryParams = '') => api.get(`/admin/users/students${queryParams ? '?' + queryParams : ''}`),
     getDeleted: () => api.get('/admin/users/deleted'),
